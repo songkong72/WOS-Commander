@@ -258,8 +258,9 @@ export default function HeroDetail() {
                                     {((hero.skills as any)?.[skillType] || []).map((skill: any, idx: number) => (
                                         <View key={idx} className="bg-slate-800/30 rounded-2xl p-4 flex-row gap-4 border border-white/5">
                                             <Image
-                                                source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
+                                                source={{ uri: skill.icon?.startsWith('http') ? skill.icon : `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
                                                 className="w-16 h-16 rounded-xl"
+                                                defaultSource={require('../../assets/icon.png')}
                                             />
                                             <View className="flex-1">
                                                 <Text className="text-white font-black text-sm mb-1">{skill.name}</Text>
@@ -294,7 +295,11 @@ export default function HeroDetail() {
                                         <View className="space-y-4">
                                             {(hero as any).equipment.skills.map((skill: any, idx: number) => (
                                                 <View key={idx} className="flex-row gap-4 items-center">
-                                                    <Image source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }} className="w-12 h-12 rounded-lg" />
+                                                    <Image
+                                                        source={{ uri: skill.icon?.startsWith('http') ? skill.icon : `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
+                                                        className="w-12 h-12 rounded-lg"
+                                                        defaultSource={require('../../assets/icon.png')}
+                                                    />
                                                     <View className="flex-1">
                                                         <Text className="text-white font-black text-sm">{skill.name}</Text>
                                                         <Text className="text-slate-400 text-xs leading-5">{skill.desc}</Text>
