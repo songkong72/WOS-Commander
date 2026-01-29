@@ -85,10 +85,14 @@ export default function HeroDetail() {
         <View className="absolute top-0 left-0 right-0 z-50 flex-row justify-between items-center px-6 pt-12 pb-4">
             <TouchableOpacity
                 onPress={() => {
+                    // Determine the category to return to based on hero's gen or rarity
+                    const category = hero.gen || hero.rarity;
                     if (navigation.canGoBack()) {
-                        navigation.goBack();
+                        router.back();
+                        // Use replace with query param to set the category
+                        router.setParams({ category });
                     } else {
-                        router.replace('/hero-management');
+                        router.replace(`/hero-management?category=${category}`);
                     }
                 }}
                 className="w-10 h-10 rounded-full bg-black/40 items-center justify-center border border-white/10"

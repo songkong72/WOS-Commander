@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Dimensions } from 'react-native';
-import { Stack, Link, useRouter } from 'expo-router';
+import { Stack, Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
@@ -49,7 +49,15 @@ const roleIcons: { [key: string]: any } = {
 
 export default function HeroManagement() {
     const router = useRouter();
+    const params = useLocalSearchParams();
     const [selectedCategory, setSelectedCategory] = useState('레어'); // Default first tab
+
+    // Update category from URL parameter if provided
+    React.useEffect(() => {
+        if (params.category && typeof params.category === 'string') {
+            setSelectedCategory(params.category);
+        }
+    }, [params.category]);
 
     const categories = [
         { id: '레어', label: '레어' },
