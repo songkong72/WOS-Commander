@@ -5,7 +5,6 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
 import { heroImages } from '../../assets/images/heroes';
-import { skillIcons } from '../../assets/images/skill-icons';
 
 export default function HeroDetail() {
     const { id } = useLocalSearchParams();
@@ -259,7 +258,7 @@ export default function HeroDetail() {
                                     {((hero.skills as any)?.[skillType] || []).map((skill: any, idx: number) => (
                                         <View key={idx} className="bg-slate-800/30 rounded-2xl p-4 flex-row gap-4 border border-white/5">
                                             <Image
-                                                source={skillIcons[skill.icon] || require('../../assets/icon.png')}
+                                                source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
                                                 className="w-16 h-16 rounded-xl"
                                             />
                                             <View className="flex-1">
@@ -283,7 +282,7 @@ export default function HeroDetail() {
                                     <View className="bg-slate-800/30 rounded-3xl p-6 border border-white/5 mb-6">
                                         <View className="flex-row items-center gap-6 mb-8">
                                             <Image
-                                                source={skillIcons[(hero as any).equipment.icon] || require('../../assets/icon.png')}
+                                                source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/01/${(hero as any).equipment.icon}` }}
                                                 className="w-20 h-20 rounded-2xl"
                                             />
                                             <View>
@@ -299,7 +298,7 @@ export default function HeroDetail() {
                                             {(hero as any).equipment.skills.map((skill: any, idx: number) => (
                                                 <View key={idx} className="flex-row gap-4 items-center">
                                                     <Image
-                                                        source={skillIcons[skill.icon] || require('../../assets/icon.png')}
+                                                        source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
                                                         className="w-12 h-12 rounded-lg"
                                                     />
                                                     <View className="flex-1">

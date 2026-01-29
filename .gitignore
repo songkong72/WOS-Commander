@@ -35,3 +35,5 @@ yarn-error.*
 # Typescript
 *.tsbuildinfo
 
+# Skill icons (too many files for bundling)
+assets/images/skill-icons/
