@@ -1,0 +1,3606 @@
+[
+    {
+        "id": "jeronimo",
+        "name": "제로니모",
+        "type": "보병",
+        "gen": "S1",
+        "rarity": "전설",
+        "image": "jeronimo.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "전투"
+        },
+        "description": "제로니모는 명실상부한 귀족으로 가문이 몰락했더라도 우아한 몸가짐과 세련된 삶을 추구했다. 그의 가장 칭송받는 재능은 검술이며, 지휘관으로서도 훌륭한 자질을 갖추고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "삼단 베기",
+                    "desc": "일정 범위 안의 적을 들어올려 3차례 베고, 매번 공격력 160%/176%/192%/208%/224%의 피해를 입힌다.",
+                    "icon": "hero_skill_icon_500111.png"
+                },
+                {
+                    "name": "검기",
+                    "desc": "일반 공격마다 검기를 시전해서 전방 직사각형 범위 내 적에게 공격력 15%/17%/19%/21%/23%의 피해를 입힌다.",
+                    "icon": "hero_skill_icon_500112.png"
+                },
+                {
+                    "name": "거만함",
+                    "desc": "도도한 제로니모는 순풍이 불 때 더욱 강해진다. HP가 50% 이상일 때 공격력이 16%/24%/32%/40%/48% 향상된다.",
+                    "icon": "hero_skill_icon_500113.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "전쟁 선언",
+                    "desc": "제로니모의 전투 전 연설로 전체 아군 부대가 입히는 피해가 5%/10%/15%/20%/25% 증가한다.",
+                    "icon": "hero_skill_icon_500114.png"
+                },
+                {
+                    "name": "검술 지도",
+                    "desc": "검술의 이치를 전수해서 전체 아군 부대의 공격력이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_500115.png"
+                },
+                {
+                    "name": "정밀 검술",
+                    "desc": "제로니모가 전수한 검술은 병사들이 전세를 잡는 데 큰 힘이 되어, 4라운드마다 전체 아군 부대가 주는 피해를 6%/12%/18%/24%/30% 증가시킨다.",
+                    "icon": "hero_skill_icon_500116.png"
+                }
+            ],
+            "special": [
+                {
+                    "name": "타고난 지도자",
+                    "desc": "카리스마가 전체 군에 영향을 미쳐 제로니모의 출정 여부와 상관없이 전체 아군 부대의 파괴력과 HP가 3%/6%/9%/12%/15% 증가합니다.",
+                    "icon": "hero_icon_005.png"
+                }
+            ],
+            "equipment": {
+                "name": "새벽의 칼날",
+                "power": "281,250",
+                "icon": "equipment_icon_1050011.png",
+                "skills": [
+                    {
+                        "name": "검방패",
+                        "desc": "공격 진행 시 검기가 방패를 형성하여 자신이 받는 피해가 30% 감소합니다.",
+                        "icon": "hero_skill_icon_500117.png"
+                    },
+                    {
+                        "name": "진실의 술법",
+                        "desc": "검진을 펼쳐 공격하며, 집결 부대의 공격력이 15% 상승한다.",
+                        "icon": "hero_skill_icon_500118.png"
+                    }
+                ]
+            }
+        }
+    },
+    {
+        "id": "natalia",
+        "name": "나탈리아",
+        "type": "보병",
+        "gen": "S1",
+        "rarity": "전설",
+        "image": "natalia.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "전투"
+        },
+        "description": "곰과 동행하는 소녀 나탈리아는 나이를 뛰어넘는 학식을 가진 모험가입니다. 아버지 레터로부터 배운 생태학 지식과 북극곰 카샤와 함께하며 험난한 세상을 헤쳐나가고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "비스트 어택",
+                    "desc": "북극곰이 땅을 내리쳐 공격력 160%/176%/192%/208%/224% 의 범위 피해를 입히고 1초간 스턴시킨다.",
+                    "icon": "hero_skill_icon_500411.png"
+                },
+                {
+                    "name": "채찍질",
+                    "desc": "채찍을 휘둘러서 목표물에게 공격력 150%/165%/180%/195%/210% 의 피해를 입힌다.",
+                    "icon": "hero_skill_icon_500412.png"
+                },
+                {
+                    "name": "레인지 리스폰",
+                    "desc": "피해를 입을 때 10% 확률로 공격력이 4%/6%/8%/10%/12% 향상된다. (최대 5중첩)",
+                    "icon": "hero_skill_icon_500413.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "야성 수호",
+                    "desc": "40%의 확률로 전체 아군 부대가 받는 피해가 10%/20%/30%/40%/50% 감소한다.",
+                    "icon": "hero_skill_icon_500414.png"
+                },
+                {
+                    "name": "비스트 로드",
+                    "desc": "전체 아군 부대 공격력이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_500415.png"
+                },
+                {
+                    "name": "야성의 부름",
+                    "desc": "전체 아군 부대 피해량이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_500416.png"
+                }
+            ],
+            "special": [
+                {
+                    "name": "백곰의 힘",
+                    "desc": "출정 여부와 상관없이 전체 아군 부대의 공격력, 방어력 2%/4%/6%/8%/10% 증가합니다.",
+                    "icon": "hero_icon_005.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "광풍어자",
+            "power": "281,250",
+            "icon": "equipment_icon_1050041.png",
+            "skills": [
+                {
+                    "name": "한마음",
+                    "desc": "나탈리아와 백곰이 교감하여 입히는 피해가 30% 상승한다.",
+                    "icon": "hero_skill_icon_500417.png"
+                },
+                {
+                    "name": "불패의 군대",
+                    "desc": "집결에 참여해서 집결 부대 파괴력이 15% 상승한다.",
+                    "icon": "hero_skill_icon_500418.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "molly",
+        "name": "몰리",
+        "type": "창병",
+        "gen": "S1",
+        "rarity": "전설",
+        "image": "molly.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "전투"
+        },
+        "description": "끝없는 추위는 고난의 근원으로 여겨졌지만, 몰리는 그렇게 여기지 않았고 그녀에게 눈 덮인 세상은 거대한 놀이터였다. 그녀는 눈을 좋아하고, 눈싸움을 좋아하며, 눈밭을 달리는 것을 좋아하는 게 마치 걱정 없이 사는 얼음 세계의 요정 같다. 바히티가 파에톤의 아지트에서 그녀를 구출한 뒤, 연맹의 소중한 동료가 되었습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "초대형 눈덩이",
+                    "desc": "거대한 눈덩이를 발사해서 원형 범위 내 목표물에 공격력*180%/198%/216%/234%/252%의 피해를 입히고 1.5초 동안 얼려버린다.",
+                    "icon": "hero_skill_icon_500211.png"
+                },
+                {
+                    "name": "눈속 매복",
+                    "desc": "눈밭에 숨어 기습 공격을 행하고 목표물에 공격력*150%/165%/180%/195%/210%의 피해를 입힌다.",
+                    "icon": "hero_skill_icon_500212.png"
+                },
+                {
+                    "name": "소녀의 집착",
+                    "desc": "HP가 50% 미만일 때 공격 속도가 20%/30%/40%/50%/60% 향상된다.",
+                    "icon": "hero_skill_icon_500213.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "눈안개 비호",
+                    "desc": "40%의 확률로 전체 아군 부대가 받는 피해가 50% 감소한다.",
+                    "icon": "hero_skill_icon_500214.png"
+                },
+                {
+                    "name": "빙설의 영역",
+                    "desc": "아군 전체 부대가 공격할 때 50%확률로 이번 피해를 10%/20%/30%/40%/50% 향상시킨다.",
+                    "icon": "hero_skill_icon_500215.png"
+                },
+                {
+                    "name": "소녀의 분노",
+                    "desc": "아군 전체 부대가 입히는 피해가 5%/10%/15%/20%/25% 향상된다.",
+                    "icon": "hero_skill_icon_500216.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "눈의 정령",
+            "power": "281,250",
+            "icon": "equipment_icon_1050021.png",
+            "skills": [
+                {
+                    "name": "개조된 발사기",
+                    "desc": "송신기를 개량하여 자신이 가하는 피해가 30% 증가한다.",
+                    "icon": "hero_skill_icon_500217.png"
+                },
+                {
+                    "name": "눈의 가호",
+                    "desc": "눈의 가호를 받아 수성 부대의 파괴력이 15% 증가합니다.",
+                    "icon": "hero_skill_icon_500218.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "zinman",
+        "name": "진먼",
+        "type": "궁병",
+        "gen": "S1",
+        "rarity": "전설",
+        "image": "zinman.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "건설"
+        },
+        "description": "옛 솔라시티의 유명한 건축 예술가였던 진먼은 이제 서광 연맹의 중요한 건설 역군입니다. 그의 소박한 건축물들이 더 많은 생존자들에게 안식처를 제공하고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "개틀링건",
+                    "desc": "못 1개마다 공격력*55%/60%/65%/70%/75%의 피해를 입히고, 2초 동안 스턴시킨다.",
+                    "icon": "hero_skill_icon_500311.png"
+                },
+                {
+                    "name": "퀵 디펜스",
+                    "desc": "HP가 50% 미만일 때, 자신의 방어력을 50%/75%/100%/125%/150% 향상시킨다.",
+                    "icon": "hero_skill_icon_500312.png"
+                },
+                {
+                    "name": "열의",
+                    "desc": "넘치는 열정으로 공격 속도가 10%/15%/20%/25%/30% 상승한다.",
+                    "icon": "hero_skill_icon_500313.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "난공불락",
+                    "desc": "전체 아군의 방어력과 HP가 2%/4%/6%/8%/10% 증가합니다.",
+                    "icon": "hero_skill_icon_500314.png"
+                },
+                {
+                    "name": "건축 예술",
+                    "desc": "건축 자원 소모가 3%/6%/9%/12%/15% 감소하고, 업그레이드 속도가 3%/6%/9%/12%/15% 증가합니다.",
+                    "icon": "hero_skill_icon_500315.png"
+                },
+                {
+                    "name": "진지전의 강자",
+                    "desc": "전체 아군 부대가 입히는 피해가 5%/10%/15%/20%/25% 증가합니다.",
+                    "icon": "hero_skill_icon_500316.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "딱따구리",
+            "power": "281,250",
+            "icon": "equipment_icon_1050031.png",
+            "skills": [
+                {
+                    "name": "과부하 스테이플 건",
+                    "desc": "압력 스테이플 건이 과부하 모드가 되어 공격력이 24% 증가합니다",
+                    "icon": "hero_skill_icon_500317.png"
+                },
+                {
+                    "name": "반격 개시",
+                    "desc": "수성 부대의 공격력이 15% 증가합니다",
+                    "icon": "hero_skill_icon_500318.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "flint",
+        "name": "플린트",
+        "type": "보병",
+        "gen": "S2",
+        "rarity": "전설",
+        "image": "flint.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "전투"
+        },
+        "description": "플린트는 야생의 불꽃처럼 설원에서 활활 타오르는 전사입니다. 파에톤에 의해 모든 것을 잃은 뒤 복수를 갈망하며, 공동의 적을 위해 서광 연맹과 협력하고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "복수의 불꽃",
+                    "desc": "0.5초마다 공격력*60%/66%/72%/78%/84%의 피해를 입히고, 목표물이 받는 피해를 10%/15%/20%/25%/30% 향상시킨다.",
+                    "icon": "hero_skill_icon_500611.png"
+                },
+                {
+                    "name": "분노의 화염",
+                    "desc": "HP가 50% 미만일 때 자신의 최대 HP 20%/25%/30%/35%/40%를 즉시 회복한다. (전투당 1회)",
+                    "icon": "hero_skill_icon_500612.png"
+                },
+                {
+                    "name": "열원 확산",
+                    "desc": "아군 전체 영웅의 공격 속도를 3%/4%/5%/6%/7% 향상시킨다.",
+                    "icon": "hero_skill_icon_500613.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "불타는 들판",
+                    "desc": "플린트가 이끄는 방패병이 주는 피해가 20%/40%/60%/80%/100% 상승한다.",
+                    "icon": "hero_skill_icon_500614.png"
+                },
+                {
+                    "name": "뜨거운 의지",
+                    "desc": "아군 전체 부대의 공격력이 5%/10%/15%/20%/25% 향상된다.",
+                    "icon": "hero_skill_icon_500615.png"
+                },
+                {
+                    "name": "사나운 불길",
+                    "desc": "전체 아군 부대 파괴력이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_500616.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "드래곤 글라우",
+            "power": "281,250",
+            "icon": "equipment_icon_1050061.png",
+            "skills": [
+                {
+                    "name": "복수의 열기",
+                    "desc": "“분노의 화염” 발동 후 전투 종료까지 공격력이 24% 향상된다.",
+                    "icon": "hero_skill_icon_500617.png"
+                },
+                {
+                    "name": "드래곤 브레스",
+                    "desc": "수성 부대 공격력이 15% 향상된다.",
+                    "icon": "hero_skill_icon_500618.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "philly",
+        "name": "필리",
+        "type": "창병",
+        "gen": "S2",
+        "rarity": "전설",
+        "image": "philly.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "전투"
+        },
+        "description": "기이한 소문 속의 의사 필리는 역병으로부터 마을을 구한 영웅이자 기적의 화신입니다. 그녀는 죽음을 되돌릴 방법을 찾기 위해 의술 연구에 매진하고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "응급 치료",
+                    "desc": "아군 모든 영웅에게 필리의 공격력*200/220%/240%/260%/280%의 HP를 회복시킨다.",
+                    "icon": "hero_skill_icon_500711.png"
+                },
+                {
+                    "name": "탁월한 의술",
+                    "desc": "HP 백분율이 가장 낮은 아군 영웅에게 필리의 공격력*100%/110%/120%/130%/140%의 HP를 회복시킨다.",
+                    "icon": "hero_skill_icon_500712.png"
+                },
+                {
+                    "name": "마비 독소",
+                    "desc": "목표물을 중독시켜 공격력*140%/154%/168%/182%/196%의 피해를 입히고 1초간 마비시킨다.",
+                    "icon": "hero_skill_icon_500713.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "강건의 비결",
+                    "desc": "아군 부대 공격력이 3%/6%/9%/12%/15%, 방어력이 2%/4%/6%/8%/10% 증가한다.",
+                    "icon": "hero_skill_icon_500714.png"
+                },
+                {
+                    "name": "강화 약물",
+                    "desc": "아군 전체 부대가 공격할 때 25% 확률로 120%/140%/160%/180%/200%의 피해를 입힌다.",
+                    "icon": "hero_skill_icon_500715.png"
+                },
+                {
+                    "name": "각성 주사",
+                    "desc": "40%의 확률로 전체 아군 부대가 받는 피해가 10%/20%/30%/40%/50% 감소한다.",
+                    "icon": "hero_skill_icon_500716.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "신비한 약전",
+            "power": "281,250",
+            "icon": "equipment_icon_1050071.png",
+            "skills": [
+                {
+                    "name": "에센스 추출",
+                    "desc": "HP 회복 스킬의 효과를 70% 향상시킨다.",
+                    "icon": "hero_skill_icon_500717.png"
+                },
+                {
+                    "name": "응급처치 훈련",
+                    "desc": "방어 부대의 HP를 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_500718.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "alonso",
+        "name": "알론소",
+        "type": "궁병",
+        "gen": "S2",
+        "rarity": "전설",
+        "image": "alonso.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "전투"
+        },
+        "description": "과묵한 신비로운 노인 알론소는 바다 괴물 '레비아탄'에게 복수하기 위해 평생을 바친 고래잡이입니다. 그는 거대 괴수 사냥의 전문가이자 뛰어난 선장입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "강력한 그물",
+                    "desc": "공격력* 200%/220%/240%/260%/280% 의 범위 피해를 입히고 1.5초 동안 속박한다.",
+                    "icon": "hero_skill_icon_500811.png"
+                },
+                {
+                    "name": "기조력",
+                    "desc": "파도와 같은 기세의 작살을 던져서 공격력* 50%/55%/60%/65%/70%의 범위 피해를 입힌다.",
+                    "icon": "hero_skill_icon_500812.png"
+                },
+                {
+                    "name": "작살 크러쉬",
+                    "desc": "매 8~5회 일반 공격 후 다음 공격은 목표물을 0.2~0.5초 동안 기절시킨다.",
+                    "icon": "hero_skill_icon_500813.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "거센 파도",
+                    "desc": "40%의 확률로 전체 아군 부대 파괴력이 10%/20%/30%/40%/50% 상승한다.",
+                    "icon": "hero_skill_icon_500814.png"
+                },
+                {
+                    "name": "굳센 의지",
+                    "desc": "아군 공격 시 10%~50% 확률로 적이 가하는 피해를 40% 감소시킨다. (2라운드)",
+                    "icon": "hero_skill_icon_500815.png"
+                },
+                {
+                    "name": "극독의 작살",
+                    "desc": "50% 확률로 이번 피해를 10%/20%/30%/40%/50% 향상시킨다.",
+                    "icon": "hero_skill_icon_500816.png"
+                }
+            ],
+            "special": [
+                {
+                    "name": "바다의 향연",
+                    "desc": "일반 공격마다 HP가 가장 낮은 아군 영웅의 HP를 알론소 공격력의 15%만큼 회복시킨다.",
+                    "icon": "hero_icon_005.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "아합 선장",
+            "power": "281,250",
+            "icon": "equipment_icon_1050081.png",
+            "skills": [
+                {
+                    "name": "바다의 향연",
+                    "desc": "일반 공격 시 HP가 가장 낮은 아군 영웅을 회복시킨다.",
+                    "icon": "hero_skill_icon_500817.png"
+                },
+                {
+                    "name": "작살 강화",
+                    "desc": "집결 부대 파괴력을 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_500818.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "logan",
+        "name": "로건",
+        "type": "보병",
+        "gen": "S3",
+        "rarity": "전설",
+        "image": "logan.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "전투"
+        },
+        "description": "사나운 사자처럼 강철 같은 몸으로 희망 연맹을 수호하는 로건은 뛰어난 전술과 동력 갑옷을 활용한 강력한 전투력을 갖추고 있습니다. 한때 파에톤의 엔지니어였으나 이제는 생존자들을 위한 용광로 설계자이자 수호자로 활동합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "파멸의 주먹",
+                    "desc": "강철 주먹으로 충격파를 발생시켜 공격력*120%/132%/144%/156%/168%의 데미지를 입히고 공격 속도를 50% 하락시킨다.",
+                    "icon": "hero_skill_icon_500911.png"
+                },
+                {
+                    "name": "동력 갑옷",
+                    "desc": "공격을 받을 때 8%~16% 확률로 방어력을 8%~20% 향상시킨다. (최대 5회 중첩)",
+                    "icon": "hero_skill_icon_500912.png"
+                },
+                {
+                    "name": "거센 타격",
+                    "desc": "부채꼴 범위 내 목표물에 공격력*80%/88%/96%/104%/112%의 데미지를 입히고 30% 확률로 1초간 스턴시킨다.",
+                    "icon": "hero_skill_icon_500913.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "사자의 위엄",
+                    "desc": "전체 적군 부대의 공격력이 4%/8%/12%/16%/20% 감소한다.",
+                    "icon": "hero_skill_icon_500914.png"
+                },
+                {
+                    "name": "라이언 피어스",
+                    "desc": "전체 아군 부대가 받는 피해를 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_500915.png"
+                },
+                {
+                    "name": "리더십",
+                    "desc": "아군 전체 부대 HP를 5%/10%/15%/20%/25% 향상시킨다.",
+                    "icon": "hero_skill_icon_500916.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "강철 주먹",
+            "power": "281,250",
+            "icon": "equipment_icon_1050091.png",
+            "skills": [
+                {
+                    "name": "주먹 강화",
+                    "desc": "강철 주먹의 위력이 강화되어 데미지가 30% 상승한다.",
+                    "icon": "hero_skill_icon_500917.png"
+                },
+                {
+                    "name": "아이언 가드",
+                    "desc": "수성 부대 방어력을 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_500918.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "mia",
+        "name": "미야",
+        "type": "창병",
+        "gen": "S3",
+        "rarity": "전설",
+        "image": "mia.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "점술"
+        },
+        "description": "떠돌이 상단의 리더 미야는 진정한 마법과 정확한 정보를 다루는 신비로운 인물입니다. 그녀의 타로 카드와 수정구슬은 적에게는 불운을, 아군에게는 행운을 가져다줍니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "운명의 노래",
+                    "desc": "공격력* 270%/297%/324%/351%/378%의 피해를 입히고 랜덤하게 공격력 감소 또는 스턴 효과를 부여한다.",
+                    "icon": "hero_skill_icon_501011.png"
+                },
+                {
+                    "name": "재앙의 징조",
+                    "desc": "적 1명에게 미야 공격력의 5%~600% 사이의 랜덤 피해를 입힌다.",
+                    "icon": "hero_skill_icon_501012.png"
+                },
+                {
+                    "name": "운명의 수호",
+                    "desc": "최저 HP 아군의 HP를 미야 공격력의 5%~400% 사이의 랜덤 수치로 회복시킨다.",
+                    "icon": "hero_skill_icon_501013.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "액운",
+                    "desc": "50% 확률로 적군이 받는 피해를 10%/20%/30%/40%/50% 증가시킨다.",
+                    "icon": "hero_skill_icon_501014.png"
+                },
+                {
+                    "name": "행운의 가호",
+                    "desc": "아군 공격 시 10%~50% 확률로 해당 피해를 20% 증가시킨다.",
+                    "icon": "hero_skill_icon_501015.png"
+                },
+                {
+                    "name": "신비로운 해독",
+                    "desc": "40% 확률로 아군 전체 부대가 받는 피해가 10%/20%/30%/40%/50% 하락한다.",
+                    "icon": "hero_skill_icon_501016.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "운명의 수정",
+            "power": "281,250",
+            "icon": "equipment_icon_1050101.png",
+            "skills": [
+                {
+                    "name": "진실의 눈",
+                    "desc": "스킬의 랜덤 효과 최소/최대 효율을 150% 향상시킨다.",
+                    "icon": "hero_skill_icon_501017.png"
+                },
+                {
+                    "name": "운명의 집결",
+                    "desc": "집결 부대의 공격력을 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_501018.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "greg",
+        "name": "그렉",
+        "type": "궁병",
+        "gen": "S3",
+        "rarity": "전설",
+        "image": "greg.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "전투"
+        },
+        "description": "이성과 율법으로 세계의 질서를 회복하려는 법관 그렉은 신성한 법전의 힘으로 악을 심판합니다. 그는 엄격한 판결을 통해 전장에 정의를 구현하고 아군을 고무시킵니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "하늘의 정의",
+                    "desc": "공격력의 *160%/176%/192%/208%/224% 데미지를 입히고 2초간 스턴시킨다.",
+                    "icon": "hero_skill_icon_501111.png"
+                },
+                {
+                    "name": "권선징악",
+                    "desc": "적에게 220%~300% 피해를 입히거나, 아군에게 50% HP 회복을 제공한다.",
+                    "icon": "hero_skill_icon_501112.png"
+                },
+                {
+                    "name": "공정한 심판",
+                    "desc": "적이 받는 피해를 3초 동안 10%/15%/20%/25%/30% 증가시킨사.",
+                    "icon": "hero_skill_icon_501113.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "정의의 검",
+                    "desc": "20% 확률로 전체 아군 부대의 피해를 8%~40% 증가시킨다. (3라운드)",
+                    "icon": "hero_skill_icon_501114.png"
+                },
+                {
+                    "name": "율법",
+                    "desc": "20% 확률로 적의 피해를 10%/20%/30%/40%/50% 감소시킨다. (2라운드)",
+                    "icon": "hero_skill_icon_501115.png"
+                },
+                {
+                    "name": "질서의 비호",
+                    "desc": "아군 전체 부대의 HP가 5%/10%/15%/20%/25% 향상된다.",
+                    "icon": "hero_skill_icon_501116.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "왕국 법전",
+            "power": "281,250",
+            "icon": "equipment_icon_1050111.png",
+            "skills": [
+                {
+                    "name": "법정 질서",
+                    "desc": "목표물을 5초간 침묵시키고 공격력*300%의 피해를 입힌다.",
+                    "icon": "hero_skill_icon_501117.png"
+                },
+                {
+                    "name": "정의의 나팔",
+                    "desc": "집결 부대의 HP를 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_501118.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "ahmos",
+        "name": "아모세",
+        "type": "보병",
+        "gen": "S4",
+        "rarity": "전설",
+        "image": "ahmos.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "수호"
+        },
+        "description": "불의 수정 크투게아의 심장을 지키는 고대 수호자 부족의 후예 아모세는 생명을 얻은 성스러운 창과 방패로 생존자들을 수호합니다. 그는 집행관의 선함을 인정하고 새로운 도시를 수호할 것을 맹세했습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "크투게아의 가호",
+                    "desc": "무적 상태 돌입 및 주변 아군 피해 30%~70% 감소. (2초)",
+                    "icon": "hero_skill_icon_501211.png"
+                },
+                {
+                    "name": "새벽의 검",
+                    "desc": "공격력*70%~98% 피해를 입히고 적이 받는 피해를 2초간 20% 증가시킨다.",
+                    "icon": "hero_skill_icon_501212.png"
+                },
+                {
+                    "name": "선대의 축복",
+                    "desc": "가호 시전 시 5초간 초당 공격력*30%~42%의 HP를 회복한다.",
+                    "icon": "hero_skill_icon_501213.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "살모사 진형",
+                    "desc": "창/궁병 피해 10%~30%, 방패병 피해 10%~70% 감소. (2라운드)",
+                    "icon": "hero_skill_icon_501214.png"
+                },
+                {
+                    "name": "불의 축복",
+                    "desc": "아군 방패병이 입히는 피해를 20%/40%/60%/80%/100% 증가한다.",
+                    "icon": "hero_skill_icon_501215.png"
+                },
+                {
+                    "name": "빛나는 칼날",
+                    "desc": "타깃에 12%~60% 추가 피해 및 타깃 피해량 5%~25% 누적 증가.",
+                    "icon": "hero_skill_icon_501216.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "수호자의 유물",
+            "power": "281,250",
+            "icon": "equipment_icon_1050121.png",
+            "skills": [
+                {
+                    "name": "불굴의 신념",
+                    "desc": "가호를 받은 아군의 공격력이 2.5초간 42% 증가한다.",
+                    "icon": "hero_skill_icon_501217.png"
+                },
+                {
+                    "name": "수호자의 맹세",
+                    "desc": "수성 부대의 HP를 15% 증가한다.",
+                    "icon": "hero_skill_icon_501218.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "reina",
+        "name": "레이나",
+        "type": "창병",
+        "gen": "S4",
+        "rarity": "전설",
+        "image": "reina.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "암살"
+        },
+        "description": "미야의 오른팔 레이나는 낮에는 저글링 고수, 밤에는 닌자술의 대가로 활동하는 최고의 정찰병입니다. 위장과 암살에 능한 그녀는 미야를 보호하며 상단의秘密을 수호합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "그림자 기습",
+                    "desc": "적 뒤로 순간이동하여 공격력*300%/330%/360%/390%/420%의 범위 피해를 입힌다.",
+                    "icon": "hero_skill_icon_501311.png"
+                },
+                {
+                    "name": "은둔의 비술",
+                    "desc": "일반 공격 시 5%~25% 확률로 환술을 시전하여 피해를 무효화한다.",
+                    "icon": "hero_skill_icon_501312.png"
+                },
+                {
+                    "name": "요괴의 독",
+                    "desc": "공격력*100%~140% 피해를 주고 1.5초 동안 속박한다.",
+                    "icon": "hero_skill_icon_501313.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "자객의 본능",
+                    "desc": "아군 전체 부대의 일반 공격 피해를 10%/15%/20%/25%/30% 향상시킨다.",
+                    "icon": "hero_skill_icon_501314.png"
+                },
+                {
+                    "name": "그림자 발걸음",
+                    "desc": "일반 공격 시 4%~20% 확률로 피해를 회피한다.",
+                    "icon": "hero_skill_icon_501315.png"
+                },
+                {
+                    "name": "그림자 칼날",
+                    "desc": "창병 공격 시 25% 확률로 120%~200% 추가 피해를 준다.",
+                    "icon": "hero_skill_icon_501316.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "닌자도-레이",
+            "power": "281,250",
+            "icon": "equipment_icon_1050131.png",
+            "skills": [
+                {
+                    "name": "잔영의 일격",
+                    "desc": "일반 공격 시 40% 확률로 쿠나이를 추가 투척해 공격력*45% 피해를 준다.",
+                    "icon": "hero_skill_icon_501317.png"
+                },
+                {
+                    "name": "불같은 침략",
+                    "desc": "집결 부대의 파괴력을 15% 증가한다.",
+                    "icon": "hero_skill_icon_501318.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "lynne",
+        "name": "린",
+        "type": "궁병",
+        "gen": "S4",
+        "rarity": "전설",
+        "image": "lynne.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "음유시인"
+        },
+        "description": "병원의 그림자를 걷어내는 음유시인 린은 악기 '아일라의 눈물'로 감미로운 연주와 강력한 전투를 동시에 펼칩니다. 용병 대장에서 음유시인으로 거듭난 그녀의 하모니는 아군에게 승리를 가져옵니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "시드락의 노래",
+                    "desc": "전체 상태이상 해제 및 3~5초간 공격력 증가 및 상태이상 면역 부여.",
+                    "icon": "hero_skill_icon_501411.png"
+                },
+                {
+                    "name": "죽음의 피날레",
+                    "desc": "경로상의 적에게 공격력* 220%/240%/260%/280%/300%의 피해를 준다.",
+                    "icon": "hero_skill_icon_501412.png"
+                },
+                {
+                    "name": "불협화음",
+                    "desc": "적진을 교란해 적군 공격 속도 및 치료 효과를 대폭 감소시킨다.",
+                    "icon": "hero_skill_icon_501413.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "사자의 노래",
+                    "desc": "40% 확률로 전체 아군 부대의 피해를 10%/20%/30%/40%/50% 증가시킨다.",
+                    "icon": "hero_skill_icon_501414.png"
+                },
+                {
+                    "name": "슬픈 발라드",
+                    "desc": "적군 전체 부대의 피해를 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_501415.png"
+                },
+                {
+                    "name": "카덴차",
+                    "desc": "궁병이 3번 공격할 때마다 공격력이 1%~5% 영구 중첩 상승한다.",
+                    "icon": "hero_skill_icon_501416.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "아일라의 눈물",
+            "power": "281,250",
+            "icon": "equipment_icon_1050141.png",
+            "skills": [
+                {
+                    "name": "아일라의 비가",
+                    "desc": "연주 효과를 강화하여 아군의 생존력을 대폭 높인다.",
+                    "icon": "hero_skill_icon_501417.png"
+                },
+                {
+                    "name": "집결의 선율",
+                    "desc": "집결 부대의 파괴력을 15% 증가한다.",
+                    "icon": "hero_skill_icon_501418.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "hector",
+        "name": "헥터",
+        "type": "보병",
+        "gen": "S5",
+        "rarity": "전설",
+        "image": "hector.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "전투"
+        },
+        "description": "경기장의 스타이자 격투계의 제왕 헥터는 맹렬한 공세와 거센 포효로 상대를 제압하는 최고의 전사입니다. 단결된 약자들의 힘을 목격한 뒤, 그는 자신의 신념을 되돌아보며 새로운 동료들과 함께하고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "검무",
+                    "desc": "4초간 공격 속도가 80%~120% 향상되며, 제어 효과에 면역된다.",
+                    "icon": "hero_skill_icon_501511.png"
+                },
+                {
+                    "name": "필사의 격투",
+                    "desc": "HP가 50% 이하일 경우 받는 피해가 20%/30%/40%/50%/60% 감소한다.",
+                    "icon": "hero_skill_icon_501512.png"
+                },
+                {
+                    "name": "불굴의 용사",
+                    "desc": "HP가 50% 이하일 경우 공격력이 16%/24%/32%/40%/48% 향상된다.",
+                    "icon": "hero_skill_icon_501513.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "생존 본능",
+                    "desc": "40% 확률로 전체 아군 부대가 받는 피해가 10%/20%/30%/40%/50% 감소한다.",
+                    "icon": "hero_skill_icon_501514.png"
+                },
+                {
+                    "name": "벼락치기",
+                    "desc": "방패병 피해 100%~200%, 궁병 피해 20%~100% 증가. (10회 공격 누적)",
+                    "icon": "hero_skill_icon_501515.png"
+                },
+                {
+                    "name": "기습 강풍",
+                    "desc": "전체 아군 부대가 공격 시 25% 확률로 120%/140%/160%/180%/200% 피해 부여.",
+                    "icon": "hero_skill_icon_501516.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "글레이브",
+            "power": "281,250",
+            "icon": "equipment_icon_1050151.png",
+            "skills": [
+                {
+                    "name": "블러디댄스",
+                    "desc": "검무 지속 시간이 1.5초 연장되며, 가하는 피해의 15%를 HP로 회복한다.",
+                    "icon": "hero_skill_icon_501517.png"
+                },
+                {
+                    "name": "일당백",
+                    "desc": "수성 부대의 공격력을 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_501518.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "nora",
+        "name": "노라",
+        "type": "창병",
+        "gen": "S5",
+        "rarity": "전설",
+        "image": "nora.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "기습"
+        },
+        "description": "용맹한 경기병이자 ‘전광석화’ 소대의 지휘관 노라는 적의 후방을 파고드는 기습의 명수입니다. 아버지를 잃은 아픔을 딛고 여동생 그웬을 보호하며 파에톤에 맞서 싸우고 있습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "분노의 벼락",
+                    "desc": "수류탄 5개를 투척하여 공격력*60%~84%의 범위 피해를 준다.",
+                    "icon": "hero_skill_icon_501611.png"
+                },
+                {
+                    "name": "섬광탄",
+                    "desc": "일정 범위 내 타깃에 공격력*50%~70% 피해를 주고 1.5초간 기절시킨다.",
+                    "icon": "hero_skill_icon_501612.png"
+                },
+                {
+                    "name": "전광석화",
+                    "desc": "요란한 엔진 소리와 함께 아군 전체 공격력을 3%/3.5%/4%/4.5%/5% 향상시킨다.",
+                    "icon": "hero_skill_icon_501613.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "제병 협동 전술",
+                    "desc": "방패/궁병 피해 3%~15% 감소 및 주는 피해 3%~15% 증가.",
+                    "icon": "hero_skill_icon_501614.png"
+                },
+                {
+                    "name": "기습 공격",
+                    "desc": "창병 공격 시 20% 확률로 적군 전체에 20%/40%/60%/80%/100% 추가 피해.",
+                    "icon": "hero_skill_icon_501615.png"
+                },
+                {
+                    "name": "추격 가속",
+                    "desc": "창병 5회 공격마다 아군 피해 5%~25% 증가 및 받는 피해 5%~25% 감소. (2라운드)",
+                    "icon": "hero_skill_icon_501616.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "스노우 레인저",
+            "power": "281,250",
+            "icon": "equipment_icon_1050161.png",
+            "skills": [
+                {
+                    "name": "충격파 수류탄",
+                    "desc": "분노의 벼락 시전 시 35% 확률로 타깃을 1초간 기절시킨다.",
+                    "icon": "hero_skill_icon_501617.png"
+                },
+                {
+                    "name": "임기응변",
+                    "desc": "수성 부대의 방어력이 15% 향상된다.",
+                    "icon": "hero_skill_icon_501618.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "gwen",
+        "name": "그웬",
+        "type": "궁병",
+        "gen": "S5",
+        "rarity": "전설",
+        "image": "gwen.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "공학"
+        },
+        "description": "공학 분야의 천재이자 하늘을 동경하는 비행사 그웬은 직접 발명한 비행기로 적진을 폭격하는 지원 전문가입니다. 언니 노라와 함께 파에톤의 위협으로부터 도시를 수호합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "포화 공격",
+                    "desc": "공격력*180%~252% 범위 피해를 입히고 공격 속도를 50% 저하시킨다. (2초)",
+                    "icon": "hero_skill_icon_501711.png"
+                },
+                {
+                    "name": "공중 저격",
+                    "desc": "공격력*100%~140% 피해를 주며 50% 확률로 2배의 치명적 피해를 준다.",
+                    "icon": "hero_skill_icon_501712.png"
+                },
+                {
+                    "name": "공중 폭격",
+                    "desc": "연소탄을 통해 매초 공격력*35%~49%의 피해를 입힌다. (3초)",
+                    "icon": "hero_skill_icon_501713.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "호크아이",
+                    "desc": "아군 전체 부대 공격 시 타깃이 받는 피해가 5%/10%/15%/20%/25% 증가한다.",
+                    "icon": "hero_skill_icon_501714.png"
+                },
+                {
+                    "name": "공중 제어",
+                    "desc": "5번 공격마다 20%~100% 추가 피해 및 다음 타격 시 5%~15% 추가 피해.",
+                    "icon": "hero_skill_icon_501715.png"
+                },
+                {
+                    "name": "폭파 소대",
+                    "desc": "궁병 4번 공격마다 적군 전체에 10%/20%/30%/40%/50% 추가 피해를 준다.",
+                    "icon": "hero_skill_icon_501716.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "호프윙",
+            "power": "281,250",
+            "icon": "equipment_icon_1050171.png",
+            "skills": [
+                {
+                    "name": "협동 공격",
+                    "desc": "스킬 발동 시마다 랜덤 타깃에 공격력*70%의 피해를 추가로 준다.",
+                    "icon": "hero_skill_icon_501717.png"
+                },
+                {
+                    "name": "기습 강공",
+                    "desc": "집결 부대의 파괴력을 15% 향상시킨다.",
+                    "icon": "hero_skill_icon_501718.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "wuming",
+        "name": "무명",
+        "type": "보병",
+        "gen": "S6",
+        "rarity": "전설",
+        "image": "wuming.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "협객"
+        },
+        "description": "세상을 돌아다니는 의로운 협객 무명은 최고의 경지에 이른 무술로 약한 자를 돕습니다. 과거의 집념을 버리고 ‘숭고한 이상’을 깨달은 그는 노인의 가르침을 이어받아 이름을 숨기고 생존자들을 수호합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "팔방 찌르기",
+                    "desc": "2초간 무적 상태 돌입 및 전방에 공격력*100%~140% 범위 피해.",
+                    "icon": "hero_skill_icon_501811.png"
+                },
+                {
+                    "name": "정신 집중",
+                    "desc": "4초간 공격력 8%~24%, 방어력 16%~48% 증가.",
+                    "icon": "hero_skill_icon_501812.png"
+                },
+                {
+                    "name": "기공 강타",
+                    "desc": "일반 공격 시마다 랜덤 적군에게 공격력*20%~28% 관통 피해.",
+                    "icon": "hero_skill_icon_501813.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "바람 피하기",
+                    "desc": "방패병의 일반 공격 피해 5%~25%, 스킬 피해 6%~30% 감소.",
+                    "icon": "hero_skill_icon_501814.png"
+                },
+                {
+                    "name": "솟아오른 반달",
+                    "desc": "전체 아군 부대가 주는 모든 피해를 4%~20% 증가시킨다.",
+                    "icon": "hero_skill_icon_501815.png"
+                },
+                {
+                    "name": "완벽한 이해",
+                    "desc": "전체 아군 부대가 주는 스킬 피해를 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_501816.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "용 강하의 지팡이",
+            "power": "281,250",
+            "icon": "equipment_icon_1050181.png",
+            "skills": [
+                {
+                    "name": "무술의 대가",
+                    "desc": "무술에 대한 조예가 깊어 주는 피해가 30% 증가한다.",
+                    "icon": "hero_skill_icon_501817.png"
+                },
+                {
+                    "name": "먼지 털어내기",
+                    "desc": "수성 부대의 방어력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_501818.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "rene",
+        "name": "레니",
+        "type": "창병",
+        "gen": "S6",
+        "rarity": "전설",
+        "image": "rene.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "환술"
+        },
+        "description": "피에로 레니는 묘기와 마술로 아이들에게 희망을 주는 유랑 상단의 일원입니다. 과거 파에톤의 불의 수정 실험으로 정신이 붕괴되었으나, 그녀만의 동화 같은 세상 속에서 악을 물리치며 동료들을 지킵니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "환각의 구름",
+                    "desc": "공격력*100%~140% 피해 및 1초간 혼란 유발 (아군 오인 사격).",
+                    "icon": "hero_skill_icon_501911.png"
+                },
+                {
+                    "name": "별하늘 칠하기",
+                    "desc": "공격력*50%~70% 피해 및 4초간 받는 피해 2%~6% 증가 표식 부여.",
+                    "icon": "hero_skill_icon_501912.png"
+                },
+                {
+                    "name": "꿈의 세계",
+                    "desc": "표식 타깃에 대한 공격력 8%~24% 향상 및 피해 4%~12% 증가.",
+                    "icon": "hero_skill_icon_501913.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "꿈의 흉터",
+                    "desc": "타깃에 꿈의 흔적 부여, 다음 라운드에 창병 피해 40%~200% 추가 가산.",
+                    "icon": "hero_skill_icon_501914.png"
+                },
+                {
+                    "name": "꿈 포획자",
+                    "desc": "창병이 꿈의 흔적 타깃에게 주는 피해를 30%~150% 증가시킨다.",
+                    "icon": "hero_skill_icon_501915.png"
+                },
+                {
+                    "name": "꿈 세계의 파편",
+                    "desc": "전체 아군 부대가 꿈의 흔적 타깃에게 주는 피해를 15%~75% 증가시킨다.",
+                    "icon": "hero_skill_icon_501916.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "마법 환상 구체",
+            "power": "281,250",
+            "icon": "equipment_icon_1050191.png",
+            "skills": [
+                {
+                    "name": "꿈의 환상",
+                    "desc": "공격 시 8% 확률로 타깃에게 1초간 혼란 상태를 부여한다.",
+                    "icon": "hero_skill_icon_501917.png"
+                },
+                {
+                    "name": "아름다운 생각",
+                    "desc": "집결 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_501918.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "wayne",
+        "name": "웨인",
+        "type": "궁병",
+        "gen": "S6",
+        "rarity": "전설",
+        "image": "wayne.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "추적"
+        },
+        "description": "차가운 기계처럼 정확한 명사수 웨인은 부메랑과 총격술로 목표를 제압하는 노련한 현상금 사냥꾼입니다. 사라진 고향에 대한 아픔으로 고독을 자처했으나, 전장에서는 누구보다 믿음직한 기습의 대가입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "회오리 선풍",
+                    "desc": "부메랑 투척 및 회수 시 경로상 적에게 공격력*100%~140% 피해.",
+                    "icon": "hero_skill_icon_502011.png"
+                },
+                {
+                    "name": "환영의 일격",
+                    "desc": "일반 공격 시 15%~35% 확률로 추가 공격을 1회 더 실행한다.",
+                    "icon": "hero_skill_icon_502012.png"
+                },
+                {
+                    "name": "바로 지금!",
+                    "desc": "피해를 줄 때 3%~15% 확률로 강력한 치명타를 입힌다.",
+                    "icon": "hero_skill_icon_502013.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "번개 같은 기습",
+                    "desc": "4라운드마다 타깃에 추가 공격 실행, 20%~100% 피해 부여.",
+                    "icon": "hero_skill_icon_502014.png"
+                },
+                {
+                    "name": "우회 타격",
+                    "desc": "궁병 2회 공격마다 창병에 8%~40%, 궁병에 4%~20% 추가 피해.",
+                    "icon": "hero_skill_icon_502015.png"
+                },
+                {
+                    "name": "전광석화",
+                    "desc": "아군 공격 시 5%~25% 확률로 치명타 피해를 주도록 한다.",
+                    "icon": "hero_skill_icon_502016.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "동력 부메랑",
+            "power": "281,250",
+            "icon": "equipment_icon_1050201.png",
+            "skills": [
+                {
+                    "name": "총격술",
+                    "desc": "5연속 발사로 데미지를 주고 호위병일 경우 즉시 처치한다.",
+                    "icon": "hero_skill_icon_502017.png"
+                },
+                {
+                    "name": "최선의 방어는 공격",
+                    "desc": "수성 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_502018.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "edith",
+        "name": "에디스",
+        "type": "보병",
+        "gen": "S7",
+        "rarity": "전설",
+        "image": "edith.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "기계"
+        },
+        "description": "영특한 꼬마 엔지니어 에디스와 그녀의 거대 강철 친구 미스터 아이언은 도시의 명물 콤비입니다. 버려진 인간 병기였던 미스터 아이언은 에디스를 지키기 위해 평화로운 거구에서 강력한 수호자로 변신합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "분노의 철권",
+                    "desc": "부채꼴 범위 피해, 1초 스턴 및 공격력 20%~100% 상승. (2초)",
+                    "icon": "hero_skill_icon_502111.png"
+                },
+                {
+                    "name": "긴급 탈출",
+                    "desc": "HP 0 도달 시 부품 폭발로 공격력*200%~280% 범위 피해.",
+                    "icon": "hero_skill_icon_502112.png"
+                },
+                {
+                    "name": "위기 예측",
+                    "desc": "10%~50% 확률로 미스터 아이언이 받는 피해 50%를 무효화한다.",
+                    "icon": "hero_skill_icon_502113.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "공수 겸비",
+                    "desc": "아군 궁병 받는 피해 4%~20% 감소 및 창병 주는 피해 4%~20% 증가.",
+                    "icon": "hero_skill_icon_502114.png"
+                },
+                {
+                    "name": "용감무쌍",
+                    "desc": "방패병이 입는 피해를 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_502115.png"
+                },
+                {
+                    "name": "아이언 가드",
+                    "desc": "전체 아군 부대의 HP를 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_502116.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "하트 공구함",
+            "power": "281,250",
+            "icon": "equipment_icon_1050211.png",
+            "skills": [
+                {
+                    "name": "꼬마 엔지니어",
+                    "desc": "HP 50% 이하 시 35% 즉시 회복 및 방어력 30% 영구 상승.",
+                    "icon": "hero_skill_icon_502117.png"
+                },
+                {
+                    "name": "견고한 공사",
+                    "desc": "수성 부대의 HP를 15% 증가한다.",
+                    "icon": "hero_skill_icon_502118.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "gordon",
+        "name": "고든",
+        "type": "창병",
+        "gen": "S7",
+        "rarity": "전설",
+        "image": "gordon.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "독약"
+        },
+        "description": "품위 있는 신사이자 ‘독약의 대가’인 고든은 화학 지식으로 적을 가차 없이 퇴치합니다. 고향을 앗아간 테오도르에 대한 복수심을 원동력 삼아, 그는 독으로 독을 다스리며 무고한 생존자들을 지킵니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "맹독 폭발",
+                    "desc": "독가스 영역 형성, 3초간 0.5초마다 공격력*50%~70% 피해.",
+                    "icon": "hero_skill_icon_502211.png"
+                },
+                {
+                    "name": "독액병",
+                    "desc": "중독 부여, 0.5초마다 도트 피해 및 입는 피해 5%~25% 증가.",
+                    "icon": "hero_skill_icon_502212.png"
+                },
+                {
+                    "name": "체질 악화",
+                    "desc": "고든 자신의 방어력을 25%/37.5%/50%/62.5%/75% 향상시킨다.",
+                    "icon": "hero_skill_icon_502213.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "독을 바른 칼날",
+                    "desc": "창병 2회 공격마다 추가 피해 및 주는 피해 4%~20% 감소.",
+                    "icon": "hero_skill_icon_502214.png"
+                },
+                {
+                    "name": "독극물 공포증",
+                    "desc": "창병 피해 30%~150% 증가 및 적군 전체 피해 6%~30% 감소.",
+                    "icon": "hero_skill_icon_502215.png"
+                },
+                {
+                    "name": "맹독성 운무",
+                    "desc": "방패병 받는 피해 6%~30% 증가 및 궁병 주는 피해 6%~30% 감소.",
+                    "icon": "hero_skill_icon_502216.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "파골의 독",
+            "power": "281,250",
+            "icon": "equipment_icon_1050221.png",
+            "skills": [
+                {
+                    "name": "1325번 약",
+                    "desc": "주는 피해 25% 증가 및 중독 타깃 공격력 15% 저하.",
+                    "icon": "hero_skill_icon_502217.png"
+                },
+                {
+                    "name": "맹독 공격",
+                    "desc": "집결 부대의 파괴력을 15% 상승시킨다.",
+                    "icon": "hero_skill_icon_502218.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "bradley",
+        "name": "브레들리",
+        "type": "궁병",
+        "gen": "S7",
+        "rarity": "전설",
+        "image": "bradley.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "지략"
+        },
+        "description": "팔콘 용병단의 지략가이자 화포 전문가 브레들리는 충성과 명예를 중시하는 백전노장입니다. 잃어버린 기억을 되찾기 위해 계곡을 탐색하며, 노련한 전술로 아군의 희생을 최소화하며 승리를 이끕니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "파멸의 중포",
+                    "desc": "중포 파괴 모드 가동, 공격력*300%~420% 범위 피해.",
+                    "icon": "hero_skill_icon_502311.png"
+                },
+                {
+                    "name": "연소탄",
+                    "desc": "공격력*60%~84% 범위 피해 및 2초간 0.5초마다 도트 피해.",
+                    "icon": "hero_skill_icon_502312.png"
+                },
+                {
+                    "name": "불굴의 장수",
+                    "desc": "공격력이 10%/14%/18%/22%/26% 상승한다.",
+                    "icon": "hero_skill_icon_502313.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "노병의 긍지",
+                    "desc": "전체 아군 부대의 공격력이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_502314.png"
+                },
+                {
+                    "name": "헤드 어택",
+                    "desc": "아군 창병 피해 6%~30%, 방패병 피해 5%~25% 증가.",
+                    "icon": "hero_skill_icon_502315.png"
+                },
+                {
+                    "name": "전세 파악",
+                    "desc": "4라운드마다 아군 피해 6%~30% 증가. (2라운드 지속)",
+                    "icon": "hero_skill_icon_502316.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "스텟",
+            "power": "281,250",
+            "icon": "equipment_icon_1050231.png",
+            "skills": [
+                {
+                    "name": "노병의 긍지",
+                    "desc": "작전 경험을 통한 공격력 강화.",
+                    "icon": "hero_skill_icon_502317.png"
+                },
+                {
+                    "name": "전세 파악",
+                    "desc": "전투 흐름을 읽는 능력 강화.",
+                    "icon": "hero_skill_icon_502318.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "kato",
+        "name": "가토",
+        "type": "보병",
+        "gen": "S8",
+        "rarity": "전설",
+        "image": "gato.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "무사"
+        },
+        "description": "머나먼 이국의 왕 가토는 빼앗긴 국보를 되찾기 위해 정예 부대를 이 이끌고 빙원에 왔습니다. 위엄 있는 군주로서 그는 강력한 실드와 방어 기술로 아군을 보호하며, 파에톤의 공세를 와해시키는 전장의 중심입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "열왕의 의지",
+                    "desc": "공격력*220%~380% 실드 생성 (5초 지속).",
+                    "icon": "hero_skill_icon_502411.png"
+                },
+                {
+                    "name": "왕권의 위협",
+                    "desc": "3초간 적 공격력 1%~5% 감소 및 자신의 공격력 적 영웅 수에 비례해 상승.",
+                    "icon": "hero_skill_icon_502412.png"
+                },
+                {
+                    "name": "제왕의 스텝",
+                    "desc": "일반 공격 회피 확률 3%~15%, 치명타 확률 4%~20% 증가.",
+                    "icon": "hero_skill_icon_502413.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "황금 근위대",
+                    "desc": "방패병의 방어력을 6%/12%/18%/24%/30% 상승시킨다.",
+                    "icon": "hero_skill_icon_502414.png"
+                },
+                {
+                    "name": "열왕의 자비",
+                    "desc": "방패병 공격 시마다 공격력 6%~30% 실드 획득 (1라운드).",
+                    "icon": "hero_skill_icon_502415.png"
+                },
+                {
+                    "name": "제왕의 군대",
+                    "desc": "적군 전체 부대의 공격력을 5%/10%/15%/20%/25% 저하시킨다.",
+                    "icon": "hero_skill_icon_502416.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "황금 송곳니",
+            "power": "281,250",
+            "icon": "equipment_icon_1050241.png",
+            "skills": [
+                {
+                    "name": "열왕의 징벌",
+                    "desc": "실드값 55%~95% 가산 및 실드 중 피해 10%~30% 반사.",
+                    "icon": "hero_skill_icon_502417.png"
+                },
+                {
+                    "name": "불멸의 성",
+                    "desc": "수성 부대의 방어력을 15% 상승시킨다.",
+                    "icon": "hero_skill_icon_502418.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "sonia",
+        "name": "소냐",
+        "type": "창병",
+        "gen": "S8",
+        "rarity": "전설",
+        "image": "sonya.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "공학"
+        },
+        "description": "잠수함 넵튠호의 수석 엔지니어 소냐는 지적이고 이성적인 보물 사냥꾼입니다. 잃어버린 고국의 보물을 찾아 왕국을 재건하겠다는 야망을 품고, 그녀는 냉동 기술과 기습 전술로 전장을 장악합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "극한의 추위",
+                    "desc": "단일 타깃 1.5초 동결 및 주변에 공격력*220%~300% 범위 피해.",
+                    "icon": "hero_skill_icon_502511.png"
+                },
+                {
+                    "name": "냉동탄",
+                    "desc": "공격력*100%~150% 피해 및 3초간 주변 공속 50% 저하.",
+                    "icon": "hero_skill_icon_502512.png"
+                },
+                {
+                    "name": "재물에 눈이 먼 자",
+                    "desc": "공격 속도를 10%/20%/30%/40%/50% 상승시킨다.",
+                    "icon": "hero_skill_icon_502513.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "보물 사냥꾼",
+                    "desc": "전체 아군 부대의 피해가 4%/8%/12%/16%/20% 증가한다.",
+                    "icon": "hero_skill_icon_502514.png"
+                },
+                {
+                    "name": "현상금의 유혹",
+                    "desc": "창병 2회 공격마다 추가 피해 15%~75% 및 아군 공격력 5%~25% 증가.",
+                    "icon": "hero_skill_icon_502515.png"
+                },
+                {
+                    "name": "급류의 충격",
+                    "desc": "5라운드마다 공격력 50%~250% 피해 및 1라운드 기절 부여.",
+                    "icon": "hero_skill_icon_502516.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "게잡이개구리",
+            "power": "281,250",
+            "icon": "equipment_icon_1050251.png",
+            "skills": [
+                {
+                    "name": "뼛속까지 시린 추위",
+                    "desc": "자신 공격력 8%~24% 상승 및 동결 후 쇄빙 피해 가산.",
+                    "icon": "hero_skill_icon_502517.png"
+                },
+                {
+                    "name": "소용돌이 포대",
+                    "desc": "수성 부대의 파괴력을 15% 상승시킨다.",
+                    "icon": "hero_skill_icon_502518.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "hendrick",
+        "name": "헨드릭",
+        "type": "궁병",
+        "gen": "S8",
+        "rarity": "전설",
+        "image": "hendrick.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "항해"
+        },
+        "description": "넵튠호의 선장 헨드릭은 ‘침몰한 고국’을 찾는 데 전념하는 신비로운 항해사입니다. 심연의 소리를 듣는 그는 해양 생물들과 소통하며, 고대 생명체를 소환해 적을 파괴하는 기이한 능력을 발휘합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "르리에의 노래",
+                    "desc": "고대 생명체 소환, 공격력*220%~300% 피해 및 1.5초 기절.",
+                    "icon": "hero_skill_icon_502611.png"
+                },
+                {
+                    "name": "침몰한 닻",
+                    "desc": "범위 내 적에게 공격력*100%~140%의 무거운 타격 피해 부여.",
+                    "icon": "hero_skill_icon_502612.png"
+                },
+                {
+                    "name": "칠성장어의 키스",
+                    "desc": "유닛 처치 시마다 피해 0.5%~2.5% 증가 (최대 15회 중첩).",
+                    "icon": "hero_skill_icon_502613.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "벌레 이빨",
+                    "desc": "적군 전체 부대의 방어력을 5%/10%/15%/20%/25% 저하시킨다.",
+                    "icon": "hero_skill_icon_502614.png"
+                },
+                {
+                    "name": "따개비 갑옷",
+                    "desc": "4라운드마다 아군 방어력 6%~30% 상승 (2라운드 지속).",
+                    "icon": "hero_skill_icon_502615.png"
+                },
+                {
+                    "name": "데이곤의 후예",
+                    "desc": "3라운드마다 고대 생명체와 협동 공격, 적 전체에 8%~40% 피해.",
+                    "icon": "hero_skill_icon_502616.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "심연의 다이버",
+            "power": "281,250",
+            "icon": "equipment_icon_1050261.png",
+            "skills": [
+                {
+                    "name": "히드라의 춤",
+                    "desc": "스킬 종료 후 촉수 소환 (HP 30% 보유, 5초 지속).",
+                    "icon": "hero_skill_icon_502617.png"
+                },
+                {
+                    "name": "심연의 가호",
+                    "desc": "집결 부대의 공격력을 15% 상승시킨다.",
+                    "icon": "hero_skill_icon_502618.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "magnus",
+        "name": "마그누스",
+        "type": "보병",
+        "gen": "S9",
+        "rarity": "전설",
+        "image": "magnus.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "모험"
+        },
+        "description": "대모험가 마그누스의 명성은 빙원에 울려 퍼지며 수많은 아이들의 우상이 되었습니다. 선조로부터 이어받은 빙해 용사의 피가 흐르는 그는, 쌍도끼를 휘두르며 적을 도발하고 아군의 방어선을 견고히 하는 용맹한 전사입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "빙해의 허리케인",
+                    "desc": "3초간 회전하며 0.5초마다 공격력*60%~84% 피해 및 적 도발.",
+                    "icon": "hero_skill_icon_502711.png"
+                },
+                {
+                    "name": "강풍의 도끼",
+                    "desc": "도끼 투척, 공격력*50%~70% 피해 및 3초간 초당 공격력*100%~140% 추가 피해.",
+                    "icon": "hero_skill_icon_502712.png"
+                },
+                {
+                    "name": "파갑의 일격",
+                    "desc": "30% 확률로 공격력*50%~70% 추가 피해 및 2초간 방어력 5%~25% 감소.",
+                    "icon": "hero_skill_icon_502713.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "분노의 파도",
+                    "desc": "전체 아군 부대의 공격력이 5%/10%/15%/20%/25% 증가한다.",
+                    "icon": "hero_skill_icon_502714.png"
+                },
+                {
+                    "name": "강철 진형",
+                    "desc": "공격 시 40% 확률로 아군 방어력 10%~50% 상승 (1라운드).",
+                    "icon": "hero_skill_icon_502715.png"
+                },
+                {
+                    "name": "빙해 전법",
+                    "desc": "아군 방패병 받는 피해 2%~10% 감소 및 궁병 주는 피해 2%~10% 증가.",
+                    "icon": "hero_skill_icon_502716.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "폭풍 도끼",
+            "power": "281,250",
+            "icon": "equipment_icon_1050271.png",
+            "skills": [
+                {
+                    "name": "용사의 피",
+                    "desc": "받는 피해 15% 감소 및 스킬 사용 중 방어력 75% 상승.",
+                    "icon": "hero_skill_icon_502717.png"
+                },
+                {
+                    "name": "영령의 의지",
+                    "desc": "수성 부대의 HP를 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_502718.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "fred",
+        "name": "프레드",
+        "type": "창병",
+        "gen": "S9",
+        "rarity": "전설",
+        "image": "fred.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "소방"
+        },
+        "description": "과거 솔라시티 소방대의 최고 지휘관이었던 프레드는 화염의 흐름을 읽는 베테랑입니다. 이제 그는 맹렬한 불길뿐만 아니라 빙원의 영혼들을 도탄에 빠뜨리는 전쟁의 불길을 잠재우기 위해 다시 일어섰습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "인공 강우",
+                    "desc": "산성 액체 분사, 3초간 0.5초마다 공격력*60%~84% 피해 및 받는 피해 15% 증가.",
+                    "icon": "hero_skill_icon_502811.png"
+                },
+                {
+                    "name": "고압력 물총",
+                    "desc": "공격력*200%~280% 피해 및 타깃의 버프 효과 제거.",
+                    "icon": "hero_skill_icon_502812.png"
+                },
+                {
+                    "name": "1급 경계태세",
+                    "desc": "HP 50% 미만 시 공격력 8%~24%, 방어력 25%~75% 상승.",
+                    "icon": "hero_skill_icon_502813.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "물대포 제압",
+                    "desc": "전체 적군 부대의 파괴력을 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_502814.png"
+                },
+                {
+                    "name": "산성용액",
+                    "desc": "적군 방패병이 받는 피해를 4%/8%/12%/16%/20% 증가시킨다.",
+                    "icon": "hero_skill_icon_502815.png"
+                },
+                {
+                    "name": "거센 공세",
+                    "desc": "창병 4회 공격마다 추가 피해 및 적 주는 피해 4%~20% 감소.",
+                    "icon": "hero_skill_icon_502816.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "파이어워커",
+            "power": "281,250",
+            "icon": "equipment_icon_1050281.png",
+            "skills": [
+                {
+                    "name": "맹렬한 영웅",
+                    "desc": "공격력 24% 상승 및 버프 제거 시마다 방어력 10% 상승 (최대 5회).",
+                    "icon": "hero_skill_icon_502817.png"
+                },
+                {
+                    "name": "용맹 감화",
+                    "desc": "집결 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_502818.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "seurat",
+        "name": "쇠라",
+        "type": "궁병",
+        "gen": "S9",
+        "rarity": "전설",
+        "image": "xura.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "주술"
+        },
+        "description": "미스터리한 원더러 부락의 주술사 쇠라는 자연의 영혼과 소통하며 의술과 주술을 펼칩니다. 고목의 생명력을 되살릴 붉은 결정을 찾기 위해, 그는 신비로운 의술로 아군을 치료하고 독성 포자로 적을 무력화합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "기원의 춤",
+                    "desc": "3초간 아군 초당 공격력*20%~100% 회복 및 받는 피해 50% 감소.",
+                    "icon": "hero_skill_icon_502911.png"
+                },
+                {
+                    "name": "주박 비술",
+                    "desc": "독 포자 감염, 3초간 매 공격마다 공격력*100%~140% 피해.",
+                    "icon": "hero_skill_icon_502912.png"
+                },
+                {
+                    "name": "마비 화살",
+                    "desc": "공격력 4%~12% 상승 및 20% 확률로 1초간 마비 유발.",
+                    "icon": "hero_skill_icon_502913.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "안개 포자",
+                    "desc": "전체 아군 부대가 받는 피해를 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_502914.png"
+                },
+                {
+                    "name": "관통하는 화살",
+                    "desc": "궁병 2회 공격마다 추가 피해 20%~100% 및 적 받는 피해 상승.",
+                    "icon": "hero_skill_icon_502915.png"
+                },
+                {
+                    "name": "변화무쌍의 날씨",
+                    "desc": "궁병 받는 피해 2%~10% 감소 및 주는 피해 3%~15% 증가.",
+                    "icon": "hero_skill_icon_502916.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "주술사 가면",
+            "power": "281,250",
+            "icon": "equipment_icon_1050291.png",
+            "skills": [
+                {
+                    "name": "고대의 군가",
+                    "desc": "최고 공격력 아군 부대원의 주는 피해를 60% 증가 (4초).",
+                    "icon": "hero_skill_icon_502917.png"
+                },
+                {
+                    "name": "대지의 축복",
+                    "desc": "수성 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_502918.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "gregory",
+        "name": "그레고리",
+        "type": "보병",
+        "gen": "S10",
+        "rarity": "전설",
+        "image": "gregory.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "기사"
+        },
+        "description": "옛 왕정의 마지막 정예인 백광 근위대를 이끄는 기사 그레고리는 신념과 긍지의 화신입니다. 솔라시티의 함락 이후 왕정의 마지막 후손을 보호하며, 전장에서는 강력한 에페로 적진을 돌파하는 방어선을 구축합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "꿰뚫는 에페",
+                    "desc": "공격력*100%~140% 범위 피해, 넉백 및 1초간 기절.",
+                    "icon": "hero_skill_icon_503011.png"
+                },
+                {
+                    "name": "검을 방패로",
+                    "desc": "10%~50% 확률로 피해 방어 및 받는 피해 50% 감소.",
+                    "icon": "hero_skill_icon_503012.png"
+                },
+                {
+                    "name": "숭고한 희생",
+                    "desc": "사망 시 5초간 아군 전체 공격력 8%~24% 증가.",
+                    "icon": "hero_skill_icon_503013.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "뜨거운 태양의 선생",
+                    "desc": "전체 아군 부대의 공격력 3%~15%, 방어력 2%~10% 증가.",
+                    "icon": "hero_skill_icon_503014.png"
+                },
+                {
+                    "name": "돌격해 함락하라",
+                    "desc": "전체 아군 부대 일반 공격 시 5%~25% 확률로 치명타 피해.",
+                    "icon": "hero_skill_icon_503015.png"
+                },
+                {
+                    "name": "강철의 방어선",
+                    "desc": "방패병부대의 받는 피해를 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_503016.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "타오르는 태양 대검",
+            "power": "281,250",
+            "icon": "equipment_icon_1050301.png",
+            "skills": [
+                {
+                    "name": "의지의 갑옷",
+                    "desc": "방어력 50% 증가 및 기절, 마비, 빙결 면역.",
+                    "icon": "hero_skill_icon_503017.png"
+                },
+                {
+                    "name": "뜨거운 태양의 성",
+                    "desc": "수성 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503018.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "freya",
+        "name": "프레야",
+        "type": "창병",
+        "gen": "S10",
+        "rarity": "전설",
+        "image": "freya.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "구원"
+        },
+        "description": "니플헤임의 차가운 구원자 프레야는 ‘혈월증’의 공포 속에서 살아남은 나이트워치의 리더입니다. 쇠사슬을 휘둘러 적의 광기를 가두고, 전장에서는 민첩한 일격으로 적의 방어선을 무너뜨리는 수호자입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "재의 춤",
+                    "desc": "공격력*200%~280% 범위 피해 및 3초간 전이 표식 부여.",
+                    "icon": "hero_skill_icon_503111.png"
+                },
+                {
+                    "name": "가시의 속박",
+                    "desc": "공격력*100%~140% 피해 및 1.5초간 행동 불가.",
+                    "icon": "hero_skill_icon_503112.png"
+                },
+                {
+                    "name": "혈염의 분노",
+                    "desc": "매 8~4회 일반 공격 시 다음 공격 치명타 확률 60%~100% 증가.",
+                    "icon": "hero_skill_icon_503113.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "황혼빛 안개",
+                    "desc": "적군 부대 전체의 공격력을 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_503114.png"
+                },
+                {
+                    "name": "초승달 낫",
+                    "desc": "일반 공격 시 50% 확률로 20%~100% 추가 피해 수확.",
+                    "icon": "hero_skill_icon_503115.png"
+                },
+                {
+                    "name": "민첩한 일격",
+                    "desc": "전체 아군 받는 피해 3%~15% 감소 및 주는 피해 3%~15% 증가.",
+                    "icon": "hero_skill_icon_503116.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "핏빛 달의 죽음",
+            "power": "281,250",
+            "icon": "equipment_icon_1050311.png",
+            "skills": [
+                {
+                    "name": "암야의 급습",
+                    "desc": "피해 30% 증가 및 소환물 등장 시 공격력*300% 피해.",
+                    "icon": "hero_skill_icon_503117.png"
+                },
+                {
+                    "name": "오밤중의 보초",
+                    "desc": "수성 부대의 방어력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503118.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "blanche",
+        "name": "블랑쉬",
+        "type": "궁병",
+        "gen": "S10",
+        "rarity": "전설",
+        "image": "blanchette.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "에이스"
+        },
+        "description": "칼크만 고아원의 맏언니 블랑쉬는 아이들을 지키기 위해 현상금 사냥꾼이 된 ‘에이스 헌터’입니다. 순진한 모습 뒤에 빙원 최고의 총술을 숨긴 그녀는, 엽총과 결정 산탄으로 적의 심장을 꿰뚫는 사수입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "번쩍이는 붉은색",
+                    "desc": "3개 목표 공격, 공격력*200%~280% 피해 및 5초간 치료 불가.",
+                    "icon": "hero_skill_icon_503211.png"
+                },
+                {
+                    "name": "부쇄진 붉은 결정",
+                    "desc": "산탄 발사, 공격력*100%~140% 범위 피해.",
+                    "icon": "hero_skill_icon_503212.png"
+                },
+                {
+                    "name": "선홍색 추격",
+                    "desc": "목표 HP가 낮을수록 일반 공격 피해 최대 10%~50% 증가.",
+                    "icon": "hero_skill_icon_503213.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "진홍빛 칼날",
+                    "desc": "전체 아군 부대의 파괴력을 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_503214.png"
+                },
+                {
+                    "name": "선홍 폭발",
+                    "desc": "3턴마다 결정 칼날 발사, 15%~75% 추가 피해.",
+                    "icon": "hero_skill_icon_503215.png"
+                },
+                {
+                    "name": "적색 습격",
+                    "desc": "창병에 8%~40%, 궁병에 4%~20% 추가 피해 부여.",
+                    "icon": "hero_skill_icon_503216.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "늑대 사냥꾼",
+            "power": "281,250",
+            "icon": "equipment_icon_1050321.png",
+            "skills": [
+                {
+                    "name": "붉은 열광",
+                    "desc": "공격 속도 30% 증가 및 치료 불가 지속 시간 5초 연장.",
+                    "icon": "hero_skill_icon_503217.png"
+                },
+                {
+                    "name": "불꽃 번개",
+                    "desc": "집결 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503218.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "eleonora",
+        "name": "엘레오노라",
+        "type": "보병",
+        "gen": "S11",
+        "rarity": "전설",
+        "image": "eleonora.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "여왕"
+        },
+        "description": "솔라리스 왕조의 정당한 통치자 엘레오노라 3세는 망명 생활을 거쳐 무시무시한 기사로 성장했습니다. 이제 그녀는 뿌리 깊은 불공평함을 목격하고, 연민과 평등에 기초한 새로운 왕국을 건설하기 위해 방패를 들었습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "강렬한 빛의 방패",
+                    "desc": "공격력*100%~220% 실드, 30% 반사 및 종료 시 범위 피해.",
+                    "icon": "hero_skill_icon_503311.png"
+                },
+                {
+                    "name": "왕의 징벌",
+                    "desc": "공격력*100%~140% 피해 및 2초간 방어력 10%~30% 감소.",
+                    "icon": "hero_skill_icon_503312.png"
+                },
+                {
+                    "name": "태양의 위엄",
+                    "desc": "받는 피해 5%~15% 감소 및 주는 피해 5%~15% 증가.",
+                    "icon": "hero_skill_icon_503313.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "작열하는 태양의 위광",
+                    "desc": "전체 아군 부대의 HP를 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_503314.png"
+                },
+                {
+                    "name": "솔라리스 방진",
+                    "desc": "아군 방패병 받는 피해 2%~10% 감소 및 궁병 주는 피해 2%~10% 증가.",
+                    "icon": "hero_skill_icon_503315.png"
+                },
+                {
+                    "name": "발산하는 빛",
+                    "desc": "방패병 5회 공격마다 아군 주는 피해 상승 및 받는 피해 감소.",
+                    "icon": "hero_skill_icon_503316.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "솔라리스의 권력",
+            "power": "281,250",
+            "icon": "equipment_icon_1050331.png",
+            "skills": [
+                {
+                    "name": "해머와 방패",
+                    "desc": "HP 50% 이상 시 공격력 24%, 이하 시 방어력 75% 상승.",
+                    "icon": "hero_skill_icon_503317.png"
+                },
+                {
+                    "name": "최후의 요새",
+                    "desc": "수성 부대의 HP를 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503318.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "lloyd",
+        "name": "로이드",
+        "type": "창병",
+        "gen": "S11",
+        "rarity": "전설",
+        "image": "lloyd.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "장인"
+        },
+        "description": "‘장인의 도시’ 오스터모어 출신의 로이드는 시계 제작만큼 정교한 기계 공학의 대가입니다. 파에톤의 침략으로부터 마을을 되찾은 용기 있는 청년으로, 이제 그는 자신의 신기술로 동료들을 무장시켜 전쟁에 맞섭니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "포화 폭격",
+                    "desc": "폭탄 로봇 3기 소환, 각 공격력*70%~98% 범위 피해.",
+                    "icon": "hero_skill_icon_503411.png"
+                },
+                {
+                    "name": "약점 공격",
+                    "desc": "공격력*100%~140% 피해 및 3초간 약점 노출 (받는 피해 10%~20% 증가).",
+                    "icon": "hero_skill_icon_503412.png"
+                },
+                {
+                    "name": "숙련의 극의",
+                    "desc": "공격 속도를 10%/15%/20%/25%/30% 증가시킨다.",
+                    "icon": "hero_skill_icon_503413.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "새들의 소란",
+                    "desc": "전체 적군 부대의 파괴력을 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_503414.png"
+                },
+                {
+                    "name": "빙결 폭탄",
+                    "desc": "3턴마다 30%~150% 추가 피해 및 적 파괴력 6%~30% 감소.",
+                    "icon": "hero_skill_icon_503415.png"
+                },
+                {
+                    "name": "변화무쌍의 기술",
+                    "desc": "40% 확률로 전체 아군 부대 파괴력 10%~50% 증가.",
+                    "icon": "hero_skill_icon_503416.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "기묘한 장인의 보물",
+            "power": "281,250",
+            "icon": "equipment_icon_1050341.png",
+            "skills": [
+                {
+                    "name": "서리 숨결",
+                    "desc": "일반 공격 시 공격력 15% 추가 피해 및 적 공속 15% 감소.",
+                    "icon": "hero_skill_icon_503417.png"
+                },
+                {
+                    "name": "강철 미궁",
+                    "desc": "수성 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503418.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "rufus",
+        "name": "루퍼스",
+        "type": "궁병",
+        "gen": "S11",
+        "rarity": "전설",
+        "image": "rufus.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "지도자"
+        },
+        "description": "옛 왕국의 정의로운 반란자이자 명예로운 용병대 지도자인 루퍼스는 강한 정의감을 지녔습니다. 지하 세계에서 문명의 탄생과 몰락을 목격한 후 다시 돌아온 그는, 맹렬한 불길처럼 적을 압도하는 이글스의 정신적 지주입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "행성 충돌",
+                    "desc": "공격력*200%~280% 범위 피해 및 2초간 화염 도트 피해.",
+                    "icon": "hero_skill_icon_503511.png"
+                },
+                {
+                    "name": "파편 폭탄",
+                    "desc": "공격력*100%~140% 피해 및 주변 50%~70% 파편 피해.",
+                    "icon": "hero_skill_icon_503512.png"
+                },
+                {
+                    "name": "분노의 화염",
+                    "desc": "치명타 확률이 7%~20% 증가한다.",
+                    "icon": "hero_skill_icon_503513.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "화염 군단",
+                    "desc": "전체 아군 부대의 공격력을 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_503514.png"
+                },
+                {
+                    "name": "파쇄의 일격",
+                    "desc": "관통탄 활용, 12%~60% 추가 피해 및 적 받는 피해 상승.",
+                    "icon": "hero_skill_icon_503515.png"
+                },
+                {
+                    "name": "맹렬한 위압",
+                    "desc": "20% 확률로 적군 파괴력을 10%~50% 감소시킨다 (2턴).",
+                    "icon": "hero_skill_icon_503516.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "불타는 유성",
+            "power": "281,250",
+            "icon": "equipment_icon_1050351.png",
+            "skills": [
+                {
+                    "name": "전쟁의 불길",
+                    "desc": "일반 공격 시 점화 부여, 초당 공격력 30% 피해 (2초).",
+                    "icon": "hero_skill_icon_503517.png"
+                },
+                {
+                    "name": "열화 여단",
+                    "desc": "집결 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503518.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "hervor",
+        "name": "헤르보르",
+        "type": "보병",
+        "gen": "S12",
+        "rarity": "전설",
+        "image": "hervor.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "산맥"
+        },
+        "description": "사슬라 설산의 열악한 환경에서 바위처럼 강인하게 자라난 헤르보르는 사슬라 부족의 대족장입니다. 거대한 망치로 산을 흔들고 포효로 눈사태를 일으키는 그녀는, 불사의 힘을 찾아 빙원을 누비는 압도적인 수호자입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "흔들리는 산",
+                    "desc": "공격력*100%~140% 범위 피해, 1초 기절 및 적 공격력 25% 감소.",
+                    "icon": "hero_skill_icon_503611.png"
+                },
+                {
+                    "name": "갈라지는 하늘땅",
+                    "desc": "5%~25% 확률로 공포 부여 (받는 피해 최대 15% 증가, 3중첩).",
+                    "icon": "hero_skill_icon_503612.png"
+                },
+                {
+                    "name": "바위의 몸",
+                    "desc": "받는 피해 5%~25% 감소 및 전투 시작 후 9초간 제어 면역.",
+                    "icon": "hero_skill_icon_503613.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "전쟁의 포효",
+                    "desc": "전체 아군 부대의 파괴력을 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_503614.png"
+                },
+                {
+                    "name": "불멸의 사자",
+                    "desc": "방패병의 일반 공격 피해 및 스킬 피해를 최대 30% 감소시킨다.",
+                    "icon": "hero_skill_icon_503615.png"
+                },
+                {
+                    "name": "전쟁의 의지",
+                    "desc": "방패병 받는 피해 3%~15% 감소 및 주는 피해 2%~10% 증가.",
+                    "icon": "hero_skill_icon_503616.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "사슬라의 망치",
+            "power": "281,250",
+            "icon": "equipment_icon_1050361.png",
+            "skills": [
+                {
+                    "name": "선조의 영광",
+                    "desc": "공격 속도 30% 증가 및 공포 효과 발동 확률 25% 상승.",
+                    "icon": "hero_skill_icon_503617.png"
+                },
+                {
+                    "name": "서리 요새",
+                    "desc": "수성 부대의 방어력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503618.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "karol",
+        "name": "가로얼",
+        "type": "창병",
+        "gen": "S12",
+        "rarity": "전설",
+        "image": "garoal.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "기사"
+        },
+        "description": "독수리 여단 역사상 가장 어린 전설적 지도자인 가로얼은 비옥한 평야의 기사 정신을 계승했습니다. 맹렬한 눈보라 속에서도 굴하지 않는 그의 돌격은, 창과 말로 적의 진형을 뚫고 아군에게 승리의 서광을 알립니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "새벽의 돌진",
+                    "desc": "공격력*200%~280% 범위 피해 및 2초간 적 방어력 5%~25% 감소.",
+                    "icon": "hero_skill_icon_503711.png"
+                },
+                {
+                    "name": "강습 돌격",
+                    "desc": "특정 구역 내 목표에게 공격력*100%~140% 피해 연타.",
+                    "icon": "hero_skill_icon_503712.png"
+                },
+                {
+                    "name": "승리의 추격",
+                    "desc": "처치 시마다 공격력 4%~12% 증가 및 HP 2%~10% 회복.",
+                    "icon": "hero_skill_icon_503713.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "수호의 날개",
+                    "desc": "전체 아군 부대가 받는 피해를 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_503714.png"
+                },
+                {
+                    "name": "파진의 창",
+                    "desc": "보병 진형 약점 공략, 창병 6%~30%, 방패병 5%~25% 추가 피해.",
+                    "icon": "hero_skill_icon_503715.png"
+                },
+                {
+                    "name": "영광의 깃발",
+                    "desc": "전체 아군 공격력 3%~15%, 방어력 2%~10% 증가.",
+                    "icon": "hero_skill_icon_503716.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "바람의 총",
+            "power": "281,250",
+            "icon": "equipment_icon_1050371.png",
+            "skills": [
+                {
+                    "name": "날개의 노래",
+                    "desc": "스킬 시전 시 5초간 아군 공속 14%, 이속 100% 증가.",
+                    "icon": "hero_skill_icon_503717.png"
+                },
+                {
+                    "name": "단체 맹공격",
+                    "desc": "집결 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503718.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "ligeia",
+        "name": "리지아",
+        "type": "궁병",
+        "gen": "S12",
+        "rarity": "전설",
+        "image": "ligeia.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "스파이"
+        },
+        "description": "다양한 재능과 천상의 목소리를 지닌 리지아는 사실 솔라리스 제국의 스파이 마스터였습니다. 기계 거미를 조종해 비밀을 수집하고 적을 위협하는 그녀는, 조작과 협박의 기술로 전쟁터를 자신만의 무대로 만듭니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "산성 거미 떼",
+                    "desc": "기계 거미 3기 소환, 공격력*70%~98% 피해 및 공깎 5%~25%.",
+                    "icon": "hero_skill_icon_503811.png"
+                },
+                {
+                    "name": "운명의 그물",
+                    "desc": "강철 거미줄 공격, 20%~100% 확률로 ‘공명’ (피해 분담) 부여.",
+                    "icon": "hero_skill_icon_503812.png"
+                },
+                {
+                    "name": "반려 거미",
+                    "desc": "디버프 상쇄 시 공격력 8%~24% 증가 (최대 3마리 중첩).",
+                    "icon": "hero_skill_icon_503813.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "강철 이빨",
+                    "desc": "적군 전체 부대의 방어력을 5%/10%/15%/20%/25% 감소시킨다.",
+                    "icon": "hero_skill_icon_503814.png"
+                },
+                {
+                    "name": "붕괴의 독",
+                    "desc": "궁병 2회 공격마다 추가 피해 및 적 받는 피해 상승.",
+                    "icon": "hero_skill_icon_503815.png"
+                },
+                {
+                    "name": "독아의 습격",
+                    "desc": "궁병 2회 공격마다 중독 추가 피해 및 적 주는 피해 감소.",
+                    "icon": "hero_skill_icon_503816.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "운명을 엮는 자",
+            "power": "281,250",
+            "icon": "equipment_icon_1050381.png",
+            "skills": [
+                {
+                    "name": "거미 여왕",
+                    "desc": "전투 시작 시 거미 2마리 소환 및 스킬 명중 수 증가.",
+                    "icon": "hero_skill_icon_503817.png"
+                },
+                {
+                    "name": "거미 둥지",
+                    "desc": "수성 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503818.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "gisela",
+        "name": "기젤라",
+        "type": "보병",
+        "gen": "S13",
+        "rarity": "전설",
+        "image": "gisela.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "천재"
+        },
+        "description": "오스터만의 역대 최연소 장인 기젤라는 외소한 체구 뒤에 강력한 기계 공학 기술을 숨기고 있습니다. 자신이 직접 만든 거대한 로봇 팔로 수 톤의 물건을 들어 올리며, 전장에서는 강력한 과부하 공격과 휴대용 보호막으로 아군을 수호합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "과부하 맹공",
+                    "desc": "5초간 공속 20%~60%, 방어력 50%~150% 증가 및 에너지 50 획득.",
+                    "icon": "hero_skill_icon_503911.png"
+                },
+                {
+                    "name": "강철 중권",
+                    "desc": "강력한 일격, 공격력*100%~140% 범위 피해 및 에너지 25 획득.",
+                    "icon": "hero_skill_icon_503912.png"
+                },
+                {
+                    "name": "휴대용 실드",
+                    "desc": "에너지 100 달성 시 활성화, 공격력*70%~190% 실드 획득 (3초).",
+                    "icon": "hero_skill_icon_503913.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "합금 방패",
+                    "desc": "아군 방패병의 방어력을 6%/12%/18%/24%/30% 증가시킨다.",
+                    "icon": "hero_skill_icon_503914.png"
+                },
+                {
+                    "name": "임시 공사",
+                    "desc": "방패병 공격 시 40% 확률로 아군 전체 방어력 10%~50% 상승 (1턴).",
+                    "icon": "hero_skill_icon_503915.png"
+                },
+                {
+                    "name": "시범형 실드",
+                    "desc": "전체 아군 부대 40% 확률로 받는 피해 10%~50% 감소 장비 장착.",
+                    "icon": "hero_skill_icon_503916.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "헤라클레스",
+            "power": "281,250",
+            "icon": "equipment_icon_1050391.png",
+            "skills": [
+                {
+                    "name": "에너지 정제",
+                    "desc": "일반 공격 시 에너지 획득 15 증가 및 실드값 효율 상승.",
+                    "icon": "hero_skill_icon_503917.png"
+                },
+                {
+                    "name": "자동 포탑",
+                    "desc": "수성 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_503918.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "flora",
+        "name": "플로라",
+        "type": "창병",
+        "gen": "S13",
+        "rarity": "전설",
+        "image": "flora.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "학자"
+        },
+        "description": "식물과 교감하는 천재 식물학자 플로라는 척박한 빙원에서도 생명을 피워냅니다. 아카디아의 재건을 꿈꾸며, 그녀가 배양한 육식 식물과 가시 덩굴은 전장에서 기습의 수단이 되어 적을 무력화하고 아군을 지원합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "휘감는 덩굴",
+                    "desc": "공격력*100%~140% 범위 피해 및 2초간 기절 유발.",
+                    "icon": "hero_skill_icon_504011.png"
+                },
+                {
+                    "name": "맹렬한 개화",
+                    "desc": "육식성 아드리아 장미 소환, 주변 적에게 공격력 20%~40% 범위 피해.",
+                    "icon": "hero_skill_icon_504012.png"
+                },
+                {
+                    "name": "자연의 힘",
+                    "desc": "플로라 및 소환 식물의 HP 최대 10%, 방어력 최대 20% 증가.",
+                    "icon": "hero_skill_icon_504013.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "가시의 춤",
+                    "desc": "공격 시 50% 확률로 적군이 받는 피해 10%~50% 증가 부여.",
+                    "icon": "hero_skill_icon_504014.png"
+                },
+                {
+                    "name": "가시 꽃 덤블",
+                    "desc": "방패병 받는 피해 최대 25% 감소 및 창병 주는 피해 최대 25% 증가.",
+                    "icon": "hero_skill_icon_504015.png"
+                },
+                {
+                    "name": "짙은 향기",
+                    "desc": "4턴마다 적 방패병 받는 피해 및 적 궁병 주는 피해 6%~30% 조절.",
+                    "icon": "hero_skill_icon_504016.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "풍요의 씨앗",
+            "power": "281,250",
+            "icon": "equipment_icon_1050401.png",
+            "skills": [
+                {
+                    "name": "극독 화등",
+                    "desc": "덩굴 및 장미에 독성 부여, 0.5초당 공격력 25% 피해.",
+                    "icon": "hero_skill_icon_504017.png"
+                },
+                {
+                    "name": "자연의 축복",
+                    "desc": "수성 부대의 HP를 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504018.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "vulcanus",
+        "name": "올카누스",
+        "type": "궁병",
+        "gen": "S13",
+        "rarity": "전설",
+        "image": "vulcanus.jpg",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "군주"
+        },
+        "description": "지하 세계 도시 셀레파이스의 군주 올카누스는 ‘위대한 전쟁의 대장장이’라 불립니다. 고대의 힘이 잠든 유적의 비밀을 지키며, 그가 설계한 거대한 쇠뇌와 파갑 화살은 침략자들의 갑옷을 종잇장처럼 꿰뚫습니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "파성의 화살",
+                    "desc": "화살 3발 발사, 각 공격력*200%~280% 피해 및 3초간 출혈 도트.",
+                    "icon": "hero_skill_icon_504111.png"
+                },
+                {
+                    "name": "속박의 화살",
+                    "desc": "공격력*100%~140% 피해 및 2초간 기절 유발.",
+                    "icon": "hero_skill_icon_504112.png"
+                },
+                {
+                    "name": "거대한 불꽃의 빛",
+                    "desc": "휘하 호위병의 공방 수치를 10%~30% 증가시킨다.",
+                    "icon": "hero_skill_icon_504113.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "효웅의 분노",
+                    "desc": "적군 부대 전체의 공격력을 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_504114.png"
+                },
+                {
+                    "name": "찢는 칼날",
+                    "desc": "5회 공격마다 추가 피해 및 적 받는 피해 상승 부여.",
+                    "icon": "hero_skill_icon_504115.png"
+                },
+                {
+                    "name": "파쇄의 화살촉",
+                    "desc": "3턴마다 적 방어력 12%~60% 감소 및 아군 궁병 공격력 상승.",
+                    "icon": "hero_skill_icon_504116.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "인멸의 궤적",
+            "power": "281,250",
+            "icon": "equipment_icon_1050411.png",
+            "skills": [
+                {
+                    "name": "날카로운 화살촉",
+                    "desc": "모든 피해에 출혈 부여 및 출혈 피해 강화.",
+                    "icon": "hero_skill_icon_504117.png"
+                },
+                {
+                    "name": "제왕의 존엄",
+                    "desc": "집결 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504118.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "elif",
+        "name": "엘리프",
+        "type": "보병",
+        "gen": "S14",
+        "rarity": "전설",
+        "image": "elif.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "무용수"
+        },
+        "description": "환상적인 춤사위로 빙원의 색채를 밝히는 엘리프는 실전에서도 유연한 공격력을 뽐내는 전사입니다. 여동생의 병을 고치기 위해 금지된 인체 실험의 원흉을 추적하며, 그녀의 비단 장막은 적을 혼란시키고 아군을 보호합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "신기루의 춤",
+                    "desc": "주변 적 혼란 (1초) 및 자신 회피율 10%~30% 획득 (5초).",
+                    "icon": "hero_skill_icon_504211.png"
+                },
+                {
+                    "name": "칼날의 춤",
+                    "desc": "공격력*100%~140% 피해 및 1초간 혼란 상태 부여.",
+                    "icon": "hero_skill_icon_504212.png"
+                },
+                {
+                    "name": "매혹의 스텝",
+                    "desc": "회피율 최대 20% 증가 및 일반 공격 시 확률적 혼란 유발.",
+                    "icon": "hero_skill_icon_504213.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "연사의 속박",
+                    "desc": "전체 적군 부대의 공격력을 5%/10%/15%/20%/25% 감소시킨다.",
+                    "icon": "hero_skill_icon_504214.png"
+                },
+                {
+                    "name": "무수한 칼날의 진",
+                    "desc": "전체 아군 부대의 공격력이 3%~15%, 방어력 2%~10% 증가.",
+                    "icon": "hero_skill_icon_504215.png"
+                },
+                {
+                    "name": "비단 장막",
+                    "desc": "방패병 공격 시 공격력의 6%~30% 보호막 형성.",
+                    "icon": "hero_skill_icon_504216.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "달의 흔적",
+            "power": "281,250",
+            "icon": "equipment_icon_1050421.png",
+            "skills": [
+                {
+                    "name": "화염 회전검",
+                    "desc": "공격 속도 20% 증가 및 혼란 유발 확률 20% 상승.",
+                    "icon": "hero_skill_icon_504217.png"
+                },
+                {
+                    "name": "수호의 춤",
+                    "desc": "수성 부대의 방어력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504218.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "dominica",
+        "name": "도미니카",
+        "type": "창병",
+        "gen": "S14",
+        "rarity": "전설",
+        "image": "dominica.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "마술사"
+        },
+        "description": "빙원 최고의 마술사 도미니카는 기괴한 트릭과 변장술의 대가입니다. ‘절대 간파당하지 않는 마술’을 향한 집착으로 탄생한 무기들과 환영 장치는, 전장에서 적의 허를 찌르고 아군에게 예측 불가능한 우위를 제공합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "마법 상자 환상극",
+                    "desc": "상자 3개 소환, 공격력*200%~280% 범위 피해 및 1초 기절.",
+                    "icon": "hero_skill_icon_504311.png"
+                },
+                {
+                    "name": "교활한 불꽃 장미",
+                    "desc": "공격력 140% 피해 및 2초간 화염 도트 피해.",
+                    "icon": "hero_skill_icon_504312.png"
+                },
+                {
+                    "name": "분신 교체",
+                    "desc": "사망 시 허공으로 소멸, 5초 후 HP 최대 50%로 부활.",
+                    "icon": "hero_skill_icon_504313.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "환영 장치",
+                    "desc": "전체 아군 부대가 주는 피해를 4%/8%/12%/16%/20% 증가시킨다.",
+                    "icon": "hero_skill_icon_504314.png"
+                },
+                {
+                    "name": "장미 찌르기",
+                    "desc": "창병 12%~60% 추가 피해 및 적 받는 피해 최대 25% 상승.",
+                    "icon": "hero_skill_icon_504315.png"
+                },
+                {
+                    "name": "마경 미궁",
+                    "desc": "방패병/궁병 받는 피해 최대 15% 감소 및 주는 피해 최대 15% 상승.",
+                    "icon": "hero_skill_icon_504316.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "허수 마법 상자",
+            "power": "281,250",
+            "icon": "equipment_icon_1050431.png",
+            "skills": [
+                {
+                    "name": "환상 마스터리",
+                    "desc": "기량 연마를 통해 전체 공격력을 25% 증가시킨다.",
+                    "icon": "hero_skill_icon_504317.png"
+                },
+                {
+                    "name": "그랜드 판타지",
+                    "desc": "집결 부대의 원정 치명타 확률을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504318.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "cara",
+        "name": "카라",
+        "type": "궁병",
+        "gen": "S14",
+        "rarity": "전설",
+        "image": "cara.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "우체부"
+        },
+        "description": "오스터만의 명랑한 우체부 카라는 비행 빗자루 ‘비행 중포’를 타고 빙원을 가로지릅니다. 우연히 만들어진 강력한 무기로 도시를 구한 그녀는, 공중 연막과 포격으로 적의 시야를 가리고 동료들에게 용기를 북돋아 줍니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "마력 포격",
+                    "desc": "공격력*200%~280% 범위 피해를 주는 강력한 포탄 발사.",
+                    "icon": "hero_skill_icon_504411.png"
+                },
+                {
+                    "name": "흐릿한 슬픔",
+                    "desc": "안개 연기 분사, 적 명중률 7%~15% 감소 및 2초간 화상 피해.",
+                    "icon": "hero_skill_icon_504412.png"
+                },
+                {
+                    "name": "우정의 힘",
+                    "desc": "아군 영웅 사망 시마다 공격력 최대 15% 증가 (영구).",
+                    "icon": "hero_skill_icon_504413.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "중첩된 안개",
+                    "desc": "적군 부대 전체의 파괴력을 4%/8%/12%/16%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_504414.png"
+                },
+                {
+                    "name": "마법 기계 펫",
+                    "desc": "전체 아군 부대의 일반 공격 피해를 최대 30% 증가시킨다.",
+                    "icon": "hero_skill_icon_504415.png"
+                },
+                {
+                    "name": "마녀의 급습",
+                    "desc": "궁병 2회 공격마다 창병 8%~40%, 궁병 4%~20% 추가 피해.",
+                    "icon": "hero_skill_icon_504416.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "급속 혜성",
+            "power": "281,250",
+            "icon": "equipment_icon_1050441.png",
+            "skills": [
+                {
+                    "name": "과학이 곧 마법",
+                    "desc": "연막 1초 연장 및 일반 공격 피해 25% 증가.",
+                    "icon": "hero_skill_icon_504417.png"
+                },
+                {
+                    "name": "황혼의 도시",
+                    "desc": "수성 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504418.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "hank",
+        "name": "행크",
+        "type": "보병",
+        "gen": "S15",
+        "rarity": "전설",
+        "image": "hank.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "방패병",
+            "subClass": "개척자"
+        },
+        "description": "아이스브레이커 연맹의 용감한 개척자 행크는 수십 년간의 모험으로 다져진 강인한 정신력의 소유자입니다. 거구 뒤에 숨겨진 섬세한 손재주로 아이들에게 희망을 주며, 전장에서는 원형톱을 휘둘러 적의 방어를 무너뜨립니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "광포한 난무",
+                    "desc": "원형톱을 ‘광기’ 모드로 전환, 전방에 참격 피해 및 적 방어력 감소.",
+                    "icon": "hero_skill_icon_504511.png"
+                },
+                {
+                    "name": "긴급 에너지",
+                    "desc": "HP 50% 미만 시 공격력 대폭 상승 (전투당 1회).",
+                    "icon": "hero_skill_icon_504512.png"
+                },
+                {
+                    "name": "재사용",
+                    "desc": "공격 시마다 가한 피해의 일정 비율을 HP로 흡수 회복.",
+                    "icon": "hero_skill_icon_504513.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "포효하는 분노",
+                    "desc": "전체 아군 부대의 파괴력을 대폭 증가시킨다.",
+                    "icon": "hero_skill_icon_504514.png"
+                },
+                {
+                    "name": "휘날리는 불꽃",
+                    "desc": "보병 5회 공격마다 아군 피해 상승 및 받는 피해 감소.",
+                    "icon": "hero_skill_icon_504515.png"
+                },
+                {
+                    "name": "분노의 힘",
+                    "desc": "적 보병 받는 피해 증가 및 적 궁병 주는 피해 감소 부여.",
+                    "icon": "hero_skill_icon_504516.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "강철 방어선",
+            "power": "281,250",
+            "icon": "equipment_icon_1050451.png",
+            "skills": [
+                {
+                    "name": "강철 바리케이드",
+                    "desc": "스킬 시전 시 자신의 공격력에 비례한 실드 획득.",
+                    "icon": "hero_skill_icon_504517.png"
+                },
+                {
+                    "name": "개척자의 의지",
+                    "desc": "수성 부대의 방어력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504518.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "estella",
+        "name": "에스텔라",
+        "type": "창병",
+        "gen": "S15",
+        "rarity": "전설",
+        "image": "estella.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "창병",
+            "subClass": "화가"
+        },
+        "description": "광석 물감으로 환상적인 색채를 그려내는 어린 화가 에스텔라는 꿈속에서 구세계의 정경을 목격합니다. 그녀가 휘두르는 작열하고 얼어붙는 색채는 침략자들을 격퇴하며, 오색찬란한 빛으로 전장에 희망의 그림을 그려냅니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "타는 듯한 붉은 빛",
+                    "desc": "공격력*200%~280% 범위 피해 및 적 공격력 최대 25% 감소.",
+                    "icon": "hero_skill_icon_504611.png"
+                },
+                {
+                    "name": "황금빛 석양",
+                    "desc": "공격력*100%~140% 피해 및 4초간 부식 도트 피해.",
+                    "icon": "hero_skill_icon_504612.png"
+                },
+                {
+                    "name": "극야의 푸른빛",
+                    "desc": "일반 공격 시 타깃 공속 최대 30% 감소 (2초).",
+                    "icon": "hero_skill_icon_504613.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "월식의 슬픈 색채",
+                    "desc": "전체 적군 부대의 방어력을 5%/10%/15%/20%/25% 감소시킨다.",
+                    "icon": "hero_skill_icon_504614.png"
+                },
+                {
+                    "name": "여명의 그림",
+                    "desc": "전체 아군 공격력 3%~15%, 방어력 2%~10% 증가.",
+                    "icon": "hero_skill_icon_504615.png"
+                },
+                {
+                    "name": "들뜬 색채의 풍경",
+                    "desc": "방패병 받는 피해 최대 25% 감소 및 창병 주는 피해 최대 25% 증가.",
+                    "icon": "hero_skill_icon_504616.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "몽환의 채색화",
+            "power": "281,250",
+            "icon": "equipment_icon_1050461.png",
+            "skills": [
+                {
+                    "name": "색채 폭발",
+                    "desc": "두 색에 동시 물든 적이 받는 피해를 30% 증가시킨다.",
+                    "icon": "hero_skill_icon_504617.png"
+                },
+                {
+                    "name": "기이한 꿈의 보금자리",
+                    "desc": "수성 부대의 공격력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504618.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "vivica",
+        "name": "비비카",
+        "type": "궁병",
+        "gen": "S15",
+        "rarity": "전설",
+        "image": "vivika.png",
+        "displayInfo": {
+            "rarity": "SSR 전설",
+            "class": "궁병",
+            "subClass": "단장"
+        },
+        "description": "나이트워치 군단의 차가운 단장 비비카는 니플헤임의 혈월 재앙을 봉인하려 합니다. 감정을 닫아버린 그녀의 탄환은 냉혹할 정도로 정확하며, 까마귀와 함께 적의 약점을 꿰뚫어 어둠 속에서도 빛을 발하는 명사수입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "영원한 밤의 피날레",
+                    "desc": "공격력*200%~280% 피해 및 2초간 출혈 도트 피해.",
+                    "icon": "hero_skill_icon_504711.png"
+                },
+                {
+                    "name": "어두운 밤의 아이",
+                    "desc": "까마귀 소환 표식 부여, 10초간 받는 피해 최대 25% 증가.",
+                    "icon": "hero_skill_icon_504712.png"
+                },
+                {
+                    "name": "추운 밤의 애가",
+                    "desc": "적 영웅 사망 시마다 공격력이 최대 15% 증가 (영구).",
+                    "icon": "hero_skill_icon_504713.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "어두운 밤의 군단",
+                    "desc": "전체 아군 부대의 공격력을 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_504714.png"
+                },
+                {
+                    "name": "어두운 그림자의 세계",
+                    "desc": "공격 시 20% 확률로 적군 전체에 최대 100% 추가 피해.",
+                    "icon": "hero_skill_icon_504715.png"
+                },
+                {
+                    "name": "안개의 아이",
+                    "desc": "방패병 받는 피해 최대 10% 감소 및 궁병 주는 피해 최대 10% 증가.",
+                    "icon": "hero_skill_icon_504716.png"
+                }
+            ]
+        },
+        "equipment": {
+            "name": "어두운 별",
+            "power": "281,250",
+            "icon": "equipment_icon_1050471.png",
+            "skills": [
+                {
+                    "name": "핏빛 밤의 사냥복",
+                    "desc": "개조된 무기를 통해 주는 모든 피해를 25% 증가시킨다.",
+                    "icon": "hero_skill_icon_504717.png"
+                },
+                {
+                    "name": "새벽의 노래",
+                    "desc": "집결 부대의 파괴력을 15% 증가시킨다.",
+                    "icon": "hero_skill_icon_504718.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "sergey",
+        "name": "세르게이",
+        "type": "보병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "sergey.png",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "방패병",
+            "subClass": "노병"
+        },
+        "description": "과거 솔라리스 왕조의 모범 병사였던 세르게이는 항명 사건 이후 서광 연맹의 든든한 방패가 되었습니다. 베테랑 노병인 그는 혹한과 강적 앞에서도 굴하지 않는 강철의 의지를 지녔으며, 그의 거대한 방패는 아군을 수호하는 전장의 성벽입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "방패 돌격",
+                    "desc": "무거운 방패로 충돌, 공격력 200%~280% 범위 피해 및 넉백 유발.",
+                    "icon": "hero_skill_icon_50011.png"
+                },
+                {
+                    "name": "연합 방어",
+                    "desc": "모든 아군 영웅의 방어력을 5%/7.5%/10%/12.5%/15% 향상시킨다.",
+                    "icon": "hero_skill_icon_50012.png"
+                },
+                {
+                    "name": "방패 저항",
+                    "desc": "방패를 강화해서 자신이 받는 피해가 10%/15%/20%/25%/30% 하락한다.",
+                    "icon": "hero_skill_icon_50013.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "수호의 힘",
+                    "desc": "전체 아군 부대가 받는 피해가 4%/8%/12%/16%/20% 감소한다.",
+                    "icon": "hero_skill_icon_50014.png"
+                },
+                {
+                    "name": "약점 타격",
+                    "desc": "전체 적군 부대의 공격력을 4%/8%/12%/16%/20% 하락시킨다.",
+                    "icon": "hero_skill_icon_50015.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "patrick",
+        "name": "패트릭",
+        "type": "보병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "patrick.png",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "방패병",
+            "subClass": "요리사"
+        },
+        "description": "솔라시티 궁중 요리사 출신인 패트릭은 미식이 인류 최고의 즐거움이라 믿습니다. 재료가 부족한 상황에서도 기적 같은 맛을 만들어내며, 그의 요리는 절망에 빠진 동료들에게 다시 일어설 투지와 에너지를 불어넣어 줍니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "BBQ 파티",
+                    "desc": "전체 아군 공격력 200%~280% HP 회복 및 공격력 상승 (4초).",
+                    "icon": "hero_skill_icon_50041.png"
+                },
+                {
+                    "name": "두꺼운 지방",
+                    "desc": "요리사의 체격 덕분에 자신이 받는 피해가 10%~30% 하락한다.",
+                    "icon": "hero_skill_icon_50042.png"
+                },
+                {
+                    "name": "비상식량",
+                    "desc": "5초 간격으로 자신의 HP를 공격력 50%~70%만큼 회복한다.",
+                    "icon": "hero_skill_icon_50043.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "미식 효과",
+                    "desc": "전체 아군 부대의 최대 HP가 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_50044.png"
+                },
+                {
+                    "name": "에너지 섭취",
+                    "desc": "전체 아군 부대의 공격력이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_50045.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "smith",
+        "name": "스미스",
+        "type": "보병",
+        "gen": "상설",
+        "rarity": "레어",
+        "image": "smith.png",
+        "displayInfo": {
+            "rarity": "R 희귀",
+            "class": "방패병",
+            "subClass": "대장장이"
+        },
+        "description": "과묵한 대장장이 스미스는 철의 숨결을 느끼며 최고의 무기를 담조합니다. 잠수함 납치 사건 이후 각성한 그의 기술은 도시의 자원 생산과 무기 제작에 기여하며, 전장에서는 묵직한 망치로 적을 압도합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "화염 망치",
+                    "desc": "무거운 도끼 스윙, 전방 부채꼴 범위에 공격력 200%~280% 피해.",
+                    "icon": "hero_skill_icon_500011.png"
+                },
+                {
+                    "name": "갑옷 강화",
+                    "desc": "갑옷 보강을 통해 자신이 받는 피해가 10%~30% 하락한다.",
+                    "icon": "hero_skill_icon_500012.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "버니쉬 아이언",
+                    "desc": "철광 공장의 생산량을 5%/10%/15%/20%/25% 향상시킨다.",
+                    "icon": "hero_skill_icon_500014.png"
+                },
+                {
+                    "name": "대장장이 정신",
+                    "desc": "전체 철광 채집 속도를 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_500015.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "eugene",
+        "name": "유진",
+        "type": "보병",
+        "gen": "상설",
+        "rarity": "레어",
+        "image": "eugene.png",
+        "displayInfo": {
+            "rarity": "R 희귀",
+            "class": "방패병",
+            "subClass": "벌목공"
+        },
+        "description": "열정적인 벌목공 유진은 일과 전투에서 에너지를 발산합니다. 환각 증세 때문에 난폭해지기도 하지만, 그의 강력한 도끼질은 도시 건설에 필요한 목재를 끊임없이 공급하며 전장에서는 적들을 파괴하는 힘이 됩니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "엑스 월",
+                    "desc": "회전 공격, 0.5초마다 주변 적에게 공격력 80%~110% 피해 (3초).",
+                    "icon": "hero_skill_icon_50101.png"
+                },
+                {
+                    "name": "예리한 칼날",
+                    "desc": "날카로운 도끼질로 가하는 모든 피해량이 10%~30% 증가한다.",
+                    "icon": "hero_skill_icon_50102.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "가문의 기예",
+                    "desc": "벌목장의 생산량을 5%/10%/15%/20%/25% 향상시킨다.",
+                    "icon": "hero_skill_icon_50103.png"
+                },
+                {
+                    "name": "벌목의 대가",
+                    "desc": "전체 목재 채집 속도를 5%/10%/15%/20%/25% 상승시킨다.",
+                    "icon": "hero_skill_icon_50104.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "jessie",
+        "name": "제시",
+        "type": "창병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "jessie.png",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "창병",
+            "subClass": "엔지니어"
+        },
+        "description": "낙천적인 성격의 천재 엔지니어 제시는 아카디아의 멸망 이후 사랑하는 모든 것을 무기로 지키기로 결심했습니다. 그녀의 무기 개조 기술은 아군의 화력을 극대화하며, 전장에서는 무거운 총을 난사해 적들을 단숨에 제압합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "버스트 파이어",
+                    "desc": "총기 난사, 부채꼴 범위 적에게 0.5초마다 공격력 55%~75% 피해 (2초).",
+                    "icon": "hero_skill_icon_50021.png"
+                },
+                {
+                    "name": "방어 개조",
+                    "desc": "갑옷을 개조하여 자신의 방어력이 25%~70% 상승한다.",
+                    "icon": "hero_skill_icon_50022.png"
+                },
+                {
+                    "name": "무기 개조",
+                    "desc": "무기를 개조하여 자신의 공격력이 8%~24% 상승한다.",
+                    "icon": "hero_skill_icon_50023.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "완전 무장",
+                    "desc": "전체 아군 부대의 피해량이 5%/10%/15%/20%/25% 상승한다.",
+                    "icon": "hero_skill_icon_50024.png"
+                },
+                {
+                    "name": "기계 장벽",
+                    "desc": "전체 아군 부대가 받는 피해가 4%/8%/12%/16%/20% 감소한다.",
+                    "icon": "hero_skill_icon_50025.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "seoyoon",
+        "name": "서윤",
+        "type": "창병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "seoyoon.jpg",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "창병",
+            "subClass": "음악가"
+        },
+        "description": "예술의 힘으로 얼어붙은 마음을 치유하는 음악가 서윤은 북소리를 통해 용기를 전파합니다. 우아한 모습 뒤에 숨겨진 강인함으로 아군의 사기를 북돋우며, 그녀의 리듬은 전장에서 동료들을 승리의 물결로 인도합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "여명의 북소리",
+                    "desc": "전체 아군 공격력 2.5%~4.5%, 공속 4% 향상 (4초).",
+                    "icon": "hero_skill_icon_50051.png"
+                },
+                {
+                    "name": "정면 공격",
+                    "desc": "북채 투척, 단일 타깃에게 공격력 150%~210% 피해.",
+                    "icon": "hero_skill_icon_50052.png"
+                },
+                {
+                    "name": "거센 바람",
+                    "desc": "공격 3회마다 공격 속도 1%~5% 상승 (전투 끝까지 지속).",
+                    "icon": "hero_skill_icon_50053.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "정벌의 북소리",
+                    "desc": "전체 아군 부대의 공격력을 5%/10%/15%/20%/25% 상승시킨다.",
+                    "icon": "hero_skill_icon_50054.png"
+                },
+                {
+                    "name": "치유의 춤",
+                    "desc": "의무실의 치료 속도를 10%/20%/30%/40%/50% 상승시킨다.",
+                    "icon": "hero_skill_icon_50055.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "ryoyuki",
+        "name": "료유키",
+        "type": "창병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "ryoyuki.jpg",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "창병",
+            "subClass": "전투"
+        }
+    },
+    {
+        "id": "lumborgen",
+        "name": "룸 보겐",
+        "type": "창병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "lumborgen.png",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "창병",
+            "subClass": "전투"
+        }
+    },
+    {
+        "id": "bahiti",
+        "name": "바히티",
+        "type": "궁병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "bahiti.png",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "궁병",
+            "subClass": "탐험가"
+        },
+        "description": "서광 연맹의 사자 바히티는 매머드차를 몰고 설원 구석구석을 누비는 최고의 탐험가입니다. 극강의 정의감을 지닌 그는 날카로운 눈빛으로 적의 약점을 꿰뚫어 보며, 그의 정밀한 사격은 아군에게 승리의 기회를 연결합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "약점 사격",
+                    "desc": "목표 약점 조준 사격, 공격력 400%~560%의 강력한 피해.",
+                    "icon": "hero_skill_icon_50031.png"
+                },
+                {
+                    "name": "퀵 샷",
+                    "desc": "야외 생존 경험을 바탕으로 공격 속도가 10%~30% 상승한다.",
+                    "icon": "hero_skill_icon_50032.png"
+                },
+                {
+                    "name": "예리한 시야",
+                    "desc": "정밀 사격 기술을 통해 가하는 피해가 10%~30% 증가한다.",
+                    "icon": "hero_skill_icon_50033.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "위험 감지",
+                    "desc": "전체 아군 부대가 받는 피해가 4%/8%/12%/16%/20% 감소한다.",
+                    "icon": "hero_skill_icon_50034.png"
+                },
+                {
+                    "name": "불안정한 역장",
+                    "desc": "공격 시 50% 확률로 피해량이 10%~50% 증가한다.",
+                    "icon": "hero_skill_icon_50035.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "cloris",
+        "name": "클로리스",
+        "type": "궁병",
+        "gen": "상설",
+        "rarity": "레어",
+        "image": "cloris.png",
+        "displayInfo": {
+            "rarity": "R 희귀",
+            "class": "궁병",
+            "subClass": "생존자"
+        },
+        "description": "자연의 품 속에서 홀로 자립하는 법을 배운 클로리스는 야생의 끈질긴 생명력을 상징합니다. 조상 대대로 내려온 활과 화살로 사냥감을 쫓으며, 그녀의 생존 기술은 극한의 환경에서도 도시에 필수적인 자원을 보장합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "분산 사격",
+                    "desc": "대량의 화살 발사, 공격력 180%~252% 범위 피해.",
+                    "icon": "hero_skill_icon_50061.png"
+                },
+                {
+                    "name": "사냥감 표시",
+                    "desc": "목표 마킹, 이번 공격의 피해량이 10%~30% 상승.",
+                    "icon": "hero_skill_icon_50062.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "에이스 헌터",
+                    "desc": "사냥꾼 오두막의 생산량을 5%/10%/15%/20%/25% 향상시킨다.",
+                    "icon": "hero_skill_icon_50063.png"
+                },
+                {
+                    "name": "포식자",
+                    "desc": "출정 시 생고기 채집 속도를 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_50064.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "zina",
+        "name": "지나",
+        "type": "궁병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "zina.png",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "궁병",
+            "subClass": "용병단장"
+        },
+        "description": "팔콘 용병단장 지나는 정밀한 궁술과 결단력 있는 지휘로 악마 같은 실력을 뽐냅니다. 엄격한 규율 속에서 난민들을 보호하며, 그녀의 폭렬 화살은 적들에게 손쓸 틈 없는 섬멸의 공포를 선사합니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "폭렬 화살",
+                    "desc": "단일 210%~290% 피해 및 주변 70%~98% 범위 피해.",
+                    "icon": "hero_skill_icon_50071.png"
+                },
+                {
+                    "name": "바람의 인도",
+                    "desc": "저격용 쇠뇌 개조를 통해 공격 속도가 10%~30% 상승한다.",
+                    "icon": "hero_skill_icon_50072.png"
+                },
+                {
+                    "name": "호크 아이",
+                    "desc": "적 약점 공략을 통해 치명타 확률이 7%~20% 상승한다.",
+                    "icon": "hero_skill_icon_50073.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "강력한 육체",
+                    "desc": "영주 스태미나 소모량을 10%/12%/15%/18%/20% 감소시킨다.",
+                    "icon": "hero_skill_icon_50074.png"
+                },
+                {
+                    "name": "퀵 페이스트",
+                    "desc": "몹 처치 행군 속도를 20%/40%/60%/80%/100% 상승시킨다.",
+                    "icon": "hero_skill_icon_50075.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "jere",
+        "name": "제셀",
+        "type": "궁병",
+        "gen": "상설",
+        "rarity": "에픽",
+        "image": "jere.jpg",
+        "displayInfo": {
+            "rarity": "SR 영웅",
+            "class": "궁병",
+            "subClass": "학자"
+        },
+        "description": "세상을 치유할 방법을 찾는 여행가이자 학자인 제셀은 해박한 지식과 사격 솜씨를 겸비했습니다. 구 세계의 아름다움을 다시 되찾으려는 그의 이상은, 과학 기술 연구와 정교한 전술을 통해 도시에 큰 도움을 줍니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "다중 사격",
+                    "desc": "3연속 발사, 각 100%, 125%~175%, 150%~210% 피해 및 범위 피해.",
+                    "icon": "hero_skill_icon_50081.png"
+                },
+                {
+                    "name": "화력 제압",
+                    "desc": "공격력 100%~140% 피해 및 적 공속 30%~50% 감소 (2초).",
+                    "icon": "hero_skill_icon_50082.png"
+                },
+                {
+                    "name": "사격 본능",
+                    "desc": "천부적인 사격 기술을 통해 자신의 공격력이 8%~24% 상승한다.",
+                    "icon": "hero_skill_icon_50083.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "전술적 추론",
+                    "desc": "전체 아군 부대의 피해량을 5%/10%/15%/20%/25% 증가시킨다.",
+                    "icon": "hero_skill_icon_50084.png"
+                },
+                {
+                    "name": "박학다식",
+                    "desc": "과학 기술 연구 속도를 3%/6%/9%/12%/15% 상승시킨다.",
+                    "icon": "hero_skill_icon_50085.png"
+                }
+            ]
+        }
+    },
+    {
+        "id": "charlie",
+        "name": "찰리",
+        "type": "궁병",
+        "gen": "상설",
+        "rarity": "레어",
+        "image": "charlie.png",
+        "displayInfo": {
+            "rarity": "R 희귀",
+            "class": "궁병",
+            "subClass": "척탄병"
+        },
+        "description": "폭파 전문가 찰리는 거친 외모와 달리 신중한 탄광 기술자입니다. 청력 저하로 늘 큰 소리로 외치지만, 적들에게는 강력한 수류탄과 폭약으로 ‘뼛속 깊은 교훈’을 새겨주는 화끈한 척탄병입니다.",
+        "skills": {
+            "exploration": [
+                {
+                    "name": "무차별 폭격",
+                    "desc": "초특급 폭탄 투척, 목표 및 주변에 공격력 140%~196% 피해.",
+                    "icon": "hero_skill_icon_50111.png"
+                },
+                {
+                    "name": "고성능 수류탄",
+                    "desc": "최대 20% 확률로 목표를 최대 1.5초간 스턴시킨다.",
+                    "icon": "hero_skill_icon_50112.png"
+                }
+            ],
+            "expedition": [
+                {
+                    "name": "폭파 전문",
+                    "desc": "석탄 공장의 생산량을 5%/10%/15%/20%/25% 향상시킨다.",
+                    "icon": "hero_skill_icon_50113.png"
+                },
+                {
+                    "name": "석탄 채굴",
+                    "desc": "전체 석탄 채집 속도를 5%/10%/15%/20%/25% 향상시킨다.",
+                    "icon": "hero_skill_icon_50114.png"
+                }
+            ]
+        }
+    }
+]
