@@ -182,9 +182,9 @@ export default function HeroDetail() {
                                 <TouchableOpacity
                                     key={tab}
                                     onPress={() => setActiveTab(tab)}
-                                    className={`px-6 py-3 rounded-2xl border transition-all ${activeTab === tab ? 'bg-brand-accent border-brand-accent' : 'bg-slate-900 border-slate-800'}`}
+                                    className={`px-6 py-3 rounded-2xl border transition-all ${activeTab === tab ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
                                 >
-                                    <Text className={`font-black text-xs uppercase tracking-widest ${activeTab === tab ? 'text-black' : 'text-slate-400'}`}>
+                                    <Text className={`font-black text-xs uppercase tracking-widest ${activeTab === tab ? 'text-black' : 'text-slate-300'}`}>
                                         {tab === 'story' ? '스토리' : tab === 'shards' ? '조각' : tab === 'skills' ? '스킬' : '스페셜'}
                                     </Text>
                                 </TouchableOpacity>
@@ -241,9 +241,9 @@ export default function HeroDetail() {
                                         <TouchableOpacity
                                             key={t}
                                             onPress={() => setSkillType(t)}
-                                            className={`px-4 py-2 rounded-xl border ${skillType === t ? 'bg-white/10 border-white/20' : 'border-transparent'}`}
+                                            className={`px-4 py-2 rounded-xl border ${skillType === t ? 'bg-white/10 border-white/20' : 'bg-slate-800/40 border-slate-700/50'}`}
                                         >
-                                            <Text className={`text-[10px] font-black uppercase tracking-widest ${skillType === t ? 'text-white' : 'text-slate-500'}`}>
+                                            <Text className={`text-[10px] font-black uppercase tracking-widest ${skillType === t ? 'text-white' : 'text-slate-300'}`}>
                                                 {t === 'exploration' ? '탐험' : t === 'expedition' ? '원정' : '특성'}
                                             </Text>
                                         </TouchableOpacity>

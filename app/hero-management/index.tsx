@@ -88,7 +88,7 @@ export default function HeroManagement() {
                                 onPress={() => setSelectedCategory(cat.id)}
                                 className={`py-4 items-center border-l-4 ${selectedCategory === cat.id ? 'bg-brand-accent/10 border-brand-accent' : 'border-transparent'}`}
                             >
-                                <Text className={`font-black text-xs md:text-sm ${selectedCategory === cat.id ? 'text-brand-accent' : 'text-slate-500'}`}>
+                                <Text className={`font-black text-xs md:text-sm ${selectedCategory === cat.id ? 'text-brand-accent' : 'text-slate-300'}`}>
                                     {cat.label}
                                 </Text>
                             </TouchableOpacity>

@@ -308,9 +308,9 @@ export default function EventTracker() {
                         <TouchableOpacity
                             key={cat}
                             onPress={() => setSelectedCategory(cat)}
-                            className={`px-8 py-2.5 rounded-full mr-3 border ${selectedCategory === cat ? 'bg-brand-accent border-brand-accent' : 'bg-slate-900 border-slate-800'}`}
+                            className={`px-8 py-2.5 rounded-full mr-3 border ${selectedCategory === cat ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
                         >
-                            <Text className={`font-black text-xs ${selectedCategory === cat ? 'text-brand-dark' : 'text-slate-400'}`}>
+                            <Text className={`font-black text-xs ${selectedCategory === cat ? 'text-brand-dark' : 'text-slate-300'}`}>
                                 {cat}
                             </Text>
                         </TouchableOpacity>
@@ -470,9 +470,9 @@ export default function EventTracker() {
                                         <TouchableOpacity
                                             key={d}
                                             onPress={() => toggleDay(d)}
-                                            className={`w-10 h-10 rounded-xl items-center justify-center mr-2 mb-2 border ${editDays.includes(d) ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800 border-slate-700'}`}
+                                            className={`w-10 h-10 rounded-xl items-center justify-center mr-2 mb-2 border ${editDays.includes(d) ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
                                         >
-                                            <Text className={`font-black text-xs ${editDays.includes(d) ? 'text-brand-dark' : 'text-slate-400'}`}>{d}</Text>
+                                            <Text className={`font-black text-xs ${editDays.includes(d) ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </View>

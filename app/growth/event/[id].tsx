@@ -135,13 +135,13 @@ export default function EventDetail() {
                                 onPress={() => setActiveTab('guide')}
                                 className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'guide' ? 'bg-brand-accent' : ''}`}
                             >
-                                <Text className={`font-black text-xs ${activeTab === 'guide' ? 'text-brand-dark' : 'text-slate-400'}`}>공략 가이드</Text>
+                                <Text className={`font-black text-xs ${activeTab === 'guide' ? 'text-brand-dark' : 'text-slate-300'}`}>공략 가이드</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setActiveTab('attendees')}
                                 className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'attendees' ? 'bg-brand-accent' : ''}`}
                             >
-                                <Text className={`font-black text-xs ${activeTab === 'attendees' ? 'text-brand-dark' : 'text-slate-400'}`}>참석 영주 ({attendees.length})</Text>
+                                <Text className={`font-black text-xs ${activeTab === 'attendees' ? 'text-brand-dark' : 'text-slate-300'}`}>참석 영주 ({attendees.length})</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -274,7 +274,7 @@ export default function EventDetail() {
                                         key={r} onPress={() => setFormData({ ...formData, role: r })}
                                         className={`px-3 py-2 rounded-lg border ${formData.role === r ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800 border-slate-700'}`}
                                     >
-                                        <Text className={`text-[10px] font-black ${formData.role === r ? 'text-brand-dark' : 'text-slate-500'}`}>{r}</Text>
+                                        <Text className={`text-[10px] font-black ${formData.role === r ? 'text-brand-dark' : 'text-slate-300'}`}>{r}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
