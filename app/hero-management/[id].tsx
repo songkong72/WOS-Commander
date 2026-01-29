@@ -282,7 +282,11 @@ export default function HeroDetail() {
                                 {(hero as any).equipment ? (
                                     <View className="bg-slate-800/30 rounded-3xl p-6 border border-white/5 mb-6">
                                         <View className="flex-row items-center gap-6 mb-8">
-                                            <Image source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/01/${(hero as any).equipment.icon}` }} className="w-20 h-20 rounded-2xl" />
+                                            <Image
+                                                source={{ uri: (hero as any).equipment.icon?.startsWith('http') ? (hero as any).equipment.icon : `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/01/${(hero as any).equipment.icon}` }}
+                                                className="w-20 h-20 rounded-2xl"
+                                                defaultSource={require('../../assets/icon.png')}
+                                            />
                                             <View>
                                                 <Text className="text-white font-black text-lg mb-1">{(hero as any).equipment.name}</Text>
                                                 <View className="flex-row items-center gap-2">
