@@ -5,6 +5,7 @@ import { useAuth } from '../_layout';
 import { getGuideContent } from '../../data/event-guides';
 import { Attendee, INITIAL_ATTENDEES } from '../../data/mock-attendees';
 import { useFirestoreAttendees } from '../../hooks/useFirestoreAttendees';
+import { useFirestoreEventSchedules } from '../../hooks/useFirestoreEventSchedules';
 import heroesData from '../../data/heroes.json';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -115,6 +116,23 @@ export default function EventTracker() {
     const { auth } = useAuth();
     const router = useRouter();
 
+    // Firebase Event Schedules
+    const { schedules, loading: schedulesLoading, saveSchedules } = useFirestoreEventSchedules();
+
+    // Merge Firebase schedules with initial events
+    React.useEffect(() => {
+        if (!schedulesLoading && schedules.length > 0) {
+            const mergedEvents = INITIAL_WIKI_EVENTS.map(event => {
+                const savedSchedule = schedules.find(s => s.eventId === event.id);
+                if (savedSchedule) {
+                    return { ...event, day: savedSchedule.day, time: savedSchedule.time };
+                }
+                return event;
+            });
+            setEvents(mergedEvents);
+        }
+    }, [schedules, schedulesLoading]);
+
     // Scheduling Modal
     const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
     const [editingEvent, setEditingEvent] = useState<WikiEvent | null>(null);
@@ -213,6 +231,10 @@ export default function EventTracker() {
         setBulkAttendees(bulkAttendees.map(a => a.id === id ? { ...a, [field]: value } : a));
     };
 
+    const deleteAttendee = (id: string) => {
+        setBulkAttendees(bulkAttendees.filter(a => a.id !== id));
+    };
+
     const saveAttendees = () => {
         const validAttendees = bulkAttendees.filter(a => a.name?.trim());
         if (validAttendees.length === 0) {
@@ -237,13 +259,28 @@ export default function EventTracker() {
         }
     };
 
-    const saveSchedule = () => {
+    const saveSchedule = async () => {
         if (!editingEvent) return;
         const finalDay = editDays.join(',');
         const finalTime = isPermanent ? '상설' : `${editHour}:${editMinute}`;
+
+        // Update local state
         setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: finalTime } : e));
-        setScheduleModalVisible(false);
-        Alert.alert('저장 완료', `${editingEvent.title} 일정이 변경되었습니다.`);
+
+        // Save to Firebase
+        try {
+            const updatedSchedules = schedules.filter(s => s.eventId !== editingEvent.id);
+            updatedSchedules.push({
+                eventId: editingEvent.id,
+                day: finalDay,
+                time: finalTime
+            });
+            await saveSchedules(updatedSchedules);
+            setScheduleModalVisible(false);
+            Alert.alert('저장 완료', `${editingEvent.title} 일정이 변경되어 모든 기기에 동기화되었습니다.`);
+        } catch (error: any) {
+            Alert.alert('오류', '일정 저장 중 문제가 발생했습니다: ' + error.message);
+        }
     };
 
     const guideContent = selectedEventForGuide ? getGuideContent(selectedEventForGuide.id) : null;
@@ -568,7 +605,7 @@ export default function EventTracker() {
                                         </View>
                                         {bulkAttendees.length > 1 && (
                                             <TouchableOpacity
-                                                onPress={() => setBulkAttendees(bulkAttendees.filter(a => a.id !== attendee.id))}
+                                                onPress={() => deleteAttendee(attendee.id!)}
                                                 className="bg-red-500/10 px-3 py-1.5 rounded-xl border border-red-500/20"
                                             >
                                                 <Text className="text-red-400 text-[10px] font-black">삭제</Text>
