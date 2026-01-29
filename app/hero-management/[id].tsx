@@ -260,6 +260,8 @@ export default function HeroDetail() {
                                             <Image
                                                 source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
                                                 className="w-16 h-16 rounded-xl"
+                                                defaultSource={require('../../assets/icon.png')}
+                                                onError={() => console.log(`Failed to load skill icon: ${skill.icon}`)}
                                             />
                                             <View className="flex-1">
                                                 <Text className="text-white font-black text-sm mb-1">{skill.name}</Text>
@@ -284,6 +286,8 @@ export default function HeroDetail() {
                                             <Image
                                                 source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/01/${(hero as any).equipment.icon}` }}
                                                 className="w-20 h-20 rounded-2xl"
+                                                defaultSource={require('../../assets/icon.png')}
+                                                onError={() => console.log(`Failed to load equipment icon: ${(hero as any).equipment.icon}`)}
                                             />
                                             <View>
                                                 <Text className="text-white font-black text-lg mb-1">{(hero as any).equipment.name}</Text>
@@ -300,6 +304,8 @@ export default function HeroDetail() {
                                                     <Image
                                                         source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
                                                         className="w-12 h-12 rounded-lg"
+                                                        defaultSource={require('../../assets/icon.png')}
+                                                        onError={() => console.log(`Failed to load equipment skill icon: ${skill.icon}`)}
                                                     />
                                                     <View className="flex-1">
                                                         <Text className="text-white font-black text-sm">{skill.name}</Text>
