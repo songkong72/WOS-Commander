@@ -217,7 +217,7 @@ export default function HeroDetail() {
                     <View className="flex-1">
                         {/* Tab Buttons */}
                         <View className="flex-row flex-wrap gap-2 mb-6">
-                            {['story', 'shards', 'skills', 'special'].map((tab) => (
+                            {['story', 'shards', 'skills'].map((tab) => (
                                 <TouchableOpacity
                                     key={tab}
                                     onPress={() => setActiveTab(tab)}
@@ -226,7 +226,7 @@ export default function HeroDetail() {
                                         : 'bg-slate-800/80 border-slate-700'}`}
                                 >
                                     <Text className={`font-black text-[13px] ${activeTab === tab ? 'text-slate-900' : 'text-slate-400'}`}>
-                                        {tab === 'story' ? '스토리' : tab === 'shards' ? '조각' : tab === 'skills' ? '스킬' : '스페셜'}
+                                        {tab === 'story' ? '스토리' : tab === 'shards' ? '조각' : '스킬'}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
@@ -279,7 +279,12 @@ export default function HeroDetail() {
                         {activeTab === 'skills' && (
                             <View className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
                                 <View className="flex-row gap-2 mb-6 justify-center">
-                                    {['exploration', 'expedition', 'special'].filter(t => (hero.skills as any)?.[t]?.length > 0).map((t) => (
+                                    {['exploration', 'expedition', 'special'].filter(t => {
+                                        if (t === 'special') {
+                                            return !!((hero as any).equipment || (hero.skills as any)?.special?.length > 0);
+                                        }
+                                        return (hero.skills as any)?.[t]?.length > 0;
+                                    }).map((t) => (
                                         <TouchableOpacity
                                             key={t}
                                             onPress={() => setSkillType(t)}
@@ -294,126 +299,111 @@ export default function HeroDetail() {
                                     ))}
                                 </View>
 
-                                <View className="space-y-4">
-                                    {((hero.skills as any)?.[skillType] || []).map((skill: any, idx: number) => (
-                                        <View key={idx} className="bg-slate-800/30 rounded-2xl p-4 flex-row gap-4 border border-white/5">
-                                            <SkillImage
-                                                icon={skill.icon}
-                                                className="w-16 h-16 rounded-xl"
-                                            />
-                                            <View className="flex-1">
-                                                <Text className="text-white font-black text-sm mb-1">{skill.name}</Text>
-                                                <Text className="text-slate-400 text-xs leading-5">{skill.desc}</Text>
-                                            </View>
-                                        </View>
-                                    ))}
-                                    {(!(hero.skills as any)?.[skillType] || (hero.skills as any)[skillType].length === 0) && (
-                                        <Text className="text-slate-500 text-center py-10">정보가 아직 등록되지 않았습니다.</Text>
-                                    )}
-                                </View>
-                            </View>
-                        )}
+                                {skillType === 'special' ? (
+                                    <View>
+                                        <Text className="text-[#22d3ee] font-black text-lg mb-6">스페셜 (전용 장비)</Text>
 
-                        {/* Special Content */}
-                        {activeTab === 'special' && (
-                            <View className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
-                                <Text className="text-[#22d3ee] font-black text-lg mb-6">스페셜 (전용 장비)</Text>
-
-                                {/* Equipment Stats Section */}
-                                {(hero as any).special?.[0]?.equipment?.stats ? (
-                                    <View className="mb-8">
-                                        <Text className="text-white font-black text-sm mb-3 pl-1">스텟</Text>
-                                        <View className="flex-col md:flex-row gap-4">
-                                            {/* Exploration Stats */}
-                                            <View className="flex-1 bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-                                                <View className="bg-slate-900/80 py-1.5 rounded-lg mb-3">
-                                                    <Text className="text-slate-300 text-[11px] font-black text-center">탐험</Text>
-                                                </View>
-                                                <StatRow
-                                                    label="공격"
-                                                    value={(hero as any).special[0].equipment.stats.exploration.atk.toLocaleString()}
-                                                    icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png"
-                                                />
-                                                <StatRow
-                                                    label="방어"
-                                                    value={(hero as any).special[0].equipment.stats.exploration.def.toLocaleString()}
-                                                    icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png"
-                                                />
-                                                <StatRow
-                                                    label="체력"
-                                                    value={(hero as any).special[0].equipment.stats.exploration.hp.toLocaleString()}
-                                                    icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png"
-                                                />
-                                            </View>
-
-                                            {/* Expedition Stats */}
-                                            <View className="flex-1 bg-slate-800/50 rounded-2xl p-4 border border-white/5">
-                                                <View className="bg-slate-900/80 py-1.5 rounded-lg mb-3">
-                                                    <Text className="text-slate-300 text-[11px] font-black text-center">원정</Text>
-                                                </View>
-                                                <StatRow
-                                                    label="파괴력"
-                                                    value={(hero as any).special[0].equipment.stats.expedition.power}
-                                                />
-                                                <StatRow
-                                                    label="HP"
-                                                    value={(hero as any).special[0].equipment.stats.expedition.hp}
-                                                />
-                                            </View>
-                                        </View>
-                                    </View>
-                                ) : null}
-
-                                {(() => {
-                                    const equipmentData = (hero as any).equipment || (hero as any).special?.[0]?.equipment;
-
-                                    if (!equipmentData) return (
-                                        <Text className="text-slate-500 text-center py-10">전용 장비 정보가 아직 등록되지 않았습니다.</Text>
-                                    );
-
-                                    const displayPower = typeof equipmentData.power === 'number'
-                                        ? equipmentData.power.toLocaleString()
-                                        : equipmentData.power;
-
-                                    return (
-                                        <View className="bg-slate-800/30 rounded-3xl p-6 border border-white/5 mb-6">
-                                            <View className="flex-row items-center gap-6 mb-8">
-                                                <SkillImage
-                                                    icon={equipmentData.icon}
-                                                    className="w-20 h-20 rounded-2xl"
-                                                />
-                                                <View>
-                                                    <Text className="text-white font-black text-lg mb-1">{equipmentData.name}</Text>
-                                                    <View className="flex-row items-center gap-2">
-                                                        <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/power-e1711159096981.png' }} className="w-5 h-5" />
-                                                        <Text className="text-brand-accent font-black">{displayPower}</Text>
-                                                    </View>
-                                                </View>
-                                            </View>
-
-                                            <View className="space-y-4">
-                                                {equipmentData.skills.map((skill: any, idx: number) => (
-                                                    <View key={idx} className="flex-row gap-4 items-center">
-                                                        <SkillImage
-                                                            icon={skill.icon}
-                                                            className="w-12 h-12 rounded-lg"
-                                                        />
-                                                        <View className="flex-1">
-                                                            <Text className="text-white font-black text-sm">{skill.name}</Text>
-                                                            <Text className="text-slate-400 text-xs leading-5">{skill.desc}</Text>
+                                        {(() => {
+                                            const stats = (hero as any).special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
+                                            if (stats) {
+                                                return (
+                                                    <View className="mb-8">
+                                                        <Text className="text-white font-black text-sm mb-3 pl-1">스텟</Text>
+                                                        <View className="flex-col md:flex-row gap-4">
+                                                            <View className="flex-1 bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+                                                                <View className="bg-slate-900/80 py-1.5 rounded-lg mb-3">
+                                                                    <Text className="text-slate-300 text-[11px] font-black text-center">탐험</Text>
+                                                                </View>
+                                                                <StatRow label="공격" value={stats.exploration.atk?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
+                                                                <StatRow label="방어" value={stats.exploration.def?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
+                                                                <StatRow label="체력" value={stats.exploration.hp?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
+                                                            </View>
+                                                            <View className="flex-1 bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+                                                                <View className="bg-slate-900/80 py-1.5 rounded-lg mb-3">
+                                                                    <Text className="text-slate-300 text-[11px] font-black text-center">원정</Text>
+                                                                </View>
+                                                                <StatRow label="파괴력" value={stats.expedition.power} />
+                                                                <StatRow label="HP" value={stats.expedition.hp} />
+                                                            </View>
                                                         </View>
                                                     </View>
-                                                ))}
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+
+                                        {(() => {
+                                            const equipmentData = (hero as any).equipment || (hero as any).special?.[0]?.equipment;
+
+                                            if (!equipmentData) return (
+                                                <Text className="text-slate-500 text-center py-10">전용 장비 정보가 아직 등록되지 않았습니다.</Text>
+                                            );
+
+                                            const displayPower = equipmentData.power
+                                                ? (typeof equipmentData.power === 'number'
+                                                    ? equipmentData.power.toLocaleString()
+                                                    : equipmentData.power)
+                                                : '';
+
+                                            return (
+                                                <View className="bg-slate-800/30 rounded-3xl p-6 border border-white/5 mb-6">
+                                                    <View className="flex-row items-center gap-6 mb-8">
+                                                        <SkillImage
+                                                            icon={equipmentData.icon}
+                                                            className="w-20 h-20 rounded-2xl"
+                                                        />
+                                                        <View>
+                                                            <Text className="text-white font-black text-lg mb-1">{equipmentData.name}</Text>
+                                                            <View className="flex-row items-center gap-2">
+                                                                <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/power-e1711159096981.png' }} className="w-5 h-5" />
+                                                                <Text className="text-brand-accent font-black">{displayPower}</Text>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+
+                                                    <View className="space-y-4">
+                                                        {equipmentData.skills.map((skill: any, idx: number) => (
+                                                            <View key={idx} className="flex-row gap-4 items-center">
+                                                                <SkillImage
+                                                                    icon={skill.icon}
+                                                                    className="w-12 h-12 rounded-lg"
+                                                                />
+                                                                <View className="flex-1">
+                                                                    <Text className="text-white font-black text-sm">{skill.name}</Text>
+                                                                    <Text className="text-slate-400 text-xs leading-5">{skill.desc}</Text>
+                                                                </View>
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
+                                ) : (
+                                    <View className="space-y-4">
+                                        {((hero.skills as any)?.[skillType] || []).map((skill: any, idx: number) => (
+                                            <View key={idx} className="bg-slate-800/30 rounded-2xl p-4 flex-row gap-4 border border-white/5">
+                                                <SkillImage
+                                                    icon={skill.icon}
+                                                    className="w-16 h-16 rounded-xl"
+                                                />
+                                                <View className="flex-1">
+                                                    <Text className="text-white font-black text-sm mb-1">{skill.name}</Text>
+                                                    <Text className="text-slate-400 text-xs leading-5">{skill.desc}</Text>
+                                                </View>
                                             </View>
-                                        </View>
-                                    );
-                                })()}
+                                        ))}
+                                        {(!(hero.skills as any)?.[skillType] || (hero.skills as any)[skillType].length === 0) && (
+                                            <Text className="text-slate-500 text-center py-10">정보가 아직 등록되지 않았습니다.</Text>
+                                        )}
+                                    </View>
+                                )}
                             </View>
                         )}
                     </View>
                 </View>
                 <View className="h-20" />
-            </ScrollView>
-        </View>
+            </ScrollView >
+        </View >
     );
 }
