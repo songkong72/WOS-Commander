@@ -303,7 +303,7 @@ export default function HeroDetail() {
 
                                 {skillType === 'special' ? (
                                     <View>
-                                        <Text className="text-[#22d3ee] font-black text-lg mb-6">스페셜 (전용 장비)</Text>
+                                        <Text className="text-[#22d3ee] font-black text-lg mb-6">전용 장비 & 스텟</Text>
 
                                         {(() => {
                                             const stats = (hero as any).skills?.special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
