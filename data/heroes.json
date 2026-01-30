@@ -1338,24 +1338,32 @@
                 {
                     "name": "아이언 가드",
                     "desc": "전체 아군 부대의 HP를 5%/10%/15%/20%/25% 증가시킨다.",
-                    "icon": "hero_skill_icon_502116.png"
+                    "icon": "hero_skill_icon_500326.png"
                 }
-            ]
-        },
-        "equipment": {
-            "name": "하트 공구함",
-            "power": "281,250",
-            "icon": "equipment_icon_1050211.png",
-            "skills": [
+            ],
+            "special": [
                 {
-                    "name": "꼬마 엔지니어",
-                    "desc": "HP 50% 이하 시 35% 즉시 회복 및 방어력 30% 영구 상승.",
-                    "icon": "hero_skill_icon_502117.png"
-                },
-                {
-                    "name": "견고한 공사",
-                    "desc": "수성 부대의 HP를 15% 증가한다.",
-                    "icon": "hero_skill_icon_502118.png"
+                    "name": "전용 장비",
+                    "id": "edith_exclusive",
+                    "icon": "equipment_icon_1050032-1.png",
+                    "type": "장비",
+                    "equipment": {
+                        "name": "하트 공구함",
+                        "icon": "equipment_icon_1050032-1.png",
+                        "power": 722250,
+                        "skills": [
+                            {
+                                "name": "꼬마 엔지니어",
+                                "desc": "에디스는 미스터 아이언을 보살피며, HP가 50% 이하가 되면 바로 일정 수의 HP를 회복시키고(HP 상한의 35% 상당) 전투가 끝날 때까지 방어력을 30% 상승시킨다. 전투 시마다 1번씩만 발동할 수 있다.",
+                                "icon": "hero_skill_icon_500327.png"
+                            },
+                            {
+                                "name": "견고한 공사",
+                                "desc": "에디스는 미스터 아이언과 함께 방어 공사에 착수해 수성 부대를 더 잘 엄호하고 그들의 HP를 15% 증가시킨다.",
+                                "icon": "hero_skill_icon_500328.png"
+                            }
+                        ]
+                    }
                 }
             ]
         }

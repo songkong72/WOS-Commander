@@ -5,6 +5,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
 import { heroImages } from '../../assets/images/heroes';
+import { skillIcons } from '../../assets/images/skill-icons';
 
 
 const SkillImage = ({ icon, className }: { icon: string, className?: string }) => {
@@ -18,6 +19,12 @@ const SkillImage = ({ icon, className }: { icon: string, className?: string }) =
 
     const source = React.useMemo(() => {
         if (!icon) return require('../../assets/icon.png');
+
+        // Check if we have a local icon mapping (e.g. for Edith)
+        if (skillIcons[icon]) {
+            return skillIcons[icon];
+        }
+
         if (icon.startsWith('http')) return { uri: icon };
         if (tryIndex >= baseUrls.length) return require('../../assets/icon.png');
         return { uri: `${baseUrls[tryIndex]}${icon}` };
