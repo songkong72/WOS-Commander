@@ -976,51 +976,51 @@
                 {
                     "name": "분노의 벼락",
                     "desc": "강력한 수류탄 다섯 개를 동시에 투척하여 랜덤 타깃(영웅 우선)에 공격력*60%/66%/72%/78%/84%의 범위 피해를 준다.",
-                    "icon": "hero_skill_icon_501611.png"
+                    "icon": "hero_skill_icon_500251.png"
                 },
                 {
                     "name": "섬광탄",
                     "desc": "섬광탄을 투척하여 일정 범위 내의 타깃에 공격력*50%/55%/60%/65%/70% 의 피해를 주고, 1.5초간 기절시킨다.",
-                    "icon": "hero_skill_icon_501612.png"
+                    "icon": "hero_skill_icon_500252.png"
                 },
                 {
                     "name": "전광석화",
                     "desc": "Norah blitzes the ennemy, boosting all Troops Attack by 3%/3.5%/4%/4.5%/5%. 요란한 엔진 소리와 함께 날카로운 공세로 아군 전체 공격력을 3%/3.5%/4%/4.5%/5% 향상시킨다.",
-                    "icon": "hero_skill_icon_501613.png"
+                    "icon": "hero_skill_icon_500253.png"
                 }
             ],
             "expedition": [
                 {
                     "name": "제병 협동 전술",
-                    "desc": "방패/궁병 피해 3%~15% 감소 및 주는 피해 3%~15% 증가.",
-                    "icon": "hero_skill_icon_501614.png"
+                    "desc": "다양한 병과와의 협동 작전에 능한 노라의 지휘로 방패병과 궁병이 받는 피해는 3%/6%/9%/12%/15% 감소하고 주는 피해는 3%/6%/9%/12%/15% 증가한다.",
+                    "icon": "hero_skill_icon_500255.png"
                 },
                 {
                     "name": "기습 공격",
-                    "desc": "창병 공격 시 20% 확률로 적군 전체에 20%/40%/60%/80%/100% 추가 피해.",
-                    "icon": "hero_skill_icon_501615.png"
+                    "desc": "기습의 명수인 노라는 창병이 공격 시 20%의 확률로 전체 적군에게 20%/40%/60%/80%/100%의 추가 피해를 주도록 한다.",
+                    "icon": "hero_skill_icon_500254.png"
                 },
                 {
                     "name": "추격 가속",
-                    "desc": "창병 5회 공격마다 아군 피해 5%~25% 증가 및 받는 피해 5%~25% 감소. (2라운드)",
-                    "icon": "hero_skill_icon_501616.png"
+                    "desc": "노라의 격려를 받은 창병이 5번 공격할 때마다 전체 아군 부대가 주는 피해는 5%/10%/15%/20%/25% 증가하며, 받는 피해는 5%/10%/15%/20%/25% 감소한다. 2라운드 지속.",
+                    "icon": "hero_skill_icon_500256.png"
                 }
             ]
         },
         "equipment": {
             "name": "스노우 레인저",
             "power": "281,250",
-            "icon": "equipment_icon_1050161.png",
+            "icon": "equipment_icon_1050025.png",
             "skills": [
                 {
                     "name": "충격파 수류탄",
-                    "desc": "분노의 벼락 시전 시 35% 확률로 타깃을 1초간 기절시킨다.",
-                    "icon": "hero_skill_icon_501617.png"
+                    "desc": "분노의 벼락 발동 시 투척한 수류탄에 충격 효과를 주어 35%의 확률로 타깃을 1초간 기절시킨다.",
+                    "icon": "hero_skill_icon_500257.png"
                 },
                 {
                     "name": "임기응변",
-                    "desc": "수성 부대의 방어력이 15% 향상된다.",
-                    "icon": "hero_skill_icon_501618.png"
+                    "desc": "항상 침착하고 임기응변에 능한 노라의 격려 덕에 수성 부대의 방어력이 15% 향상된다.",
+                    "icon": "hero_skill_icon_500258.png"
                 }
             ]
         }
