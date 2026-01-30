@@ -6,8 +6,36 @@ import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
 import { heroImages } from '../../assets/images/heroes';
 
+
+const SkillImage = ({ icon, className }: { icon: string, className?: string }) => {
+    const [tryIndex, setTryIndex] = useState(0);
+    const baseUrls = [
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/',
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/',
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/01/',
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/',
+    ];
+
+    const source = React.useMemo(() => {
+        if (!icon) return require('../../assets/icon.png');
+        if (icon.startsWith('http')) return { uri: icon };
+        if (tryIndex >= baseUrls.length) return require('../../assets/icon.png');
+        return { uri: `${baseUrls[tryIndex]}${icon}` };
+    }, [icon, tryIndex]);
+
+    return (
+        <Image
+            source={source}
+            className={className}
+            onError={() => setTryIndex(prev => prev + 1)}
+            defaultSource={require('../../assets/icon.png')}
+        />
+    );
+};
+
 export default function HeroDetail() {
     const { id } = useLocalSearchParams();
+
     const router = useRouter();
     const navigation = useNavigation();
     const hero = heroesData.find(h => h.id === id);
@@ -257,11 +285,9 @@ export default function HeroDetail() {
                                 <View className="space-y-4">
                                     {((hero.skills as any)?.[skillType] || []).map((skill: any, idx: number) => (
                                         <View key={idx} className="bg-slate-800/30 rounded-2xl p-4 flex-row gap-4 border border-white/5">
-                                            <Image
-                                                source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
+                                            <SkillImage
+                                                icon={skill.icon}
                                                 className="w-16 h-16 rounded-xl"
-                                                defaultSource={require('../../assets/icon.png')}
-                                                onError={() => console.log(`Failed to load skill icon: ${skill.icon}`)}
                                             />
                                             <View className="flex-1">
                                                 <Text className="text-white font-black text-sm mb-1">{skill.name}</Text>
@@ -283,11 +309,9 @@ export default function HeroDetail() {
                                 {(hero as any).equipment ? (
                                     <View className="bg-slate-800/30 rounded-3xl p-6 border border-white/5 mb-6">
                                         <View className="flex-row items-center gap-6 mb-8">
-                                            <Image
-                                                source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/01/${(hero as any).equipment.icon}` }}
+                                            <SkillImage
+                                                icon={(hero as any).equipment.icon}
                                                 className="w-20 h-20 rounded-2xl"
-                                                defaultSource={require('../../assets/icon.png')}
-                                                onError={() => console.log(`Failed to load equipment icon: ${(hero as any).equipment.icon}`)}
                                             />
                                             <View>
                                                 <Text className="text-white font-black text-lg mb-1">{(hero as any).equipment.name}</Text>
@@ -301,11 +325,9 @@ export default function HeroDetail() {
                                         <View className="space-y-4">
                                             {(hero as any).equipment.skills.map((skill: any, idx: number) => (
                                                 <View key={idx} className="flex-row gap-4 items-center">
-                                                    <Image
-                                                        source={{ uri: `https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/${skill.icon}` }}
+                                                    <SkillImage
+                                                        icon={skill.icon}
                                                         className="w-12 h-12 rounded-lg"
-                                                        defaultSource={require('../../assets/icon.png')}
-                                                        onError={() => console.log(`Failed to load equipment skill icon: ${skill.icon}`)}
                                                     />
                                                     <View className="flex-1">
                                                         <Text className="text-white font-black text-sm">{skill.name}</Text>

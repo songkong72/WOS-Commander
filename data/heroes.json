@@ -1311,29 +1311,29 @@
                 {
                     "name": "분노의 철권",
                     "desc": "부채꼴 범위 피해, 1초 스턴 및 공격력 20%~100% 상승. (2초)",
-                    "icon": "hero_skill_icon_502111.png"
+                    "icon": "hero_skill_icon_500321.png"
                 },
                 {
                     "name": "긴급 탈출",
                     "desc": "HP 0 도달 시 부품 폭발로 공격력*200%~280% 범위 피해.",
-                    "icon": "hero_skill_icon_502112.png"
+                    "icon": "hero_skill_icon_500322.png"
                 },
                 {
                     "name": "위기 예측",
                     "desc": "10%~50% 확률로 미스터 아이언이 받는 피해 50%를 무효화한다.",
-                    "icon": "hero_skill_icon_502113.png"
+                    "icon": "hero_skill_icon_500323.png"
                 }
             ],
             "expedition": [
                 {
                     "name": "공수 겸비",
                     "desc": "아군 궁병 받는 피해 4%~20% 감소 및 창병 주는 피해 4%~20% 증가.",
-                    "icon": "hero_skill_icon_502114.png"
+                    "icon": "hero_skill_icon_500324.png"
                 },
                 {
                     "name": "용감무쌍",
                     "desc": "방패병이 입는 피해를 4%/8%/12%/16%/20% 감소시킨다.",
-                    "icon": "hero_skill_icon_502115.png"
+                    "icon": "hero_skill_icon_500325.png"
                 },
                 {
                     "name": "아이언 가드",
