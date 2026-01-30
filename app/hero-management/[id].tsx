@@ -221,9 +221,11 @@ export default function HeroDetail() {
                                 <TouchableOpacity
                                     key={tab}
                                     onPress={() => setActiveTab(tab)}
-                                    className={`px-6 py-3 rounded-2xl border transition-all ${activeTab === tab ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
+                                    className={`px-5 py-3 rounded-full border transition-all ${activeTab === tab
+                                        ? 'bg-[#22d3ee] border-[#22d3ee] shadow-lg shadow-cyan-500/20'
+                                        : 'bg-slate-800/80 border-slate-700'}`}
                                 >
-                                    <Text className={`font-black text-xs uppercase tracking-widest ${activeTab === tab ? 'text-black' : 'text-slate-300'}`}>
+                                    <Text className={`font-black text-[13px] ${activeTab === tab ? 'text-slate-900' : 'text-slate-400'}`}>
                                         {tab === 'story' ? '스토리' : tab === 'shards' ? '조각' : tab === 'skills' ? '스킬' : '스페셜'}
                                     </Text>
                                 </TouchableOpacity>
@@ -233,7 +235,7 @@ export default function HeroDetail() {
                         {/* Story Content */}
                         {activeTab === 'story' && (
                             <View className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
-                                <Text className="text-brand-accent font-black text-lg mb-4">Hero Story</Text>
+                                <Text className="text-[#22d3ee] font-black text-lg mb-4">Hero Story</Text>
                                 <Text className="text-slate-300 leading-7 text-sm">
                                     {hero.description || `${hero.name}의 상세 정보가 아직 업데이트되지 않았습니다.`}
                                 </Text>
@@ -244,10 +246,11 @@ export default function HeroDetail() {
                         {activeTab === 'shards' && (
                             <View className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
                                 <View className="flex-row items-center justify-between mb-6">
-                                    <Text className="text-brand-accent font-black text-lg">성급 진화 (Shards)</Text>
+                                    <Text className="text-[#22d3ee] font-black text-lg">성급 진화 (Shards)</Text>
                                     <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/item_icon_500220.png' }} className="w-8 h-8" />
                                 </View>
                                 <View className="border border-slate-800 rounded-2xl overflow-hidden">
+                                    {/* ... table content remains same ... */}
                                     <View className="flex-row bg-slate-800/50 py-3 px-4 border-b border-slate-800">
                                         <Text className="flex-1 text-slate-400 text-[10px] font-black uppercase">성급 | 티어</Text>
                                         <Text className="w-12 text-center text-slate-400 text-[10px] font-black uppercase">Total</Text>
@@ -280,9 +283,11 @@ export default function HeroDetail() {
                                         <TouchableOpacity
                                             key={t}
                                             onPress={() => setSkillType(t)}
-                                            className={`px-4 py-2 rounded-xl border ${skillType === t ? 'bg-white/10 border-white/20' : 'bg-slate-800/40 border-slate-700/50'}`}
+                                            className={`px-5 py-2.5 rounded-full border transition-all ${skillType === t
+                                                ? 'bg-white border-white shadow-lg shadow-white/10'
+                                                : 'bg-transparent border-slate-700'}`}
                                         >
-                                            <Text className={`text-[10px] font-black uppercase tracking-widest ${skillType === t ? 'text-white' : 'text-slate-300'}`}>
+                                            <Text className={`text-[11px] font-black uppercase tracking-widest ${skillType === t ? 'text-slate-900' : 'text-slate-400'}`}>
                                                 {t === 'exploration' ? '탐험' : t === 'expedition' ? '원정' : '특성'}
                                             </Text>
                                         </TouchableOpacity>
@@ -312,7 +317,7 @@ export default function HeroDetail() {
                         {/* Special Content */}
                         {activeTab === 'special' && (
                             <View className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-2xl">
-                                <Text className="text-brand-accent font-black text-lg mb-6">스페셜 (전용 장비)</Text>
+                                <Text className="text-[#22d3ee] font-black text-lg mb-6">스페셜 (전용 장비)</Text>
                                 {(hero as any).equipment ? (
                                     <View className="bg-slate-800/30 rounded-3xl p-6 border border-white/5 mb-6">
                                         <View className="flex-row items-center gap-6 mb-8">
