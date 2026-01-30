@@ -81,28 +81,7 @@ export default function Home() {
         <View className="flex-1 bg-brand-dark items-center justify-center">
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Admin Status / Login Header */}
-            <View className="absolute top-12 left-0 right-0 items-center z-10">
-                {auth.isLoggedIn ? (
-                    <TouchableOpacity
-                        onPress={() => {
-                            logout();
-                            Alert.alert('로그아웃', '정상적으로 로그아웃되었습니다.');
-                        }}
-                        className="bg-brand-accent/20 px-4 py-2 rounded-2xl border border-brand-accent/30 flex-row items-center"
-                    >
-                        <View className="w-2 h-2 rounded-full bg-brand-accent mr-2" />
-                        <Text className="text-brand-accent font-black text-xs">{auth.adminName} (관리자)</Text>
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity
-                        onPress={() => setLoginModalVisible(true)}
-                        className="bg-slate-900/90 px-5 py-2.5 rounded-2xl border border-brand-accent/40 shadow-2xl items-center"
-                    >
-                        <Text className="text-brand-accent font-black text-xs">관리자 로그인</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+
 
             <View className="p-6 w-full max-w-md items-center">
                 <Text className="text-brand-accent text-sm font-black tracking-widest mb-2 uppercase">Whiteout Survival</Text>
@@ -169,7 +148,29 @@ export default function Home() {
                 </TouchableOpacity>
             </View>
 
-            <Text className="absolute bottom-10 text-slate-500 text-xs font-bold tracking-tighter">
+            {/* Admin Status / Login Footer */}
+            <View className="mb-4">
+                {auth.isLoggedIn ? (
+                    <TouchableOpacity
+                        onPress={() => {
+                            logout();
+                            Alert.alert('로그아웃', '정상적으로 로그아웃되었습니다.');
+                        }}
+                        className="opacity-40"
+                    >
+                        <Text className="text-brand-accent font-bold text-[10px] tracking-tight">{auth.adminName} (관리자) · 로그아웃</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        onPress={() => setLoginModalVisible(true)}
+                        className="opacity-20"
+                    >
+                        <Text className="text-slate-500 font-bold text-[10px] tracking-tight">관리자 로그인</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            <Text className="text-slate-600 text-[9px] font-bold tracking-tighter uppercase opacity-40">
                 © 2026 WOS COMMANDER ALLIANCE. ALL RIGHTS RESERVED.
             </Text>
 
