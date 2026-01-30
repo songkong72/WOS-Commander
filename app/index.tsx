@@ -81,6 +81,29 @@ export default function Home() {
         <View className="flex-1 bg-brand-dark items-center justify-center">
             <Stack.Screen options={{ headerShown: false }} />
 
+            {/* Admin Status / Login Header */}
+            <View className="absolute top-10 right-8 z-10">
+                {auth.isLoggedIn ? (
+                    <TouchableOpacity
+                        onPress={() => {
+                            logout();
+                            Alert.alert('로그아웃', '정상적으로 로그아웃되었습니다.');
+                        }}
+                        className="bg-brand-accent/10 px-3 py-1.5 rounded-full border border-brand-accent/30 flex-row items-center"
+                    >
+                        <View className="w-1.5 h-1.5 rounded-full bg-brand-accent mr-2" />
+                        <Text className="text-brand-accent font-bold text-[10px]">{auth.adminName}</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        onPress={() => setLoginModalVisible(true)}
+                        className="bg-slate-900/40 px-3 py-1.5 rounded-full border border-slate-800 items-center"
+                    >
+                        <Text className="text-slate-500 font-bold text-[10px]">ADMIN</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
 
 
             <View className="p-6 w-full max-w-md items-center">
@@ -148,27 +171,7 @@ export default function Home() {
                 </TouchableOpacity>
             </View>
 
-            {/* Admin Status / Login Footer */}
-            <View className="mb-4">
-                {auth.isLoggedIn ? (
-                    <TouchableOpacity
-                        onPress={() => {
-                            logout();
-                            Alert.alert('로그아웃', '정상적으로 로그아웃되었습니다.');
-                        }}
-                        className="opacity-40"
-                    >
-                        <Text className="text-brand-accent font-bold text-[10px] tracking-tight">{auth.adminName} (관리자) · 로그아웃</Text>
-                    </TouchableOpacity>
-                ) : (
-                    <TouchableOpacity
-                        onPress={() => setLoginModalVisible(true)}
-                        className="opacity-20"
-                    >
-                        <Text className="text-slate-500 font-bold text-[10px] tracking-tight">관리자 로그인</Text>
-                    </TouchableOpacity>
-                )}
-            </View>
+
 
             <Text className="text-slate-600 text-[9px] font-bold tracking-tighter uppercase opacity-40">
                 © 2026 WOS COMMANDER ALLIANCE. ALL RIGHTS RESERVED.
