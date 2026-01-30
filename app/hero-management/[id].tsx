@@ -8,7 +8,7 @@ import { heroImages } from '../../assets/images/heroes';
 import { skillIcons } from '../../assets/images/skill-icons';
 
 
-const SkillImage = ({ icon, className }: { icon: string, className?: string }) => {
+const SkillImage = ({ icon, className, style }: { icon: string, className?: string, style?: any }) => {
     const [tryIndex, setTryIndex] = useState(0);
     const baseUrls = [
         'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/04/',
@@ -34,6 +34,8 @@ const SkillImage = ({ icon, className }: { icon: string, className?: string }) =
         <Image
             source={source}
             className={className}
+            style={style}
+            resizeMode="contain"
             onError={() => setTryIndex(prev => prev + 1)}
             defaultSource={require('../../assets/icon.png')}
         />
