@@ -304,7 +304,7 @@ export default function HeroDetail() {
                                         <Text className="text-[#22d3ee] font-black text-lg mb-6">스페셜 (전용 장비)</Text>
 
                                         {(() => {
-                                            const stats = (hero as any).special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
+                                            const stats = (hero as any).skills?.special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
                                             if (stats) {
                                                 return (
                                                     <View className="mb-8">
@@ -333,7 +333,7 @@ export default function HeroDetail() {
                                         })()}
 
                                         {(() => {
-                                            const equipmentData = (hero as any).equipment || (hero as any).special?.[0]?.equipment;
+                                            const equipmentData = (hero as any).equipment || (hero as any).skills?.special?.[0]?.equipment;
 
                                             if (!equipmentData) return (
                                                 <Text className="text-slate-500 text-center py-10">전용 장비 정보가 아직 등록되지 않았습니다.</Text>
