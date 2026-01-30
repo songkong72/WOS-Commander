@@ -23,4 +23,26 @@ export const skillIcons: { [key: string]: any } = {
   'equipment_icon_1050151.png': require('./equipment_icon_1050151.png'),
   'hero_skill_icon_501517.png': require('./hero_skill_icon_501517.png'),
   'hero_skill_icon_501518.png': require('./hero_skill_icon_501518.png'),
+
+  // Nora (S5) Skills
+  'hero_skill_icon_501611.png': require('./hero_skill_icon_501611.png'),
+  'hero_skill_icon_501612.png': require('./hero_skill_icon_501612.png'),
+  'hero_skill_icon_501613.png': require('./hero_skill_icon_501613.png'),
+  'hero_skill_icon_501614.png': require('./hero_skill_icon_501614.png'),
+  'hero_skill_icon_501615.png': require('./hero_skill_icon_501615.png'),
+  'hero_skill_icon_501616.png': require('./hero_skill_icon_501616.png'),
+  'equipment_icon_1050161.png': require('./equipment_icon_1050161.png'),
+  'hero_skill_icon_501617.png': require('./hero_skill_icon_501617.png'),
+  'hero_skill_icon_501618.png': require('./hero_skill_icon_501618.png'),
+
+  // Gwen (S5) Skills
+  'hero_skill_icon_501711.png': require('./hero_skill_icon_501711.png'),
+  'hero_skill_icon_501712.png': require('./hero_skill_icon_501712.png'),
+  'hero_skill_icon_501713.png': require('./hero_skill_icon_501713.png'),
+  'hero_skill_icon_501714.png': require('./hero_skill_icon_501714.png'),
+  'hero_skill_icon_501715.png': require('./hero_skill_icon_501715.png'),
+  'hero_skill_icon_501716.png': require('./hero_skill_icon_501716.png'),
+  'equipment_icon_1050171.png': require('./equipment_icon_1050171.png'),
+  'hero_skill_icon_501717.png': require('./hero_skill_icon_501717.png'),
+  'hero_skill_icon_501718.png': require('./hero_skill_icon_501718.png'),
 };
