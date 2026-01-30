@@ -14,6 +14,32 @@ export default function Home() {
     const [loginInput, setLoginInput] = useState('');
 
     // Load last login name on mount
+    const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const handler = (e: any) => {
+                e.preventDefault();
+                setDeferredPrompt(e);
+            };
+            window.addEventListener('beforeinstallprompt', handler);
+            return () => window.removeEventListener('beforeinstallprompt', handler);
+        }
+    }, []);
+
+    const handleInstallClick = () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => {
+                setDeferredPrompt(null);
+            });
+        } else {
+            Alert.alert(
+                '앱 설치 안내',
+                '이미 설치되었거나 지원하지 않는 브라우저일 수 있습니다.\n\n[설치 방법]\n1. 브라우저 메뉴(점 3개 또는 공유) 클릭\n2. "앱 설치" 또는 "홈 화면에 추가" 선택'
+            );
+        }
+    };
     React.useEffect(() => {
         const loadLastLogin = async () => {
             try {
@@ -127,6 +153,15 @@ export default function Home() {
                         <Text className="text-brand-accent/60 text-xs font-bold mt-1">COMING SOON</Text>
                     </View>
                 </View>
+
+                {/* Install App Button */}
+                <TouchableOpacity
+                    onPress={handleInstallClick}
+                    className="mt-8 bg-slate-800/80 px-6 py-3 rounded-full border border-slate-700 flex-row items-center space-x-2"
+                >
+                    <Text className="text-xl">📲</Text>
+                    <Text className="text-slate-300 font-bold text-sm">앱으로 설치하기</Text>
+                </TouchableOpacity>
             </View>
 
             <Text className="absolute bottom-10 text-slate-500 text-xs font-bold tracking-tighter">
