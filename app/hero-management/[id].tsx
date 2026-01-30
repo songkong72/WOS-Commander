@@ -20,6 +20,9 @@ const SkillImage = ({ icon, className, style }: { icon: string, className?: stri
         'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/12/',
         'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/09/',
         'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/08/',
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/05/',
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/07/',
+        'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/08/',
     ];
 
     const source = React.useMemo(() => {

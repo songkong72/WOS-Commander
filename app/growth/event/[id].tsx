@@ -105,27 +105,47 @@ export default function EventDetail() {
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
                 {/* Banner Section */}
-                <ImageBackground
-                    source={imageUrl ? { uri: imageUrl as string } : require('../../../assets/images/app_main_bg.png')}
-                    className="h-80 w-full"
-                >
-                    <BlurView intensity={20} className="absolute inset-0 bg-black/30" />
-                    <View className="mt-16 px-6">
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            className="w-10 h-10 rounded-full bg-black/40 items-center justify-center border border-white/20"
-                        >
-                            <Text className="text-white text-xl font-bold">←</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View className="mt-auto px-6 pb-8">
-                        <View className="px-3 py-1 bg-brand-accent rounded-lg self-start mb-3">
-                            <Text className="text-[10px] font-black text-brand-dark">{category}</Text>
+                {imageUrl ? (
+                    <ImageBackground
+                        source={{ uri: imageUrl as string }}
+                        className="h-80 w-full"
+                    >
+                        <BlurView intensity={20} className="absolute inset-0 bg-black/30" />
+                        <View className="mt-16 px-6">
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                className="w-10 h-10 rounded-full bg-black/40 items-center justify-center border border-white/20"
+                            >
+                                <Text className="text-white text-xl font-bold">←</Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text className="text-white text-4xl font-black tracking-tighter shadow-lg">{title}</Text>
+
+                        <View className="mt-auto px-6 pb-8">
+                            <View className="px-3 py-1 bg-brand-accent rounded-lg self-start mb-3">
+                                <Text className="text-[10px] font-black text-brand-dark">{category}</Text>
+                            </View>
+                            <Text className="text-white text-4xl font-black tracking-tighter shadow-lg">{title}</Text>
+                        </View>
+                    </ImageBackground>
+                ) : (
+                    <View className="h-80 w-full bg-slate-900">
+                        <View className="mt-16 px-6">
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                className="w-10 h-10 rounded-full bg-black/40 items-center justify-center border border-white/20"
+                            >
+                                <Text className="text-white text-xl font-bold">←</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="mt-auto px-6 pb-8">
+                            <View className="px-3 py-1 bg-brand-accent rounded-lg self-start mb-3">
+                                <Text className="text-[10px] font-black text-brand-dark">{category}</Text>
+                            </View>
+                            <Text className="text-white text-4xl font-black tracking-tighter shadow-lg">{title}</Text>
+                        </View>
                     </View>
-                </ImageBackground>
+                )}
 
                 <View className="p-6 -mt-8 bg-brand-dark rounded-t-[40px]">
                     {/* Tab Switcher */}

@@ -6,6 +6,7 @@ export interface EventSchedule {
     eventId: string;
     day: string;
     time: string;
+    strategy?: string;
 }
 
 export const useFirestoreEventSchedules = () => {

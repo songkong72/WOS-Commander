@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ImageBackground, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useAuth } from './_layout';
@@ -47,13 +47,8 @@ export default function Home() {
     };
 
     return (
-        <ImageBackground
-            source={require('../assets/images/app_main_bg.png')}
-            style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%', height: '100%' }}
-            resizeMode="cover"
-        >
+        <View className="flex-1 bg-brand-dark items-center justify-center">
             <Stack.Screen options={{ headerShown: false }} />
-            <View className="absolute inset-0 bg-brand-dark/80" />
 
             {/* Admin Status / Login Header */}
             <View className="absolute bottom-20 right-6 z-10">
@@ -166,6 +161,6 @@ export default function Home() {
                     </View>
                 </View>
             </Modal>
-        </ImageBackground>
+        </View>
     );
 }

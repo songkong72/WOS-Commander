@@ -1,6 +1,7 @@
-// Auto-generated mapping
+// Auto-generated hero images index
+
 export const heroImages: { [key: string]: any } = {
-    'ahmos.png': require('./ahmos.png'),
+    'ahmose.png': require('./ahmose.png'),
     'alonso.png': require('./alonso.png'),
     'bahiti.png': require('./bahiti.png'),
     'blanchette.jpg': require('./blanchette.jpg'),
@@ -32,11 +33,12 @@ export const heroImages: { [key: string]: any } = {
     'jere.jpg': require('./jere.jpg'),
     'jeronimo.png': require('./jeronimo.png'),
     'jessie.png': require('./jessie.png'),
+    'karol.jpg': require('./karol.jpg'),
     'ligeia.jpg': require('./ligeia.jpg'),
     'lloyd.jpg': require('./lloyd.jpg'),
     'logan.png': require('./logan.png'),
     'lumborgen.png': require('./lumborgen.png'),
-    'lynne.jpg': require('./lynne.jpg'),
+    'lynn.jpg': require('./lynn.jpg'),
     'magnus.jpg': require('./magnus.jpg'),
     'mia.png': require('./mia.png'),
     'molly.png': require('./molly.png'),
@@ -52,6 +54,7 @@ export const heroImages: { [key: string]: any } = {
     'sergey.png': require('./sergey.png'),
     'smith.png': require('./smith.png'),
     'sonya.jpg': require('./sonya.jpg'),
+    'vivica.png': require('./vivica.png'),
     'vivika.png': require('./vivika.png'),
     'vulcanus.jpg': require('./vulcanus.jpg'),
     'wayne.jpg': require('./wayne.jpg'),

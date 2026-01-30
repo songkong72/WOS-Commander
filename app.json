@@ -27,7 +27,20 @@
         },
         "web": {
             "favicon": "./assets/icon.png",
-            "bundler": "metro"
+            "bundler": "metro",
+            "name": "WOS Commander",
+            "short_name": "WOS Cmd",
+            "start_url": "/",
+            "display": "standalone",
+            "backgroundColor": "#020617",
+            "themeColor": "#0F172A",
+            "description": "Whiteout Survival 연맹 작전 및 성장 도우미",
+            "meta": {
+                "apple": {
+                    "mobileWebAppCapable": "yes",
+                    "mobileWebAppStatusBarStyle": "black-translucent"
+                }
+            }
         }
     }
 }
