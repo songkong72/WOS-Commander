@@ -42,7 +42,7 @@ const SkillImage = ({ icon, className, style }: { icon: string, className?: stri
             style={style}
             resizeMode="contain"
             onError={() => setTryIndex(prev => prev + 1)}
-            defaultSource={require('../../assets/icon.png')}
+
         />
     );
 };
