@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, TextInput, Alert, Platform } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useAuth } from './_layout';
@@ -34,10 +34,15 @@ export default function Home() {
                 setDeferredPrompt(null);
             });
         } else {
-            Alert.alert(
-                '앱 설치 안내',
-                '이미 설치되었거나 지원하지 않는 브라우저일 수 있습니다.\n\n[설치 방법]\n1. 브라우저 메뉴(점 3개 또는 공유) 클릭\n2. "앱 설치" 또는 "홈 화면에 추가" 선택'
-            );
+            // Explicit Web Alert using window.alert
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.alert('설치 가능한 상태가 아니거나 이미 설치되었습니다.\n\n[설치 방법]\n1. 브라우저 주소창 우측 아이콘 확인\n2. 브라우저 메뉴(점 3개) > "앱 설치" 선택\n\n(iOS는 공유 버튼 > 홈 화면에 추가)');
+            } else {
+                Alert.alert(
+                    '앱 설치 안내',
+                    '이미 설치되었거나 지원하지 않는 브라우저일 수 있습니다.\n\n브라우저 메뉴를 확인해주세요.'
+                );
+            }
         }
     };
     React.useEffect(() => {

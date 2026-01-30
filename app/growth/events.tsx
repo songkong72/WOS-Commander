@@ -639,52 +639,7 @@ export default function EventTracker() {
                                 </View>
                             )}
 
-                            {/* Alliance Strategy Section (Merged) */}
-                            {selectedEventForGuide?.category === '연맹' && (
-                                <View className="mb-8 p-1">
-                                    <View className="flex-row items-center mb-4 justify-between">
-                                        <View className="flex-row items-center">
-                                            <View className="w-1.5 h-6 bg-purple-500 rounded-full mr-3" />
-                                            <Text className="text-purple-400 text-sm font-black uppercase tracking-widest">연맹 작전 지시</Text>
-                                        </View>
-                                        {isAdmin && !isEditingStrategy && (
-                                            <TouchableOpacity onPress={() => setIsEditingStrategy(true)} className="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-                                                <Text className="text-slate-400 text-[10px] font-bold">수정</Text>
-                                            </TouchableOpacity>
-                                        )}
-                                    </View>
 
-                                    <View className={`rounded-[24px] border ${isAdmin && isEditingStrategy ? 'border-purple-500/50 bg-slate-900' : 'border-purple-500/20 bg-purple-500/5'} overflow-hidden`}>
-                                        {isAdmin && isEditingStrategy ? (
-                                            <View className="p-4">
-                                                <TextInput
-                                                    multiline
-                                                    value={strategyContent}
-                                                    onChangeText={setStrategyContent}
-                                                    className="text-slate-200 text-base leading-7 min-h-[100px] mb-4"
-                                                    placeholder="연맹원들에게 전달할 작전을 입력하세요..."
-                                                    placeholderTextColor="#64748b"
-                                                    style={{ textAlignVertical: 'top' }}
-                                                />
-                                                <View className="flex-row justify-end space-x-2">
-                                                    <TouchableOpacity onPress={() => { setIsEditingStrategy(false); setStrategyContent(selectedEventForGuide.strategy || ''); }} className="bg-slate-800 px-4 py-2 rounded-xl">
-                                                        <Text className="text-slate-400 font-bold text-xs">취소</Text>
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity onPress={() => saveStrategy(selectedEventForGuide)} className="bg-purple-500 px-4 py-2 rounded-xl shadow-lg shadow-purple-500/20">
-                                                        <Text className="text-white font-bold text-xs">저장</Text>
-                                                    </TouchableOpacity>
-                                                </View>
-                                            </View>
-                                        ) : (
-                                            <View className="p-6">
-                                                <Text className="text-slate-200 text-base font-bold leading-7">
-                                                    {selectedEventForGuide?.strategy || '🥶 현재 등록된 작전 지시가 없습니다.'}
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                </View>
-                            )}
 
                             <View className="flex-row items-center mb-4">
                                 <View className="w-1.5 h-6 bg-brand-accent rounded-full mr-3" />
