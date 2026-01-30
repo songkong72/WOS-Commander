@@ -82,7 +82,7 @@ export default function Home() {
             <Stack.Screen options={{ headerShown: false }} />
 
             {/* Admin Status / Login Header */}
-            <View className="absolute bottom-20 right-6 z-10">
+            <View className="absolute top-12 right-8 z-10">
                 {auth.isLoggedIn ? (
                     <TouchableOpacity
                         onPress={() => {
