@@ -1351,6 +1351,17 @@
                         "name": "하트 공구함",
                         "icon": "equipment_icon_1050032-1.png",
                         "power": 722250,
+                        "stats": {
+                            "exploration": {
+                                "atk": 1107,
+                                "def": 1444,
+                                "hp": 21667
+                            },
+                            "expedition": {
+                                "power": "160.50%",
+                                "hp": "160.50%"
+                            }
+                        },
                         "skills": [
                             {
                                 "name": "꼬마 엔지니어",
