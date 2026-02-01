@@ -93,7 +93,12 @@ export default function EventTracker() {
     useEffect(() => {
         if (!schedulesLoading) {
             const mergedEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(event => {
-                const savedSchedule = schedules.find(s => s.eventId === event.id);
+                // Handle duplicate ID fallback (a_weapon and alliance_frost_league are the same)
+                const savedSchedule = schedules.find(s =>
+                    s.eventId === event.id ||
+                    (event.id === 'a_weapon' && s.eventId === 'alliance_frost_league') ||
+                    (event.id === 'alliance_frost_league' && s.eventId === 'a_weapon')
+                );
                 if (savedSchedule) {
                     return {
                         ...event,
@@ -586,8 +591,11 @@ export default function EventTracker() {
             setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: finalTime } : e));
 
             try {
+                // Consolidate to a single ID for weapon league data
+                const targetId = (editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') ? 'a_weapon' : editingEvent.id;
+
                 await updateSchedule({
-                    eventId: editingEvent.id,
+                    eventId: targetId,
                     day: finalDay,
                     time: finalTime,
                     strategy: editingEvent.strategy || ''
@@ -878,7 +886,7 @@ export default function EventTracker() {
                                                         )}
                                                     </View>
                                                     <View className="flex-row flex-wrap gap-1 mb-3">
-                                                        {(event.day || event.time) ? (
+                                                        {(event.day?.trim() || event.time?.trim()) ? (
                                                             <>
                                                                 {event.day && !event.time && (
                                                                     <View className="flex-row flex-wrap gap-2">
@@ -1615,10 +1623,10 @@ export default function EventTracker() {
                                                             <View className="mx-2"><Text className="text-slate-600 font-black">/</Text></View>
                                                             <Dropdown field="h" options={hours} currentVal={dateParts.h} />
                                                             {editingEvent?.id !== 'a_castle' && editingEvent?.id !== 'a_svs' && editingEvent?.id !== 'a_operation' && (
-                                                                <>
+                                                                <React.Fragment>
                                                                     <View className="mx-1"><Text className="text-slate-600 font-black">:</Text></View>
                                                                     <Dropdown field="min" options={minutes} currentVal={dateParts.min} />
-                                                                </>
+                                                                </React.Fragment>
                                                             )}
                                                         </View>
                                                     </View>

@@ -155,7 +155,9 @@ export default function Home() {
         if (!schedules) return [];
         const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
         return schedules.map(s => {
-            const eventInfo = allBaseEvents.find(e => e.id === s.eventId);
+            // Map alliance_frost_league back to a_weapon if it's orphaned
+            const searchId = s.eventId === 'alliance_frost_league' ? 'a_weapon' : s.eventId;
+            const eventInfo = allBaseEvents.find(e => e.id === searchId);
             return {
                 ...s,
                 title: eventInfo ? eventInfo.title : '알 수 없는 이벤트',
