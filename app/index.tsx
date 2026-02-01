@@ -267,7 +267,7 @@ export default function Home() {
                                 onHoverOut={() => setIsLoginHovered(false)}
                                 className="p-3 bg-slate-800/80 rounded-full border border-slate-700 active:bg-slate-700 backdrop-blur-md relative"
                             >
-                                <Ionicons name="settings-outline" size={28} color={auth.isLoggedIn ? "#38bdf8" : "white"} />
+                                <Ionicons name="person-circle-outline" size={28} color={auth.isLoggedIn ? "#38bdf8" : "white"} />
                                 {isLoginHovered && (
                                     <View className="absolute -bottom-10 right-0 bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-600 shadow-xl z-50 items-center">
                                         <Text numberOfLines={1} className="text-white text-xs font-bold whitespace-nowrap">
