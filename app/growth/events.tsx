@@ -830,9 +830,7 @@ export default function EventTracker() {
                                         onPress={() => setSelectedCategory(cat)}
                                         className={`px-6 py-2.5 rounded-full mr-2 border ${selectedCategory === cat ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
                                     >
-                                        <Text className={`font-black text-xs ${selectedCategory === cat ? 'text-brand-dark' : 'text-slate-300'}`}>
-                                            {cat}
-                                        </Text>
+                                        <Text className={`font-black text-[15px] ${selectedCategory === cat ? 'text-brand-dark' : 'text-slate-400'}`}>{cat}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
@@ -875,10 +873,10 @@ export default function EventTracker() {
                                             <View className="p-4 flex-1 justify-between">
                                                 <View>
                                                     <View className="flex-row items-center justify-between mb-2">
-                                                        <Text className="text-white text-lg font-black leading-tight flex-1 mr-2" numberOfLines={1}>{event.title}</Text>
+                                                        <Text className="text-white text-xl font-black leading-tight flex-1 mr-2" numberOfLines={1}>{event.title}</Text>
                                                         {isOngoing && (
-                                                            <View className="bg-red-500 px-2 py-1 rounded shadow-lg shadow-red-500/30 animate-pulse">
-                                                                <Text className="text-white text-[10px] font-black">진행중</Text>
+                                                            <View className="bg-red-500 px-2.5 py-1.5 rounded-lg shadow-lg shadow-red-500/30 animate-pulse">
+                                                                <Text className="text-white text-[12px] font-black">진행중</Text>
                                                             </View>
                                                         )}
                                                     </View>
@@ -888,8 +886,8 @@ export default function EventTracker() {
                                                                 {event.day && !event.time && (
                                                                     <View className="flex-row flex-wrap gap-1">
                                                                         {event.day.split('/').map((d, dIdx) => (
-                                                                            <View key={dIdx} className="px-2 py-0.5 bg-brand-accent/10 rounded border border-brand-accent/20">
-                                                                                <Text className="text-brand-accent text-[10px] font-bold">{d}</Text>
+                                                                            <View key={dIdx} className="px-3 py-1 bg-brand-accent/10 rounded-lg border border-brand-accent/20">
+                                                                                <Text className="text-brand-accent text-[12px] font-black">{d}</Text>
                                                                             </View>
                                                                         ))}
                                                                     </View>
@@ -907,11 +905,11 @@ export default function EventTracker() {
 
                                                                             return (
                                                                                 <View key={idx} className="mb-2 last:mb-0">
-                                                                                    {label && <Text className="text-slate-500 text-[9px] font-black uppercase mb-0.5">{label}</Text>}
-                                                                                    <View className="flex-row flex-wrap gap-1.5">
+                                                                                    {label && <Text className="text-slate-500 text-[11px] font-black uppercase mb-1 ml-1">{label}</Text>}
+                                                                                    <View className="flex-row flex-wrap gap-2">
                                                                                         {content.split(/[,|]/).map((item, iIdx) => (
-                                                                                            <View key={iIdx} className="bg-blue-500/5 px-2 py-0.5 rounded border border-blue-500/10">
-                                                                                                <Text className="text-blue-400 text-[10px] font-black">{item.trim()}</Text>
+                                                                                            <View key={iIdx} className="bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-500/20">
+                                                                                                <Text className="text-blue-400 text-[13px] font-black">{item.trim()}</Text>
                                                                                             </View>
                                                                                         ))}
                                                                                     </View>
@@ -922,8 +920,8 @@ export default function EventTracker() {
                                                                 )}
                                                             </>
                                                         ) : (
-                                                            <View className="px-2 py-0.5 bg-brand-accent/10 rounded border border-brand-accent/20">
-                                                                <Text className="text-brand-accent text-[10px] font-bold">일정 미정</Text>
+                                                            <View className="px-3 py-1.5 bg-brand-accent/10 rounded-xl border border-brand-accent/20">
+                                                                <Text className="text-brand-accent text-[12px] font-black">일정 미정</Text>
                                                             </View>
                                                         )}
                                                     </View>
@@ -933,9 +931,9 @@ export default function EventTracker() {
                                                 <View className="flex-row mt-3 h-12">
                                                     <TouchableOpacity
                                                         onPress={() => openGuideModal(event)}
-                                                        className="flex-1 mx-1 rounded-xl border border-slate-700 bg-slate-800 items-center justify-center flex-row"
+                                                        className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
                                                     >
-                                                        <Text className="text-[#38bdf8] text-[11px] font-bold">
+                                                        <Text className="text-[#38bdf8] text-[14px] font-black">
                                                             {event.category === '연맹' ? '⚔️ 전략' : '📘 가이드'}
                                                         </Text>
                                                     </TouchableOpacity>

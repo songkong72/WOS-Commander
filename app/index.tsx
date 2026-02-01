@@ -391,13 +391,13 @@ export default function Home() {
                                                                 <View className="flex-row gap-2">
                                                                     {event.eventId !== 'a_fortress' && (
                                                                         (!event.day && !event.time) ? (
-                                                                            <View className="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-                                                                                <Text className="text-[#38bdf8] font-bold">일정 미정</Text>
+                                                                            <View className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 shadow-sm">
+                                                                                <Text className="text-[#38bdf8] font-black text-sm">일정 미정</Text>
                                                                             </View>
                                                                         ) : (
                                                                             event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
-                                                                                <View className="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-                                                                                    <Text className="text-[#38bdf8] font-bold">{event.day}</Text>
+                                                                                <View className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 shadow-sm">
+                                                                                    <Text className="text-[#38bdf8] font-black text-sm">{event.day}</Text>
                                                                                 </View>
                                                                             ) : null
                                                                         )
@@ -415,11 +415,11 @@ export default function Home() {
 
                                                                                 return (
                                                                                     <View key={pIdx} className="mb-2 last:mb-0">
-                                                                                        {label && <Text className="text-slate-500 text-[9px] font-black uppercase mb-0.5">{label}</Text>}
+                                                                                        {label && <Text className="text-slate-400 text-[10px] font-black uppercase mb-0.5 ml-1">{label}</Text>}
                                                                                         <View className="flex-row flex-wrap gap-1.5">
                                                                                             {content.split(/[,|]/).map((item, iIdx) => (
-                                                                                                <View key={iIdx} className="bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 flex-row items-center self-start">
-                                                                                                    <Text className="text-[#38bdf8] font-black text-xs">
+                                                                                                <View key={iIdx} className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 shadow-inner">
+                                                                                                    <Text className="text-[#38bdf8] font-black text-sm">
                                                                                                         {item.trim()}
                                                                                                     </Text>
                                                                                                 </View>
@@ -433,8 +433,8 @@ export default function Home() {
                                                                 </View>
                                                             </View>
                                                             {isActive && (
-                                                                <View className="mr-3 bg-red-500 px-2 py-1 rounded">
-                                                                    <Text className="text-white text-[10px] font-bold">진행중</Text>
+                                                                <View className="mr-3 bg-red-500 px-2 py-1 rounded-lg">
+                                                                    <Text className="text-white text-[11px] font-black">진행중</Text>
                                                                 </View>
                                                             )}
                                                             <Ionicons name="chevron-forward" size={24} color={isActive ? "#ef4444" : "#475569"} />
