@@ -66,7 +66,21 @@ export const useFirestoreEventSchedules = () => {
             }
         );
 
-        return () => unsubscribe();
+        // Add a safety timeout (e.g., 5 seconds) to ensure loading doesn't stay stuck
+        const timeout = setTimeout(() => {
+            setLoading((current) => {
+                if (current) {
+                    console.warn("Firestore loading timed out. Proceeding with default data.");
+                    return false;
+                }
+                return false;
+            });
+        }, 5000);
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     // Deprecated: Use updateSchedule instead

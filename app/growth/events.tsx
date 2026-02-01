@@ -852,7 +852,7 @@ export default function EventTracker() {
                                             }
                                         }}
                                     >
-                                        <View className={`h-full bg-slate-900/60 rounded-[24px] border overflow-hidden transition-all duration-300 ${highlightId === event.id ? 'border-[#38bdf8] shadow-lg shadow-blue-500/20 scale-[1.02]' : 'border-slate-800 hover:border-slate-700'}`}>
+                                        <View className={`h-full bg-[#1e293b]/95 rounded-[28px] border-2 overflow-hidden transition-all duration-300 ${highlightId === event.id ? 'border-[#38bdf8] shadow-2xl shadow-blue-500/30 scale-[1.02]' : 'border-slate-700/60 shadow-lg'}`}>
                                             {/* Card Image Area */}
                                             <View className="h-56 bg-slate-800 relative">
                                                 {event.imageUrl ? (
@@ -884,10 +884,10 @@ export default function EventTracker() {
                                                         {(event.day || event.time) ? (
                                                             <>
                                                                 {event.day && !event.time && (
-                                                                    <View className="flex-row flex-wrap gap-1">
+                                                                    <View className="flex-row flex-wrap gap-2">
                                                                         {event.day.split('/').map((d, dIdx) => (
-                                                                            <View key={dIdx} className="px-3 py-1 bg-brand-accent/10 rounded-lg border border-brand-accent/20">
-                                                                                <Text className="text-brand-accent text-[12px] font-black">{d}</Text>
+                                                                            <View key={dIdx} className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner">
+                                                                                <Text className="text-[#38bdf8] font-black text-lg">{d}</Text>
                                                                             </View>
                                                                         ))}
                                                                     </View>
@@ -906,10 +906,10 @@ export default function EventTracker() {
                                                                             return (
                                                                                 <View key={idx} className="mb-2 last:mb-0">
                                                                                     {label && <Text className="text-slate-500 text-[11px] font-black uppercase mb-1 ml-1">{label}</Text>}
-                                                                                    <View className="flex-row flex-wrap gap-2">
+                                                                                    <View className="flex-row flex-wrap gap-2.5">
                                                                                         {content.split(/[,|]/).map((item, iIdx) => (
-                                                                                            <View key={iIdx} className="bg-blue-500/10 px-3 py-1.5 rounded-xl border border-blue-500/20">
-                                                                                                <Text className="text-blue-400 text-[13px] font-black">{item.trim()}</Text>
+                                                                                            <View key={iIdx} className="bg-black/50 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-2xl">
+                                                                                                <Text className="text-[#38bdf8] font-black text-lg">{item.trim()}</Text>
                                                                                             </View>
                                                                                         ))}
                                                                                     </View>
@@ -920,8 +920,8 @@ export default function EventTracker() {
                                                                 )}
                                                             </>
                                                         ) : (
-                                                            <View className="px-3 py-1.5 bg-brand-accent/10 rounded-xl border border-brand-accent/20">
-                                                                <Text className="text-brand-accent text-[12px] font-black">일정 미정</Text>
+                                                            <View className="px-4 py-2 bg-brand-accent/20 rounded-xl border border-brand-accent/30 shadow-sm">
+                                                                <Text className="text-brand-accent text-base font-black">일정 미정</Text>
                                                             </View>
                                                         )}
                                                     </View>
@@ -943,26 +943,26 @@ export default function EventTracker() {
                                                             <>
                                                                 <TouchableOpacity
                                                                     onPress={() => openAttendeeModal(event)}
-                                                                    className="flex-1 mx-1 rounded-xl border border-blue-500/30 bg-blue-500/10 items-center justify-center flex-row"
+                                                                    className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
                                                                 >
-                                                                    <Ionicons name="people" size={12} color="#60a5fa" className="mr-1" />
-                                                                    <Text className="text-blue-400 text-[11px] font-bold" numberOfLines={1}>참석자</Text>
+                                                                    <Ionicons name="people" size={16} color="#38bdf8" className="mr-2" />
+                                                                    <Text className="text-[#38bdf8] text-[14px] font-black" numberOfLines={1}>참석자</Text>
                                                                 </TouchableOpacity>
                                                                 <TouchableOpacity
                                                                     onPress={() => openScheduleModal(event)}
-                                                                    className="flex-1 mx-1 rounded-xl border border-slate-700 bg-slate-800 items-center justify-center flex-row"
+                                                                    className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
                                                                 >
-                                                                    <Ionicons name="time-outline" size={12} color="#94a3b8" className="mr-1" />
-                                                                    <Text className="text-slate-400 text-[11px] font-bold">시간</Text>
+                                                                    <Ionicons name="time-outline" size={16} color="#38bdf8" className="mr-2" />
+                                                                    <Text className="text-[#38bdf8] text-[14px] font-black">시간</Text>
                                                                 </TouchableOpacity>
                                                             </>
                                                         ) : (
                                                             <TouchableOpacity
                                                                 onPress={() => openAttendeeModal(event)}
-                                                                className="flex-1 mx-1 rounded-xl border border-blue-500/30 bg-blue-500/10 items-center justify-center flex-row hover:bg-blue-500/20"
+                                                                className="flex-1 mx-1 rounded-2xl border border-blue-500/30 bg-blue-500/10 items-center justify-center flex-row h-12 shadow-sm"
                                                             >
-                                                                <Ionicons name="people" size={14} color="#60a5fa" className="mr-1" />
-                                                                <Text className="text-blue-400 text-[11px] font-bold">참석</Text>
+                                                                <Ionicons name="people" size={16} color="#60a5fa" className="mr-2" />
+                                                                <Text className="text-blue-400 text-[14px] font-black">참석</Text>
                                                             </TouchableOpacity>
                                                         )
                                                     )}
@@ -970,9 +970,9 @@ export default function EventTracker() {
                                                     {event.category !== '연맹' && auth.isLoggedIn && (
                                                         <TouchableOpacity
                                                             onPress={() => openScheduleModal(event)}
-                                                            className="w-12 mx-1 rounded-xl border border-slate-700 bg-slate-800 items-center justify-center"
+                                                            className="w-12 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center h-12 shadow-sm"
                                                         >
-                                                            <Ionicons name="settings-sharp" size={16} color="#94a3b8" />
+                                                            <Ionicons name="settings-sharp" size={18} color="#38bdf8" />
                                                         </TouchableOpacity>
                                                     )}
                                                 </View>

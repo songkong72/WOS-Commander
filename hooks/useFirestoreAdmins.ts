@@ -27,7 +27,14 @@ export const useFirestoreAdmins = () => {
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        const timeout = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     const addAdmin = async (name: string, addedBy: string) => {

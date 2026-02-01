@@ -33,7 +33,14 @@ export const useFirestoreAttendees = (eventId: string | undefined) => {
             setLoading(false);
         });
 
-        return () => unsubscribe();
+        const timeout = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timeout);
+        };
     }, [eventId]);
 
     const saveAttendeesToFirestore = async (newAttendees: Partial<Attendee>[], eventTitle?: string) => {

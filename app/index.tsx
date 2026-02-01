@@ -369,35 +369,35 @@ export default function Home() {
                         {/* Weekly Events List */}
                         <View className="w-full mb-12">
                             <View className="bg-[#0f172a]/60 rounded-[40px] border border-slate-800/80 shadow-2xl overflow-hidden">
-                                <View className="flex-row items-center justify-between p-8 border-b border-slate-800/50">
+                                <View className="flex-row items-center justify-between p-6 border-b border-slate-800/50">
                                     <View className="flex-row items-center">
                                         <View className="w-2 h-10 bg-[#38bdf8] rounded-full mr-5" />
                                         <Text className="text-white text-3xl font-black">금주의 이벤트</Text>
                                     </View>
                                 </View>
-                                <View className="p-4">
+                                <View className="p-6">
                                     {loading ? (
                                         <Text className="text-slate-500 p-12 text-center text-lg font-bold">일정을 불러오는 중...</Text>
                                     ) : displayEvents.length > 0 ? (
-                                        <View className="flex-col gap-3">
+                                        <View className="flex-col gap-4">
                                             {displayEvents.map((event, idx) => {
                                                 const isActive = isEventActive(event);
                                                 return (
                                                     <TouchableOpacity key={idx} className="w-full" onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.eventId } })}>
-                                                        <View className={`p-6 rounded-[24px] border flex-row items-center transition-colors ${isActive ? 'bg-red-500/10 border-red-500/30' : 'border-slate-800/80 bg-slate-900/40 active:bg-slate-800'}`}>
-                                                            <View className={`w-3 h-3 rounded-full mr-5 shadow-[0_0_10px_rgba(59,130,246,0.5)] ${isActive ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`} />
-                                                            <View className="flex-1">
+                                                        <View className={`p-5 md:p-6 rounded-[32px] border-2 flex-row items-center transition-all ${isActive ? 'bg-red-500/25 border-red-500/50 shadow-2xl shadow-red-500/20' : 'border-slate-600/60 bg-[#1e293b] active:bg-slate-800 shadow-xl'}`}>
+                                                            <View className={`w-4 h-4 rounded-full mr-4 md:mr-5 flex-shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.8)] ${isActive ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`} />
+                                                            <View className="flex-1 min-w-0">
                                                                 <Text className="text-white text-xl font-black mb-2">{event.title}</Text>
                                                                 <View className="flex-row gap-2">
                                                                     {event.eventId !== 'a_fortress' && (
                                                                         (!event.day && !event.time) ? (
-                                                                            <View className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 shadow-sm">
-                                                                                <Text className="text-[#38bdf8] font-black text-sm">일정 미정</Text>
+                                                                            <View className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner">
+                                                                                <Text className="text-[#38bdf8] font-black text-lg">일정 미정</Text>
                                                                             </View>
                                                                         ) : (
                                                                             event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
-                                                                                <View className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 shadow-sm">
-                                                                                    <Text className="text-[#38bdf8] font-black text-sm">{event.day}</Text>
+                                                                                <View className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner">
+                                                                                    <Text className="text-[#38bdf8] font-black text-lg">{event.day}</Text>
                                                                                 </View>
                                                                             ) : null
                                                                         )
@@ -414,12 +414,12 @@ export default function Home() {
                                                                                 const content = label ? trimmed.substring(colonIdx + 1).trim() : trimmed;
 
                                                                                 return (
-                                                                                    <View key={pIdx} className="mb-2 last:mb-0">
-                                                                                        {label && <Text className="text-slate-400 text-[10px] font-black uppercase mb-0.5 ml-1">{label}</Text>}
-                                                                                        <View className="flex-row flex-wrap gap-1.5">
+                                                                                    <View key={pIdx} className="mb-4 last:mb-0">
+                                                                                        {label && <Text className="text-slate-300 text-sm font-black uppercase mb-2 ml-2">{label}</Text>}
+                                                                                        <View className="flex-row flex-wrap gap-2 md:gap-2.5">
                                                                                             {content.split(/[,|]/).map((item, iIdx) => (
-                                                                                                <View key={iIdx} className="bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-700 shadow-inner">
-                                                                                                    <Text className="text-[#38bdf8] font-black text-sm">
+                                                                                                <View key={iIdx} className="bg-black/50 px-3 md:px-5 py-2 md:py-2.5 rounded-2xl border border-slate-500 shadow-2xl mb-1">
+                                                                                                    <Text className="text-[#38bdf8] font-black text-sm md:text-lg">
                                                                                                         {item.trim()}
                                                                                                     </Text>
                                                                                                 </View>
@@ -433,11 +433,11 @@ export default function Home() {
                                                                 </View>
                                                             </View>
                                                             {isActive && (
-                                                                <View className="mr-3 bg-red-500 px-2 py-1 rounded-lg">
+                                                                <View className="mx-2 bg-red-500 px-2 py-1 rounded-lg flex-shrink-0">
                                                                     <Text className="text-white text-[11px] font-black">진행중</Text>
                                                                 </View>
                                                             )}
-                                                            <Ionicons name="chevron-forward" size={24} color={isActive ? "#ef4444" : "#475569"} />
+                                                            <Ionicons name="chevron-forward" size={24} color={isActive ? "#ef4444" : "#475569"} className="flex-shrink-0" />
                                                         </View>
                                                     </TouchableOpacity>
                                                 );

@@ -27,7 +27,15 @@ export const useFirestoreNotice = () => {
             console.error("Notice listener error:", error);
             setLoading(false);
         });
-        return () => unsubscribe();
+
+        const timeout = setTimeout(() => {
+            setLoading(false);
+        }, 5000);
+
+        return () => {
+            unsubscribe();
+            clearTimeout(timeout);
+        };
     }, []);
 
     const saveNotice = async (content: string, visible: boolean) => {
