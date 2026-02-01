@@ -9,6 +9,13 @@ export const ADMIN_USERS = [
     '영광의사령관', // 맹주
     '세종대왕',    // 장로
     '관리자영주',  // 테스트 지원용
+    '관리자',      // 슈퍼 관리자
+];
+
+export const SUPER_ADMINS = [
+    '관리자',
+    '영광의사령관',
+    '관리자영주'
 ];
 
 export type AdminStatus = {

@@ -22,7 +22,8 @@ export function useAuth() {
     return context;
 }
 
-import { View, Text } from 'react-native';
+import { View, Text, Platform } from 'react-native';
+import Head from 'expo-router/head';
 
 export default function Layout() {
     const [auth, setAuth] = useState<AdminStatus>({ isLoggedIn: false, adminName: null });
@@ -32,6 +33,13 @@ export default function Layout() {
 
     return (
         <AuthContext.Provider value={{ auth, login, logout }}>
+            {Platform.OS === 'web' && (
+                <Head>
+                    <meta name="mobile-web-app-capable" content="yes" />
+                    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+                    <link rel="manifest" href="/manifest.json" />
+                </Head>
+            )}
             <View style={{ flex: 1 }}>
                 <Slot />
             </View>

@@ -1,45 +1,12 @@
-export type EventCategory = '전체' | '개인' | '연맹' | '초보자';
+import { WikiEvent } from './event-types';
+import { PERSONAL_EVENTS } from './wiki_events_personal';
+import { ALLIANCE_EVENTS } from './wiki_events_alliance';
+import { ROOKIE_EVENTS } from './wiki_events_rookie';
 
-export interface WikiEvent {
-    id: string;
-    title: string;
-    category: EventCategory;
-    wikiUrl: string;
-    imageUrl?: string;
-    day: string; // Event Day (e.g., 월, 화, 수...)
-    time: string; // Event Time (e.g., 11:00)
-    description: string;
-    strategy?: string; // Alliance Strategy content
-}
+export * from './event-types';
 
 export const INITIAL_WIKI_EVENTS: WikiEvent[] = [
-    // Personal Events (개인)
-    { id: 'p1', title: '설국 사진첩', category: '개인', day: '월', time: '10:00', description: '추억을 모아 보상을 받으세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%a4%ec%9b%90-%eb%8c%80%eb%aa%a8%ed%97%98/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/10/IMG_1010.png' },
-    { id: 'p2', title: '야수 처치', category: '개인', day: '화', time: '12:00', description: '강력한 야수를 소탕하고 평화를 찾으세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%95%bc%ec%88%98-%ec%b2%98%ec%b9%98/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/08/%E6%B8%85%E7%90%86%E9%87%8E%E5%85%BD.png' },
-    { id: 'p3', title: '설원 대모험', category: '개인', day: '수', time: '14:00', description: '주사위를 굴려 보물을 찾으세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%a4%ec%9b%90-%eb%8c%80%eb%aa%a8%ed%97%98/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/03/item_icon_620119.png' },
-    { id: 'p4', title: '은조개 이벤트', category: '개인', day: '목', time: '16:00', description: '바다의 보물 은조개를 모으세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%9d%80%ec%a1%b0%ea%b0%9c-%ec%9d%b4%eb%b2%a4%ed%8a%b8/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/07/item_icon_620166.png' },
-    { id: 'p5', title: '빙원으로 복귀', category: '개인', day: '금', time: '18:00', description: '떠났던 영주들을 위한 특별 보상.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%b9%99%ec%9b%90%ec%9c%bc%eb%a1%9c-%eb%b3%b5%ea%b7%80/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/10/16103410/20250516-182834.png' },
-    { id: 'p6', title: '낚시 선수권 대회', category: '개인', day: '토', time: '20:00', description: '최고의 낚시꾼에게 주어지는 영예.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%82%9a%ec%8b%9c-%ec%84%a0%ec%88%98%ea%b6%8c-%eb%8c%80%ed%9a%8c/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21123327/jump_icon_40179.png' },
-    { id: 'p7', title: '제설 특공대', category: '개인', day: '월', time: '09:00', description: '도시의 눈을 치워 시민들을 안전하게.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%a0%9c%ec%84%a4-%ed%8a%b9%ea%b3%b5%eb%8c%80/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/07/snowbusters-event-150x150.png' },
-    { id: 'p8', title: '새벽의 희망', category: '개인', day: '화', time: '11:00', description: '새로운 시대를 여는 희망의 빛.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%83%88%eb%b2%bd%ec%9d%98-%ed%9d%ac%eb%a7%9d/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/22083815/%E9%BB%8E%E6%98%8E%E7%9A%84%E6%84%BF%E6%99%AF.png' },
-    { id: 'p9', title: '설원 거래소', category: '개인', day: '수', time: '13:00', description: '다양한 아이템을 교환하세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%a4%ec%9b%90-%ea%b1%b0%eb%9e%98%ec%86%8c/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21152458/jump_icon_40160.png' },
-    { id: 'p10', title: '개혁의 악장', category: '개인', day: '목', time: '15:00', description: '기술 개혁을 향한 리듬.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ea%b0%9c%ed%98%81%ec%9d%98-%ec%95%85%ec%9e%a5/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/11/15105033/%E5%8F%98%E9%9D%A9%E7%9A%84%E4%B9%90%E7%AB%A0-150x150.png' },
-    { id: 'p11', title: '불의 수정 활성화', category: '개인', day: '금', time: '17:00', description: '고대 에너지 불의 수정을 깨우세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%b6%88%ec%9d%98-%ec%88%98%ec%a0%95-%ed%99%9c%ec%84%b1%ed%99%94/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/11/15105148/%E7%81%AB%E6%99%B6%E6%BF%80%E6%B4%BB%E8%AE%A1%E5%88%92.png' },
-    { id: 'p12', title: '미야의 점집', category: '개인', day: '토', time: '19:00', description: '행운의 점괘를 확인해 보세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%af%b8%ec%95%bc%ec%9d%98-%ec%a0%90%ec%a7%91/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/10/16082554/%E7%B1%B3%E5%A8%85%E7%9A%84%E8%AE%B8%E6%84%BF%E5%B0%8F%E5%B1%8B.png' },
-    { id: 'p13', title: '빛을 쫓는 여행', category: '개인', day: '일', time: '21:00', description: '미지의 세계로 떠나는 눈부신 여정.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/24065/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/06/item_icon_700021.png' },
-    { id: 'p14', title: '비보 사냥꾼', category: '개인', day: '월', time: '11:00', description: '희귀한 보물을 찾아 떠나는 모험.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%b9%84%eb%b3%b4-%ec%82%ac%eb%83%a5%ea%be%bc/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/07/15094132/%E7%A7%98%E5%AE%9D%E7%8C%8E%E4%BA%BA.png' },
-    { id: 'p15', title: '전군 참전', category: '개인', day: '화', time: '13:00', description: '모든 부대를 집결시켜 대공세를 전개하세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%a0%84%ea%b5%b0-%ec%b0%b8%ec%a0%84/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/22082953/%E5%85%A8%E5%86%9B%E5%8F%82%E6%88%98.png' },
-
-    // Alliance Events (연맹)
-    { id: 'a1', title: '서리 영역 병기 리그', category: '연맹', day: '일', time: '22:00', description: '연맹 간의 치열한 병기 리그전.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%9c%a6%ec%98%81%ec%97%ad-%eb%b3%91%ea%b8%b0-%eb%a6%ac%ea%b7%b8/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/10/8930473caddf3a2e-150x150.png' },
-    { id: 'a2', title: '왕국 합병', category: '연맹', day: '토', time: '09:00', description: '왕국들이 하나로 합쳐지는 거대 이벤트.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%99%95%ea%b5%ad-%ed%95%a9%eb%b3%91/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/29152903/State-Merge.png' },
-    { id: 'a3', title: '프로스트 드래곤 엠페러', category: '연맹', day: '금', time: '20:00', description: '프로스트 드래곤을 정복하고 제왕이 되세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ed%94%84%eb%a1%9c%ec%8a%a4%ed%8a%b8-%eb%93%9c%eb%9e%98%ea%b3%a4-%ec%97%a0%ed%8e%98%eb%9f%ac/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/26232252/Frostdragon-Tyrant-icon1-150x150.png' },
-    { id: 'a4', title: '서버전 – 최강 왕국', category: '연맹', day: '일', time: '12:00', description: '다른 서버와 경쟁하여 최강의 왕국을 가리세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%b4%ec%9c%bc%ec%a0%84-%ec%b5%9c%ea%b0%95-%ec%99%95%ea%b5%ad/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21145433/jump_icon_40117.png' },
-    { id: 'a5', title: '연맹 총동원', category: '연맹', day: '월', time: '00:00', description: '연맹원 모두가 힘을 합쳐 미션을 완료하세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%97%b0%eb%a7%b9-%ec%b4%9d%eb%8f%99%ec%9b%90/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/22084100/%E8%81%94%E7%9B%9F%E6%80%BB%E5%8A%A8%E5%91%98.png' },
-    { id: 'a8', title: '곰 사냥 작전', category: '연맹', day: '수', time: '21:00', description: '연맹원들과 함께 거대 곰을 사냥하세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ea%b3%b0-%ec%82%ac%eb%83%a5-%ec%9e%a1%ec%a0%84/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21150133/jump_icon_40088.png' },
-    { id: 'a9', title: '미치광이 조이', category: '연맹', day: '목', time: '20:00', description: '연맹 영지를 침공하는 조이를 막아내세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%af%b8%ec%b9%98%ea%b4%91%ec%9d%b4-%ec%a1%b0%ec%9d%b4/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21144421/jump_icon_40086.png' },
-
-    // Rookie Events (초보자)
-    { id: 'r1', title: '새벽의 여정', category: '초보자', day: '매일', time: '상설', description: '초보 영주님들을 위한 성장 가이드 여정.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%83%88%eb%b2%bd%ec%97%ac%ec%a0%95/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/09/%E7%A0%B4%E6%99%93%E7%9A%84%E5%BE%81%E7%A8%8B.png' },
-    { id: 'r2', title: '설원의 별', category: '초보자', day: '매일', time: '상설', description: '빛나는 설원의 별이 되어보세요.', wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%a4%ec%9b%90%ec%9d%98-%eb%b3%84/', imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/06/%D9%86%D8%AC%D9%85%D8%A9-%D8%A7%D9%84%D8%AD%D9%82%D9%84-%D8%A7%D9%84%D8%AB%D9%84%D8%AC%D9%8I.png' },
+    ...PERSONAL_EVENTS,
+    ...ALLIANCE_EVENTS,
+    ...ROOKIE_EVENTS
 ];

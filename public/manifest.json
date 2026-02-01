@@ -1,0 +1,17 @@
+{
+    "short_name": "WOS Cmd",
+    "name": "WOS Commander",
+    "icons": [
+        {
+            "src": "/icon.png",
+            "type": "image/png",
+            "sizes": "1024x1024"
+        }
+    ],
+    "start_url": "/",
+    "background_color": "#020617",
+    "display": "standalone",
+    "scope": "/",
+    "theme_color": "#0F172A",
+    "orientation": "portrait"
+}
