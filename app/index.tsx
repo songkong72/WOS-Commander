@@ -52,6 +52,27 @@ export default function Home() {
         return () => clearInterval(timer);
     }, []);
 
+    const isEventExpired = (event: any) => {
+        try {
+            const id = event.id || event.eventId;
+            const schedule = schedules.find(s => s.eventId === id);
+            const dayStr = schedule?.day || event.day || '';
+            const timeStr = schedule?.time || event.time || '';
+            const combined = dayStr + ' ' + timeStr;
+
+            // Date Range Match (same pattern as isEventActive)
+            const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+            if (dateRangeMatch) {
+                const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
+                const end = new Date(eStr);
+                if (!isNaN(end.getTime())) {
+                    return now > end;
+                }
+            }
+            return false;
+        } catch (e) { return false; }
+    };
+
     const isEventActive = (event: any) => {
         try {
             const id = event.id || event.eventId;
@@ -163,7 +184,7 @@ export default function Home() {
                 title: eventInfo ? eventInfo.title : '알 수 없는 이벤트',
             };
         })
-            .filter(e => e.title !== '알 수 없는 이벤트')
+            .filter(e => e.title !== '알 수 없는 이벤트' && !isEventExpired(e))
             .sort((a, b) => {
                 // 1. Priority: Has Schedule vs No Schedule
                 const hasA = !!a.day && a.day !== '일정 미정';
