@@ -37,10 +37,11 @@ export default function Layout() {
                 <Head>
                     <meta name="mobile-web-app-capable" content="yes" />
                     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
                     <link rel="manifest" href="/manifest.json" />
                 </Head>
             )}
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, overflow: 'hidden' }}>
                 <Slot />
             </View>
         </AuthContext.Provider>

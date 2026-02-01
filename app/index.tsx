@@ -8,7 +8,8 @@ import { useFirestoreEventSchedules } from '../hooks/useFirestoreEventSchedules'
 import { useFirestoreAdmins } from '../hooks/useFirestoreAdmins';
 // @ts-ignore
 import { useFirestoreNotice } from '../hooks/useFirestoreNotice';
-import { INITIAL_WIKI_EVENTS } from '../data/wiki-events';
+import { INITIAL_WIKI_EVENTS, WikiEvent } from '../data/wiki-events';
+import { ADDITIONAL_EVENTS } from '../data/new-events';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -52,74 +53,54 @@ export default function Home() {
     }, []);
 
     const isEventActive = (event: any) => {
-        if (event.eventId === 'a_fortress' && event.time) {
-            const dayMap = ['일', '월', '화', '수', '목', '금', '토'];
-            const currentDayStr = dayMap[now.getDay()];
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        try {
+            const id = event.id || event.eventId;
+            const schedule = schedules.find(s => s.eventId === id);
+            const dayStr = schedule?.day || event.day || '';
+            const timeStr = schedule?.time || event.time || '';
+            const combined = dayStr + ' ' + timeStr;
 
-            const regex = /([월화수목금토일])?\s*(\d{2}):(\d{2})/g;
-            let match;
-            while ((match = regex.exec(event.time)) !== null) {
-                const [_, dayStr, hStr, mStr] = match;
-
-                // If day specified, must match today
-                if (dayStr && dayStr !== currentDayStr) continue;
-
-                const startMinutes = parseInt(hStr) * 60 + parseInt(mStr);
-                const endMinutes = startMinutes + 30; // 30 min duration
-
-                if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // Special handling for Mobilization
-        if ((event.eventId === 'a_mobilization' || event.eventId === 'a_castle' || event.eventId === 'a_svs' || event.eventId === 'a_operation') && event.day) {
-            const parts = event.day.split('~');
-            if (parts.length === 2) {
-                // Formatting helper: YYYY.MM.DD HH:mm -> YYYY/MM/DD HH:mm (Cross-platform safe)
-                const format = (s: string) => s.trim().replace(/\./g, '/');
-                const start = new Date(format(parts[0]));
-                const end = new Date(format(parts[1]));
-
-                // If invalid date, ignore
+            // 1. Date Range Logic (e.g., "2026.02.01 (일) 11:00 ~ 2026.02.04 (수) 11:00")
+            const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+            if (dateRangeMatch) {
+                const sStr = `${dateRangeMatch[1].replace(/\./g, '-')}T${dateRangeMatch[2]}:00`;
+                const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
+                const start = new Date(sStr);
+                const end = new Date(eStr);
                 if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
                     return now >= start && now <= end;
                 }
             }
-        }
 
-        if (!event.day) return false;
+            // 2. Weekly Range Logic (e.g., "토 10:00 ~ 일 22:00")
+            const weeklyMatch = combined.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
+            if (weeklyMatch) {
+                const dayMap: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+                const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+                const startTotal = dayMap[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
+                const endTotal = dayMap[weeklyMatch[4]] * 1440 + parseInt(weeklyMatch[5]) * 60 + parseInt(weeklyMatch[6]);
+                if (startTotal <= endTotal) return currentTotal >= startTotal && currentTotal <= endTotal;
+                return currentTotal >= startTotal || currentTotal <= endTotal;
+            }
 
-        // 1. Day Check
-        const days = event.day.split(',').map((d: string) => d.trim());
+            // 3. Simple Day/Time Check (Fallback for non-range events)
+            const days = dayStr.split(/[,|]/).map(d => d.trim());
+            if (days.includes('상시') || days.includes('상설')) return true;
 
-        // If Permanent, always active (Ignore time)
-        if (days.includes('상시') || days.includes('상설')) return true;
-
-        if (!event.time) return false;
-
-        const dayMap = ['일', '월', '화', '수', '목', '금', '토'];
-        const currentDayStr = dayMap[now.getDay()];
-
-        const isToday = days.includes('매일') || days.includes(currentDayStr);
-        if (!isToday) return false;
-
-        // 2. Time Check (Range: Start ~ Start + 30m)
-        const timeMatches = event.time.match(/(\d{1,2}):(\d{2})/g);
-        if (!timeMatches) return false;
-
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-        return timeMatches.some((t: string) => {
-            const [h, m] = t.split(':').map(Number);
-            const startMinutes = h * 60 + m;
-            const endMinutes = startMinutes + 30;
-            // Handle day crossing? Assuming events are within same day for now as per user request
-            return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
-        });
+            const dayMap = ['일', '월', '화', '수', '목', '금', '토'];
+            if (days.includes('매일') || days.includes(dayMap[now.getDay()])) {
+                const timeMatches = timeStr.match(/(\d{1,2}):(\d{2})/g);
+                if (timeMatches) {
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    return timeMatches.some(t => {
+                        const [h, m] = t.split(':').map(Number);
+                        const startTime = h * 60 + m;
+                        return currentMinutes >= startTime && currentMinutes <= startTime + 30;
+                    });
+                }
+            }
+            return false;
+        } catch (e) { return false; }
     };
     const [noticeModalVisible, setNoticeModalVisible] = useState(false);
     const [editNoticeContent, setEditNoticeContent] = useState('');
@@ -172,8 +153,9 @@ export default function Home() {
     // Event Sorting Logic
     const displayEvents = useMemo(() => {
         if (!schedules) return [];
+        const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
         return schedules.map(s => {
-            const eventInfo = INITIAL_WIKI_EVENTS.find(e => e.id === s.eventId);
+            const eventInfo = allBaseEvents.find(e => e.id === s.eventId);
             return {
                 ...s,
                 title: eventInfo ? eventInfo.title : '알 수 없는 이벤트',
@@ -230,20 +212,45 @@ export default function Home() {
     };
 
     return (
-        <ImageBackground source={require('../assets/images/bg-main.png')} className="flex-1 bg-[#020617]" resizeMode="cover">
+        <ImageBackground
+            source={require('../assets/images/bg-main.png')}
+            style={{
+                flex: 1,
+                backgroundColor: '#020617',
+                width: '100%',
+                height: '100%',
+            }}
+            imageStyle={{
+                resizeMode: 'cover',
+                width: '100%',
+                height: '100%',
+                // Center the image for web/desktop
+                ...Platform.select({
+                    web: {
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                    } as any
+                })
+            }}
+        >
             <View className="flex-1 bg-black/60">
                 <Stack.Screen options={{ headerShown: false }} />
 
-                <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                <ScrollView
+                    className="flex-1"
+                    showsVerticalScrollIndicator={false}
+                    horizontal={false}
+                    contentContainerStyle={{ width: '100%', overflow: 'hidden' }}
+                >
 
                     {/* Header Section */}
-                    <View className="pt-20 pb-10 px-8 flex-row flex-wrap justify-between items-start">
+                    <View className="pt-20 pb-10 px-4 md:px-8 flex-row flex-wrap justify-between items-start">
                         <View>
                             {/* Title Styled like the user uploaded image */}
-                            <Text className="text-[#38bdf8] font-black text-sm tracking-[0.5em] mb-2 uppercase">Whiteout Survival</Text>
-                            <Text className="text-white text-6xl font-black tracking-tighter shadow-xl shadow-blue-500/20">WOS 커맨더</Text>
-                            <View className="w-16 h-1.5 bg-[#38bdf8] rounded-full mt-4" />
-                            <Text className="text-slate-400 font-bold text-sm mt-4 leading-6">최적의 영웅 조합과 전략으로{"\n"}빙하기의 생존을 지휘하세요</Text>
+                            <Text className="text-[#38bdf8] font-black text-[10px] md:text-sm tracking-[0.5em] mb-2 uppercase">Whiteout Survival</Text>
+                            <Text className="text-white text-4xl md:text-6xl font-black tracking-tighter shadow-xl shadow-blue-500/20">WOS 커맨더</Text>
+                            <View className="w-12 md:w-16 h-1 md:h-1.5 bg-[#38bdf8] rounded-full mt-3 md:mt-4" />
+                            <Text className="text-slate-400 font-bold text-xs md:text-sm mt-4 leading-6">최적의 영웅 조합과 전략으로{"\n"}빙하기의 생존을 지휘하세요</Text>
                         </View>
 
                         <View className="flex-row flex-wrap gap-3 mt-2 justify-end">
@@ -281,7 +288,7 @@ export default function Home() {
                     </View>
 
                     {/* Main Content */}
-                    <View className="px-6 w-full max-w-6xl mx-auto">
+                    <View className="px-4 md:px-6 w-full max-w-6xl mx-auto">
 
                         {/* Notice Section (Truncated for space) */}
                         {notice && (notice.visible || auth.isLoggedIn) && (notice.content || auth.isLoggedIn) && (
@@ -317,43 +324,43 @@ export default function Home() {
                             </TouchableOpacity>
                         )}
 
-                        {/* Feature Cards Stack */}
-                        <View className="flex-col gap-6 mb-12">
+                        {/* Feature Cards Grid (Responsive) */}
+                        <View className="flex-row flex-wrap gap-4 md:gap-6 mb-12">
                             {/* Hero Management */}
-                            <TouchableOpacity onPress={() => router.push('/hero-management')} className="flex-1 bg-[#0f172a] p-8 rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
+                            <TouchableOpacity onPress={() => router.push('/hero-management')} className="w-full md:flex-1 md:min-w-[320px] bg-[#0f172a] p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
                                 <View className="flex-row items-center">
-                                    <View className="w-16 h-16 bg-[#38bdf8]/10 rounded-2xl items-center justify-center border border-[#38bdf8]/20 mr-6">
-                                        <Ionicons name="shield-outline" size={32} color="#38bdf8" />
+                                    <View className="w-12 h-12 md:w-16 md:h-16 bg-[#38bdf8]/10 rounded-2xl items-center justify-center border border-[#38bdf8]/20 mr-4 md:mr-6">
+                                        <Ionicons name="shield-outline" size={28} color="#38bdf8" />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-white text-3xl font-black mb-1">영웅 관리</Text>
-                                        <Text className="text-slate-400 text-lg font-bold">스탯 및 스킬</Text>
+                                        <Text className="text-white text-2xl md:text-3xl font-black mb-1">영웅 관리</Text>
+                                        <Text className="text-slate-400 text-base md:text-lg font-bold">스탯 및 스킬</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
 
                             {/* Event Schedule */}
-                            <TouchableOpacity onPress={() => router.push('/growth/events')} className="flex-1 bg-[#0f172a] p-8 rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
+                            <TouchableOpacity onPress={() => router.push('/growth/events')} className="w-full md:flex-1 md:min-w-[320px] bg-[#0f172a] p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
                                 <View className="flex-row items-center">
-                                    <View className="w-16 h-16 bg-blue-500/10 rounded-2xl items-center justify-center border border-blue-400/20 mr-6">
-                                        <Ionicons name="calendar-outline" size={32} color="#60a5fa" />
+                                    <View className="w-12 h-12 md:w-16 md:h-16 bg-blue-500/10 rounded-2xl items-center justify-center border border-blue-400/20 mr-4 md:mr-6">
+                                        <Ionicons name="calendar-outline" size={28} color="#60a5fa" />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-white text-3xl font-black mb-1">이벤트 스케줄</Text>
-                                        <Text className="text-slate-400 text-lg font-bold">연맹전략 및 주간 일정</Text>
+                                        <Text className="text-white text-2xl md:text-3xl font-black mb-1">이벤트 스케줄</Text>
+                                        <Text className="text-slate-400 text-base md:text-lg font-bold">연맹전략 및 주간 일정</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
 
                             {/* Strategy Sheet */}
-                            <TouchableOpacity onPress={() => router.push('/strategy-sheet')} className="flex-1 bg-[#0f172a] p-8 rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
+                            <TouchableOpacity onPress={() => router.push('/strategy-sheet')} className="w-full md:flex-1 md:min-w-[320px] bg-[#0f172a] p-6 md:p-8 rounded-[24px] md:rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
                                 <View className="flex-row items-center">
-                                    <View className="w-16 h-16 bg-emerald-500/10 rounded-2xl items-center justify-center border border-emerald-400/20 mr-6">
-                                        <Ionicons name="map-outline" size={32} color="#10b981" />
+                                    <View className="w-12 h-12 md:w-16 md:h-16 bg-emerald-500/10 rounded-2xl items-center justify-center border border-emerald-400/20 mr-4 md:mr-6">
+                                        <Ionicons name="map-outline" size={28} color="#10b981" />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-white text-3xl font-black mb-1">전략 문서</Text>
-                                        <Text className="text-slate-400 text-lg font-bold">배치도 및 공지사항</Text>
+                                        <Text className="text-white text-2xl md:text-3xl font-black mb-1">전략 문서</Text>
+                                        <Text className="text-slate-400 text-base md:text-lg font-bold">배치도 및 공지사항</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -367,9 +374,7 @@ export default function Home() {
                                         <View className="w-2 h-10 bg-[#38bdf8] rounded-full mr-5" />
                                         <Text className="text-white text-3xl font-black">금주의 이벤트</Text>
                                     </View>
-
                                 </View>
-
                                 <View className="p-4">
                                     {loading ? (
                                         <Text className="text-slate-500 p-12 text-center text-lg font-bold">일정을 불러오는 중...</Text>
@@ -679,7 +684,7 @@ export default function Home() {
                     </View>
                 </Modal>
 
-            </View >
-        </ImageBackground >
+            </View>
+        </ImageBackground>
     );
 }
