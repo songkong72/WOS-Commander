@@ -316,7 +316,7 @@ export default function EventTracker() {
             }
         }
 
-        if (event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation' || event.id === 'alliance_frost_league') {
+        if (event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation' || event.id === 'alliance_frost_league' || event.id === 'a_weapon') {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
             setMStart(s || `${new Date().getFullYear()}.01.01 12:00`);
@@ -579,7 +579,7 @@ export default function EventTracker() {
     const saveSchedule = async () => {
         if (!editingEvent) return;
 
-        if (editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation' || editingEvent.id === 'alliance_frost_league') {
+        if (editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation' || editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
@@ -658,7 +658,7 @@ export default function EventTracker() {
             return days.map(d => `${d}(${times[d] || '22:00'})`).join(', ');
         };
 
-        if (editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league') {
+        if (editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && editingEvent.id !== 'a_weapon') {
             const str1 = buildStr(days1, times1);
             const str2 = buildStr(days2, times2);
 
@@ -1161,7 +1161,7 @@ export default function EventTracker() {
                                 <View>
                                     <Text className="text-white text-2xl font-black mb-1">{editingEvent?.title}</Text>
                                     <Text className="text-slate-400 text-sm">
-                                        {editingEvent?.id === 'alliance_frost_league' ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                        {(editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
                                     </Text>
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className="bg-slate-800 p-2 rounded-full border border-slate-700">
@@ -1177,7 +1177,7 @@ export default function EventTracker() {
                                         ? { paddingBottom: 20 }
                                         : (editingEvent?.id === 'a_fortress')
                                             ? { paddingBottom: 200 }
-                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league')
+                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon')
                                                 ? { paddingBottom: 300 }
                                                 : { paddingBottom: 20 }
                                 }
@@ -1532,7 +1532,7 @@ export default function EventTracker() {
                                             );
                                         })()}
                                     </View>
-                                ) : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league') ? (
+                                ) : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon') ? (
                                     <View className="mb-6" style={{ zIndex: 100 }}>
                                         {/* Helper to update date time parts */}
                                         {(() => {
@@ -1636,7 +1636,7 @@ export default function EventTracker() {
                                 ) : (
                                     <>
                                         {/* Tabs (Alliance Only) - Exclude Championship, Center, and Mercenary Honor, Frost League */}
-                                        {editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && (
+                                        {editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                             <View className="flex-row mb-6 bg-slate-800 p-1 rounded-xl">
                                                 <TouchableOpacity
                                                     onPress={() => { setActiveTab(1); setSelectedDayToEdit(null); }}
@@ -1738,7 +1738,7 @@ export default function EventTracker() {
                                             </View>
                                         )}
 
-                                        {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && (
+                                        {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                             <>
                                                 <View className="mb-4">
                                                     {editingEvent?.id === 'a_center' ? (
