@@ -588,7 +588,7 @@ export default function EventTracker() {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
-            setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: finalTime } : e));
+            setEvents(events.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? { ...e, day: finalDay, time: finalTime } : e));
 
             try {
                 // Consolidate to a single ID for weapon league data
@@ -1185,9 +1185,11 @@ export default function EventTracker() {
                                         ? { paddingBottom: 20 }
                                         : (editingEvent?.id === 'a_fortress')
                                             ? { paddingBottom: 200 }
-                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon')
+                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation')
                                                 ? { paddingBottom: 300 }
-                                                : { paddingBottom: 20 }
+                                                : (editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon')
+                                                    ? { paddingBottom: 20 }
+                                                    : { paddingBottom: 20 }
                                 }
                                 scrollEnabled={editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_center'}
                             >
@@ -1890,22 +1892,22 @@ export default function EventTracker() {
                                         )}
                                     </>
                                 )}
-                            </ScrollView>
-                            <View className="flex-row gap-3">
-                                <TouchableOpacity
-                                    onPress={handleDeleteSchedule}
-                                    className="flex-1 bg-slate-800 py-3.5 rounded-2xl items-center border border-red-500/20 active:bg-slate-700"
-                                >
-                                    <Text className="text-red-400 font-bold text-lg">초기화</Text>
-                                </TouchableOpacity>
+                                <View className="flex-row gap-3 pt-6 border-t border-slate-800/80 mt-6">
+                                    <TouchableOpacity
+                                        onPress={handleDeleteSchedule}
+                                        className="flex-1 bg-slate-800 py-3.5 rounded-2xl items-center border border-red-500/20 active:bg-slate-700"
+                                    >
+                                        <Text className="text-red-400 font-bold text-lg">초기화</Text>
+                                    </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    onPress={saveSchedule}
-                                    className="flex-[2] bg-brand-accent py-3.5 rounded-2xl items-center shadow-lg shadow-brand-accent/20 active:bg-brand-accent/90"
-                                >
-                                    <Text className="text-brand-dark font-black text-lg">설정 저장하기</Text>
-                                </TouchableOpacity>
-                            </View>
+                                    <TouchableOpacity
+                                        onPress={saveSchedule}
+                                        className="flex-[2] bg-brand-accent py-3.5 rounded-2xl items-center shadow-lg shadow-brand-accent/20 active:bg-brand-accent/90"
+                                    >
+                                        <Text className="text-brand-dark font-black text-lg">설정 저장하기</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </ScrollView>
                         </Pressable>
                     </Pressable>
                 </Modal>
@@ -2012,6 +2014,6 @@ export default function EventTracker() {
                     </View>
                 </Modal>
             </View>
-        </ImageBackground>
+        </ImageBackground >
     );
 }
