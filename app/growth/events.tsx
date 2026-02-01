@@ -100,11 +100,15 @@ export default function EventTracker() {
                     (event.id === 'alliance_frost_league' && s.eventId === 'a_weapon')
                 );
                 if (savedSchedule) {
+                    // Sanitize stray dots from DB
+                    const cleanDay = (savedSchedule.day === '.' || savedSchedule.day?.trim() === '.') ? '' : (savedSchedule.day || '');
+                    const cleanTime = (savedSchedule.time === '.' || savedSchedule.time?.trim() === '.') ? '' : (savedSchedule.time || '');
+
                     return {
                         ...event,
-                        day: savedSchedule.day === '상설' ? '상시' : savedSchedule.day,
-                        time: savedSchedule.time.replace(/상설/g, '상시'),
-                        strategy: savedSchedule.strategy || event.strategy
+                        day: cleanDay,
+                        time: cleanTime,
+                        strategy: savedSchedule.strategy || ''
                     };
                 }
                 return { ...event, day: '', time: '' };
@@ -137,10 +141,8 @@ export default function EventTracker() {
 
     // Tab & Data States
     const [activeTab, setActiveTab] = useState<1 | 2>(1);
-    const [days1, setDays1] = useState<string[]>([]);
-    const [times1, setTimes1] = useState<{ [key: string]: string }>({});
-    const [days2, setDays2] = useState<string[]>([]);
-    const [times2, setTimes2] = useState<{ [key: string]: string }>({});
+    const [slots1, setSlots1] = useState<{ day: string, time: string, id: string }[]>([]);
+    const [slots2, setSlots2] = useState<{ day: string, time: string, id: string }[]>([]);
 
     const [editHour, setEditHour] = useState('11');
     const [editMinute, setEditMinute] = useState('00');
@@ -181,7 +183,7 @@ export default function EventTracker() {
     const [bulkAttendees, setBulkAttendees] = useState<Partial<Attendee>[]>([]);
 
     // Scheduling Logic
-    const [selectedDayToEdit, setSelectedDayToEdit] = useState<string | null>(null);
+    const [selectedDayForSlot, setSelectedDayForSlot] = useState<string>('월');
 
     const isAdmin = auth.isLoggedIn && (auth.adminName?.includes('관리자') || auth.adminName?.toLowerCase().includes('admin'));
 
@@ -270,16 +272,31 @@ export default function EventTracker() {
         }
     };
 
-    const updateTimeForActiveDay = (h: string, m: string) => {
-        if (!selectedDayToEdit) return;
-        setEditHour(h);
-        setEditMinute(m);
-
+    const addTimeSlot = () => {
         const isT1 = activeTab === 1;
-        const setTimes = isT1 ? setTimes1 : setTimes2;
-        const currentTimes = isT1 ? times1 : times2;
+        const setSlots = isT1 ? setSlots1 : setSlots2;
+        const currentSlots = isT1 ? slots1 : slots2;
 
-        setTimes({ ...currentTimes, [selectedDayToEdit]: `${h}:${m}` });
+        if (selectedDayForSlot === '상시') {
+            setSlots([{ day: '상시', time: '', id: Math.random().toString() }]);
+            return;
+        }
+
+        const newSlot = {
+            day: selectedDayForSlot,
+            time: `${editHour}:${editMinute}`,
+            id: Math.random().toString()
+        };
+
+        // If '상시' was there, clear it
+        const filtered = currentSlots.filter(s => s.day !== '상시');
+        setSlots([...filtered, newSlot]);
+    };
+
+    const removeTimeSlot = (id: string) => {
+        const isT1 = activeTab === 1;
+        const setSlots = isT1 ? setSlots1 : setSlots2;
+        setSlots(prev => prev.filter(s => s.id !== id));
     };
 
     const saveStrategy = async (targetEvent: WikiEvent) => {
@@ -303,6 +320,26 @@ export default function EventTracker() {
                 Alert.alert('오류', '저장 실패: ' + error.message);
             }
         }
+    };
+
+    const parseScheduleStr = (str: string) => {
+        if (!str || str === '.') return [];
+        // Handle "1군: 월(22:00) / 2군: 수(11:00)" or just "월(22:00), 수(11:00)"
+        const slots: { day: string, time: string, id: string }[] = [];
+        const parts = str.split(/[,|]/);
+        parts.forEach(p => {
+            const trimP = p.trim();
+            if (!trimP) return;
+            const match = trimP.match(/([일월화수목금토]|[매일]|[상시])\s*(?:\(([^)]+)\))?/);
+            if (match) {
+                slots.push({
+                    day: match[1],
+                    time: match[2] || '',
+                    id: Math.random().toString()
+                });
+            }
+        });
+        return slots;
     };
 
     const openScheduleModal = (event: WikiEvent) => {
@@ -329,6 +366,7 @@ export default function EventTracker() {
         }
 
         if (event.id === 'a_fortress') {
+            // Fortress logic remains largely similar as it has its own complex list state
             const fParsed: any[] = [];
             const cParsed: any[] = [];
             if (event.time) {
@@ -397,140 +435,33 @@ export default function EventTracker() {
             setCitadelList(cParsed);
         }
 
-        const rawTime = event.time || '';
-        const rawDay = event.day || '';
+        // Parse Standard Schedule
+        let s1: any[] = [];
+        let s2: any[] = [];
 
-        let d1: string[] = [];
-        let t1: Record<string, string> = {};
-        let d2: string[] = [];
-        let t2: Record<string, string> = {};
-
-        const parseDT = (str: string) => {
-            const days: string[] = [];
-            const times: Record<string, string> = {};
-            str.split(',').forEach(s => {
-                const match = s.trim().match(/([^(]+)\(([^)]+)\)/);
-                if (match) {
-                    const d = match[1].trim();
-                    times[d] = match[2].trim();
-                    days.push(d);
-                } else if (s.trim()) {
-                    days.push(s.trim());
-                    times[s.trim()] = '22:00';
-                }
+        if (event.category === '연맹' && event.id !== 'a_center' && event.id !== 'a_champ' && event.id !== 'a_mercenary' && event.id !== 'alliance_frost_league' && event.id !== 'a_weapon') {
+            const parts = (event.time || '').split(' / ');
+            parts.forEach(p => {
+                if (p.startsWith('1군:')) s1 = parseScheduleStr(p.replace('1군:', ''));
+                if (p.startsWith('2군:')) s2 = parseScheduleStr(p.replace('2군:', ''));
             });
-            return { days, times };
-        };
-
-        if (rawTime.includes('1군:')) {
-            const parts = rawTime.split('/');
-            parts.forEach(part => {
-                part = part.trim();
-                if (part.startsWith('1군:')) {
-                    const content = part.replace('1군:', '').trim();
-                    const { days, times } = parseDT(content);
-                    d1 = days; t1 = times;
-                } else if (part.startsWith('2군:')) {
-                    const content = part.replace('2군:', '').trim();
-                    const { days, times } = parseDT(content);
-                    d2 = days; t2 = times;
-                }
-            });
+            // If empty parts but data in Day/Time fields, try fallback
+            if (s1.length === 0 && s2.length === 0) s1 = parseScheduleStr(event.time || '');
         } else {
-            // Check rawTime first as it now contains the day(time) format
-            if (rawTime.includes('(')) {
-                const { days, times } = parseDT(rawTime);
-                d1 = days; t1 = times;
-            } else if (rawDay.includes('(')) {
-                const { days, times } = parseDT(rawDay);
-                d1 = days; t1 = times;
-            } else {
-                d1 = rawDay.split(',').map(s => s.trim()).filter(Boolean);
-                const baseTime = rawTime || '22:00';
-                d1.forEach(d => t1[d] = baseTime);
-            }
+            s1 = parseScheduleStr(event.time || '');
         }
 
-        setDays1(d1); setTimes1(t1);
-        setDays2(d2); setTimes2(t2);
+        setSlots1(s1);
+        setSlots2(s2);
 
-        if (d1.length > 0) {
-            setSelectedDayToEdit(d1[0]);
-            const [h, m] = (t1[d1[0]] || '22:00').split(':');
-            setEditHour(h || '22');
-            setEditMinute(m || '00');
-        } else {
-            setSelectedDayToEdit(null);
-            setEditHour('22');
-            setEditMinute('00');
-        }
+        setSelectedDayForSlot('월');
+        setEditHour('22');
+        setEditMinute('00');
         setScheduleModalVisible(true);
     };
 
     const toggleDay = (day: string) => {
-        const isT1 = activeTab === 1;
-        const currentDays = isT1 ? days1 : days2;
-        const currentTimes = isT1 ? times1 : times2;
-        const setDays = isT1 ? setDays1 : setDays2;
-        const setTimes = isT1 ? setTimes1 : setTimes2;
-
-        // Exclusive '상시' logic
-        if (day === '상시') {
-            if (currentDays.includes('상시')) {
-                // Deselect -> Clear
-                setDays([]);
-                setTimes({});
-                setSelectedDayToEdit(null);
-            } else {
-                // Select '상시' -> Clear others
-                setDays(['상시']);
-                setTimes({}); // Clear time
-                setSelectedDayToEdit(null);
-            }
-            return;
-        }
-
-        // Unified Logic
-        let newDays = currentDays.filter(d => d !== '상시'); // Remove '상시' if adding another day
-        let newTimes = { ...currentTimes };
-        delete newTimes['상시'];
-
-        // Handle '매일' special case (it was resetting everything)
-        if (day === '매일') {
-            setDays(['매일']);
-            setTimes({ '매일': '22:00' });
-            setSelectedDayToEdit('매일');
-            setEditHour('22');
-            setEditMinute('00');
-            return;
-        }
-
-        // Remove '매일' if present when selecting normal day?
-        // Original code (Line 319) filtered '매일' and '상설' out.
-        newDays = newDays.filter(d => d !== '매일');
-        delete newTimes['매일'];
-
-        if (newDays.includes(day)) {
-            newDays = newDays.filter(d => d !== day);
-            delete newTimes[day];
-            if (selectedDayToEdit === day) {
-                const nextDay = newDays.length > 0 ? newDays[0] : null;
-                setSelectedDayToEdit(nextDay);
-                if (nextDay) {
-                    const [h, m] = (newTimes[nextDay] || '22:00').split(':');
-                    setEditHour(h || '22');
-                    setEditMinute(m || '00');
-                }
-            }
-        } else {
-            newDays = [...newDays, day];
-            newTimes[day] = '22:00';
-            setSelectedDayToEdit(day);
-            setEditHour('22');
-            setEditMinute('00');
-        }
-        setDays(newDays);
-        setTimes(newTimes);
+        setSelectedDayForSlot(day);
     };
 
     const openGuideModal = (event: WikiEvent) => {
@@ -659,35 +590,33 @@ export default function EventTracker() {
         let finalDay = '';
         let finalTime = '';
 
-        const buildStr = (days: string[], times: Record<string, string>) => {
-            if (days.length === 0) return '';
-            // If 상시, return '상시' to display it in the status
-            if (days.includes('상시')) return '상시';
-            return days.map(d => `${d}(${times[d] || '22:00'})`).join(', ');
+        const buildStr = (slots: { day: string, time: string }[]) => {
+            if (slots.length === 0) return '';
+            if (slots.some(s => s.day === '상시')) return '상시';
+            return slots.map(s => `${s.day}(${s.time})`).join(', ');
+        };
+
+        const getAllDays = (slots: { day: string }[]) => {
+            const raw = slots.map(s => s.day);
+            return Array.from(new Set(raw));
         };
 
         if (editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && editingEvent.id !== 'a_weapon') {
-            const str1 = buildStr(days1, times1);
-            const str2 = buildStr(days2, times2);
+            const str1 = buildStr(slots1);
+            const str2 = buildStr(slots2);
 
             const parts = [];
-            // Only add part if not empty (normal days)
             if (str1) parts.push(`1군: ${str1}`);
             if (str2) parts.push(`2군: ${str2}`);
             finalTime = parts.join(' / ');
 
-            const allDays = Array.from(new Set([...days1, ...days2]));
+            const allDays = Array.from(new Set([...getAllDays(slots1), ...getAllDays(slots2)]));
             const dayOrder = ['월', '화', '수', '목', '금', '토', '일', '매일', '상시'];
             finalDay = allDays.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)).join(', ');
         } else {
             // General Event
-            if (days1.includes('상시')) {
-                finalDay = '상시';
-                finalTime = '상시';
-            } else {
-                finalTime = buildStr(days1, times1);
-                finalDay = days1.join(', ');
-            }
+            finalTime = buildStr(slots1);
+            finalDay = getAllDays(slots1).join(', ');
         }
 
         setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: finalTime } : e));
@@ -886,9 +815,13 @@ export default function EventTracker() {
                                                         )}
                                                     </View>
                                                     <View className="flex-row flex-wrap gap-1 mb-3">
-                                                        {(event.day?.trim() || event.time?.trim()) ? (
-                                                            <>
-                                                                {event.day && !event.time && (
+                                                        {event.id !== 'a_fortress' && (
+                                                            (!event.day && !event.time) ? (
+                                                                <View className="px-4 py-2 bg-brand-accent/20 rounded-xl border border-brand-accent/30 shadow-sm">
+                                                                    <Text className="text-brand-accent text-base font-black">일정 미정</Text>
+                                                                </View>
+                                                            ) : (
+                                                                event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
                                                                     <View className="flex-row flex-wrap gap-2">
                                                                         {event.day.split('/').map((d, dIdx) => (
                                                                             <View key={dIdx} className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner">
@@ -896,37 +829,36 @@ export default function EventTracker() {
                                                                             </View>
                                                                         ))}
                                                                     </View>
-                                                                )}
-                                                                {event.time && (
-                                                                    <View className="w-full mt-1 border-t border-slate-800/30 pt-1">
-                                                                        {event.time.split(' / ').map((part, idx) => {
-                                                                            const trimmed = part.trim();
-                                                                            if (!trimmed) return null;
-                                                                            const colonIdx = trimmed.indexOf(':');
-                                                                            // Check if it's a label colon (not between digits)
-                                                                            const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                                                            const label = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
-                                                                            const content = label ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                                                                ) : null
+                                                            )
+                                                        )}
+                                                        {event.time && (
+                                                            <View className="w-full mt-1 border-t border-slate-800/30 pt-1">
+                                                                {event.time.split(' / ').map((part, idx) => {
+                                                                    const trimmed = part.trim();
+                                                                    if (!trimmed) return null;
+                                                                    const colonIdx = trimmed.indexOf(':');
+                                                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
+                                                                    const label = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
+                                                                    const content = label ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                                                                    if (content === "." || !content) return null;
 
-                                                                            return (
-                                                                                <View key={idx} className="mb-2 last:mb-0">
-                                                                                    {label && <Text className="text-slate-500 text-[11px] font-black uppercase mb-1 ml-1">{label}</Text>}
-                                                                                    <View className="flex-row flex-wrap gap-2.5">
-                                                                                        {content.split(/[,|]/).map((item, iIdx) => (
-                                                                                            <View key={iIdx} className="bg-black/50 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-2xl">
-                                                                                                <Text className="text-[#38bdf8] font-black text-lg">{item.trim()}</Text>
-                                                                                            </View>
-                                                                                        ))}
-                                                                                    </View>
-                                                                                </View>
-                                                                            );
-                                                                        })}
-                                                                    </View>
-                                                                )}
-                                                            </>
-                                                        ) : (
-                                                            <View className="px-4 py-2 bg-brand-accent/20 rounded-xl border border-brand-accent/30 shadow-sm">
-                                                                <Text className="text-brand-accent text-base font-black">일정 미정</Text>
+                                                                    return (
+                                                                        <View key={idx} className="mb-2 last:mb-0">
+                                                                            {label && <Text className="text-slate-500 text-[11px] font-black uppercase mb-1 ml-1">{label}</Text>}
+                                                                            <View className="flex-row flex-wrap gap-2.5">
+                                                                                {content.split(/[,|]/).map((item, iIdx) => {
+                                                                                    const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                                    return (
+                                                                                        <View key={iIdx} className="bg-black/50 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-2xl">
+                                                                                            <Text className="text-[#38bdf8] font-black text-lg">{formatted}</Text>
+                                                                                        </View>
+                                                                                    );
+                                                                                })}
+                                                                            </View>
+                                                                        </View>
+                                                                    );
+                                                                })}
                                                             </View>
                                                         )}
                                                     </View>
@@ -992,7 +924,7 @@ export default function EventTracker() {
                 </View>
 
                 {/* Guide Detail Popup Modal */}
-                <Modal visible={guideModalVisible} transparent animationType="fade">
+                <Modal visible={guideModalVisible} transparent animationType="fade" >
                     <View className="flex-1 bg-black/90 justify-center items-center p-6">
                         <TouchableOpacity
                             activeOpacity={1}
@@ -1146,7 +1078,7 @@ export default function EventTracker() {
                 </Modal>
 
                 {/* Schedule Edit Modal */}
-                <Modal visible={scheduleModalVisible} transparent animationType="slide">
+                <Modal visible={scheduleModalVisible} transparent animationType="slide" >
                     <Pressable
                         className="flex-1 bg-black/80 justify-end"
                         onPress={() => {
@@ -1624,7 +1556,7 @@ export default function EventTracker() {
                                                             <Dropdown field="d" options={days} currentVal={dateParts.d} />
                                                             <View className="mx-2"><Text className="text-slate-600 font-black">/</Text></View>
                                                             <Dropdown field="h" options={hours} currentVal={dateParts.h} />
-                                                            {editingEvent?.id !== 'a_castle' && editingEvent?.id !== 'a_svs' && editingEvent?.id !== 'a_operation' && (
+                                                            {!!editingEvent && editingEvent.id !== 'a_castle' && editingEvent.id !== 'a_svs' && editingEvent.id !== 'a_operation' && (
                                                                 <React.Fragment>
                                                                     <View className="mx-1"><Text className="text-slate-600 font-black">:</Text></View>
                                                                     <Dropdown field="min" options={minutes} currentVal={dateParts.min} />
@@ -1649,13 +1581,13 @@ export default function EventTracker() {
                                         {editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                             <View className="flex-row mb-6 bg-slate-800 p-1 rounded-xl">
                                                 <TouchableOpacity
-                                                    onPress={() => { setActiveTab(1); setSelectedDayToEdit(null); }}
+                                                    onPress={() => setActiveTab(1)}
                                                     className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? 'bg-slate-700' : ''}`}
                                                 >
                                                     <Text className={`font-bold ${activeTab === 1 ? 'text-white font-black' : 'text-slate-500'}`}>1군 설정</Text>
                                                 </TouchableOpacity>
                                                 <TouchableOpacity
-                                                    onPress={() => { setActiveTab(2); setSelectedDayToEdit(null); }}
+                                                    onPress={() => setActiveTab(2)}
                                                     className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? 'bg-slate-700' : ''}`}
                                                 >
                                                     <Text className={`font-bold ${activeTab === 2 ? 'text-white font-black' : 'text-slate-500'}`}>2군 설정</Text>
@@ -1751,71 +1683,56 @@ export default function EventTracker() {
                                         {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                             <>
                                                 <View className="mb-4">
-                                                    {editingEvent?.id === 'a_center' ? (
-                                                        <>
-                                                            <Text className="text-brand-accent text-xs font-black mb-3 ml-1 uppercase">상시 진행 여부</Text>
-                                                            <TouchableOpacity
-                                                                onPress={() => toggleDay('상시')}
-                                                                className={`w-full py-4 rounded-2xl items-center justify-center border ${days1.includes('상시') ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800 border-slate-700'}`}
-                                                            >
-                                                                <Text className={`font-black text-lg ${days1.includes('상시') ? 'text-brand-dark' : 'text-slate-400'}`}>
-                                                                    {days1.includes('상시') ? '상시 진행 중 (클릭하여 해제)' : '상시 진행 설정'}
-                                                                </Text>
-                                                            </TouchableOpacity>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Text className="text-brand-accent text-xs font-black mb-2 ml-1 uppercase">
-                                                                {(editingEvent?.category === '연맹' && editingEvent?.id !== 'a_mercenary') ? `진행 요일 (${activeTab}군)` : '진행 요일'}
-                                                            </Text>
-                                                            <View className="flex-row flex-wrap gap-2">
-                                                                {['월', '화', '수', '목', '금', '토', '일', '매일', '상시'].map((d) => {
-                                                                    const currentDays = activeTab === 1 ? days1 : days2;
-                                                                    const isSelected = currentDays.includes(d);
-                                                                    return (
-                                                                        <TouchableOpacity
-                                                                            key={d}
-                                                                            onPress={() => toggleDay(d)}
-                                                                            className={`w-10 h-10 rounded-xl items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
-                                                                        >
-                                                                            <Text className={`font-black text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text>
-                                                                        </TouchableOpacity>
-                                                                    );
-                                                                })}
-                                                            </View>
-                                                        </>
-                                                    )}
+                                                    <Text className="text-brand-accent text-xs font-black mb-2 ml-1 uppercase">
+                                                        {(editingEvent?.category === '연맹' && editingEvent?.id !== 'a_mercenary') ? `진행 요일 (${activeTab}군)` : '진행 요일'}
+                                                    </Text>
+                                                    <View className="flex-row flex-wrap gap-2">
+                                                        {['월', '화', '수', '목', '금', '토', '일', '매일', '상시'].map((d) => {
+                                                            const isSelected = selectedDayForSlot === d;
+                                                            return (
+                                                                <TouchableOpacity
+                                                                    key={d}
+                                                                    onPress={() => toggleDay(d)}
+                                                                    className={`w-10 h-10 rounded-xl items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
+                                                                >
+                                                                    <Text className={`font-black text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text>
+                                                                </TouchableOpacity>
+                                                            );
+                                                        })}
+                                                    </View>
                                                 </View>
 
                                                 {editingEvent?.id !== 'a_center' && (
                                                     <View className="mb-4 mt-2">
-                                                        <View className="flex-row items-center mb-2 gap-3">
+                                                        <View className="flex-row items-center mb-4 gap-3">
                                                             <Text className="text-brand-accent text-[10px] font-black uppercase opacity-60">진행 시간</Text>
                                                             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
-                                                                {(activeTab === 1 ? days1 : days2).map(d => (
+                                                                {(activeTab === 1 ? slots1 : slots2).map(slot => (
                                                                     <TouchableOpacity
-                                                                        key={d}
+                                                                        key={slot.id}
                                                                         onPress={() => {
-                                                                            setSelectedDayToEdit(d);
-                                                                            const currentTimes = activeTab === 1 ? times1 : times2;
-                                                                            const t = currentTimes[d] || '22:00';
-                                                                            const [h, m] = t.split(':');
+                                                                            const [h, m] = slot.time.split(':');
                                                                             setEditHour(h || '22');
                                                                             setEditMinute(m || '00');
+                                                                            setSelectedDayForSlot(slot.day);
                                                                         }}
-                                                                        className={`mr-2 px-3 py-1.5 rounded-lg border ${selectedDayToEdit === d ? 'bg-slate-700 border-slate-600' : 'bg-transparent border-slate-800'}`}
+                                                                        className="mr-3 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1.5 rounded-xl flex-row items-center"
                                                                     >
-                                                                        <Text className={`text-xs font-black ${selectedDayToEdit === d ? 'text-white' : 'text-slate-500'}`}>
-                                                                            {d}<Text className="text-brand-accent">({(activeTab === 1 ? times1 : times2)[d]})</Text>
+                                                                        <Text className="text-white text-xs font-black mr-2">
+                                                                            {slot.day}{slot.time ? `(${slot.time})` : ''}
                                                                         </Text>
+                                                                        <TouchableOpacity onPress={() => removeTimeSlot(slot.id)}>
+                                                                            <Ionicons name="close-circle" size={16} color="#ef4444" />
+                                                                        </TouchableOpacity>
                                                                     </TouchableOpacity>
                                                                 ))}
                                                             </ScrollView>
                                                         </View>
 
-                                                        {editingEvent?.id !== 'a_center' && (
-                                                            <View className="space-y-3" style={{ zIndex: (hourDropdownVisible || minuteDropdownVisible) ? 100 : 1 }}>
+                                                        {editingEvent?.id !== 'a_center' && selectedDayForSlot !== '상시' && (
+                                                            <View className="space-y-4">
                                                                 <View className="flex-row items-center space-x-4">
+                                                                    {/* Hour Picker */}
                                                                     <View className="flex-1 relative">
                                                                         <TouchableOpacity
                                                                             onPress={() => setHourDropdownVisible(!hourDropdownVisible)}
@@ -1837,10 +1754,7 @@ export default function EventTracker() {
                                                                                     getItemLayout={(data, index) => ({ length: 50, offset: 50 * index, index })}
                                                                                     renderItem={({ item: h }) => (
                                                                                         <TouchableOpacity
-                                                                                            onPress={() => {
-                                                                                                updateTimeForActiveDay(h, editMinute);
-                                                                                                setHourDropdownVisible(false);
-                                                                                            }}
+                                                                                            onPress={() => { setEditHour(h); setHourDropdownVisible(false); }}
                                                                                             className={`h-[50px] justify-center px-4 border-b border-slate-800/50 ${editHour === h ? 'bg-brand-accent/10' : ''}`}
                                                                                         >
                                                                                             <Text className={`font-bold ${editHour === h ? 'text-brand-accent' : 'text-slate-300'}`}>{h}시</Text>
@@ -1851,6 +1765,7 @@ export default function EventTracker() {
                                                                         )}
                                                                     </View>
                                                                     <View className="w-4 items-center"><Text className="text-slate-500 font-bold">:</Text></View>
+                                                                    {/* Minute Picker */}
                                                                     <View className="flex-1 relative">
                                                                         <TouchableOpacity
                                                                             onPress={() => setMinuteDropdownVisible(!minuteDropdownVisible)}
@@ -1870,10 +1785,7 @@ export default function EventTracker() {
                                                                                     keyExtractor={(item) => item}
                                                                                     renderItem={({ item: m }) => (
                                                                                         <TouchableOpacity
-                                                                                            onPress={() => {
-                                                                                                updateTimeForActiveDay(editHour, m);
-                                                                                                setMinuteDropdownVisible(false);
-                                                                                            }}
+                                                                                            onPress={() => { setEditMinute(m); setMinuteDropdownVisible(false); }}
                                                                                             className={`h-[50px] justify-center px-4 border-b border-slate-800/50 ${editMinute === m ? 'bg-brand-accent/10' : ''}`}
                                                                                         >
                                                                                             <Text className={`font-bold ${editMinute === m ? 'text-brand-accent' : 'text-slate-300'}`}>{m}분</Text>
@@ -1884,7 +1796,23 @@ export default function EventTracker() {
                                                                         )}
                                                                     </View>
                                                                 </View>
+
+                                                                <TouchableOpacity
+                                                                    onPress={addTimeSlot}
+                                                                    className="bg-blue-500/20 py-3 rounded-xl border border-blue-500/40 items-center flex-row justify-center"
+                                                                >
+                                                                    <Ionicons name="add-circle-outline" size={20} color="#38bdf8" style={{ marginRight: 8 }} />
+                                                                    <Text className="text-[#38bdf8] font-black">이 시간 추가 등록</Text>
+                                                                </TouchableOpacity>
                                                             </View>
+                                                        )}
+                                                        {selectedDayForSlot === '상시' && (
+                                                            <TouchableOpacity
+                                                                onPress={addTimeSlot}
+                                                                className="bg-brand-accent/20 py-4 rounded-xl border border-brand-accent/40 items-center"
+                                                            >
+                                                                <Text className="text-brand-accent font-black">상시 진행으로 등록</Text>
+                                                            </TouchableOpacity>
                                                         )}
                                                     </View>
                                                 )}
@@ -1913,7 +1841,7 @@ export default function EventTracker() {
                 </Modal>
 
                 {/* Attendee Modal */}
-                <Modal visible={attendeeModalVisible} transparent animationType="slide">
+                <Modal visible={attendeeModalVisible} transparent animationType="slide" >
                     <View className="flex-1 bg-black/90 pt-16">
                         <View className="flex-1 bg-slate-900 rounded-t-[40px] overflow-hidden border-t border-slate-700">
                             <View className="h-16 bg-slate-800 flex-row items-center justify-between px-6 border-b border-slate-700">
@@ -1949,7 +1877,7 @@ export default function EventTracker() {
                                                     editable={isAdmin}
                                                     className={`flex-1 bg-slate-900 p-3 rounded-xl text-white font-bold border border-slate-700 ${!isAdmin ? 'opacity-70' : ''}`}
                                                 />
-                                                {isAdmin && (
+                                                {!!isAdmin && (
                                                     <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className="ml-2 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
                                                         <Ionicons name="trash-outline" size={16} color="#ef4444" />
                                                     </TouchableOpacity>
@@ -1988,7 +1916,8 @@ export default function EventTracker() {
                 </Modal>
 
                 {/* Wiki Browser Modal (Web Only) */}
-                <Modal visible={browserVisible && Platform.OS === 'web'} animationType="slide" transparent={false}>
+                <Modal visible={browserVisible && Platform.OS === 'web'
+                } animationType="slide" transparent={false} >
                     <View className="flex-1 bg-white">
                         <View className="h-16 bg-slate-900 flex-row items-center justify-between px-4 border-b border-slate-700">
                             <View className="flex-row items-center flex-1 mr-4">
@@ -2014,6 +1943,6 @@ export default function EventTracker() {
                     </View>
                 </Modal>
             </View>
-        </ImageBackground >
+        </ImageBackground>
     );
 }
