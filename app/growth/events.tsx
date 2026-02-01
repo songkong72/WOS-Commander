@@ -316,14 +316,11 @@ export default function EventTracker() {
             }
         }
 
-        if (event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation') {
-            const parts = (event.day || '').split(' ~ ');
-            // If data exists, use it. Otherwise, default to NOW for Start, Next Week for End? or just NOW
-            const now = new Date();
-            const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
-            setMStart(parts[0] || defaultStr);
-            setMEnd(parts[1] || defaultStr);
+        if (event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation' || event.id === 'alliance_frost_league') {
+            const rawDay = event.day || '';
+            const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
+            setMStart(s || `${new Date().getFullYear()}.01.01 12:00`);
+            setMEnd(e || `${new Date().getFullYear()}.01.01 12:00`);
         }
 
         if (event.id === 'a_fortress') {
@@ -582,7 +579,7 @@ export default function EventTracker() {
     const saveSchedule = async () => {
         if (!editingEvent) return;
 
-        if (editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation') {
+        if (editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation' || editingEvent.id === 'alliance_frost_league') {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
@@ -661,7 +658,7 @@ export default function EventTracker() {
             return days.map(d => `${d}(${times[d] || '22:00'})`).join(', ');
         };
 
-        if (editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_mercenary') {
+        if (editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league') {
             const str1 = buildStr(days1, times1);
             const str2 = buildStr(days2, times2);
 
@@ -1163,7 +1160,9 @@ export default function EventTracker() {
                             <View className="flex-row justify-between items-start mb-4">
                                 <View>
                                     <Text className="text-white text-2xl font-black mb-1">{editingEvent?.title}</Text>
-                                    <Text className="text-slate-400 text-sm">이벤트 진행 요일과 시간을 설정하세요.</Text>
+                                    <Text className="text-slate-400 text-sm">
+                                        {editingEvent?.id === 'alliance_frost_league' ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                    </Text>
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className="bg-slate-800 p-2 rounded-full border border-slate-700">
                                     <Ionicons name="close" size={20} color="#94a3b8" />
@@ -1178,7 +1177,7 @@ export default function EventTracker() {
                                         ? { paddingBottom: 20 }
                                         : (editingEvent?.id === 'a_fortress')
                                             ? { paddingBottom: 200 }
-                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation')
+                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league')
                                                 ? { paddingBottom: 300 }
                                                 : { paddingBottom: 20 }
                                 }
@@ -1533,7 +1532,7 @@ export default function EventTracker() {
                                             );
                                         })()}
                                     </View>
-                                ) : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation') ? (
+                                ) : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league') ? (
                                     <View className="mb-6" style={{ zIndex: 100 }}>
                                         {/* Helper to update date time parts */}
                                         {(() => {
@@ -1636,8 +1635,8 @@ export default function EventTracker() {
                                     </View>
                                 ) : (
                                     <>
-                                        {/* Tabs (Alliance Only) - Exclude Championship, Center, and Mercenary Honor */}
-                                        {editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_mercenary' && (
+                                        {/* Tabs (Alliance Only) - Exclude Championship, Center, and Mercenary Honor, Frost League */}
+                                        {editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && (
                                             <View className="flex-row mb-6 bg-slate-800 p-1 rounded-xl">
                                                 <TouchableOpacity
                                                     onPress={() => { setActiveTab(1); setSelectedDayToEdit(null); }}
@@ -1739,7 +1738,7 @@ export default function EventTracker() {
                                             </View>
                                         )}
 
-                                        {editingEvent?.id !== 'a_champ' && (
+                                        {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && (
                                             <>
                                                 <View className="mb-4">
                                                     {editingEvent?.id === 'a_center' ? (
