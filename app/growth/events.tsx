@@ -11,6 +11,16 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { WikiEvent, INITIAL_WIKI_EVENTS, EventCategory } from '../../data/wiki-events';
 import { ADDITIONAL_EVENTS } from '../../data/new-events';
+import * as Notifications from 'expo-notifications';
+
+// Set notification handler
+Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+    }),
+});
 
 const HERO_NAMES = heroesData.map(h => h.name);
 const FORTRESS_OPTIONS = Array.from({ length: 12 }, (_, i) => `요새 ${i + 1}`);
@@ -139,6 +149,63 @@ export default function EventTracker() {
     const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
     const [editingEvent, setEditingEvent] = useState<WikiEvent | null>(null);
 
+    // Permission request for notifications
+    useEffect(() => {
+        const requestPermissions = async () => {
+            const { status } = await Notifications.getPermissionsAsync();
+            if (status !== 'granted') {
+                await Notifications.requestPermissionsAsync();
+            }
+        };
+        requestPermissions();
+    }, []);
+
+    const scheduleNotification = async (event: WikiEvent, day: string, time: string) => {
+        if (!day || !time || time === '상시' || time === '상설') return;
+
+        const dayMap: { [key: string]: number } = { '일': 1, '월': 2, '화': 3, '수': 4, '목': 5, '금': 6, '토': 7 };
+        const [h, m] = time.split(':').map(Number);
+
+        // Schedule for each day
+        for (const d of day.split(',').map(s => s.trim())) {
+            const weekday = dayMap[d];
+            if (weekday) {
+                await Notifications.scheduleNotificationAsync({
+                    content: {
+                        title: `🏰 이벤트 시작 알림: ${event.title}`,
+                        body: `잠시 후 ${event.title} 이벤트가 시작됩니다! 본부를 수호하세요.`,
+                        sound: true,
+                        data: { eventId: event.id },
+                    },
+                    trigger: {
+                        weekday,
+                        hour: h,
+                        minute: m,
+                        repeats: true,
+                    },
+                });
+            }
+        }
+    };
+
+    // Custom Alert State
+    const [customAlert, setCustomAlert] = useState<{
+        visible: boolean,
+        title: string,
+        message: string,
+        type: 'success' | 'error' | 'warning' | 'confirm',
+        onConfirm?: () => void
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error'
+    });
+
+    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
+        setCustomAlert({ visible: true, title, message, type, onConfirm });
+    };
+
     // Tab & Data States
     const [activeTab, setActiveTab] = useState<1 | 2>(1);
     const [slots1, setSlots1] = useState<{ day: string, time: string, id: string }[]>([]);
@@ -146,6 +213,7 @@ export default function EventTracker() {
 
     const [editHour, setEditHour] = useState('11');
     const [editMinute, setEditMinute] = useState('00');
+    const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
 
     const [isPermanent, setIsPermanent] = useState(false);
     const [hourDropdownVisible, setHourDropdownVisible] = useState(false);
@@ -215,10 +283,10 @@ export default function EventTracker() {
                 setCurrentWikiUrl(url);
                 setBrowserVisible(true);
             } else {
-                Linking.openURL(url).catch(err => Alert.alert('오류', '링크를 열 수 없습니다: ' + err.message));
+                Linking.openURL(url).catch(err => showCustomAlert('오류', '링크를 열 수 없습니다: ' + err.message, 'error'));
             }
         } else {
-            Alert.alert('알림', '위키 링크가 존재하지 않습니다.');
+            showCustomAlert('알림', '위키 링크가 존재하지 않습니다.', 'warning');
         }
     };
 
@@ -282,6 +350,12 @@ export default function EventTracker() {
             return;
         }
 
+        if (editingSlotId) {
+            setSlots(currentSlots.map(s => s.id === editingSlotId ? { ...s, day: selectedDayForSlot, time: `${editHour}:${editMinute}` } : s));
+            setEditingSlotId(null);
+            return;
+        }
+
         const newSlot = {
             day: selectedDayForSlot,
             time: `${editHour}:${editMinute}`,
@@ -315,9 +389,9 @@ export default function EventTracker() {
                     strategy: strategyContent
                 });
                 setIsEditingStrategy(false);
-                Alert.alert('완료', '연맹 작전이 저장되었습니다.');
+                showCustomAlert('완료', '연맹 작전이 저장되었습니다.', 'success');
             } catch (error: any) {
-                Alert.alert('오류', '저장 실패: ' + error.message);
+                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             }
         }
     };
@@ -457,6 +531,7 @@ export default function EventTracker() {
         setSelectedDayForSlot('월');
         setEditHour('22');
         setEditMinute('00');
+        setEditingSlotId(null);
         setScheduleModalVisible(true);
     };
 
@@ -491,7 +566,7 @@ export default function EventTracker() {
     const saveAttendees = () => {
         const validAttendees = bulkAttendees.filter(a => a.name?.trim());
         if (validAttendees.length === 0) {
-            Alert.alert('알림', '최소 한 명 이상의 이름을 입력해주세요.');
+            showCustomAlert('알림', '최소 한 명 이상의 이름을 입력해주세요.', 'warning');
             return;
         }
 
@@ -500,15 +575,16 @@ export default function EventTracker() {
         ).join('\n');
 
         setAttendeeModalVisible(false);
-        Alert.alert(
+        showCustomAlert(
             '참석 명단 저장 완료',
-            `${managedEvent?.title} 이벤트를 위해 총 ${validAttendees.length}명의 영주가 등록되었습니다.\n\n${summary}`
+            `${managedEvent?.title} 이벤트를 위해 총 ${validAttendees.length}명의 영주가 등록되었습니다.\n\n${summary}`,
+            'success'
         );
 
         if (managedEvent) {
             saveAttendeesToFirestore(validAttendees.length > 0 ? validAttendees : [], managedEvent.title)
-                .then(() => Alert.alert('성공', '명단이 서버에 저장되었습니다.'))
-                .catch((e) => Alert.alert('오류', '저장 중 문제가 발생했습니다: ' + e.message));
+                .then(() => showCustomAlert('성공', '명단이 서버에 저장되었습니다.', 'success'))
+                .catch((e) => showCustomAlert('오류', '저장 중 문제가 발생했습니다: ' + e.message, 'error'));
         }
     };
 
@@ -532,9 +608,9 @@ export default function EventTracker() {
                     strategy: editingEvent.strategy || ''
                 });
                 setScheduleModalVisible(false);
-                Alert.alert('완료', `${editingEvent.title} 일정이 저장되었습니다.`);
+                showCustomAlert('완료', `${editingEvent.title} 일정이 저장되었습니다.`, 'success');
             } catch (error: any) {
-                Alert.alert('오류', '저장 실패: ' + error.message);
+                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             }
             return;
         }
@@ -553,9 +629,9 @@ export default function EventTracker() {
                     strategy: editingEvent.strategy || ''
                 });
                 setScheduleModalVisible(false);
-                Alert.alert('완료', '연맹 챔피언십 일정이 저장되었습니다.');
+                showCustomAlert('완료', '연맹 챔피언십 일정이 저장되었습니다.', 'success');
             } catch (error: any) {
-                Alert.alert('오류', '저장 실패: ' + error.message);
+                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             }
             return;
         }
@@ -579,10 +655,20 @@ export default function EventTracker() {
                     time: timeStr,
                     strategy: editingEvent.strategy || ''
                 });
+
+                // Cancel old notifications and schedule new ones
+                await Notifications.cancelAllScheduledNotificationsAsync();
+                for (const f of fortressList) {
+                    await scheduleNotification(editingEvent, f.day || '토', `${f.h}:${f.m}`);
+                }
+                for (const c of citadelList) {
+                    await scheduleNotification(editingEvent, c.day || '일', `${c.h}:${c.m}`);
+                }
+
                 setScheduleModalVisible(false);
-                Alert.alert('완료', '요새전/성채전 일정이 저장되었습니다.');
+                showCustomAlert('완료', '요새전/성채전 일정이 저장되었습니다.', 'success');
             } catch (error: any) {
-                Alert.alert('오류', '저장 실패: ' + error.message);
+                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             }
             return;
         }
@@ -629,19 +715,21 @@ export default function EventTracker() {
                 strategy: editingEvent.strategy || ''
             });
 
-            Alert.alert('저장 완료', '이벤트 일정이 성공적으로 등록되었습니다.');
+            showCustomAlert('저장 완료', '이벤트 일정이 성공적으로 등록되었습니다.', 'success');
 
         } catch (error: any) {
-            Alert.alert('저장 실패', '서버 통신 중 오류가 발생했습니다.\n' + error.message);
+            showCustomAlert('저장 실패', '서버 통신 중 오류가 발생했습니다.\n' + error.message, 'error');
         }
     };
 
     const handleDeleteSchedule = async () => {
         if (!editingEvent) return;
 
-        if (Platform.OS === 'web') {
-            // Web-specific confirmation
-            if (window.confirm('일정 초기화\n\n이 이벤트의 요일/시간 설정을 정말로 삭제하시겠습니까?')) {
+        showCustomAlert(
+            '일정 초기화',
+            '이 이벤트의 요일/시간 설정을 정말로 삭제하시겠습니까?',
+            'confirm',
+            async () => {
                 try {
                     setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: '', time: '' } : e));
 
@@ -653,39 +741,14 @@ export default function EventTracker() {
                     });
 
                     setScheduleModalVisible(false);
-                    alert('일정이 초기화되었습니다.');
+                    // Cancel notifications for this event
+                    await Notifications.cancelAllScheduledNotificationsAsync();
+                    showCustomAlert('완료', '일정이 초기화되었습니다.', 'success');
                 } catch (error: any) {
-                    alert('초기화 실패: ' + error.message);
+                    showCustomAlert('오류', '초기화 실패: ' + error.message, 'error');
                 }
             }
-            return;
-        }
-
-        // Native Alert
-        Alert.alert('일정 초기화', '이 이벤트의 요일/시간 설정을 정말로 삭제하시겠습니까?', [
-            { text: '취소', style: 'cancel' },
-            {
-                text: '삭제(초기화)',
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: '', time: '' } : e));
-
-                        await updateSchedule({
-                            eventId: editingEvent.id,
-                            day: '',
-                            time: '',
-                            strategy: editingEvent.strategy || ''
-                        });
-
-                        setScheduleModalVisible(false);
-                        Alert.alert('완료', '일정이 초기화되었습니다.');
-                    } catch (error: any) {
-                        Alert.alert('오류', '초기화 실패: ' + error.message);
-                    }
-                }
-            }
-        ]);
+        );
     };
 
     const guideContent = selectedEventForGuide ? getGuideContent(selectedEventForGuide.id) : null;
@@ -1684,7 +1747,7 @@ export default function EventTracker() {
                                             <>
                                                 <View className="mb-4">
                                                     <Text className="text-brand-accent text-xs font-black mb-2 ml-1 uppercase">
-                                                        {(editingEvent?.category === '연맹' && editingEvent?.id !== 'a_mercenary') ? `진행 요일 (${activeTab}군)` : '진행 요일'}
+                                                        {(editingEvent?.category === '연맹' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'a_center') ? `진행 요일 (${activeTab}군)` : '진행 요일'}
                                                     </Text>
                                                     <View className="flex-row flex-wrap gap-2">
                                                         {['월', '화', '수', '목', '금', '토', '일', '매일', '상시'].map((d) => {
@@ -1715,8 +1778,15 @@ export default function EventTracker() {
                                                                             setEditHour(h || '22');
                                                                             setEditMinute(m || '00');
                                                                             setSelectedDayForSlot(slot.day);
+                                                                            if (editingSlotId === slot.id) {
+                                                                                setEditingSlotId(null);
+                                                                                setEditHour('22');
+                                                                                setEditMinute('00');
+                                                                            } else {
+                                                                                setEditingSlotId(slot.id);
+                                                                            }
                                                                         }}
-                                                                        className="mr-3 bg-brand-accent/10 border border-brand-accent/20 px-3 py-1.5 rounded-xl flex-row items-center"
+                                                                        className={`mr-3 border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}
                                                                     >
                                                                         <Text className="text-white text-xs font-black mr-2">
                                                                             {slot.day}{slot.time ? `(${slot.time})` : ''}
@@ -1797,13 +1867,29 @@ export default function EventTracker() {
                                                                     </View>
                                                                 </View>
 
-                                                                <TouchableOpacity
-                                                                    onPress={addTimeSlot}
-                                                                    className="bg-blue-500/20 py-3 rounded-xl border border-blue-500/40 items-center flex-row justify-center"
-                                                                >
-                                                                    <Ionicons name="add-circle-outline" size={20} color="#38bdf8" style={{ marginRight: 8 }} />
-                                                                    <Text className="text-[#38bdf8] font-black">이 시간 추가 등록</Text>
-                                                                </TouchableOpacity>
+                                                                <View className="flex-row gap-2">
+                                                                    <TouchableOpacity
+                                                                        onPress={addTimeSlot}
+                                                                        className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-3 rounded-xl border items-center flex-row justify-center`}
+                                                                    >
+                                                                        <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 8 }} />
+                                                                        <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-black`}>
+                                                                            {editingSlotId ? '수정 완료' : '이 시간 추가 등록'}
+                                                                        </Text>
+                                                                    </TouchableOpacity>
+                                                                    {!!editingSlotId && (
+                                                                        <TouchableOpacity
+                                                                            onPress={() => {
+                                                                                setEditingSlotId(null);
+                                                                                setEditHour('22');
+                                                                                setEditMinute('00');
+                                                                            }}
+                                                                            className="bg-slate-800 px-4 py-3 rounded-xl border border-slate-700 justify-center"
+                                                                        >
+                                                                            <Text className="text-slate-400 font-bold text-sm">취소</Text>
+                                                                        </TouchableOpacity>
+                                                                    )}
+                                                                </View>
                                                             </View>
                                                         )}
                                                         {selectedDayForSlot === '상시' && (
@@ -1942,7 +2028,54 @@ export default function EventTracker() {
                         </View>
                     </View>
                 </Modal>
+                {/* Custom Alert Modal */}
+                <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                    <View className="flex-1 bg-black/60 items-center justify-center p-6">
+                        <BlurView intensity={20} className="absolute inset-0" />
+                        <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[40px] border border-slate-800 shadow-2xl items-center">
+                            <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? 'bg-emerald-500/10' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
+                                <Ionicons
+                                    name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'}
+                                    size={48}
+                                    color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'}
+                                />
+                            </View>
+                            <Text className="text-white text-2xl font-black mb-4 text-center">{customAlert.title}</Text>
+                            <Text className="text-slate-400 text-center mb-8 text-lg leading-7 font-medium">
+                                {customAlert.message}
+                            </Text>
+
+                            {customAlert.type === 'confirm' ? (
+                                <View className="flex-row gap-3 w-full">
+                                    <TouchableOpacity
+                                        onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                        className="flex-1 py-4 bg-slate-800 rounded-2xl border border-slate-700"
+                                    >
+                                        <Text className="text-slate-400 text-center font-black text-lg">취소</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setCustomAlert({ ...customAlert, visible: false });
+                                            if (customAlert.onConfirm) customAlert.onConfirm();
+                                        }}
+                                        className="flex-1 py-4 bg-red-600 rounded-2xl"
+                                    >
+                                        <Text className="text-white text-center font-black text-lg">삭제</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                    className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
+                                >
+                                    <Text className="text-white text-center font-black text-lg">확인</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </Modal>
             </View>
+
         </ImageBackground>
     );
 }
