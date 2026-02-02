@@ -246,9 +246,9 @@ export default function AdminPage() {
 
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className="mt-12 bg-slate-800 py-5 rounded-2xl border border-slate-700 items-center shadow-lg"
+                        className="mt-8 bg-slate-800/80 py-3 px-12 rounded-2xl border border-slate-700 self-center"
                     >
-                        <Text className="text-white font-black text-xl">닫기</Text>
+                        <Text className="text-slate-400 font-bold text-base">닫기</Text>
                     </TouchableOpacity>
                 </View>
             </View>
