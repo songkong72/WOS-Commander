@@ -515,8 +515,8 @@ export default function Home() {
                             }}
                             className="bg-slate-800 p-5 rounded-2xl mb-4 flex-row items-center justify-center border border-slate-700"
                         >
-                            <Ionicons name="settings-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
-                            <Text className="text-white font-black text-xl">대시보드 상세 관리</Text>
+                            <Ionicons name="people-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
+                            <Text className="text-white font-black text-xl">연맹원 관리</Text>
                         </TouchableOpacity>
 
                         {!!isSuperAdmin && (
