@@ -461,7 +461,8 @@ export default function EventTracker() {
         setActiveTab(1);
 
 
-        if (event.category === '개인' || event.id === 'a_castle' || event.id === 'a_operation' || event.id === 'alliance_frost_league' || event.id === 'a_weapon' || event.id === 'a_champ') {
+        const dateRangeIDs = ['a_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league'];
+        if (event.category === '개인' || dateRangeIDs.includes(event.id)) {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
 
@@ -638,7 +639,8 @@ export default function EventTracker() {
     const saveSchedule = async () => {
         if (!editingEvent) return;
 
-        if (editingEvent.category === '개인' || editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation' || editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon' || editingEvent.id === 'a_champ') {
+        const dateRangeIDs = ['a_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league'];
+        if (editingEvent.category === '개인' || dateRangeIDs.includes(editingEvent.id)) {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
@@ -718,16 +720,13 @@ export default function EventTracker() {
 
         const singleSlotIDs = [
             'a_center', 'alliance_center',
-            'a_champ', 'alliance_champion',
             'a_mercenary', 'alliance_mercenary',
             'a_immigrate', 'alliance_immigrate',
-            'a_trade', 'alliance_trade',
             'a_mobilization', 'alliance_mobilization',
             'a_merge', 'alliance_merge',
             'a_svs', 'alliance_svs',
             'a_dragon', 'alliance_dragon',
-            'a_joe', 'alliance_joe',
-            'alliance_frost_league', 'a_weapon'
+            'a_joe', 'alliance_joe'
         ];
 
         if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
@@ -1653,7 +1652,10 @@ export default function EventTracker() {
                                             );
                                         })()}
                                     </View>
-                                ) : (editingEvent?.category === '개인' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? (
+                                ) : (() => {
+                                    const dateRangeIDs = ['a_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league'];
+                                    return (editingEvent?.category === '개인' || dateRangeIDs.includes(editingEvent?.id || ''));
+                                })() ? (
                                     <View className="mb-6" style={{ zIndex: 100 }}>
                                         {/* Helper to update date time parts */}
                                         {(() => {
@@ -1767,16 +1769,13 @@ export default function EventTracker() {
                                         {(() => {
                                             const singleSlotIDs = [
                                                 'a_center', 'alliance_center',
-                                                'a_champ', 'alliance_champion',
                                                 'a_mercenary', 'alliance_mercenary',
                                                 'a_immigrate', 'alliance_immigrate',
-                                                'a_trade', 'alliance_trade',
                                                 'a_mobilization', 'alliance_mobilization',
                                                 'a_merge', 'alliance_merge',
                                                 'a_svs', 'alliance_svs',
                                                 'a_dragon', 'alliance_dragon',
-                                                'a_joe', 'alliance_joe',
-                                                'alliance_frost_league', 'a_weapon'
+                                                'a_joe', 'alliance_joe'
                                             ];
                                             if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                 return (
@@ -1803,91 +1802,6 @@ export default function EventTracker() {
                                             return null;
                                         })()}
 
-                                        {/* Championship Specific UI */}
-                                        {editingEvent?.id === 'a_champ' && (
-                                            <View className="mb-6">
-                                                <Text className="text-brand-accent text-xs font-black mb-3 ml-1 uppercase">진행 기간 설정</Text>
-                                                <View className="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                                                    {/* Start */}
-                                                    <View className="flex-row items-center mb-4">
-                                                        <Text className="text-white font-bold w-12">시작</Text>
-                                                        <View className="flex-row gap-2 flex-1">
-                                                            {/* Day */}
-                                                            <View className="flex-1 bg-slate-900 rounded-xl border border-slate-600 overflow-hidden">
-                                                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                                    {['월', '화', '수', '목', '금', '토', '일'].map(d => (
-                                                                        <TouchableOpacity key={d} onPress={() => setChampStart({ ...champStart, d })} className={`p-3 ${champStart.d === d ? 'bg-brand-accent' : ''}`}>
-                                                                            <Text className={`font-bold ${champStart.d === d ? 'text-brand-dark' : 'text-slate-400'}`}>{d}</Text>
-                                                                        </TouchableOpacity>
-                                                                    ))}
-                                                                </ScrollView>
-                                                            </View>
-                                                            {/* Time */}
-                                                            <View className="flex-row items-center gap-1 bg-slate-900 rounded-xl border border-slate-600 px-3 py-2">
-                                                                <TextInput
-                                                                    className="text-white font-bold w-6 text-center"
-                                                                    value={champStart.h}
-                                                                    onChangeText={t => setChampStart({ ...champStart, h: t })}
-                                                                    keyboardType="number-pad"
-                                                                    maxLength={2}
-                                                                />
-                                                                <Text className="text-slate-500">:</Text>
-                                                                <TextInput
-                                                                    className="text-white font-bold w-6 text-center"
-                                                                    value={champStart.m}
-                                                                    onChangeText={t => setChampStart({ ...champStart, m: t })}
-                                                                    keyboardType="number-pad"
-                                                                    maxLength={2}
-                                                                />
-                                                            </View>
-                                                        </View>
-                                                    </View>
-
-                                                    {/* End */}
-                                                    <View className="flex-row items-center">
-                                                        <Text className="text-white font-bold w-12">종료</Text>
-                                                        <View className="flex-row gap-2 flex-1">
-                                                            {/* Day */}
-                                                            <View className="flex-1 bg-slate-900 rounded-xl border border-slate-600 overflow-hidden">
-                                                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                                                    {['월', '화', '수', '목', '금', '토', '일'].map(d => (
-                                                                        <TouchableOpacity key={d} onPress={() => setChampEnd({ ...champEnd, d })} className={`p-3 ${champEnd.d === d ? 'bg-brand-accent' : ''}`}>
-                                                                            <Text className={`font-bold ${champEnd.d === d ? 'text-brand-dark' : 'text-slate-400'}`}>{d}</Text>
-                                                                        </TouchableOpacity>
-                                                                    ))}
-                                                                </ScrollView>
-                                                            </View>
-                                                            {/* Time */}
-                                                            <View className="flex-row items-center gap-1 bg-slate-900 rounded-xl border border-slate-600 px-3 py-2">
-                                                                <TextInput
-                                                                    className="text-white font-bold w-6 text-center"
-                                                                    value={champEnd.h}
-                                                                    onChangeText={t => setChampEnd({ ...champEnd, h: t })}
-                                                                    keyboardType="number-pad"
-                                                                    maxLength={2}
-                                                                />
-                                                                <Text className="text-slate-500">:</Text>
-                                                                <TextInput
-                                                                    className="text-white font-bold w-6 text-center"
-                                                                    value={champEnd.m}
-                                                                    onChangeText={t => setChampEnd({ ...champEnd, m: t })}
-                                                                    keyboardType="number-pad"
-                                                                    maxLength={2}
-                                                                />
-                                                            </View>
-                                                        </View>
-                                                    </View>
-                                                </View>
-
-                                                <View className="mt-4 bg-brand-accent/5 p-4 rounded-2xl border border-brand-accent/20 items-center">
-                                                    <Text className="text-slate-500 text-[10px] font-black uppercase mb-1">선택된 진행 일정</Text>
-                                                    <Text className="text-white text-lg font-black">
-                                                        {champStart.d} {champStart.h}:{champStart.m} <Text className="text-brand-accent mx-2">~</Text> {champEnd.d} {champEnd.h}:{champEnd.m}
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                        )}
-
                                         {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                             <>
                                                 <View className="mb-4">
@@ -1895,15 +1809,12 @@ export default function EventTracker() {
                                                         {(() => {
                                                             const singleSlotIDs = [
                                                                 'a_center', 'alliance_center',
-                                                                'a_champ', 'alliance_champion',
                                                                 'a_mercenary', 'alliance_mercenary',
                                                                 'a_immigrate', 'alliance_immigrate',
-                                                                'a_trade', 'alliance_trade',
                                                                 'a_mobilization', 'alliance_mobilization',
                                                                 'a_merge', 'alliance_merge',
                                                                 'a_svs', 'alliance_svs',
                                                                 'a_dragon', 'alliance_dragon',
-                                                                'a_weapon', 'alliance_frost_league',
                                                                 'a_joe', 'alliance_joe'
                                                             ];
                                                             if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
