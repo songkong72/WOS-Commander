@@ -10,7 +10,7 @@ import * as XLSX from 'xlsx';
 export default function AdminPage() {
     const router = useRouter();
     const { auth } = useAuth();
-    const { members, loading: membersLoading, saveMembers, clearAllMembers } = useFirestoreMembers();
+    const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember } = useFirestoreMembers();
 
     const [searchTerm, setSearchTerm] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -204,7 +204,17 @@ export default function AdminPage() {
                                                         `${m.nickname}님을 명단에서 삭제하시겠습니까?`,
                                                         [
                                                             { text: '취소', style: 'cancel' },
-                                                            { text: '삭제', style: 'destructive', onPress: () => { /* 구현 필요 */ } }
+                                                            {
+                                                                text: '삭제',
+                                                                style: 'destructive',
+                                                                onPress: async () => {
+                                                                    try {
+                                                                        await deleteMember(m.id);
+                                                                    } catch (error) {
+                                                                        Alert.alert('오류', '멤버 삭제 중 오류가 발생했습니다.');
+                                                                    }
+                                                                }
+                                                            }
                                                         ]
                                                     );
                                                 }}

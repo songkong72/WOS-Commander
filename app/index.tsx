@@ -508,6 +508,17 @@ export default function Home() {
                         <Text className="text-white text-2xl font-black mb-8 text-center">관리자 메뉴</Text>
                         <TouchableOpacity onPress={async () => { await logout(); setAdminMenuVisible(false); }} className="bg-slate-800 p-5 rounded-2xl mb-4 flex-row items-center justify-center border border-slate-700"><Ionicons name="log-out-outline" size={24} color="#ef4444" style={{ marginRight: 8 }} /><Text className="text-white font-black text-xl">로그아웃</Text></TouchableOpacity>
 
+                        <TouchableOpacity
+                            onPress={() => {
+                                setAdminMenuVisible(false);
+                                router.push('/admin');
+                            }}
+                            className="bg-slate-800 p-5 rounded-2xl mb-4 flex-row items-center justify-center border border-slate-700"
+                        >
+                            <Ionicons name="settings-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
+                            <Text className="text-white font-black text-xl">대시보드 상세 관리</Text>
+                        </TouchableOpacity>
+
                         {!!isSuperAdmin && (
                             <View className="mt-4 pt-4 border-t border-slate-800">
                                 <Text className="text-[#38bdf8] font-bold mb-3 text-center text-xs">슈퍼 관리자 메뉴</Text>
@@ -544,17 +555,6 @@ export default function Home() {
                                 >
                                     <Ionicons name="trash-bin-outline" size={18} color="#ef4444" style={{ marginRight: 8 }} />
                                     <Text className="text-red-400 font-bold text-sm">전체 일정 초기화</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setAdminMenuVisible(false);
-                                        router.push('/admin');
-                                    }}
-                                    className="bg-slate-800 p-5 rounded-2xl mt-4 flex-row items-center justify-center border border-slate-700"
-                                >
-                                    <Ionicons name="settings-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
-                                    <Text className="text-white font-black text-xl">대시보드 상세 관리</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -609,7 +609,7 @@ export default function Home() {
                         )}
                     </View>
                 </View>
-            </Modal>
+            </Modal >
 
             <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
                 <View className="flex-1 bg-black/85 items-center justify-center p-6">

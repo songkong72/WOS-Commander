@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, query, writeBatch, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 export interface Member {
@@ -55,5 +55,15 @@ export const useFirestoreMembers = () => {
         await batch.commit();
     };
 
-    return { members, loading, saveMembers, clearAllMembers };
+    const deleteMember = async (memberId: string) => {
+        try {
+            const docRef = doc(db, 'members', memberId);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Delete member error:", error);
+            throw error;
+        }
+    };
+
+    return { members, loading, saveMembers, clearAllMembers, deleteMember };
 };
