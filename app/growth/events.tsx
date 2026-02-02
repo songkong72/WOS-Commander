@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../_layout';
 import { getGuideContent } from '../../data/event-guides';
@@ -147,6 +147,7 @@ export default function EventTracker() {
 
     // Modal States
     const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
+    const [hoveredClockId, setHoveredClockId] = useState<string | null>(null);
     const [editingEvent, setEditingEvent] = useState<WikiEvent | null>(null);
 
     // Permission request for notifications
@@ -872,185 +873,195 @@ export default function EventTracker() {
                                         }}
                                     >
                                         <View className={`h-full bg-[#1e293b]/95 rounded-[28px] border-2 overflow-hidden transition-all duration-300 ${highlightId === event.id ? 'border-[#38bdf8] shadow-2xl shadow-blue-500/30 scale-[1.02]' : 'border-slate-700/60 shadow-lg'}`}>
-                                            {/* Card Image Area */}
-                                            <View className="h-56 bg-slate-800 relative">
-                                                {event.imageUrl ? (
-                                                    <ImageBackground source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl} className="w-full h-full" resizeMode="contain">
-                                                        <View className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent" />
-                                                        <View className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded-lg backdrop-blur-sm">
-                                                            <Text className="text-white text-[10px] font-bold">{event.category}</Text>
+                                            {/* Card Header - Modern Dashboard Style */}
+                                            <View className="px-5 py-4 flex-row items-center justify-between border-b border-white/5">
+                                                <View className="flex-row items-center flex-1 mr-2">
+                                                    {event.imageUrl ? (
+                                                        <View className="w-14 h-14 rounded-2xl border border-white/10 overflow-hidden bg-slate-900 shadow-lg mr-4">
+                                                            <Image
+                                                                source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl}
+                                                                className="w-full h-full"
+                                                                resizeMode="contain"
+                                                            />
                                                         </View>
-                                                    </ImageBackground>
-                                                ) : (
-                                                    <View className="w-full h-full items-center justify-center">
-                                                        <Text className="text-3xl">📅</Text>
-                                                    </View>
-                                                )}
-                                            </View>
-
-                                            {/* Card Content Area */}
-                                            <View className="p-4 flex-1 justify-between">
-                                                <View>
-                                                    <View className="flex-row items-center justify-between mb-2">
-                                                        <Text className="text-white text-xl font-black leading-tight flex-1 mr-2" numberOfLines={1}>{event.title}</Text>
-                                                        {isOngoing && (
-                                                            <View className="bg-red-500 px-2.5 py-1.5 rounded-lg shadow-lg shadow-red-500/30 animate-pulse">
-                                                                <Text className="text-white text-[12px] font-black">진행중</Text>
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                    <View className="flex-row flex-wrap gap-1 mb-3">
-                                                        {event.id !== 'a_fortress' && (
-                                                            (!event.day && !event.time) ? (
-                                                                <View className="px-4 py-2 bg-brand-accent/20 rounded-xl border border-brand-accent/30 shadow-sm">
-                                                                    <Text className="text-brand-accent text-base font-black">일정 미정</Text>
-                                                                </View>
-                                                            ) : (
-                                                                event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
-                                                                    <View className="flex-row flex-wrap gap-2">
-                                                                        {event.day.split('/').map((d, dIdx) => {
-                                                                            const cleanD = d.trim();
-                                                                            const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                            const isRange = cleanD.includes('~');
-                                                                            let utcText = '';
-
-                                                                            if (isRange) {
-                                                                                const parts = cleanD.split('~').map(x => x.trim());
-                                                                                // Try date range first
-                                                                                const sDateUtc = getUTCString(parts[0]);
-                                                                                const eDateUtc = getUTCString(parts[1]);
-
-                                                                                if (sDateUtc && eDateUtc) {
-                                                                                    utcText = `🌍 UTC: ${sDateUtc} ~ ${eDateUtc}`;
-                                                                                } else {
-                                                                                    // Try weekly range
-                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
-                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                                                    if (sWeeklyUtc && eWeeklyUtc) {
-                                                                                        utcText = `🌍 UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
-                                                                                    }
-                                                                                }
-                                                                            } else {
-                                                                                const dateUtc = getUTCString(cleanD);
-                                                                                if (dateUtc) {
-                                                                                    utcText = `🌍 UTC: ${dateUtc}`;
-                                                                                } else {
-                                                                                    const weeklyUtc = getUTCTimeString(cleanD);
-                                                                                    if (weeklyUtc) utcText = weeklyUtc;
-                                                                                }
-                                                                            }
-
-                                                                            const renderResponsivePeriod = (str: string, textClass: string, isUtc = false) => {
-                                                                                if (!str.includes('~')) {
-                                                                                    return <Text className={textClass}>{str}</Text>;
-                                                                                }
-                                                                                const parts = str.split('~').map(s => s.trim());
-                                                                                return (
-                                                                                    <View className="flex-row flex-wrap items-center">
-                                                                                        <Text className={textClass}>{parts[0]}</Text>
-                                                                                        <Text className={`${textClass} mx-2 opacity-60`}>~</Text>
-                                                                                        <Text className={textClass}>{parts[1]}</Text>
-                                                                                    </View>
-                                                                                );
-                                                                            };
-
-                                                                            return (
-                                                                                <View key={dIdx} className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner max-w-full">
-                                                                                    {renderResponsivePeriod(formattedDay, "text-[#38bdf8] font-black text-lg")}
-                                                                                    {!!utcText && (
-                                                                                        <View className="mt-1">
-                                                                                            {renderResponsivePeriod(utcText, "text-slate-500 text-[10px] font-bold", true)}
-                                                                                        </View>
-                                                                                    )}
-                                                                                </View>
-                                                                            );
-                                                                        })}
-                                                                    </View>
-                                                                ) : null
-                                                            )
-                                                        )}
-                                                        {event.time && (
-                                                            <View className="w-full mt-1 border-t border-slate-800/30 pt-1">
-                                                                {event.time.split(' / ').map((part, idx) => {
-                                                                    const trimmed = part.trim();
-                                                                    if (!trimmed) return null;
-                                                                    const colonIdx = trimmed.indexOf(':');
-                                                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                                                    const label = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
-                                                                    const content = label ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-                                                                    if (content === "." || !content) return null;
-
-                                                                    return (
-                                                                        <View key={idx} className="mb-2 last:mb-0">
-                                                                            {label && <Text className="text-slate-500 text-[11px] font-black uppercase mb-1 ml-1">{label}</Text>}
-                                                                            <View className="flex-row flex-wrap gap-2.5">
-                                                                                {content.split(/[,|]/).map((item, iIdx) => {
-                                                                                    const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                                    const utcStr = getUTCTimeString(item.trim());
-                                                                                    return (
-                                                                                        <View key={iIdx} className="bg-black/50 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-2xl relative">
-                                                                                            <Text className="text-[#38bdf8] font-black text-lg">{formatted}</Text>
-                                                                                            {!!utcStr && (
-                                                                                                <Text className="text-slate-500 text-[10px] font-bold mt-0.5">{utcStr}</Text>
-                                                                                            )}
-                                                                                        </View>
-                                                                                    );
-                                                                                })}
-                                                                            </View>
-                                                                        </View>
-                                                                    );
-                                                                })}
-                                                            </View>
-                                                        )}
+                                                    ) : (
+                                                        <View className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-700 items-center justify-center mr-4">
+                                                            <Text className="text-2xl">📅</Text>
+                                                        </View>
+                                                    )}
+                                                    <View className="flex-1">
+                                                        <View className="bg-cyan-500/10 self-start px-2 py-0.5 rounded-md mb-1 border border-cyan-500/20">
+                                                            <Text className="text-cyan-400 text-[9px] font-black uppercase tracking-widest">{event.category}</Text>
+                                                        </View>
+                                                        <Text className="text-white text-lg font-black leading-tight" numberOfLines={1}>{event.title}</Text>
                                                     </View>
                                                 </View>
 
-                                                {/* Action Buttons */}
-                                                <View className="flex-row mt-3 h-12">
+                                                {/* Admin Setting & Status area */}
+                                                <View className="items-end gap-2 relative">
+                                                    {auth.isLoggedIn && (
+                                                        <View className="relative">
+                                                            {/* Tooltip - Modern Dashboard style (Moved below to prevent clipping) */}
+                                                            {hoveredClockId === event.id && (
+                                                                <View className="absolute top-11 right-0 bg-slate-800/95 border border-slate-600 px-3 py-1.5 rounded-lg shadow-xl z-50 min-w-[70px]">
+                                                                    <Text className="text-white text-[10px] font-bold text-center whitespace-nowrap">시간 설정</Text>
+                                                                    {/* Tooltip arrow at top */}
+                                                                    <View className="absolute -top-1 right-4 w-2 h-2 bg-slate-800 border-l border-t border-slate-600 rotate-45" />
+                                                                </View>
+                                                            )}
+                                                            <TouchableOpacity
+                                                                onPress={() => openScheduleModal(event)}
+                                                                onMouseEnter={() => setHoveredClockId(event.id)}
+                                                                onMouseLeave={() => setHoveredClockId(null)}
+                                                                className="w-10 h-10 bg-slate-800 rounded-full items-center justify-center border border-slate-700 shadow-sm transition-all hover:bg-slate-700 hover:border-cyan-500/50"
+                                                            >
+                                                                <Ionicons name="time" size={20} color="#38bdf8" />
+                                                            </TouchableOpacity>
+                                                        </View>
+                                                    )}
+                                                    {isOngoing && (
+                                                        <View className="bg-red-500 px-2.5 py-1 rounded-lg shadow-lg shadow-red-500/20">
+                                                            <Text className="text-white text-[9px] font-black">ONGOING</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
+
+                                            {/* Card Content Area - Premium Dashboard hierarchy */}
+                                            <View className="p-5 flex-1 justify-between">
+                                                <View className="mb-6">
+                                                    {event.id !== 'a_fortress' && (
+                                                        (!event.day && !event.time) ? (
+                                                            /* Distinctive TBD Status - Not looking like a button */
+                                                            <View className="w-full py-8 border-2 border-dashed border-slate-700/50 rounded-3xl items-center justify-center bg-slate-900/20">
+                                                                <Ionicons name="calendar-outline" size={24} color="#475569" className="mb-2" />
+                                                                <Text className="text-slate-500 text-sm font-bold">다음 일정을 준비 중입니다</Text>
+                                                            </View>
+                                                        ) : (
+                                                            event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
+                                                                <View className="w-full flex-row flex-wrap gap-2">
+                                                                    {event.day.split('/').map((d, dIdx) => {
+                                                                        const cleanD = d.trim();
+                                                                        const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                        const isRange = cleanD.includes('~');
+                                                                        let utcText = '';
+
+                                                                        if (isRange) {
+                                                                            const parts = cleanD.split('~').map(x => x.trim());
+                                                                            const sDateUtc = getUTCString(parts[0]);
+                                                                            const eDateUtc = getUTCString(parts[1]);
+                                                                            if (sDateUtc && eDateUtc) {
+                                                                                utcText = `🌍 UTC: ${sDateUtc} ~ ${eDateUtc}`;
+                                                                            } else {
+                                                                                const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                if (sWeeklyUtc && eWeeklyUtc) {
+                                                                                    utcText = `🌍 UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                                }
+                                                                            }
+                                                                        } else {
+                                                                            const dateUtc = getUTCString(cleanD);
+                                                                            if (dateUtc) {
+                                                                                utcText = `🌍 UTC: ${dateUtc}`;
+                                                                            } else {
+                                                                                const weeklyUtc = getUTCTimeString(cleanD);
+                                                                                if (weeklyUtc) utcText = weeklyUtc;
+                                                                            }
+                                                                        }
+
+                                                                        const renderResponsivePeriod = (str: string, textClass: string, isUtc = false) => {
+                                                                            if (!str.includes('~')) {
+                                                                                return <Text className={textClass}>{str}</Text>;
+                                                                            }
+                                                                            const parts = str.split('~').map(s => s.trim());
+                                                                            return (
+                                                                                <View className="flex-row flex-wrap items-center">
+                                                                                    <Text className={textClass}>{parts[0]}</Text>
+                                                                                    <Text className={`${textClass} mx-1.5 opacity-60`}>~</Text>
+                                                                                    <Text className={textClass}>{parts[1]}</Text>
+                                                                                </View>
+                                                                            );
+                                                                        };
+
+                                                                        return (
+                                                                            <View key={dIdx} className="bg-slate-900/60 flex-1 min-w-[200px] p-5 rounded-2xl border border-slate-700 shadow-inner">
+                                                                                {renderResponsivePeriod(formattedDay, "text-cyan-400 font-black text-lg")}
+                                                                                {!!utcText && (
+                                                                                    <View className="mt-1.5 pt-1.5 border-t border-white/5">
+                                                                                        {renderResponsivePeriod(utcText, "text-slate-500 text-[11px] font-bold", true)}
+                                                                                    </View>
+                                                                                )}
+                                                                            </View>
+                                                                        );
+                                                                    })}
+                                                                </View>
+                                                            ) : null
+                                                        )
+                                                    )}
+                                                    {event.time && (
+                                                        <View className="w-full space-y-4">
+                                                            {event.time.split(' / ').map((part, idx) => {
+                                                                const trimmed = part.trim();
+                                                                if (!trimmed) return null;
+                                                                const colonIdx = trimmed.indexOf(':');
+                                                                const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
+                                                                const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
+                                                                // Special handling for Bear Hunt event labels
+                                                                let label = rawLabel;
+                                                                if (event.id === 'a_bear') {
+                                                                    label = label.replace('1군', '곰1').replace('2군', '곰2');
+                                                                }
+                                                                const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                                                                if (content === "." || !content) return null;
+
+                                                                return (
+                                                                    <View key={idx} className="mb-5 last:mb-0">
+                                                                        {label && (
+                                                                            <View className="flex-row items-center mb-2.5 ml-1">
+                                                                                <View className="w-1 h-3 bg-cyan-500 rounded-full mr-2" />
+                                                                                <Text className="text-slate-400 text-[11px] font-black uppercase tracking-widest">{label}</Text>
+                                                                            </View>
+                                                                        )}
+                                                                        <View className="flex-row flex-wrap gap-3">
+                                                                            {content.split(/[,|]/).map((item, iIdx) => {
+                                                                                const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                                const utcStr = getUTCTimeString(item.trim());
+                                                                                return (
+                                                                                    <View key={iIdx} className="bg-slate-900/60 px-6 py-4 rounded-3xl border border-slate-700/50 shadow-inner min-w-[140px]">
+                                                                                        <Text className="text-cyan-400 font-black text-lg">{formatted}</Text>
+                                                                                        {!!utcStr && (
+                                                                                            <Text className="text-slate-500 text-[11px] font-bold mt-1.5">{utcStr}</Text>
+                                                                                        )}
+                                                                                    </View>
+                                                                                );
+                                                                            })}
+                                                                        </View>
+                                                                    </View>
+                                                                );
+                                                            })}
+                                                        </View>
+                                                    )}
+                                                </View>
+
+                                                {/* Large Trendy Full-width Action Buttons */}
+                                                <View className="flex-row gap-4 h-[60px]">
                                                     <TouchableOpacity
                                                         onPress={() => openGuideModal(event)}
-                                                        className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
+                                                        className="flex-[1.5] rounded-3xl bg-[#38bdf8] items-center justify-center flex-row shadow-2xl shadow-cyan-500/40 active:scale-95 transition-all overflow-hidden"
                                                     >
-                                                        <Text className="text-[#38bdf8] text-[14px] font-black">
-                                                            {event.category === '연맹' ? '⚔️ 전략' : '📘 가이드'}
+                                                        <Text className="text-slate-900 text-[16px] font-black mr-2">
+                                                            {event.category === '연맹' ? '⚔️ 전략 시트' : '📘 가이드 보기'}
                                                         </Text>
+                                                        <Ionicons name="chevron-forward-circle" size={18} color="rgba(15, 23, 42, 0.4)" />
                                                     </TouchableOpacity>
 
                                                     {event.category === '연맹' && (
-                                                        auth.isLoggedIn ? (
-                                                            <>
-                                                                <TouchableOpacity
-                                                                    onPress={() => openAttendeeModal(event)}
-                                                                    className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
-                                                                >
-                                                                    <Ionicons name="people" size={16} color="#38bdf8" className="mr-2" />
-                                                                    <Text className="text-[#38bdf8] text-[14px] font-black" numberOfLines={1}>참석자</Text>
-                                                                </TouchableOpacity>
-                                                                <TouchableOpacity
-                                                                    onPress={() => openScheduleModal(event)}
-                                                                    className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
-                                                                >
-                                                                    <Ionicons name="settings-sharp" size={16} color="#38bdf8" className="mr-2" />
-                                                                    <Text className="text-[#38bdf8] text-[14px] font-black">설정</Text>
-                                                                </TouchableOpacity>
-                                                            </>
-                                                        ) : (
-                                                            <TouchableOpacity
-                                                                onPress={() => openAttendeeModal(event)}
-                                                                className="flex-1 mx-1 rounded-2xl border border-blue-500/30 bg-blue-500/10 items-center justify-center flex-row h-12 shadow-sm"
-                                                            >
-                                                                <Ionicons name="people" size={16} color="#60a5fa" className="mr-2" />
-                                                                <Text className="text-blue-400 text-[14px] font-black">참석</Text>
-                                                            </TouchableOpacity>
-                                                        )
-                                                    )}
-
-                                                    {event.category !== '연맹' && auth.isLoggedIn && (
                                                         <TouchableOpacity
-                                                            onPress={() => openScheduleModal(event)}
-                                                            className="w-12 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center h-12 shadow-sm"
+                                                            onPress={() => openAttendeeModal(event)}
+                                                            className="flex-1 rounded-3xl bg-slate-800/80 border-2 border-slate-700 items-center justify-center flex-row active:scale-95 transition-all"
                                                         >
-                                                            <Ionicons name="settings-sharp" size={20} color="#38bdf8" />
+                                                            <Ionicons name="people" size={20} color="#38bdf8" className="mr-2" />
+                                                            <Text className="text-white text-[16px] font-black">참석 관리</Text>
                                                         </TouchableOpacity>
                                                     )}
                                                 </View>

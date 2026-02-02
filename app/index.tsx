@@ -415,8 +415,12 @@ export default function Home() {
                                                                             if (!trimmed) return null;
                                                                             const colonIdx = trimmed.indexOf(':');
                                                                             const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                                                            const label = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
-                                                                            const content = label ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                                                                            const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
+                                                                            let label = rawLabel;
+                                                                            if (event.eventId === 'a_bear') {
+                                                                                label = label.replace('1군', '곰1').replace('2군', '곰2');
+                                                                            }
+                                                                            const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                                                                             return (
                                                                                 <View key={pIdx} className="mb-3 last:mb-0">
                                                                                     {!!label && (
