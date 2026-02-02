@@ -95,162 +95,157 @@ export default function AdminPage() {
 
     return (
         <View className="flex-1 bg-[#020617] p-6">
-            <View className="max-w-4xl mx-auto w-full">
+            <View className="max-w-4xl mx-auto w-full flex-1">
                 <View className="flex-row items-center mb-8 mt-12">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-800 rounded-full">
+                    <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-800 rounded-full shadow-lg border border-slate-700">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <Text className="text-white text-3xl font-black">관리자 대시보드</Text>
                 </View>
 
-                {/* Member Management Section */}
-                <View className="bg-slate-900/80 p-8 rounded-[32px] border border-slate-800 shadow-2xl mt-8 mb-20">
-                    <View className="flex-row items-center justify-between mb-6 border-b border-slate-800 pb-4">
-                        <View className="flex-row items-center">
-                            <View className="w-10 h-10 bg-indigo-500/20 rounded-xl items-center justify-center mr-3">
-                                <Ionicons name="people" size={24} color="#818cf8" />
+                <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                    {/* Member Management Section */}
+                    <View className="bg-slate-900/80 p-8 rounded-[32px] border border-slate-800 shadow-2xl mt-4">
+                        <View className="flex-row items-center justify-between mb-6 border-b border-slate-800 pb-4">
+                            <View className="flex-row items-center">
+                                <View className="w-10 h-10 bg-indigo-500/20 rounded-xl items-center justify-center mr-3">
+                                    <Ionicons name="people" size={24} color="#818cf8" />
+                                </View>
+                                <Text className="text-white text-2xl font-bold">연맹원 명단 관리</Text>
                             </View>
-                            <Text className="text-white text-2xl font-bold">연맹원 명단 관리</Text>
+                            <Text className="text-indigo-400 font-black">{members.length}명</Text>
                         </View>
-                        <Text className="text-indigo-400 font-black">{members.length}명</Text>
-                    </View>
 
-                    {/* Upload Section */}
-                    <View className="bg-slate-800/50 p-6 rounded-2xl border border-dashed border-slate-700 mb-8 items-center">
-                        <Ionicons name="cloud-upload" size={40} color="#6366f1" className="mb-3" />
-                        <Text className="text-white font-bold text-lg mb-1">엑셀 파일 일괄 등록</Text>
-                        <Text className="text-slate-500 text-xs mb-6 text-center">ID와 닉네임 컬럼이 포함된 파일을 선택하세요.</Text>
+                        {/* Upload Section */}
+                        <View className="bg-slate-800/50 p-6 rounded-2xl border border-dashed border-slate-700 mb-8 items-center">
+                            <Ionicons name="cloud-upload" size={40} color="#6366f1" className="mb-3" />
+                            <Text className="text-white font-bold text-lg mb-1">엑셀 파일 일괄 등록</Text>
+                            <Text className="text-slate-500 text-xs mb-6 text-center">ID와 닉네임 컬럼이 포함된 파일을 선택하세요.</Text>
 
-                        <View className="flex-row gap-4 w-full">
-                            <TouchableOpacity
-                                onPress={handleExcelUpload}
-                                disabled={uploading}
-                                className="flex-1 bg-slate-700 py-4 rounded-xl border border-slate-600 items-center"
-                            >
-                                {uploading ? (
-                                    <ActivityIndicator size="small" color="white" />
-                                ) : (
-                                    <Text className="text-white font-black">파일 선택</Text>
-                                )}
-                            </TouchableOpacity>
-                            {previewData.length > 0 && (
+                            <View className="flex-row gap-4 w-full">
                                 <TouchableOpacity
-                                    onPress={handleSaveMembers}
-                                    className="flex-1 bg-indigo-600 py-4 rounded-xl items-center"
+                                    onPress={handleExcelUpload}
+                                    disabled={uploading}
+                                    className="flex-1 bg-slate-700 py-4 rounded-xl border border-slate-600 items-center"
                                 >
-                                    <Text className="text-white font-black">명단 저장 ({previewData.length}건)</Text>
+                                    {uploading ? (
+                                        <ActivityIndicator size="small" color="white" />
+                                    ) : (
+                                        <Text className="text-white font-black">파일 선택</Text>
+                                    )}
                                 </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-
-                    {/* Preview Table for Uploaded Data */}
-                    {previewData.length > 0 && (
-                        <View className="bg-slate-800/80 p-5 rounded-2xl border border-indigo-500/30 mb-8">
-                            <View className="flex-row justify-between items-center mb-4">
-                                <Text className="text-indigo-400 font-black">업로드 미리보기</Text>
-                                <TouchableOpacity onPress={() => setPreviewData([])}>
-                                    <Text className="text-red-400 text-xs font-bold">취소</Text>
-                                </TouchableOpacity>
+                                {previewData.length > 0 && (
+                                    <TouchableOpacity
+                                        onPress={handleSaveMembers}
+                                        className="flex-1 bg-indigo-600 py-4 rounded-xl items-center"
+                                    >
+                                        <Text className="text-white font-black">명단 저장 ({previewData.length}건)</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                            <ScrollView className="max-h-60" nestedScrollEnabled>
-                                {previewData.map((p, idx) => (
-                                    <View key={idx} className="flex-row justify-between py-2 border-b border-slate-700/50">
-                                        <Text className="text-slate-400 text-xs">{p.id}</Text>
-                                        <Text className="text-white text-xs font-bold">{p.nickname}</Text>
-                                    </View>
-                                ))}
-                            </ScrollView>
                         </View>
-                    )}
 
-                    {/* Search & List */}
-                    <View className="mb-4">
-                        <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3 border border-slate-700">
-                            <Ionicons name="search" size={20} color="#94a3b8" className="mr-2" />
-                            <TextInput
-                                placeholder="닉네임 또는 ID로 검색..."
-                                placeholderTextColor="#475569"
-                                value={searchTerm}
-                                onChangeText={setSearchTerm}
-                                className="flex-1 text-white font-bold"
-                            />
-                        </View>
-                    </View>
-
-                    <View className="bg-slate-800/30 rounded-2xl border border-slate-800 overflow-hidden">
-                        {membersLoading ? (
-                            <View className="py-10 items-center">
-                                <ActivityIndicator color="#818cf8" />
-                            </View>
-                        ) : filteredMembers.length === 0 ? (
-                            <View className="py-10 items-center">
-                                <Text className="text-slate-500 font-bold">등록된 연맹원이 없습니다.</Text>
-                            </View>
-                        ) : (
-                            <ScrollView className="max-h-96" nestedScrollEnabled>
-                                {filteredMembers.map((m, idx) => (
-                                    <View key={m.id} className={`flex-row items-center justify-between p-4 ${idx !== filteredMembers.length - 1 ? 'border-b border-slate-800' : ''}`}>
-                                        <View>
-                                            <Text className="text-white font-black text-base">{m.nickname}</Text>
-                                            <Text className="text-slate-500 text-[10px] mt-0.5">ID: {m.id}</Text>
+                        {/* Preview Table for Uploaded Data */}
+                        {previewData.length > 0 && (
+                            <View className="bg-slate-800/80 p-5 rounded-2xl border border-indigo-500/30 mb-8">
+                                <View className="flex-row justify-between items-center mb-4">
+                                    <Text className="text-indigo-400 font-black">업로드 미리보기</Text>
+                                    <TouchableOpacity onPress={() => setPreviewData([])}>
+                                        <Text className="text-red-400 text-xs font-bold">취소</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                <ScrollView className="max-h-60" nestedScrollEnabled>
+                                    {previewData.map((p, idx) => (
+                                        <View key={idx} className="flex-row justify-between py-2 border-b border-slate-700/50">
+                                            <Text className="text-slate-400 text-xs">{p.id}</Text>
+                                            <Text className="text-white text-xs font-bold">{p.nickname}</Text>
                                         </View>
-                                        <View className="flex-row gap-2">
-                                            <TouchableOpacity
-                                                className="w-8 h-8 rounded-lg bg-red-500/10 items-center justify-center"
-                                                onPress={() => {
-                                                    Alert.alert(
-                                                        '멤버 삭제',
-                                                        `${m.nickname}님을 명단에서 삭제하시겠습니까?`,
-                                                        [
-                                                            { text: '취소', style: 'cancel' },
-                                                            {
-                                                                text: '삭제',
-                                                                style: 'destructive',
-                                                                onPress: async () => {
-                                                                    try {
-                                                                        await deleteMember(m.id);
-                                                                    } catch (error) {
-                                                                        Alert.alert('오류', '멤버 삭제 중 오류가 발생했습니다.');
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        )}
+
+                        {/* Search & List */}
+                        <View className="mb-4">
+                            <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3 border border-slate-700">
+                                <Ionicons name="search" size={20} color="#94a3b8" className="mr-2" />
+                                <TextInput
+                                    placeholder="닉네임 또는 ID로 검색..."
+                                    placeholderTextColor="#475569"
+                                    value={searchTerm}
+                                    onChangeText={setSearchTerm}
+                                    className="flex-1 text-white font-bold"
+                                />
+                            </View>
+                        </View>
+
+                        <View className="bg-slate-800/30 rounded-2xl border border-slate-800 overflow-hidden">
+                            {membersLoading ? (
+                                <View className="py-10 items-center">
+                                    <ActivityIndicator color="#818cf8" />
+                                </View>
+                            ) : filteredMembers.length === 0 ? (
+                                <View className="py-10 items-center">
+                                    <Text className="text-slate-500 font-bold">등록된 연맹원이 없습니다.</Text>
+                                </View>
+                            ) : (
+                                <ScrollView className="max-h-96" nestedScrollEnabled>
+                                    {filteredMembers.map((m, idx) => (
+                                        <View key={m.id} className={`flex-row items-center justify-between p-4 ${idx !== filteredMembers.length - 1 ? 'border-b border-slate-800' : ''}`}>
+                                            <View>
+                                                <Text className="text-white font-black text-base">{m.nickname}</Text>
+                                                <Text className="text-slate-500 text-[10px] mt-0.5">ID: {m.id}</Text>
+                                            </View>
+                                            <View className="flex-row gap-2">
+                                                <TouchableOpacity
+                                                    className="w-8 h-8 rounded-lg bg-red-500/10 items-center justify-center"
+                                                    onPress={() => {
+                                                        Alert.alert(
+                                                            '멤버 삭제',
+                                                            `${m.nickname}님을 명단에서 삭제하시겠습니까?`,
+                                                            [
+                                                                { text: '취소', style: 'cancel' },
+                                                                {
+                                                                    text: '삭제',
+                                                                    style: 'destructive',
+                                                                    onPress: async () => {
+                                                                        try {
+                                                                            await deleteMember(m.id);
+                                                                        } catch (error) {
+                                                                            Alert.alert('오류', '멤버 삭제 중 오류가 발생했습니다.');
+                                                                        }
                                                                     }
                                                                 }
-                                                            }
-                                                        ]
-                                                    );
-                                                }}
-                                            >
-                                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                                            </TouchableOpacity>
+                                                            ]
+                                                        );
+                                                    }}
+                                                >
+                                                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
-                                    </View>
-                                ))}
-                            </ScrollView>
-                        )}
+                                    ))}
+                                </ScrollView>
+                            )}
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                Alert.alert(
+                                    '전체 삭제',
+                                    '등록된 모든 연맹원 명단을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+                                    [
+                                        { text: '취소', style: 'cancel' },
+                                        { text: '전체 삭제', style: 'destructive', onPress: clearAllMembers }
+                                    ]
+                                );
+                            }}
+                            className="mt-6 self-end"
+                        >
+                            <Text className="text-red-500/50 text-xs font-bold underline">명단 전체 초기화</Text>
+                        </TouchableOpacity>
                     </View>
-
-                    <TouchableOpacity
-                        onPress={() => {
-                            Alert.alert(
-                                '전체 삭제',
-                                '등록된 모든 연맹원 명단을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-                                [
-                                    { text: '취소', style: 'cancel' },
-                                    { text: '전체 삭제', style: 'destructive', onPress: clearAllMembers }
-                                ]
-                            );
-                        }}
-                        className="mt-6 self-end"
-                    >
-                        <Text className="text-red-500/50 text-xs font-bold underline">명단 전체 초기화</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        onPress={() => router.back()}
-                        className="mt-8 bg-slate-800/80 py-3 px-12 rounded-2xl border border-slate-700 self-center"
-                    >
-                        <Text className="text-slate-400 font-bold text-base">닫기</Text>
-                    </TouchableOpacity>
-                </View>
+                </ScrollView>
             </View>
         </View>
     );
