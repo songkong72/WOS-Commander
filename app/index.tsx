@@ -545,6 +545,17 @@ export default function Home() {
                                     <Ionicons name="trash-bin-outline" size={18} color="#ef4444" style={{ marginRight: 8 }} />
                                     <Text className="text-red-400 font-bold text-sm">전체 일정 초기화</Text>
                                 </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setAdminMenuVisible(false);
+                                        router.push('/admin');
+                                    }}
+                                    className="bg-slate-800 p-5 rounded-2xl mt-4 flex-row items-center justify-center border border-slate-700"
+                                >
+                                    <Ionicons name="settings-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
+                                    <Text className="text-white font-black text-xl">대시보드 상세 관리</Text>
+                                </TouchableOpacity>
                             </View>
                         )}
 
