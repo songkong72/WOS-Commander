@@ -214,7 +214,7 @@ export default function Home() {
             const cleanDay = (s.day === '.' || s.day?.trim() === '.') ? '' : (s.day || '');
             const cleanTime = (s.time === '.' || s.time?.trim() === '.') ? '' : (s.time || '');
             return { ...s, day: cleanDay, time: cleanTime, title: eventInfo ? eventInfo.title : '알 수 없는 이벤트' };
-        }).filter(e => e.title !== '알 수 없는 이벤트' && !isEventExpired(e))
+        }).filter(e => e.title !== '알 수 없는 이벤트' && !isEventExpired(e) && (!!e.day || !!e.time))
             .sort((a, b) => {
                 const activeA = isEventActive(a);
                 const activeB = isEventActive(b);
