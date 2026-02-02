@@ -467,7 +467,7 @@ export default function EventTracker() {
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
 
             const now = new Date();
-            const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+            const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} 09:00`;
 
             setMStart(s || defaultStr);
             setMEnd(e || defaultStr);
@@ -1677,8 +1677,8 @@ export default function EventTracker() {
                                                     y: now.getFullYear().toString(),
                                                     m: pad(now.getMonth() + 1),
                                                     d: pad(now.getDate()),
-                                                    h: pad(now.getHours()),
-                                                    min: pad(now.getMinutes())
+                                                    h: '09',
+                                                    min: '00'
                                                 };
                                                 const match = value.match(/(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})/);
                                                 if (match) {
