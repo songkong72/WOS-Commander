@@ -461,7 +461,7 @@ export default function EventTracker() {
         setActiveTab(1);
 
 
-        if (event.category === '개인' || event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation' || event.id === 'alliance_frost_league' || event.id === 'a_weapon' || event.id === 'a_champ') {
+        if (event.category === '개인' || event.id === 'a_castle' || event.id === 'a_operation' || event.id === 'alliance_frost_league' || event.id === 'a_weapon' || event.id === 'a_champ') {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
 
@@ -545,8 +545,21 @@ export default function EventTracker() {
         // Parse Standard Schedule
         let s1: any[] = [];
         let s2: any[] = [];
+        const singleSlotIDs = [
+            'a_center', 'alliance_center',
+            'a_champ', 'alliance_champion',
+            'a_mercenary', 'alliance_mercenary',
+            'a_immigrate', 'alliance_immigrate',
+            'a_trade', 'alliance_trade',
+            'a_mobilization', 'alliance_mobilization',
+            'a_merge', 'alliance_merge',
+            'a_svs', 'alliance_svs',
+            'a_dragon', 'alliance_dragon',
+            'a_joe', 'alliance_joe',
+            'alliance_frost_league', 'a_weapon'
+        ];
 
-        if (event.category === '연맹' && event.id !== 'a_center' && event.id !== 'a_champ' && event.id !== 'a_mercenary' && event.id !== 'alliance_frost_league' && event.id !== 'a_weapon') {
+        if (event.category === '연맹' && !singleSlotIDs.includes(event.id)) {
             const parts = (event.time || '').split(' / ');
             parts.forEach(p => {
                 if (p.startsWith('1군:')) s1 = parseScheduleStr(p.replace('1군:', ''));
@@ -703,7 +716,21 @@ export default function EventTracker() {
             return Array.from(new Set(raw));
         };
 
-        if (editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && editingEvent.id !== 'a_weapon') {
+        const singleSlotIDs = [
+            'a_center', 'alliance_center',
+            'a_champ', 'alliance_champion',
+            'a_mercenary', 'alliance_mercenary',
+            'a_immigrate', 'alliance_immigrate',
+            'a_trade', 'alliance_trade',
+            'a_mobilization', 'alliance_mobilization',
+            'a_merge', 'alliance_merge',
+            'a_svs', 'alliance_svs',
+            'a_dragon', 'alliance_dragon',
+            'a_joe', 'alliance_joe',
+            'alliance_frost_league', 'a_weapon'
+        ];
+
+        if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
             const str1 = buildStr(slots1);
             const str2 = buildStr(slots2);
 
@@ -921,7 +948,7 @@ export default function EventTracker() {
                                                     )}
                                                     {isOngoing && (
                                                         <View className="bg-red-500 px-2.5 py-1 rounded-lg shadow-lg shadow-red-500/20">
-                                                            <Text className="text-white text-[9px] font-black">ONGOING</Text>
+                                                            <Text className="text-white text-[9px] font-black">진행중</Text>
                                                         </View>
                                                     )}
                                                 </View>
@@ -1626,7 +1653,7 @@ export default function EventTracker() {
                                             );
                                         })()}
                                     </View>
-                                ) : (editingEvent?.category === '개인' || editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? (
+                                ) : (editingEvent?.category === '개인' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? (
                                     <View className="mb-6" style={{ zIndex: 100 }}>
                                         {/* Helper to update date time parts */}
                                         {(() => {
@@ -1736,23 +1763,41 @@ export default function EventTracker() {
                                     </View>
                                 ) : (
                                     <>
-                                        {/* Tabs (Alliance Only) - Exclude Championship, Center, and Mercenary Honor, Frost League */}
-                                        {editingEvent?.category === '연맹' && editingEvent?.id !== 'a_center' && editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
-                                            <View className="flex-row mb-6 bg-slate-800 p-1 rounded-xl">
-                                                <TouchableOpacity
-                                                    onPress={() => setActiveTab(1)}
-                                                    className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? 'bg-slate-700' : ''}`}
-                                                >
-                                                    <Text className={`font-bold ${activeTab === 1 ? 'text-white font-black' : 'text-slate-500'}`}>1군 설정</Text>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={() => setActiveTab(2)}
-                                                    className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? 'bg-slate-700' : ''}`}
-                                                >
-                                                    <Text className={`font-bold ${activeTab === 2 ? 'text-white font-black' : 'text-slate-500'}`}>2군 설정</Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        )}
+                                        {/* Tabs (Alliance Only) - Exclude Single Slot Events */}
+                                        {(() => {
+                                            const singleSlotIDs = [
+                                                'a_center', 'alliance_center',
+                                                'a_champ', 'alliance_champion',
+                                                'a_mercenary', 'alliance_mercenary',
+                                                'a_immigrate', 'alliance_immigrate',
+                                                'a_trade', 'alliance_trade',
+                                                'a_mobilization', 'alliance_mobilization',
+                                                'a_merge', 'alliance_merge',
+                                                'a_svs', 'alliance_svs',
+                                                'a_dragon', 'alliance_dragon',
+                                                'a_joe', 'alliance_joe',
+                                                'alliance_frost_league', 'a_weapon'
+                                            ];
+                                            if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
+                                                return (
+                                                    <View className="flex-row mb-6 bg-slate-800 p-1 rounded-xl">
+                                                        <TouchableOpacity
+                                                            onPress={() => setActiveTab(1)}
+                                                            className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? 'bg-slate-700' : ''}`}
+                                                        >
+                                                            <Text className={`font-bold ${activeTab === 1 ? 'text-white font-black' : 'text-slate-500'}`}>1군 설정</Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            onPress={() => setActiveTab(2)}
+                                                            className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? 'bg-slate-700' : ''}`}
+                                                        >
+                                                            <Text className={`font-bold ${activeTab === 2 ? 'text-white font-black' : 'text-slate-500'}`}>2군 설정</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
 
                                         {/* Championship Specific UI */}
                                         {editingEvent?.id === 'a_champ' && (
@@ -1843,7 +1888,22 @@ export default function EventTracker() {
                                             <>
                                                 <View className="mb-4">
                                                     <Text className="text-brand-accent text-xs font-black mb-2 ml-1 uppercase">
-                                                        {(editingEvent?.category === '연맹' && editingEvent?.id !== 'a_mercenary' && editingEvent?.id !== 'a_center') ? `진행 요일 (${activeTab}군)` : '진행 요일'}
+                                                        {(() => {
+                                                            const singleSlotIDs = [
+                                                                'a_center', 'alliance_center',
+                                                                'a_champ', 'alliance_champion',
+                                                                'a_mercenary', 'alliance_mercenary',
+                                                                'a_immigrate', 'alliance_immigrate',
+                                                                'a_trade', 'alliance_trade',
+                                                                'a_mobilization', 'alliance_mobilization',
+                                                                'a_merge', 'alliance_merge',
+                                                                'a_svs', 'alliance_svs',
+                                                                'a_dragon', 'alliance_dragon',
+                                                                'a_joe', 'alliance_joe',
+                                                                'alliance_frost_league', 'a_weapon'
+                                                            ];
+                                                            return (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) ? `진행 요일 (${activeTab}군)` : '진행 요일';
+                                                        })()}
                                                     </Text>
                                                     <View className="flex-row flex-wrap gap-2">
                                                         {['월', '화', '수', '목', '금', '토', '일', '매일', '상시'].map((d) => {
