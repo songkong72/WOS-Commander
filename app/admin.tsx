@@ -243,6 +243,13 @@ export default function AdminPage() {
                     >
                         <Text className="text-red-500/50 text-xs font-bold underline">명단 전체 초기화</Text>
                     </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => router.back()}
+                        className="mt-12 bg-slate-800 py-5 rounded-2xl border border-slate-700 items-center shadow-lg"
+                    >
+                        <Text className="text-white font-black text-xl">닫기</Text>
+                    </TouchableOpacity>
                 </View>
             </View>
         </View>
