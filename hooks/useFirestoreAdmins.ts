@@ -5,8 +5,10 @@ import { Alert } from 'react-native';
 
 export interface AdminUser {
     name: string;
+    password?: string;
     addedAt: number;
     addedBy?: string;
+    role?: 'admin' | 'super_admin';
 }
 
 export const useFirestoreAdmins = () => {
@@ -37,13 +39,15 @@ export const useFirestoreAdmins = () => {
         };
     }, []);
 
-    const addAdmin = async (name: string, addedBy: string) => {
+    const addAdmin = async (name: string, addedBy: string, role: 'admin' | 'super_admin' = 'admin', password?: string) => {
         try {
             if (!name.trim()) return false;
             await setDoc(doc(db, 'sys_admins', name.trim()), {
                 name: name.trim(),
+                password: password || '',
                 addedAt: Date.now(),
-                addedBy
+                addedBy,
+                role
             });
             return true;
         } catch (error: any) {

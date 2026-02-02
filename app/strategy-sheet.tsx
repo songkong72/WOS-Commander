@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Platform, Modal, TextInput, Alert, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, Modal, TextInput, Alert, Pressable, Image } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 // @ts-ignore
@@ -26,7 +26,23 @@ export default function StrategySheet() {
     const [accessError, setAccessError] = useState(false);
     const [viewMode, setViewMode] = useState<'sheet' | 'guide'>('sheet');
 
-    const targetUrl = (sheetData && sheetData.url) ? sheetData.url : DEFAULT_SHEET_URL;
+    // Determine the URL to display
+    let targetUrl = DEFAULT_SHEET_URL;
+    const isFile = sheetData?.type === 'file';
+
+    if (sheetData && sheetData.url) {
+        if (isFile) {
+            targetUrl = sheetData.url;
+        } else {
+            // Check if it's a google sheet URL and clean it if necessary
+            const match = sheetData.url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (match && match[1]) {
+                targetUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/htmlview?embedded=true`;
+            } else {
+                targetUrl = sheetData.url;
+            }
+        }
+    }
 
     const handleZoom = (delta: number) => {
         const newZoom = Math.max(0.5, Math.min(3.0, zoom + delta));
@@ -47,32 +63,31 @@ export default function StrategySheet() {
     };
 
     const onOpenAdmin = () => {
-        setInputUrl(targetUrl);
-        setModalVisible(true);
+        // Since we have a dedicated Admin Dashboard section, let's navigate there
+        router.push('/admin');
     };
 
     const handleSaveUrl = async () => {
         if (!inputUrl.trim()) return;
 
-        // Try to extract ID
-        const match = inputUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-        if (match && match[1]) {
-            const id = match[1];
-            const cleanUrl = `https://docs.google.com/spreadsheets/d/${id}/htmlview?embedded=true`;
-            try {
-                await saveSheetUrl(cleanUrl);
-                setModalVisible(false);
-                Alert.alert('성공', '전략 문서 주소가 업데이트되었습니다.');
-                // Trigger reload if needed
-            } catch (e: any) {
-                Alert.alert('오류', '저장 중 문제가 발생했습니다: ' + e.message);
+        try {
+            // If it's a google sheet, we clean it. Otherwise we save as is.
+            const match = inputUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+            if (match && match[1]) {
+                const id = match[1];
+                const cleanUrl = `https://docs.google.com/spreadsheets/d/${id}/htmlview?embedded=true`;
+                await saveSheetUrl(cleanUrl, 'url');
+            } else {
+                await saveSheetUrl(inputUrl, 'url');
             }
-        } else {
-            Alert.alert('유효하지 않은 주소', '구글 스프레드시트 주소(URL)를 정확히 입력해주세요.');
+            setModalVisible(false);
+            Alert.alert('성공', '전략 문서 주소가 업데이트되었습니다.');
+        } catch (e: any) {
+            Alert.alert('오류', '저장 중 문제가 발생했습니다: ' + e.message);
         }
     };
 
-    const isAdmin = auth.isLoggedIn; // Assuming 'isLoggedIn' implies admin access as per app structure
+    const isAdmin = auth.isLoggedIn;
 
     return (
         <View className="flex-1 bg-[#020617]">
@@ -86,7 +101,9 @@ export default function StrategySheet() {
                     </TouchableOpacity>
                     <View>
                         <Text className="text-white text-3xl font-black tracking-tight">전략 문서</Text>
-                        <Text className="text-slate-400 text-sm font-bold mt-1">실시간 연맹 공지 및 배치도</Text>
+                        <Text className="text-slate-400 text-sm font-bold mt-1">
+                            {isFile ? (sheetData?.fileName || '업로드된 파일') : '실시간 연맹 공지 및 배치도'}
+                        </Text>
                     </View>
                 </View>
 
@@ -96,13 +113,13 @@ export default function StrategySheet() {
                             onPress={onOpenAdmin}
                             onHoverIn={() => setShowTooltip(true)}
                             onHoverOut={() => setShowTooltip(false)}
-                            className="p-3 bg-slate-800 rounded-full border border-slate-700 active:bg-slate-700"
+                            className="p-3 bg-amber-500/10 rounded-full border border-amber-500/30 active:bg-amber-500/20"
                         >
-                            <Ionicons name="link-outline" size={24} color="#38bdf8" />
+                            <Ionicons name="create-outline" size={24} color="#f59e0b" />
                         </Pressable>
                         {showTooltip && (
                             <View className="absolute top-14 right-0 bg-slate-800 px-3 py-2 rounded-lg border border-slate-600 shadow-xl w-48 z-50">
-                                <Text className="text-white text-xs font-bold text-center">시트 URL경로 입력해 주세요</Text>
+                                <Text className="text-white text-xs font-bold text-center">전략 문서 관리 (관리자 전용)</Text>
                             </View>
                         )}
                     </View>
@@ -117,7 +134,9 @@ export default function StrategySheet() {
                 >
                     <View className="flex-row items-center">
                         <Ionicons name="document-text" size={16} color={viewMode === 'sheet' ? "#38bdf8" : "#64748b"} className="mr-2" />
-                        <Text className={`font-black text-sm ${viewMode === 'sheet' ? 'text-white' : 'text-slate-500'}`}>전략 문서</Text>
+                        <Text className={`font-black text-sm ${viewMode === 'sheet' ? 'text-white' : 'text-slate-500'}`}>
+                            {isFile ? '문서 보기' : '전략 문서'}
+                        </Text>
                     </View>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -139,9 +158,15 @@ export default function StrategySheet() {
                             <View className="w-24 h-24 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-[32px] items-center justify-center mb-8 mx-auto border border-amber-500/30 rotate-3">
                                 <Ionicons name="lock-closed" size={48} color="#f59e0b" />
                             </View>
-                            <Text className="text-white text-4xl font-black text-center mb-4 tracking-tighter">로그인 필요</Text>
+                            <Text className="text-white text-4xl font-black text-center mb-4 tracking-tighter">접근 제한됨</Text>
                             <Text className="text-slate-400 text-center text-lg leading-relaxed mb-12 font-medium">
-                                해당 문서는 외부 보호 영역에 있습니다.{"\n"}권한이 있는 <Text className="text-amber-500 font-bold">구글 계정</Text>으로 로그인이 필요합니다.
+                                {isFile ? (
+                                    "파일을 불러오는 중 문제가 발생했습니다. 관리자에게 문의하세요."
+                                ) : (
+                                    <>
+                                        해당 문서는 외부 보호 영역에 있습니다.{"\n"}권한이 있는 <Text className="text-amber-500 font-bold">구글 계정</Text>으로 로그인이 필요합니다.
+                                    </>
+                                )}
                             </Text>
 
                             <View className="space-y-4 mb-12">
@@ -205,7 +230,8 @@ export default function StrategySheet() {
                             startInLoadingState={true}
                             onMessage={(event: any) => {
                                 const title = event.nativeEvent.data;
-                                if (title.includes('권한') || title.includes('Access') || title.includes('Denied') || title.includes('Login')) {
+                                // Only trigger access error for google sheet related messages
+                                if (!isFile && (title.includes('권한') || title.includes('Access') || title.includes('Denied') || title.includes('Login'))) {
                                     setAccessError(true);
                                 }
                             }}
@@ -252,7 +278,7 @@ export default function StrategySheet() {
                 </View>
             </View>
 
-            {/* Admin Config Modal */}
+            {/* Admin Config Modal - Kept for legacy but ideally redirected to Admin Page */}
             <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={20} className="absolute inset-0" />
@@ -265,7 +291,7 @@ export default function StrategySheet() {
                                 value={inputUrl}
                                 onChangeText={setInputUrl}
                                 placeholder="https://docs.google.com/spreadsheets/d/..."
-                                placeholderTextColor="#64748b"
+                                placeholderTextColor="#475569"
                                 className="text-white text-lg font-medium h-12"
                                 autoCapitalize="none"
                                 autoCorrect={false}
@@ -287,3 +313,4 @@ export default function StrategySheet() {
         </View>
     );
 }
+

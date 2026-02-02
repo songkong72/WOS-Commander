@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal, TextInput, Alert, Platform, Scroll
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useAuth } from './_layout';
-import { ADMIN_USERS, SUPER_ADMINS } from '../data/admin-config';
+import { MASTER_CREDENTIALS, SUPER_ADMINS } from '../data/admin-config';
 import { useFirestoreEventSchedules } from '../hooks/useFirestoreEventSchedules';
 import { useFirestoreAdmins } from '../hooks/useFirestoreAdmins';
 // @ts-ignore
@@ -12,6 +12,7 @@ import { INITIAL_WIKI_EVENTS, WikiEvent } from '../data/wiki-events';
 import { ADDITIONAL_EVENTS } from '../data/new-events';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { hashPassword } from '../utils/crypto';
 
 export default function Home() {
     const router = useRouter();
@@ -23,6 +24,7 @@ export default function Home() {
     // -- States --
     const [loginModalVisible, setLoginModalVisible] = useState(false);
     const [loginInput, setLoginInput] = useState('');
+    const [passwordInput, setPasswordInput] = useState('');
     const [noticeDetailVisible, setNoticeDetailVisible] = useState(false);
 
     // Custom Alert State
@@ -46,8 +48,13 @@ export default function Home() {
     // Dynamic Admins Support
     const { dynamicAdmins, addAdmin, removeAdmin } = useFirestoreAdmins();
     const [newAdminName, setNewAdminName] = useState('');
+    const [newAdminPassword, setNewAdminPassword] = useState('');
+    const [newAdminRole, setNewAdminRole] = useState<'admin' | 'super_admin'>('admin');
     const [showAdminList, setShowAdminList] = useState(false);
-    const isSuperAdmin = auth.isLoggedIn && auth.adminName && SUPER_ADMINS.includes(auth.adminName);
+    const isSuperAdmin = auth.isLoggedIn && auth.adminName && (
+        SUPER_ADMINS.includes(auth.adminName) ||
+        dynamicAdmins.find(a => a.name === auth.adminName)?.role === 'super_admin'
+    );
 
     useEffect(() => {
         AsyncStorage.getItem('lastAdminId').then((savedId) => {
@@ -175,15 +182,33 @@ export default function Home() {
 
     const handleLogin = async () => {
         const input = loginInput.trim();
-        if (ADMIN_USERS.includes(input) || dynamicAdmins.some(a => a.name === input)) {
+        const pw = passwordInput.trim();
+        if (!input || !pw) return;
+
+        const hashedPw = await hashPassword(pw);
+
+        // 1. Check Master Credentials
+        // 마스터는 해시값 비교 + 호환성을 위해 'wos1234' 평문 직접 비교도 포함
+        const master = MASTER_CREDENTIALS.find(m =>
+            m.id === input && (m.pw === hashedPw || pw === 'wos1234')
+        );
+
+        // 2. Check Dynamic Admins
+        // 기존 DB의 평문 비번과 신규 암호화 비번 모두 호환되도록 체크
+        const dynamic = dynamicAdmins.find(a =>
+            a.name === input && (a.password === hashedPw || a.password === pw || !a.password)
+        );
+
+        if (master || dynamic) {
             await AsyncStorage.setItem('lastAdminId', input);
             await login(input);
             setLoginModalVisible(false);
+            setPasswordInput('');
             showCustomAlert('인증 성공', '관리자 권한으로 로그인되었습니다.', 'success');
         } else {
             showCustomAlert(
                 '인증 실패',
-                '등록되지 않은 이름입니다.\n관리자 권한은 연맹 운영진에게만 부여됩니다.\n운영진에게 등록을 요청해주세요.',
+                '아이디 또는 비밀번호가 일치하지 않습니다.',
                 'error'
             );
         }
@@ -491,12 +516,23 @@ export default function Home() {
                         <TextInput
                             placeholder="영주 이름" placeholderTextColor="#475569"
                             value={loginInput} onChangeText={setLoginInput}
+                            autoCapitalize="none"
+                            className="bg-slate-950 p-5 rounded-2xl text-white font-bold mb-4 border border-slate-800 text-lg"
+                        />
+                        <TextInput
+                            placeholder="비밀번호" placeholderTextColor="#475569"
+                            value={passwordInput} onChangeText={setPasswordInput}
+                            secureTextEntry={true}
                             autoCapitalize="none" onSubmitEditing={handleLogin}
                             className="bg-slate-950 p-5 rounded-2xl text-white font-bold mb-8 border border-slate-800 text-lg"
                         />
                         <View className="flex-row gap-3">
-                            <TouchableOpacity onPress={() => setLoginModalVisible(false)} className="flex-1 bg-slate-800 py-4 rounded-2xl"><Text className="text-slate-400 text-center font-black">취소</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={handleLogin} className="flex-1 bg-[#38bdf8] py-4 rounded-2xl"><Text className="text-[#0f172a] text-center font-black">로그인</Text></TouchableOpacity>
+                            <TouchableOpacity onPress={() => setLoginModalVisible(false)} className="flex-1 bg-slate-800 py-4 rounded-2xl">
+                                <Text className="text-slate-400 text-center font-black">취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleLogin} className="flex-[2] bg-[#38bdf8] py-4 rounded-2xl shadow-lg shadow-cyan-500/20">
+                                <Text className="text-[#0f172a] text-center font-black">로그인</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -529,13 +565,55 @@ export default function Home() {
 
                                 {!!showAdminList && (
                                     <View className="bg-black/40 p-3 rounded-xl mb-3 border border-slate-800">
-                                        <View className="flex-row gap-2 mb-3">
-                                            <TextInput className="flex-1 bg-slate-900 text-white p-2 rounded-lg border border-slate-700 text-xs" placeholder="이름" value={newAdminName} onChangeText={setNewAdminName} />
-                                            <TouchableOpacity onPress={async () => { if (await addAdmin(newAdminName, auth.adminName || '')) { setNewAdminName(''); showCustomAlert('성공', '운영진이 추가되었습니다.', 'success'); } }} className="bg-blue-600 px-3 justify-center rounded-lg"><Ionicons name="add" size={18} color="white" /></TouchableOpacity>
+                                        <View className="mb-3 space-y-2">
+                                            <TextInput
+                                                className="w-full bg-slate-950 text-white p-3 rounded-xl border border-slate-800 text-xs font-bold"
+                                                placeholder="운영진 이름" value={newAdminName} onChangeText={setNewAdminName}
+                                            />
+                                            <TextInput
+                                                className="w-full bg-slate-950 text-white p-3 rounded-xl border border-slate-800 text-xs font-bold"
+                                                placeholder="비밀번호 설정" value={newAdminPassword} onChangeText={setNewAdminPassword} secureTextEntry={true}
+                                            />
+                                            <View className="flex-row gap-2 pt-1">
+                                                <TouchableOpacity
+                                                    onPress={() => setNewAdminRole(newAdminRole === 'admin' ? 'super_admin' : 'admin')}
+                                                    className={`flex-[2.5] py-3 px-4 justify-center items-center rounded-xl border ${newAdminRole === 'super_admin' ? 'bg-amber-600/20 border-amber-500' : 'bg-slate-800 border-slate-700'}`}
+                                                >
+                                                    <View className="flex-row items-center">
+                                                        <Ionicons name={newAdminRole === 'super_admin' ? 'shield-checkmark' : 'person'} size={14} color={newAdminRole === 'super_admin' ? '#fbbf24' : '#94a3b8'} style={{ marginRight: 6 }} />
+                                                        <Text className={`${newAdminRole === 'super_admin' ? 'text-amber-500' : 'text-slate-400'} text-xs font-black`}>{newAdminRole === 'super_admin' ? '슈퍼 관리자' : '일반 운영진'}</Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity
+                                                    onPress={async () => {
+                                                        const hashed = newAdminPassword ? await hashPassword(newAdminPassword) : '';
+                                                        if (await addAdmin(newAdminName, auth.adminName || '', newAdminRole, hashed)) {
+                                                            setNewAdminName('');
+                                                            setNewAdminPassword('');
+                                                            showCustomAlert('성공', '운영진이 추가되었습니다.', 'success');
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-blue-600 py-3 justify-center items-center rounded-xl shadow-lg shadow-blue-500/30"
+                                                >
+                                                    <Ionicons name="add" size={20} color="white" />
+                                                </TouchableOpacity>
+                                            </View>
                                         </View>
-                                        {dynamicAdmins.map(a => (
-                                            <View key={a.name} className="flex-row justify-between py-2 border-b border-white/5"><Text className="text-slate-300 text-xs">{a.name}</Text><TouchableOpacity onPress={() => removeAdmin(a.name)}><Ionicons name="trash-outline" size={14} color="#ef4444" /></TouchableOpacity></View>
-                                        ))}
+                                        <View className="max-h-48">
+                                            <ScrollView nestedScrollEnabled>
+                                                {dynamicAdmins.map(a => (
+                                                    <View key={a.name} className="flex-row justify-between items-center py-2 border-b border-white/5">
+                                                        <View className="flex-row items-center">
+                                                            <Text className="text-slate-300 text-xs mr-2">{a.name}</Text>
+                                                            <View className={`px-1.5 py-0.5 rounded ${a.role === 'super_admin' ? 'bg-amber-500/20' : 'bg-slate-700/50'}`}>
+                                                                <Text className={`${a.role === 'super_admin' ? 'text-amber-500' : 'text-slate-500'} text-[8px] font-black`}>{a.role === 'super_admin' ? 'SUPER' : 'ADMIN'}</Text>
+                                                            </View>
+                                                        </View>
+                                                        <TouchableOpacity onPress={() => removeAdmin(a.name)}><Ionicons name="trash-outline" size={14} color="#ef4444" /></TouchableOpacity>
+                                                    </View>
+                                                ))}
+                                            </ScrollView>
+                                        </View>
                                     </View>
                                 )}
 

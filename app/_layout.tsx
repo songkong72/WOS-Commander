@@ -64,19 +64,13 @@ const styles = StyleSheet.create({
     },
     background: {
         flex: 1,
-        width: Platform.OS === 'web' ? '100vw' : '100%',
+        width: '100%',
         height: '100%',
     },
     backgroundImage: {
+        width: '100%',
+        height: '100%',
         resizeMode: 'cover',
-        ...Platform.select({
-            web: {
-                objectFit: 'cover',
-                width: '100vw',
-                height: '100vh',
-                position: 'fixed'
-            } as any
-        })
     },
     overlay: {
         flex: 1,

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebaseConfig';
 
 export interface StrategySheetData {
     url: string;
     updatedAt: number;
+    type?: 'url' | 'file';
+    fileName?: string;
 }
 
 export const useFirestoreStrategySheet = () => {
@@ -28,13 +31,28 @@ export const useFirestoreStrategySheet = () => {
         return () => unsubscribe();
     }, []);
 
-    const saveSheetUrl = async (url: string) => {
+    const saveSheetUrl = async (url: string, type: 'url' | 'file' = 'url', fileName?: string) => {
         const docRef = doc(db, 'settings', 'strategySheet');
         await setDoc(docRef, {
             url,
+            type,
+            fileName,
             updatedAt: Date.now()
         }, { merge: true });
     };
 
-    return { sheetData, loading, saveSheetUrl };
+    const uploadStrategyFile = async (fileBlob: Blob, fileName: string) => {
+        const timestamp = Date.now();
+        const safeFileName = fileName.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+        const storageRef = ref(storage, `strategy/${timestamp}_${safeFileName}`);
+
+        await uploadBytes(storageRef, fileBlob);
+        const downloadURL = await getDownloadURL(storageRef);
+
+        await saveSheetUrl(downloadURL, 'file', fileName);
+        return downloadURL;
+    };
+
+    return { sheetData, loading, saveSheetUrl, uploadStrategyFile };
 };
+

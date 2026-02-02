@@ -6,11 +6,14 @@ import { getGuideContent } from '../../data/event-guides';
 import { Attendee } from '../../data/mock-attendees';
 import { useFirestoreAttendees } from '../../hooks/useFirestoreAttendees';
 import { useFirestoreEventSchedules } from '../../hooks/useFirestoreEventSchedules';
+import { useFirestoreMembers } from '../../hooks/useFirestoreMembers';
+import { useFirestoreAdmins } from '../../hooks/useFirestoreAdmins';
 import heroesData from '../../data/heroes.json';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { WikiEvent, INITIAL_WIKI_EVENTS, EventCategory } from '../../data/wiki-events';
 import { ADDITIONAL_EVENTS } from '../../data/new-events';
+import { SUPER_ADMINS } from '../../data/admin-config';
 import * as Notifications from 'expo-notifications';
 
 // Set notification handler
@@ -42,7 +45,7 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
     );
 
     return (
-        <View className="flex-1 relative">
+        <View className="flex-1 relative" style={{ zIndex: showDropdown ? 60 : 1 }}>
             <Text className="text-slate-500 text-[9px] font-black mb-1.5 ml-1 uppercase">{label}</Text>
             <TextInput
                 placeholder={label === 'HERO 1' ? '영웅 1' : label === 'HERO 2' ? '영웅 2' : '영웅 3'}
@@ -54,10 +57,14 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
                     setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 className="bg-slate-900/40 p-3 rounded-xl text-white text-xs font-bold border border-slate-800"
             />
             {showDropdown && filteredHeroes.length > 0 && (
-                <View className="absolute top-16 left-0 right-0 bg-slate-800 border border-slate-700 rounded-xl max-h-40 z-50 shadow-2xl overflow-hidden">
+                <View
+                    style={{ zIndex: 9999, elevation: 9999 }}
+                    className="absolute top-16 left-0 right-0 bg-slate-800 border border-slate-700 rounded-xl max-h-40 shadow-2xl overflow-hidden"
+                >
                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                         {filteredHeroes.map((name) => (
                             <TouchableOpacity
@@ -79,6 +86,68 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
     );
 };
 
+// Member Picker for Attendance
+const MemberPicker = ({ value, onSelect, members, isAdmin }: { value: string, onSelect: (v: string) => void, members: any[], isAdmin: boolean }) => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [search, setSearch] = useState(value);
+
+    useEffect(() => {
+        if (value !== search) {
+            setSearch(value);
+        }
+    }, [value]);
+
+    const filteredMembers = members.filter(m =>
+        m.nickname.toLowerCase().includes(search.toLowerCase()) ||
+        m.id.toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+        <View className="flex-1 relative" style={{ zIndex: showDropdown ? 60 : 1 }}>
+            <TextInput
+                placeholder="영주 이름 선택/입력"
+                placeholderTextColor="#64748b"
+                value={search}
+                onChangeText={(v) => {
+                    setSearch(v);
+                    onSelect(v);
+                    setShowDropdown(true);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                editable={isAdmin}
+                className={`bg-slate-900 p-3 rounded-xl text-white font-bold border border-slate-700 ${!isAdmin ? 'opacity-70' : ''}`}
+            />
+            {showDropdown && isAdmin && filteredMembers.length > 0 && (
+                <View
+                    style={{ zIndex: 9999, elevation: 9999 }}
+                    className="absolute top-14 left-0 right-0 bg-slate-800 border border-slate-700 rounded-xl max-h-60 shadow-2xl overflow-hidden"
+                >
+                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                        {filteredMembers.map((m) => (
+                            <TouchableOpacity
+                                key={m.id}
+                                onPress={() => {
+                                    onSelect(m.nickname);
+                                    setSearch(m.nickname);
+                                    setShowDropdown(false);
+                                }}
+                                className="p-3 border-b border-slate-700/50 flex-row justify-between items-center"
+                            >
+                                <View>
+                                    <Text className="text-white text-xs font-bold">{m.nickname}</Text>
+                                    <Text className="text-slate-500 text-[9px]">ID: {m.id}</Text>
+                                </View>
+                                <Ionicons name="add-circle-outline" size={16} color="#38bdf8" />
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+        </View>
+    );
+};
+
 export default function EventTracker() {
     const { width } = useWindowDimensions();
     const isDesktop = width > 768; // Simple breakdown for Desktop layout
@@ -86,6 +155,7 @@ export default function EventTracker() {
     const [selectedCategory, setSelectedCategory] = useState<EventCategory>('전체');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
     const { auth } = useAuth();
+    const { dynamicAdmins } = useFirestoreAdmins();
     const router = useRouter();
     const params = useLocalSearchParams();
 
@@ -98,6 +168,7 @@ export default function EventTracker() {
 
     // Firebase Event Schedules
     const { schedules, loading: schedulesLoading, updateSchedule } = useFirestoreEventSchedules();
+    const { members } = useFirestoreMembers();
 
     // Merge Firebase schedules with initial events
     useEffect(() => {
@@ -265,7 +336,10 @@ export default function EventTracker() {
     // Scheduling Logic
     const [selectedDayForSlot, setSelectedDayForSlot] = useState<string>('월');
 
-    const isAdmin = auth.isLoggedIn && (auth.adminName?.includes('관리자') || auth.adminName?.toLowerCase().includes('admin'));
+    const isAdmin = auth.isLoggedIn && (
+        SUPER_ADMINS.includes(auth.adminName || '') ||
+        dynamicAdmins.some(a => a.name === auth.adminName)
+    );
 
     useEffect(() => {
         if (firestoreAttendees && firestoreAttendees.length > 0) {
@@ -279,7 +353,7 @@ export default function EventTracker() {
         let base = selectedCategory === '전체' ? [...events] : events.filter(e => e.category === selectedCategory);
 
         if (selectedCategory === '전체') {
-            const catOrder: { [key: string]: number } = { '연맹': 0, '개인': 1, '초보자': 2 };
+            const catOrder: { [key: string]: number } = { '서버': 0, '연맹': 1, '개인': 2, '초보자': 3 };
             base.sort((a, b) => {
                 const orderA = catOrder[a.category] !== undefined ? catOrder[a.category] : 99;
                 const orderB = catOrder[b.category] !== undefined ? catOrder[b.category] : 99;
@@ -461,7 +535,7 @@ export default function EventTracker() {
         setActiveTab(1);
 
 
-        const dateRangeIDs = ['a_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league'];
+        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
         if (event.category === '개인' || dateRangeIDs.includes(event.id)) {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
@@ -547,20 +621,20 @@ export default function EventTracker() {
         let s1: any[] = [];
         let s2: any[] = [];
         const singleSlotIDs = [
-            'a_center', 'alliance_center',
+            'a_center', 'alliance_center', 'p29_center',
             'a_champ', 'alliance_champion',
             'a_mercenary', 'alliance_mercenary',
-            'a_immigrate', 'alliance_immigrate',
+            'a_immigrate', 'alliance_immigrate', 'server_immigrate',
             'a_trade', 'alliance_trade',
             'a_mobilization', 'alliance_mobilization',
-            'a_merge', 'alliance_merge',
-            'a_svs', 'alliance_svs',
-            'a_dragon', 'alliance_dragon',
+            'a_merge', 'alliance_merge', 'server_merge',
+            'a_svs', 'alliance_svs', 'server_svs_prep', 'server_svs_battle',
+            'a_dragon', 'alliance_dragon', 'server_dragon',
             'a_joe', 'alliance_joe',
             'alliance_frost_league', 'a_weapon'
         ];
 
-        if (event.category === '연맹' && !singleSlotIDs.includes(event.id)) {
+        if ((event.category === '연맹' || event.category === '서버') && !singleSlotIDs.includes(event.id)) {
             const parts = (event.time || '').split(' / ');
             parts.forEach(p => {
                 if (p.startsWith('1군:')) s1 = parseScheduleStr(p.replace('1군:', ''));
@@ -639,7 +713,7 @@ export default function EventTracker() {
     const saveSchedule = async () => {
         if (!editingEvent) return;
 
-        const dateRangeIDs = ['a_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league'];
+        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
         if (editingEvent.category === '개인' || dateRangeIDs.includes(editingEvent.id)) {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
@@ -719,17 +793,19 @@ export default function EventTracker() {
         };
 
         const singleSlotIDs = [
-            'a_center', 'alliance_center',
+            'a_center', 'alliance_center', 'p29_center',
+            'a_champ', 'alliance_champion',
             'a_mercenary', 'alliance_mercenary',
-            'a_immigrate', 'alliance_immigrate',
+            'a_immigrate', 'alliance_immigrate', 'server_immigrate',
+            'a_trade', 'alliance_trade',
             'a_mobilization', 'alliance_mobilization',
-            'a_merge', 'alliance_merge',
-            'a_svs', 'alliance_svs',
-            'a_dragon', 'alliance_dragon',
+            'a_merge', 'alliance_merge', 'server_merge',
+            'a_svs', 'alliance_svs', 'server_svs_prep', 'server_svs_battle',
+            'a_dragon', 'alliance_dragon', 'server_dragon',
             'a_joe', 'alliance_joe'
         ];
 
-        if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
+        if ((editingEvent?.category === '연맹' || editingEvent?.category === '서버') && !singleSlotIDs.includes(editingEvent.id)) {
             const str1 = buildStr(slots1);
             const str2 = buildStr(slots2);
 
@@ -836,7 +912,7 @@ export default function EventTracker() {
                     <View className="w-64 bg-slate-900 border-r border-slate-800 flex-col pt-16 px-4">
                         <Text className="text-white text-xl font-black mb-8 px-2">이벤트 필터</Text>
                         <View className="space-y-2">
-                            {(['전체', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
+                            {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
                                 <TouchableOpacity
                                     key={cat}
                                     onPress={() => setSelectedCategory(cat)}
@@ -870,7 +946,7 @@ export default function EventTracker() {
                         {/* Mobile Category Filter (Hidden on Desktop) */}
                         {!isDesktop && (
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-2">
-                                {(['전체', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
+                                {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
                                     <TouchableOpacity
                                         key={cat}
                                         onPress={() => setSelectedCategory(cat)}
@@ -937,8 +1013,6 @@ export default function EventTracker() {
                                                             )}
                                                             <TouchableOpacity
                                                                 onPress={() => openScheduleModal(event)}
-                                                                onMouseEnter={() => setHoveredClockId(event.id)}
-                                                                onMouseLeave={() => setHoveredClockId(null)}
                                                                 className="w-10 h-10 bg-slate-800 rounded-full items-center justify-center border border-slate-700 shadow-sm transition-all hover:bg-slate-700 hover:border-cyan-500/50"
                                                             >
                                                                 <Ionicons name="time" size={20} color="#38bdf8" />
@@ -1076,12 +1150,12 @@ export default function EventTracker() {
                                                         className="flex-[1.5] rounded-3xl bg-[#38bdf8] items-center justify-center flex-row shadow-2xl shadow-cyan-500/40 active:scale-95 transition-all overflow-hidden"
                                                     >
                                                         <Text className="text-slate-900 text-[16px] font-black mr-2">
-                                                            {event.category === '연맹' ? '⚔️ 전략 시트' : '📘 가이드 보기'}
+                                                            {(event.category === '연맹' || event.category === '서버') ? '⚔️ 전략 시트' : '📘 가이드 보기'}
                                                         </Text>
                                                         <Ionicons name="chevron-forward-circle" size={18} color="rgba(15, 23, 42, 0.4)" />
                                                     </TouchableOpacity>
 
-                                                    {event.category === '연맹' && (
+                                                    {(event.category === '연맹' || event.category === '서버') && (
                                                         <TouchableOpacity
                                                             onPress={() => openAttendeeModal(event)}
                                                             className="flex-1 rounded-3xl bg-slate-800/80 border-2 border-slate-700 items-center justify-center flex-row active:scale-95 transition-all"
@@ -1156,7 +1230,7 @@ export default function EventTracker() {
                                 </View>
 
                                 {/* Alliance Strategy Section */}
-                                {selectedEventForGuide?.category === '연맹' && (
+                                {(selectedEventForGuide?.category === '연맹' || selectedEventForGuide?.category === '서버') && (
                                     <View className="mb-6">
                                         <View className="flex-row items-center justify-between mb-3">
                                             <Text className="text-purple-400 font-black text-sm uppercase tracking-widest">🛡️ 연맹 작전 지시</Text>
@@ -1653,7 +1727,7 @@ export default function EventTracker() {
                                         })()}
                                     </View>
                                 ) : (() => {
-                                    const dateRangeIDs = ['a_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league'];
+                                    const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
                                     return (editingEvent?.category === '개인' || dateRangeIDs.includes(editingEvent?.id || ''));
                                 })() ? (
                                     <View className="mb-6" style={{ zIndex: 100 }}>
@@ -2026,17 +2100,15 @@ export default function EventTracker() {
                                             className="mb-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 relative"
                                             style={{ zIndex: bulkAttendees.length - index }}
                                         >
-                                            <View className="flex-row items-center mb-3">
+                                            <View className="flex-row items-center mb-3" style={{ zIndex: 50 }}>
                                                 <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center mr-3">
                                                     <Text className="text-white font-black">{index + 1}</Text>
                                                 </View>
-                                                <TextInput
+                                                <MemberPicker
                                                     value={attendee.name}
-                                                    onChangeText={(v) => updateAttendeeField(attendee.id!, 'name', v)}
-                                                    placeholder="영주 이름 입력"
-                                                    placeholderTextColor="#64748b"
-                                                    editable={isAdmin}
-                                                    className={`flex-1 bg-slate-900 p-3 rounded-xl text-white font-bold border border-slate-700 ${!isAdmin ? 'opacity-70' : ''}`}
+                                                    onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
+                                                    members={members}
+                                                    isAdmin={!!isAdmin}
                                                 />
                                                 {!!isAdmin && (
                                                     <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className="ml-2 bg-red-500/10 p-3 rounded-xl border border-red-500/20">

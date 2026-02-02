@@ -1,4 +1,4 @@
-export type EventCategory = '전체' | '개인' | '연맹' | '초보자';
+export type EventCategory = '전체' | '개인' | '연맹' | '초보자' | '서버';
 
 export interface WikiEvent {
     id: string;
