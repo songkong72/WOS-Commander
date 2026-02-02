@@ -23,6 +23,8 @@ export default function StrategySheet() {
     const [modalVisible, setModalVisible] = useState(false);
     const [inputUrl, setInputUrl] = useState('');
     const [showTooltip, setShowTooltip] = useState(false);
+    const [accessError, setAccessError] = useState(false);
+    const [viewMode, setViewMode] = useState<'sheet' | 'guide'>('sheet');
 
     const targetUrl = (sheetData && sheetData.url) ? sheetData.url : DEFAULT_SHEET_URL;
 
@@ -107,36 +109,120 @@ export default function StrategySheet() {
                 )}
             </View>
 
+            {/* View Mode Toggle Tabs */}
+            <View className="bg-[#0f172a] flex-row h-12 border-b border-black">
+                <TouchableOpacity
+                    onPress={() => setViewMode('sheet')}
+                    className={`flex-1 items-center justify-center border-b-2 ${viewMode === 'sheet' ? 'border-[#38bdf8] bg-[#38bdf8]/5' : 'border-transparent'}`}
+                >
+                    <View className="flex-row items-center">
+                        <Ionicons name="document-text" size={16} color={viewMode === 'sheet' ? "#38bdf8" : "#64748b"} className="mr-2" />
+                        <Text className={`font-black text-sm ${viewMode === 'sheet' ? 'text-white' : 'text-slate-500'}`}>전략 문서</Text>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setViewMode('guide')}
+                    className={`flex-1 items-center justify-center border-b-2 ${viewMode === 'guide' ? 'border-amber-500 bg-amber-500/5' : 'border-transparent'}`}
+                >
+                    <View className="flex-row items-center">
+                        <Ionicons name="help-circle" size={16} color={viewMode === 'guide' ? "#f59e0b" : "#64748b"} className="mr-2" />
+                        <Text className={`font-black text-sm ${viewMode === 'guide' ? 'text-white' : 'text-slate-500'}`}>권한 가이드</Text>
+                    </View>
+                </TouchableOpacity>
+            </View>
+
             {/* Content Container */}
             <View className="flex-1 bg-white relative">
-                {Platform.OS === 'web' ? (
-                    <iframe
-                        src={targetUrl}
-                        style={{
-                            width: `${100 / zoom}%`,
-                            height: `${100 / zoom}%`,
-                            border: 'none',
-                            transform: `scale(${zoom})`,
-                            transformOrigin: 'top left',
-                            transition: 'transform 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out'
-                        }}
-                    />
-                ) : (
-                    <WebView
-                        ref={webViewRef}
-                        source={{ uri: targetUrl }}
-                        style={{ flex: 1 }}
-                        javaScriptEnabled={true}
-                        scalesPageToFit={true}
-                        domStorageEnabled={true}
-                        startInLoadingState={true}
-                        renderLoading={() => (
-                            <View className="absolute inset-0 items-center justify-center bg-[#0f172a]">
-                                <Text className="text-[#38bdf8] font-bold text-lg">문서를 불러오는 중...</Text>
+                {(accessError || viewMode === 'guide') ? (
+                    <View className="flex-1 bg-[#020617] items-center justify-center p-8">
+                        <View className="max-w-md w-full">
+                            <View className="w-24 h-24 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-[32px] items-center justify-center mb-8 mx-auto border border-amber-500/30 rotate-3">
+                                <Ionicons name="lock-closed" size={48} color="#f59e0b" />
                             </View>
-                        )}
-                        injectedJavaScript={`document.body.style.zoom = '${zoom}'; true;`}
-                    />
+                            <Text className="text-white text-4xl font-black text-center mb-4 tracking-tighter">로그인 필요</Text>
+                            <Text className="text-slate-400 text-center text-lg leading-relaxed mb-12 font-medium">
+                                해당 문서는 외부 보호 영역에 있습니다.{"\n"}권한이 있는 <Text className="text-amber-500 font-bold">구글 계정</Text>으로 로그인이 필요합니다.
+                            </Text>
+
+                            <View className="space-y-4 mb-12">
+                                <View className="flex-row items-center bg-slate-900/80 p-5 rounded-3xl border border-slate-800 shadow-sm">
+                                    <View className="w-10 h-10 bg-slate-800 rounded-2xl items-center justify-center mr-5">
+                                        <Ionicons name="person-add" size={20} color="#94a3b8" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-white font-black text-sm mb-1">권한 요청</Text>
+                                        <Text className="text-slate-500 text-xs font-bold leading-5">관리자에게 본인의 이메일을 알려주고 '뷰어' 권한을 요청하세요.</Text>
+                                    </View>
+                                </View>
+                                <View className="flex-row items-center bg-slate-900/80 p-5 rounded-3xl border border-slate-800 shadow-sm">
+                                    <View className="w-10 h-10 bg-slate-800 rounded-2xl items-center justify-center mr-5">
+                                        <Ionicons name="log-in" size={20} color="#94a3b8" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-white font-black text-sm mb-1">계정 전환</Text>
+                                        <Text className="text-slate-500 text-xs font-bold leading-5">현재 브라우저가 다른 계정으로 로그인되어 있는지 확인해보세요.</Text>
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View className="flex-row gap-4">
+                                <TouchableOpacity
+                                    onPress={() => Platform.OS === 'web' ? window.open(targetUrl, '_blank') : null}
+                                    className="flex-1 bg-slate-800 py-5 rounded-[24px] border border-slate-700 active:scale-95 transition-all"
+                                >
+                                    <Text className="text-white text-center font-black text-lg">새 창에서 열기</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => { setAccessError(false); setViewMode('sheet'); }}
+                                    className="flex-1 bg-[#38bdf8] py-5 rounded-[24px] shadow-xl shadow-blue-500/30 active:scale-95 transition-all"
+                                >
+                                    <Text className="text-[#0f172a] text-center font-black text-lg">재시도</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                ) : (
+                    Platform.OS === 'web' ? (
+                        <iframe
+                            src={targetUrl}
+                            style={{
+                                width: `${100 / zoom}%`,
+                                height: `${100 / zoom}%`,
+                                border: 'none',
+                                transform: `scale(${zoom})`,
+                                transformOrigin: 'top left',
+                                transition: 'transform 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out'
+                            }}
+                        />
+                    ) : (
+                        <WebView
+                            ref={webViewRef}
+                            source={{ uri: targetUrl }}
+                            style={{ flex: 1 }}
+                            javaScriptEnabled={true}
+                            scalesPageToFit={true}
+                            domStorageEnabled={true}
+                            startInLoadingState={true}
+                            onMessage={(event: any) => {
+                                const title = event.nativeEvent.data;
+                                if (title.includes('권한') || title.includes('Access') || title.includes('Denied') || title.includes('Login')) {
+                                    setAccessError(true);
+                                }
+                            }}
+                            renderLoading={() => (
+                                <View className="absolute inset-0 items-center justify-center bg-[#0f172a]">
+                                    <Text className="text-[#38bdf8] font-bold text-lg">문서를 불러오는 중...</Text>
+                                </View>
+                            )}
+                            injectedJavaScript={`
+                                (function() {
+                                    window.ReactNativeWebView.postMessage(document.title);
+                                })();
+                                document.body.style.zoom = '${zoom}'; 
+                                true;
+                            `}
+                        />
+                    )
                 )}
 
                 {/* Floating Zoom Controls */}

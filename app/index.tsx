@@ -126,6 +126,46 @@ export default function Home() {
         } catch (e) { return false; }
     };
 
+    const getUTCTimeString = (kstStr: string, includePrefix = true) => {
+        const match = kstStr.match(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+        if (!match || !match[2]) return '';
+
+        const dayStr = match[1];
+        const timeStr = match[2];
+        const [h, m] = timeStr.split(':').map(Number);
+
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        let dayIdx = days.indexOf(dayStr);
+
+        if (dayIdx === -1) { // '매일' or unknown
+            let utcShift = h - 9;
+            if (utcShift < 0) utcShift += 24;
+            const formatted = `${dayStr}(${utcShift.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
+            return includePrefix ? `UTC: ${formatted}` : formatted;
+        }
+
+        let utcH = h - 9;
+        let utcDayIdx = dayIdx;
+        if (utcH < 0) {
+            utcH += 24;
+            utcDayIdx = (dayIdx - 1 + 7) % 7;
+        }
+
+        const formatted = `${days[utcDayIdx]}(${utcH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
+        return includePrefix ? `UTC: ${formatted}` : formatted;
+    };
+
+    const getUTCString = (str: string) => {
+        if (!str) return null;
+        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+        if (!match) return null;
+        const [_, y, m, d, h, min] = match;
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+        if (isNaN(date.getTime())) return null;
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        return `${date.getUTCFullYear()}.${pad(date.getUTCMonth() + 1)}.${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+    };
+
     const [noticeModalVisible, setNoticeModalVisible] = useState(false);
     const [editNoticeContent, setEditNoticeContent] = useState('');
     const [editNoticeVisible, setEditNoticeVisible] = useState(true);
@@ -176,6 +216,11 @@ export default function Home() {
             return { ...s, day: cleanDay, time: cleanTime, title: eventInfo ? eventInfo.title : '알 수 없는 이벤트' };
         }).filter(e => e.title !== '알 수 없는 이벤트' && !isEventExpired(e))
             .sort((a, b) => {
+                const activeA = isEventActive(a);
+                const activeB = isEventActive(b);
+                if (activeA && !activeB) return -1;
+                if (!activeA && activeB) return 1;
+
                 const hasA = !!a.day && a.day !== '일정 미정';
                 const hasB = !!b.day && b.day !== '일정 미정';
                 if (hasA && !hasB) return -1;
@@ -209,16 +254,16 @@ export default function Home() {
     };
 
     return (
-        <ImageBackground
-            source={require('../assets/images/bg-main.png')}
-            style={{ flex: 1, backgroundColor: '#020617' }}
-            imageStyle={{ resizeMode: 'cover' }}
-        >
-            <View className="flex-1 bg-black/60">
-                <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ flex: 1 }}>
+            <Stack.Screen options={{ headerShown: false }} />
 
-                <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                    <View className="w-full max-w-6xl mx-auto px-4 md:px-8 pb-20">
+            <ScrollView
+                className="flex-1"
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ flexGrow: 1 }}
+            >
+                <View className="w-full items-center">
+                    <View className="w-full max-w-6xl px-4 md:px-8 pb-20">
                         {/* Header Section */}
                         <View className="pt-20 pb-10 flex-row justify-between items-start">
                             <View>
@@ -303,12 +348,63 @@ export default function Home() {
                                                             <Text className="text-white text-xl font-black mb-1">{event.title}</Text>
                                                             <View className="flex-row flex-wrap gap-2">
                                                                 {!!event.day && !event.time && event.day !== '요새전/성채전' && (
-                                                                    <View className="bg-black/60 px-4 py-2 rounded-xl border border-slate-500">
-                                                                        <Text className="text-[#38bdf8] font-bold">{event.day}</Text>
+                                                                    <View className="bg-black/60 px-4 py-2 rounded-xl border border-slate-500 max-w-full">
+                                                                        {(() => {
+                                                                            const formattedDay = event.day.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                            let utcText = '';
+                                                                            const isRange = event.day.includes('~');
+                                                                            if (isRange) {
+                                                                                const parts = event.day.split('~').map((x: string) => x.trim());
+                                                                                // Try date range first
+                                                                                const sDateUtc = getUTCString(parts[0]);
+                                                                                const eDateUtc = getUTCString(parts[1]);
+                                                                                if (sDateUtc && eDateUtc) {
+                                                                                    utcText = `UTC: ${sDateUtc} ~ ${eDateUtc}`;
+                                                                                } else {
+                                                                                    // Try weekly range
+                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                    if (sWeeklyUtc && eWeeklyUtc) {
+                                                                                        utcText = `UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                                    }
+                                                                                }
+                                                                            } else {
+                                                                                const dateUtc = getUTCString(event.day);
+                                                                                if (dateUtc) {
+                                                                                    utcText = `UTC: ${dateUtc}`;
+                                                                                } else {
+                                                                                    const weeklyUtc = getUTCTimeString(event.day);
+                                                                                    if (weeklyUtc) utcText = weeklyUtc;
+                                                                                }
+                                                                            }
+
+                                                                            const renderLine = (str: string, textClass: string) => {
+                                                                                if (!str.includes('~')) return <Text className={textClass}>{str}</Text>;
+                                                                                const [s, e] = str.split('~').map(x => x.trim());
+                                                                                return (
+                                                                                    <View className="flex-row flex-wrap items-center">
+                                                                                        <Text className={textClass}>{s}</Text>
+                                                                                        <Text className={`${textClass} mx-1.5 opacity-50`}>~</Text>
+                                                                                        <Text className={textClass}>{e}</Text>
+                                                                                    </View>
+                                                                                );
+                                                                            };
+
+                                                                            return (
+                                                                                <>
+                                                                                    {renderLine(formattedDay, "text-[#38bdf8] font-bold")}
+                                                                                    {!!utcText && (
+                                                                                        <View className="mt-0.5">
+                                                                                            {renderLine(utcText, "text-slate-500 text-[9px] font-bold")}
+                                                                                        </View>
+                                                                                    )}
+                                                                                </>
+                                                                            )
+                                                                        })()}
                                                                     </View>
                                                                 )}
                                                                 {!event.day && !event.time && (
-                                                                    <View className="bg-black/60 px-4 py-2 rounded-xl border border-slate-500">
+                                                                    <View className="bg-black/60 px-4 py-2 rounded-xl border border-slate-500 max-w-full">
                                                                         <Text className="text-[#38bdf8] font-bold">일정 미정</Text>
                                                                     </View>
                                                                 )}
@@ -329,9 +425,32 @@ export default function Home() {
                                                                                     <View className="flex-row flex-wrap gap-2">
                                                                                         {content.split(/[,|]/).map((item, iIdx) => {
                                                                                             const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                                            const utcStr = getUTCTimeString(item.trim());
                                                                                             return (
-                                                                                                <View key={iIdx} className="bg-black/50 px-3 py-1.5 rounded-xl border border-slate-600/50">
-                                                                                                    <Text className="text-[#38bdf8] font-bold text-sm">{formatted}</Text>
+                                                                                                <View key={iIdx} className="bg-black/50 px-3 py-1.5 rounded-xl border border-slate-600/50 max-w-full">
+                                                                                                    {(() => {
+                                                                                                        const renderTextLine = (str: string, tClass: string) => {
+                                                                                                            if (!str.includes('~')) return <Text className={tClass}>{str}</Text>;
+                                                                                                            const [s, e] = str.split('~').map(x => x.trim());
+                                                                                                            return (
+                                                                                                                <View className="flex-row flex-wrap items-center">
+                                                                                                                    <Text className={tClass}>{s}</Text>
+                                                                                                                    <Text className={`${tClass} mx-1.5 opacity-50`}>~</Text>
+                                                                                                                    <Text className={tClass}>{e}</Text>
+                                                                                                                </View>
+                                                                                                            );
+                                                                                                        };
+                                                                                                        return (
+                                                                                                            <>
+                                                                                                                {renderTextLine(formatted, "text-[#38bdf8] font-bold text-sm")}
+                                                                                                                {!!utcStr && (
+                                                                                                                    <View className="mt-0.5">
+                                                                                                                        {renderTextLine(utcStr, "text-slate-500 text-[10px] font-bold")}
+                                                                                                                    </View>
+                                                                                                                )}
+                                                                                                            </>
+                                                                                                        );
+                                                                                                    })()}
                                                                                                 </View>
                                                                                             );
                                                                                         })}
@@ -356,8 +475,8 @@ export default function Home() {
                             </View>
                         </View>
                     </View>
-                </ScrollView>
-            </View>
+                </View>
+            </ScrollView>
 
             {/* Modals outside scrollview */}
             <Modal visible={loginModalVisible} transparent animationType="fade">
@@ -520,6 +639,6 @@ export default function Home() {
                     </View>
                 </View>
             </Modal>
-        </ImageBackground>
+        </View >
     );
 }

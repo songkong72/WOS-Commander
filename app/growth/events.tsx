@@ -161,6 +161,7 @@ export default function EventTracker() {
     }, []);
 
     const scheduleNotification = async (event: WikiEvent, day: string, time: string) => {
+        if (Platform.OS === 'web') return;
         if (!day || !time || time === '상시' || time === '상설') return;
 
         const dayMap: { [key: string]: number } = { '일': 1, '월': 2, '화': 3, '수': 4, '목': 5, '금': 6, '토': 7 };
@@ -211,7 +212,7 @@ export default function EventTracker() {
     const [slots1, setSlots1] = useState<{ day: string, time: string, id: string }[]>([]);
     const [slots2, setSlots2] = useState<{ day: string, time: string, id: string }[]>([]);
 
-    const [editHour, setEditHour] = useState('11');
+    const [editHour, setEditHour] = useState(new Date().getHours().toString().padStart(2, '0'));
     const [editMinute, setEditMinute] = useState('00');
     const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
 
@@ -233,6 +234,16 @@ export default function EventTracker() {
     const [champEnd, setChampEnd] = useState({ d: '월', h: '23', m: '00' });
 
     const pad = (n: number) => n.toString().padStart(2, '0');
+
+    const getUTCString = (str: string) => {
+        if (!str) return null;
+        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+        if (!match) return null;
+        const [_, y, m, d, h, min] = match;
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+        if (isNaN(date.getTime())) return null;
+        return `${date.getUTCFullYear()}.${pad(date.getUTCMonth() + 1)}.${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+    };
 
     // Guide Modal
     const [guideModalVisible, setGuideModalVisible] = useState(false);
@@ -288,6 +299,34 @@ export default function EventTracker() {
         } else {
             showCustomAlert('알림', '위키 링크가 존재하지 않습니다.', 'warning');
         }
+    };
+
+    const getUTCTimeString = (kstStr: string, includePrefix = true) => {
+        const match = kstStr.match(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+        if (!match || !match[2]) return '';
+
+        const dayStr = match[1];
+        const timeStr = match[2];
+        const [h, m] = timeStr.split(':').map(Number);
+
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        let dayIdx = days.indexOf(dayStr);
+
+        if (dayIdx === -1) { // '매일' or unknown
+            let utcShift = h - 9;
+            if (utcShift < 0) utcShift += 24;
+            return `UTC: ${dayStr}(${utcShift.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
+        }
+
+        let utcH = h - 9;
+        let utcDayIdx = dayIdx;
+        if (utcH < 0) {
+            utcH += 24;
+            utcDayIdx = (dayIdx - 1 + 7) % 7;
+        }
+
+        const formattedTime = `${days[utcDayIdx]}(${utcH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
+        return includePrefix ? `UTC: ${formattedTime}` : formattedTime;
     };
 
     const checkIsOngoing = (event: WikiEvent) => {
@@ -420,23 +459,16 @@ export default function EventTracker() {
         setEditingEvent(event);
         setActiveTab(1);
 
-        if (event.id === 'a_champ') {
-            const raw = event.day || '';
-            const match = raw.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
-            if (match) {
-                setChampStart({ d: match[1], h: match[2], m: match[3] });
-                setChampEnd({ d: match[4], h: match[5], m: match[6] });
-            } else {
-                setChampStart({ d: '월', h: '22', m: '00' });
-                setChampEnd({ d: '월', h: '23', m: '00' });
-            }
-        }
 
-        if (event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation' || event.id === 'alliance_frost_league' || event.id === 'a_weapon') {
+        if (event.category === '개인' || event.id === 'a_mobilization' || event.id === 'a_castle' || event.id === 'a_svs' || event.id === 'a_operation' || event.id === 'alliance_frost_league' || event.id === 'a_weapon' || event.id === 'a_champ') {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
-            setMStart(s || `${new Date().getFullYear()}.01.01 12:00`);
-            setMEnd(e || `${new Date().getFullYear()}.01.01 12:00`);
+
+            const now = new Date();
+            const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+            setMStart(s || defaultStr);
+            setMEnd(e || defaultStr);
         }
 
         if (event.id === 'a_fortress') {
@@ -528,9 +560,10 @@ export default function EventTracker() {
         setSlots1(s1);
         setSlots2(s2);
 
+        const now = new Date();
         setSelectedDayForSlot('월');
-        setEditHour('22');
-        setEditMinute('00');
+        setEditHour(now.getHours().toString().padStart(2, '0'));
+        setEditMinute(now.getMinutes().toString().padStart(2, '0'));
         setEditingSlotId(null);
         setScheduleModalVisible(true);
     };
@@ -591,7 +624,7 @@ export default function EventTracker() {
     const saveSchedule = async () => {
         if (!editingEvent) return;
 
-        if (editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation' || editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') {
+        if (editingEvent.category === '개인' || editingEvent.id === 'a_mobilization' || editingEvent.id === 'a_castle' || editingEvent.id === 'a_svs' || editingEvent.id === 'a_operation' || editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon' || editingEvent.id === 'a_champ') {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
@@ -615,26 +648,6 @@ export default function EventTracker() {
             return;
         }
 
-        if (editingEvent.id === 'a_champ') {
-            const finalDay = `${champStart.d} ${champStart.h}:${champStart.m} ~ ${champEnd.d} ${champEnd.h}:${champEnd.m}`;
-            const finalTime = '';
-
-            setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: finalTime } : e));
-
-            try {
-                await updateSchedule({
-                    eventId: editingEvent.id,
-                    day: finalDay,
-                    time: finalTime,
-                    strategy: editingEvent.strategy || ''
-                });
-                setScheduleModalVisible(false);
-                showCustomAlert('완료', '연맹 챔피언십 일정이 저장되었습니다.', 'success');
-            } catch (error: any) {
-                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
-            }
-            return;
-        }
 
         if (editingEvent.id === 'a_fortress') {
             const fStr = fortressList.length > 0 ? `요새전: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'}(${f.h}:${f.m})`).join(' | ')}` : '';
@@ -657,12 +670,14 @@ export default function EventTracker() {
                 });
 
                 // Cancel old notifications and schedule new ones
-                await Notifications.cancelAllScheduledNotificationsAsync();
-                for (const f of fortressList) {
-                    await scheduleNotification(editingEvent, f.day || '토', `${f.h}:${f.m}`);
-                }
-                for (const c of citadelList) {
-                    await scheduleNotification(editingEvent, c.day || '일', `${c.h}:${c.m}`);
+                if (Platform.OS !== 'web') {
+                    await Notifications.cancelAllScheduledNotificationsAsync();
+                    for (const f of fortressList) {
+                        await scheduleNotification(editingEvent, f.day || '토', `${f.h}:${f.m}`);
+                    }
+                    for (const c of citadelList) {
+                        await scheduleNotification(editingEvent, c.day || '일', `${c.h}:${c.m}`);
+                    }
                 }
 
                 setScheduleModalVisible(false);
@@ -715,6 +730,17 @@ export default function EventTracker() {
                 strategy: editingEvent.strategy || ''
             });
 
+            // Schedule Notifications for Weekly Events (Day + Time)
+            if (Platform.OS !== 'web' && (finalDay && finalTime && !finalDay.includes('.'))) {
+                await Notifications.cancelAllScheduledNotificationsAsync();
+                const allSlots = [...slots1, ...slots2];
+                for (const slot of allSlots) {
+                    if (slot.day && slot.time && slot.day !== '상시') {
+                        await scheduleNotification(editingEvent, slot.day, slot.time);
+                    }
+                }
+            }
+
             showCustomAlert('저장 완료', '이벤트 일정이 성공적으로 등록되었습니다.', 'success');
 
         } catch (error: any) {
@@ -742,7 +768,9 @@ export default function EventTracker() {
 
                     setScheduleModalVisible(false);
                     // Cancel notifications for this event
-                    await Notifications.cancelAllScheduledNotificationsAsync();
+                    if (Platform.OS !== 'web') {
+                        await Notifications.cancelAllScheduledNotificationsAsync();
+                    }
                     showCustomAlert('완료', '일정이 초기화되었습니다.', 'success');
                 } catch (error: any) {
                     showCustomAlert('오류', '초기화 실패: ' + error.message, 'error');
@@ -764,23 +792,17 @@ export default function EventTracker() {
     }
 
     return (
-        <ImageBackground
-            source={require('../../assets/images/bg-main.png')}
-            style={{ flex: 1, backgroundColor: '#020617' }}
-            imageStyle={{
-                resizeMode: 'cover',
-                width: '100%',
-                height: '100%',
-                ...Platform.select({
-                    web: {
-                        objectFit: 'cover',
-                        objectPosition: 'center',
-                    } as any
-                })
-            }}
-        >
-            <View className="flex-1 bg-black/70 flex-row">
-                <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ flex: 1, backgroundColor: '#020617' }}>
+            <Stack.Screen options={{ headerShown: false }} />
+
+            {/* Base Background Layer */}
+            <ImageBackground
+                source={require('../../assets/images/bg-main.png')}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', minWidth: (Platform.OS === 'web' ? '100vw' : '100%') as any }}
+                imageStyle={{ resizeMode: 'cover', width: (Platform.OS === 'web' ? '100vw' : '100%') as any, height: (Platform.OS === 'web' ? '100vh' : '100%') as any, ...Platform.select({ web: { objectFit: 'cover' } as any }) }}
+            />
+
+            <View className="flex-1 bg-black/70 flex-row w-full h-full" style={{ minWidth: (Platform.OS === 'web' ? '100vw' : '100%') as any }}>
 
                 {/* Layout: Sidebar for Desktop */}
                 {isDesktop && (
@@ -886,11 +908,63 @@ export default function EventTracker() {
                                                             ) : (
                                                                 event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
                                                                     <View className="flex-row flex-wrap gap-2">
-                                                                        {event.day.split('/').map((d, dIdx) => (
-                                                                            <View key={dIdx} className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner">
-                                                                                <Text className="text-[#38bdf8] font-black text-lg">{d}</Text>
-                                                                            </View>
-                                                                        ))}
+                                                                        {event.day.split('/').map((d, dIdx) => {
+                                                                            const cleanD = d.trim();
+                                                                            const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                            const isRange = cleanD.includes('~');
+                                                                            let utcText = '';
+
+                                                                            if (isRange) {
+                                                                                const parts = cleanD.split('~').map(x => x.trim());
+                                                                                // Try date range first
+                                                                                const sDateUtc = getUTCString(parts[0]);
+                                                                                const eDateUtc = getUTCString(parts[1]);
+
+                                                                                if (sDateUtc && eDateUtc) {
+                                                                                    utcText = `🌍 UTC: ${sDateUtc} ~ ${eDateUtc}`;
+                                                                                } else {
+                                                                                    // Try weekly range
+                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                    if (sWeeklyUtc && eWeeklyUtc) {
+                                                                                        utcText = `🌍 UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                                    }
+                                                                                }
+                                                                            } else {
+                                                                                const dateUtc = getUTCString(cleanD);
+                                                                                if (dateUtc) {
+                                                                                    utcText = `🌍 UTC: ${dateUtc}`;
+                                                                                } else {
+                                                                                    const weeklyUtc = getUTCTimeString(cleanD);
+                                                                                    if (weeklyUtc) utcText = weeklyUtc;
+                                                                                }
+                                                                            }
+
+                                                                            const renderResponsivePeriod = (str: string, textClass: string, isUtc = false) => {
+                                                                                if (!str.includes('~')) {
+                                                                                    return <Text className={textClass}>{str}</Text>;
+                                                                                }
+                                                                                const parts = str.split('~').map(s => s.trim());
+                                                                                return (
+                                                                                    <View className="flex-row flex-wrap items-center">
+                                                                                        <Text className={textClass}>{parts[0]}</Text>
+                                                                                        <Text className={`${textClass} mx-2 opacity-60`}>~</Text>
+                                                                                        <Text className={textClass}>{parts[1]}</Text>
+                                                                                    </View>
+                                                                                );
+                                                                            };
+
+                                                                            return (
+                                                                                <View key={dIdx} className="bg-black/60 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-inner max-w-full">
+                                                                                    {renderResponsivePeriod(formattedDay, "text-[#38bdf8] font-black text-lg")}
+                                                                                    {!!utcText && (
+                                                                                        <View className="mt-1">
+                                                                                            {renderResponsivePeriod(utcText, "text-slate-500 text-[10px] font-bold", true)}
+                                                                                        </View>
+                                                                                    )}
+                                                                                </View>
+                                                                            );
+                                                                        })}
                                                                     </View>
                                                                 ) : null
                                                             )
@@ -912,9 +986,13 @@ export default function EventTracker() {
                                                                             <View className="flex-row flex-wrap gap-2.5">
                                                                                 {content.split(/[,|]/).map((item, iIdx) => {
                                                                                     const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                                    const utcStr = getUTCTimeString(item.trim());
                                                                                     return (
-                                                                                        <View key={iIdx} className="bg-black/50 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-2xl">
+                                                                                        <View key={iIdx} className="bg-black/50 px-5 py-2.5 rounded-2xl border border-slate-500 shadow-2xl relative">
                                                                                             <Text className="text-[#38bdf8] font-black text-lg">{formatted}</Text>
+                                                                                            {!!utcStr && (
+                                                                                                <Text className="text-slate-500 text-[10px] font-bold mt-0.5">{utcStr}</Text>
+                                                                                            )}
                                                                                         </View>
                                                                                     );
                                                                                 })}
@@ -952,8 +1030,8 @@ export default function EventTracker() {
                                                                     onPress={() => openScheduleModal(event)}
                                                                     className="flex-1 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center flex-row h-12 shadow-sm"
                                                                 >
-                                                                    <Ionicons name="time-outline" size={16} color="#38bdf8" className="mr-2" />
-                                                                    <Text className="text-[#38bdf8] text-[14px] font-black">시간</Text>
+                                                                    <Ionicons name="settings-sharp" size={16} color="#38bdf8" className="mr-2" />
+                                                                    <Text className="text-[#38bdf8] text-[14px] font-black">설정</Text>
                                                                 </TouchableOpacity>
                                                             </>
                                                         ) : (
@@ -972,7 +1050,7 @@ export default function EventTracker() {
                                                             onPress={() => openScheduleModal(event)}
                                                             className="w-12 mx-1 rounded-2xl border border-slate-700 bg-slate-800 items-center justify-center h-12 shadow-sm"
                                                         >
-                                                            <Ionicons name="settings-sharp" size={18} color="#38bdf8" />
+                                                            <Ionicons name="settings-sharp" size={20} color="#38bdf8" />
                                                         </TouchableOpacity>
                                                     )}
                                                 </View>
@@ -1164,7 +1242,7 @@ export default function EventTracker() {
                                 <View>
                                     <Text className="text-white text-2xl font-black mb-1">{editingEvent?.title}</Text>
                                     <Text className="text-slate-400 text-sm">
-                                        {(editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                        {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
                                     </Text>
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className="bg-slate-800 p-2 rounded-full border border-slate-700">
@@ -1180,7 +1258,7 @@ export default function EventTracker() {
                                         ? { paddingBottom: 20 }
                                         : (editingEvent?.id === 'a_fortress')
                                             ? { paddingBottom: 200 }
-                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation')
+                                            : (editingEvent?.category === '개인' || editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'a_champ')
                                                 ? { paddingBottom: 300 }
                                                 : (editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon')
                                                     ? { paddingBottom: 20 }
@@ -1206,8 +1284,8 @@ export default function EventTracker() {
                                                                 onPress={() => setFortressList([...fortressList, {
                                                                     id: Date.now().toString(),
                                                                     name: '요새 1',
-                                                                    day: '토',
-                                                                    h: '22', m: '00'
+                                                                    h: new Date().getHours().toString().padStart(2, '0'),
+                                                                    m: '00'
                                                                 }])}
                                                                 className="bg-brand-accent px-4 py-2 rounded-xl shadow-lg shadow-brand-accent/30"
                                                             >
@@ -1374,8 +1452,8 @@ export default function EventTracker() {
                                                                 onPress={() => setCitadelList([...citadelList, {
                                                                     id: Date.now().toString(),
                                                                     name: '성채 1',
-                                                                    day: '일',
-                                                                    h: '22', m: '10'
+                                                                    h: new Date().getHours().toString().padStart(2, '0'),
+                                                                    m: '00'
                                                                 }])}
                                                                 className="bg-blue-600 px-4 py-2 rounded-xl shadow-lg shadow-blue-600/30"
                                                             >
@@ -1537,7 +1615,7 @@ export default function EventTracker() {
                                             );
                                         })()}
                                     </View>
-                                ) : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon') ? (
+                                ) : (editingEvent?.category === '개인' || editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? (
                                     <View className="mb-6" style={{ zIndex: 100 }}>
                                         {/* Helper to update date time parts */}
                                         {(() => {
@@ -1554,7 +1632,14 @@ export default function EventTracker() {
                                             }) => {
                                                 // Parse value YYYY.MM.DD HH:mm
                                                 // If invalid, fallback to now
-                                                let dateParts = { y: '2024', m: '01', d: '01', h: '12', min: '00' };
+                                                const now = new Date();
+                                                let dateParts = {
+                                                    y: now.getFullYear().toString(),
+                                                    m: pad(now.getMonth() + 1),
+                                                    d: pad(now.getDate()),
+                                                    h: pad(now.getHours()),
+                                                    min: pad(now.getMinutes())
+                                                };
                                                 const match = value.match(/(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2})/);
                                                 if (match) {
                                                     dateParts = { y: match[1], m: match[2], d: match[3], h: match[4], min: match[5] };
@@ -1619,7 +1704,7 @@ export default function EventTracker() {
                                                             <Dropdown field="d" options={days} currentVal={dateParts.d} />
                                                             <View className="mx-2"><Text className="text-slate-600 font-black">/</Text></View>
                                                             <Dropdown field="h" options={hours} currentVal={dateParts.h} />
-                                                            {!!editingEvent && editingEvent.id !== 'a_castle' && editingEvent.id !== 'a_svs' && editingEvent.id !== 'a_operation' && (
+                                                            {!!editingEvent && (
                                                                 <React.Fragment>
                                                                     <View className="mx-1"><Text className="text-slate-600 font-black">:</Text></View>
                                                                     <Dropdown field="min" options={minutes} currentVal={dateParts.min} />
@@ -2076,6 +2161,6 @@ export default function EventTracker() {
                 </Modal>
             </View>
 
-        </ImageBackground>
+        </View>
     );
 }

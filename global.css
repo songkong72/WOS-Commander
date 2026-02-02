@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Force full viewport on Web */
+html,
+body,
+#root,
+[data-reactroot] {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-width: 100vw;
+    height: 100%;
+    min-height: 100vh;
+    background-color: #020617;
+    overflow-x: hidden;
+}

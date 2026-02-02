@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState } from 'react';
 import { Slot } from 'expo-router';
 import { NativeWindStyleSheet } from "nativewind";
 import { AdminStatus } from '../data/admin-config';
+import { View, Text, Platform, ImageBackground, StyleSheet } from 'react-native';
+import Head from 'expo-router/head';
 
 NativeWindStyleSheet.setOutput({
     default: "native",
@@ -22,9 +24,6 @@ export function useAuth() {
     return context;
 }
 
-import { View, Text, Platform } from 'react-native';
-import Head from 'expo-router/head';
-
 export default function Layout() {
     const [auth, setAuth] = useState<AdminStatus>({ isLoggedIn: false, adminName: null });
 
@@ -41,9 +40,46 @@ export default function Layout() {
                     <link rel="manifest" href="/manifest.json" />
                 </Head>
             )}
-            <View style={{ flex: 1, overflow: 'hidden' }}>
-                <Slot />
+
+            <View style={styles.container}>
+                {/* Global Background Image */}
+                <ImageBackground
+                    source={require('../assets/images/bg-main.png')}
+                    style={styles.background}
+                    imageStyle={styles.backgroundImage}
+                >
+                    <View style={styles.overlay}>
+                        <Slot />
+                    </View>
+                </ImageBackground>
             </View>
         </AuthContext.Provider>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#020617',
+    },
+    background: {
+        flex: 1,
+        width: Platform.OS === 'web' ? '100vw' : '100%',
+        height: '100%',
+    },
+    backgroundImage: {
+        resizeMode: 'cover',
+        ...Platform.select({
+            web: {
+                objectFit: 'cover',
+                width: '100vw',
+                height: '100vh',
+                position: 'fixed'
+            } as any
+        })
+    },
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+    }
+});
