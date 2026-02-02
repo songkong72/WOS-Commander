@@ -417,7 +417,7 @@ export default function Home() {
                                                                             const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
                                                                             const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
                                                                             let label = rawLabel;
-                                                                            if (event.eventId === 'a_bear') {
+                                                                            if (event.eventId === 'a_bear' || event.eventId === 'alliance_bear') {
                                                                                 label = label.replace('1군', '곰1').replace('2군', '곰2');
                                                                             }
                                                                             const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;

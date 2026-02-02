@@ -1035,7 +1035,7 @@ export default function EventTracker() {
                                                                 const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
                                                                 // Special handling for Bear Hunt event labels
                                                                 let label = rawLabel;
-                                                                if (event.id === 'a_bear') {
+                                                                if (event.id === 'a_bear' || event.id === 'alliance_bear') {
                                                                     label = label.replace('1군', '곰1').replace('2군', '곰2');
                                                                 }
                                                                 const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
@@ -1785,13 +1785,17 @@ export default function EventTracker() {
                                                             onPress={() => setActiveTab(1)}
                                                             className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? 'bg-slate-700' : ''}`}
                                                         >
-                                                            <Text className={`font-bold ${activeTab === 1 ? 'text-white font-black' : 'text-slate-500'}`}>1군 설정</Text>
+                                                            <Text className={`font-bold ${activeTab === 1 ? 'text-white font-black' : 'text-slate-500'}`}>
+                                                                {(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰1 설정' : '1군 설정'}
+                                                            </Text>
                                                         </TouchableOpacity>
                                                         <TouchableOpacity
                                                             onPress={() => setActiveTab(2)}
                                                             className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? 'bg-slate-700' : ''}`}
                                                         >
-                                                            <Text className={`font-bold ${activeTab === 2 ? 'text-white font-black' : 'text-slate-500'}`}>2군 설정</Text>
+                                                            <Text className={`font-bold ${activeTab === 2 ? 'text-white font-black' : 'text-slate-500'}`}>
+                                                                {(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰2 설정' : '2군 설정'}
+                                                            </Text>
                                                         </TouchableOpacity>
                                                     </View>
                                                 );
@@ -1899,10 +1903,14 @@ export default function EventTracker() {
                                                                 'a_merge', 'alliance_merge',
                                                                 'a_svs', 'alliance_svs',
                                                                 'a_dragon', 'alliance_dragon',
-                                                                'a_joe', 'alliance_joe',
-                                                                'alliance_frost_league', 'a_weapon'
+                                                                'a_weapon', 'alliance_frost_league',
+                                                                'a_joe', 'alliance_joe'
                                                             ];
-                                                            return (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) ? `진행 요일 (${activeTab}군)` : '진행 요일';
+                                                            if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
+                                                                const groupLabel = (editingEvent.id === 'a_bear' || editingEvent.id === 'alliance_bear') ? `곰${activeTab}` : `${activeTab}군`;
+                                                                return `진행 요일 (${groupLabel})`;
+                                                            }
+                                                            return '진행 요일';
                                                         })()}
                                                     </Text>
                                                     <View className="flex-row flex-wrap gap-2">
