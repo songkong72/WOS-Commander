@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect, useRootNavigationState } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from './_layout';
 import { useFirestoreMembers } from '../hooks/useFirestoreMembers';
@@ -16,12 +16,13 @@ export default function AdminPage() {
     const [uploading, setUploading] = useState(false);
     const [previewData, setPreviewData] = useState<{ id: string, nickname: string }[]>([]);
 
-    useEffect(() => {
-        if (!auth.isLoggedIn) {
-            Alert.alert('접근 거부', '관리자 권한이 필요합니다.');
-            router.replace('/');
-        }
-    }, [auth]);
+    const rootNavigationState = useRootNavigationState();
+
+    if (!rootNavigationState?.key) return null;
+
+    if (!auth.isLoggedIn) {
+        return <Redirect href="/" />;
+    }
 
     const handleExcelUpload = async () => {
         try {
