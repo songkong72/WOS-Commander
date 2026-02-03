@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../_layout';
+import { useAuth, useTheme } from '../_layout';
 import { getGuideContent } from '../../data/event-guides';
 import { Attendee } from '../../data/mock-attendees';
 import { useFirestoreAttendees } from '../../hooks/useFirestoreAttendees';
@@ -31,6 +31,8 @@ const CITADEL_OPTIONS = Array.from({ length: 4 }, (_, i) => `성채 ${i + 1}`);
 
 // Mini Hero Picker Component
 const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: string) => void, label: string }) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [showDropdown, setShowDropdown] = useState(false);
     const [search, setSearch] = useState(value);
 
@@ -46,10 +48,10 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
 
     return (
         <View className="flex-1 relative" style={{ zIndex: showDropdown ? 60 : 1 }}>
-            <Text className="text-slate-500 text-[9px] font-black mb-1.5 ml-1 uppercase">{label}</Text>
+            <Text className={`text-[9px] font-bold mb-1.5 ml-1 uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{label}</Text>
             <TextInput
                 placeholder={label === 'HERO 1' ? '영웅 1' : label === 'HERO 2' ? '영웅 2' : '영웅 3'}
-                placeholderTextColor="#475569"
+                placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
                 value={search}
                 onChangeText={(v) => {
                     setSearch(v);
@@ -58,12 +60,12 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
                 }}
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                className="bg-slate-900/40 p-3 rounded-xl text-white text-xs font-bold border border-slate-800"
+                className={`p-3 rounded-xl text-xs font-semibold border ${isDark ? 'bg-slate-900/40 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200 shadow-sm'}`}
             />
             {showDropdown && filteredHeroes.length > 0 && (
                 <View
                     style={{ zIndex: 9999, elevation: 9999 }}
-                    className="absolute top-16 left-0 right-0 bg-slate-800 border border-slate-700 rounded-xl max-h-40 shadow-2xl overflow-hidden"
+                    className={`absolute top-16 left-0 right-0 border rounded-xl max-h-40 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                         {filteredHeroes.map((name) => (
@@ -74,9 +76,9 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
                                     setSearch(name);
                                     setShowDropdown(false);
                                 }}
-                                className="p-3 border-b border-slate-700/50"
+                                className={`p-3 border-b ${isDark ? 'border-slate-700/50' : 'border-slate-100'}`}
                             >
-                                <Text className="text-white text-xs font-bold">{name}</Text>
+                                <Text className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{name}</Text>
                             </TouchableOpacity>
                         ))}
                     </ScrollView>
@@ -88,6 +90,8 @@ const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: s
 
 // Member Picker for Attendance
 const MemberPicker = ({ value, onSelect, members, isAdmin }: { value: string, onSelect: (v: string) => void, members: any[], isAdmin: boolean }) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [showDropdown, setShowDropdown] = useState(false);
     const [search, setSearch] = useState(value);
 
@@ -106,7 +110,7 @@ const MemberPicker = ({ value, onSelect, members, isAdmin }: { value: string, on
         <View className="flex-1 relative" style={{ zIndex: showDropdown ? 60 : 1 }}>
             <TextInput
                 placeholder="영주 이름 선택/입력"
-                placeholderTextColor="#64748b"
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                 value={search}
                 onChangeText={(v) => {
                     setSearch(v);
@@ -116,12 +120,12 @@ const MemberPicker = ({ value, onSelect, members, isAdmin }: { value: string, on
                 onFocus={() => setShowDropdown(true)}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 editable={isAdmin}
-                className={`bg-slate-900 p-3 rounded-xl text-white font-bold border border-slate-700 ${!isAdmin ? 'opacity-70' : ''}`}
+                className={`p-3 rounded-xl font-semibold border ${isDark ? 'bg-slate-900 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200 shadow-sm'} ${!isAdmin ? 'opacity-70' : ''}`}
             />
             {showDropdown && isAdmin && filteredMembers.length > 0 && (
                 <View
                     style={{ zIndex: 9999, elevation: 9999 }}
-                    className="absolute top-14 left-0 right-0 bg-slate-800 border border-slate-700 rounded-xl max-h-60 shadow-2xl overflow-hidden"
+                    className={`absolute top-14 left-0 right-0 border rounded-xl max-h-60 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                         {filteredMembers.map((m) => (
@@ -132,11 +136,11 @@ const MemberPicker = ({ value, onSelect, members, isAdmin }: { value: string, on
                                     setSearch(m.nickname);
                                     setShowDropdown(false);
                                 }}
-                                className="p-3 border-b border-slate-700/50 flex-row justify-between items-center"
+                                className={`p-3 border-b flex-row justify-between items-center ${isDark ? 'border-slate-700/50' : 'border-slate-100'}`}
                             >
                                 <View>
-                                    <Text className="text-white text-xs font-bold">{m.nickname}</Text>
-                                    <Text className="text-slate-500 text-[9px]">ID: {m.id}</Text>
+                                    <Text className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{m.nickname}</Text>
+                                    <Text className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>ID: {m.id}</Text>
                                 </View>
                                 <Ionicons name="add-circle-outline" size={16} color="#38bdf8" />
                             </TouchableOpacity>
@@ -155,9 +159,17 @@ export default function EventTracker() {
     const [selectedCategory, setSelectedCategory] = useState<EventCategory>('전체');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
     const { auth } = useAuth();
+    const { theme, toggleTheme } = useTheme();
+    const isDark = theme === 'dark';
     const { dynamicAdmins } = useFirestoreAdmins();
     const router = useRouter();
     const params = useLocalSearchParams();
+
+    const [now, setNow] = useState(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setNow(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
 
     // Refs for scrolling
     const scrollViewRef = useRef<ScrollView>(null);
@@ -349,19 +361,92 @@ export default function EventTracker() {
         }
     }, [firestoreAttendees, managedEvent]);
 
+    const checkItemOngoing = (str: string) => {
+        if (!str) return false;
+        const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+        const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+        const totalWeekMinutes = 7 * 1440;
+
+        if (str.includes('상시') || str.includes('상설')) return true;
+
+        // 1. 기간형 체크 (예: 2024.01.01 10:00 ~ 2024.01.03 10:00)
+        const dateRangeMatch = str.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+        if (dateRangeMatch) {
+            const sStr = `${dateRangeMatch[1].replace(/\./g, '-')}T${dateRangeMatch[2]}:00`;
+            const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
+            const start = new Date(sStr);
+            const end = new Date(eStr);
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                return now >= start && now <= end;
+            }
+        }
+
+        // 2. 주간 요일 범위 체크 (예: 월 10:00 ~ 수 10:00)
+        const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
+        if (weeklyMatch) {
+            const startTotal = dayMapObj[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
+            const endTotal = dayMapObj[weeklyMatch[4]] * 1440 + parseInt(weeklyMatch[5]) * 60 + parseInt(weeklyMatch[6]);
+            if (startTotal <= endTotal) return currentTotal >= startTotal && currentTotal <= endTotal;
+            return currentTotal >= startTotal || currentTotal <= endTotal;
+        }
+
+        // 3. 점형 일시 체크 (예: 화 23:50, 매일 10:00)
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+        if (explicitMatches.length > 0) {
+            return explicitMatches.some(m => {
+                const dayStr = m[1];
+                const h = parseInt(m[2]);
+                const min = parseInt(m[3]);
+
+                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+
+                return scheduledDays.some(d => {
+                    const dayOffset = dayMapObj[d];
+                    if (dayOffset === undefined) return false;
+                    const startTotal = dayOffset * 1440 + h * 60 + min;
+                    const endTotal = startTotal + 30;
+
+                    if (currentTotal >= startTotal && currentTotal <= endTotal) return true;
+                    if (endTotal >= totalWeekMinutes && currentTotal <= (endTotal % totalWeekMinutes)) return true;
+                    return false;
+                });
+            });
+        }
+        return false;
+    };
+
+    const checkIsOngoing = (event: WikiEvent) => {
+        try {
+            return checkItemOngoing(event.day || '') || checkItemOngoing(event.time || '');
+        } catch (err) {
+            return false;
+        }
+    };
+
     const filteredEvents = useMemo(() => {
         let base = selectedCategory === '전체' ? [...events] : events.filter(e => e.category === selectedCategory);
 
-        if (selectedCategory === '전체') {
-            const catOrder: { [key: string]: number } = { '서버': 0, '연맹': 1, '개인': 2, '초보자': 3 };
-            base.sort((a, b) => {
+        base.sort((a, b) => {
+            const activeA = checkIsOngoing(a);
+            const activeB = checkIsOngoing(b);
+
+            // 1. 진행중인 이벤트 우선
+            if (activeA && !activeB) return -1;
+            if (!activeA && activeB) return 1;
+
+            // 2. '전체' 탭인 경우 카테고리 순서
+            if (selectedCategory === '전체') {
+                const catOrder: { [key: string]: number } = { '서버': 0, '연맹': 1, '개인': 2, '초보자': 3 };
                 const orderA = catOrder[a.category] !== undefined ? catOrder[a.category] : 99;
                 const orderB = catOrder[b.category] !== undefined ? catOrder[b.category] : 99;
-                return orderA - orderB;
-            });
-        }
+                if (orderA !== orderB) return orderA - orderB;
+            }
+
+            return 0;
+        });
+
         return base;
-    }, [events, selectedCategory]);
+    }, [events, selectedCategory, now]);
 
     const openWikiLink = (url: string) => {
         if (url) {
@@ -402,56 +487,6 @@ export default function EventTracker() {
 
         const formattedTime = `${days[utcDayIdx]}(${utcH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
         return includePrefix ? `UTC: ${formattedTime}` : formattedTime;
-    };
-
-    const checkIsOngoing = (event: WikiEvent) => {
-        try {
-            const now = new Date();
-            const combined = (event.day || '') + ' ' + (event.time || '');
-
-            // 1. Date Range Logic (e.g., "2026.02.01 (일) 11:00 ~ 2026.02.18 (수) 11:00")
-            const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
-            if (dateRangeMatch) {
-                // Formatting helper for robustness
-                const sStr = `${dateRangeMatch[1].replace(/\./g, '-')}T${dateRangeMatch[2]}:00`;
-                const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
-                const start = new Date(sStr);
-                const end = new Date(eStr);
-
-                if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
-                return now >= start && now <= end;
-            }
-
-            // 2. Weekly Range Logic (e.g., "토 10:00 ~ 일 22:00")
-            const weeklyMatch = combined.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
-            if (weeklyMatch) {
-                const dayMap: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-
-                const currentDay = now.getDay();
-                const currentH = now.getHours();
-                const currentM = now.getMinutes();
-                const currentTotal = currentDay * 1440 + currentH * 60 + currentM;
-
-                const startDay = dayMap[weeklyMatch[1]];
-                const startH = parseInt(weeklyMatch[2], 10);
-                const startM = parseInt(weeklyMatch[3], 10);
-                const startTotal = startDay * 1440 + startH * 60 + startM;
-
-                const endDay = dayMap[weeklyMatch[4]];
-                const endH = parseInt(weeklyMatch[5], 10);
-                const endM = parseInt(weeklyMatch[6], 10);
-                const endTotal = endDay * 1440 + endH * 60 + endM;
-
-                if (startTotal <= endTotal) {
-                    return currentTotal >= startTotal && currentTotal <= endTotal;
-                } else {
-                    return currentTotal >= startTotal || currentTotal <= endTotal;
-                }
-            }
-            return false;
-        } catch (err) {
-            return false;
-        }
     };
 
     const addTimeSlot = () => {
@@ -886,10 +921,10 @@ export default function EventTracker() {
 
     if (schedulesLoading) {
         return (
-            <View className="flex-1 bg-brand-dark justify-center items-center">
+            <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
                 <Stack.Screen options={{ headerShown: false }} />
                 <ActivityIndicator size="large" color="#38bdf8" />
-                <Text className="text-white mt-4 font-bold">데이터 동기화 중...</Text>
+                <Text className={`mt-4 font-semibold ${isDark ? 'text-white' : 'text-slate-600'}`}>데이터 동기화 중...</Text>
             </View>
         );
     }
@@ -905,21 +940,21 @@ export default function EventTracker() {
                 imageStyle={{ resizeMode: 'cover', width: (Platform.OS === 'web' ? '100vw' : '100%') as any, height: (Platform.OS === 'web' ? '100vh' : '100%') as any, ...Platform.select({ web: { objectFit: 'cover' } as any }) }}
             />
 
-            <View className="flex-1 bg-black/70 flex-row w-full h-full" style={{ minWidth: (Platform.OS === 'web' ? '100vw' : '100%') as any }}>
+            <View className={`flex-1 flex-row w-full h-full ${isDark ? 'bg-black/70' : 'bg-white/70'}`} style={{ minWidth: (Platform.OS === 'web' ? '100vw' : '100%') as any }}>
 
                 {/* Layout: Sidebar for Desktop */}
                 {isDesktop && (
-                    <View className="w-64 bg-slate-900 border-r border-slate-800 flex-col pt-16 px-4">
-                        <Text className="text-white text-xl font-black mb-8 px-2">이벤트 필터</Text>
-                        <View className="space-y-2">
+                    <View className={`w-52 border-r flex-col pt-16 px-3 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <Text className={`text-base font-bold mb-6 px-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>이벤트 필터</Text>
+                        <View className="space-y-1.5">
                             {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
                                 <TouchableOpacity
                                     key={cat}
                                     onPress={() => setSelectedCategory(cat)}
-                                    className={`flex-row items-center p-4 rounded-xl transition-all ${selectedCategory === cat ? 'bg-brand-accent shadow-lg shadow-brand-accent/20' : 'hover:bg-slate-800'}`}
+                                    className={`flex-row items-center p-2.5 rounded-xl transition-all ${selectedCategory === cat ? 'bg-[#38bdf8] shadow-lg shadow-blue-500/20' : (isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-50')}`}
                                 >
-                                    <View className={`w-2 h-2 rounded-full mr-3 ${selectedCategory === cat ? 'bg-brand-dark' : 'bg-slate-600'}`} />
-                                    <Text className={`font-bold text-sm ${selectedCategory === cat ? 'text-brand-dark' : 'text-slate-400'}`}>
+                                    <View className={`w-2 h-2 rounded-full mr-3 ${selectedCategory === cat ? 'bg-white' : (isDark ? 'bg-slate-600' : 'bg-slate-300')}`} />
+                                    <Text className={`font-semibold text-sm ${selectedCategory === cat ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
                                         {cat} 이벤트
                                     </Text>
                                 </TouchableOpacity>
@@ -931,28 +966,28 @@ export default function EventTracker() {
                 {/* Layout: Main Content */}
                 <View className="flex-1 flex-col">
                     {/* Header */}
-                    <View className="pt-16 pb-6 px-6 bg-brand-header border-b border-slate-900">
-                        <View className="flex-row items-center justify-between mb-4">
-                            <Text className="text-white text-3xl font-black tracking-tighter">이벤트 스케줄</Text>
+                    <View className={`pt-10 pb-4 px-5 border-b ${isDark ? 'bg-[#0f172a]/80 border-slate-900' : 'bg-white/80 border-slate-100'}`}>
+                        <View className="flex-row items-center justify-between mb-3">
+                            <Text className={`text-2xl font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>이벤트 스케줄</Text>
                             <TouchableOpacity
                                 onPress={() => router.replace('/')}
-                                className="flex-row items-center bg-white/5 px-4 py-2 rounded-xl border border-white/10"
+                                className={`flex-row items-center px-3 py-1.5 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}
                             >
-                                <Ionicons name="home-outline" size={18} color="#FFD700" className="mr-2" />
-                                <Text className="text-white font-black text-xs">뒤로가기</Text>
+                                <Ionicons name="home-outline" size={16} color={isDark ? "#FFD700" : "#d97706"} className="mr-1.5" />
+                                <Text className={`font-bold text-[11px] ${isDark ? 'text-white' : 'text-slate-800'}`}>뒤로가기</Text>
                             </TouchableOpacity>
                         </View>
 
                         {/* Mobile Category Filter (Hidden on Desktop) */}
                         {!isDesktop && (
-                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-2">
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row mt-1">
                                 {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
                                     <TouchableOpacity
                                         key={cat}
                                         onPress={() => setSelectedCategory(cat)}
-                                        className={`px-6 py-2.5 rounded-full mr-2 border ${selectedCategory === cat ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
+                                        className={`px-4 py-1.5 rounded-full mr-2 border ${selectedCategory === cat ? 'bg-[#38bdf8] border-[#38bdf8]' : (isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-white border-slate-200 shadow-sm')}`}
                                     >
-                                        <Text className={`font-black text-[15px] ${selectedCategory === cat ? 'text-brand-dark' : 'text-slate-400'}`}>{cat}</Text>
+                                        <Text className={`font-bold text-[13px] ${selectedCategory === cat ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>{cat}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
@@ -960,7 +995,7 @@ export default function EventTracker() {
                     </View>
 
                     {/* Event Grid */}
-                    <ScrollView ref={scrollViewRef} className="flex-1 p-6">
+                    <ScrollView ref={scrollViewRef} className="flex-1 p-3.5">
                         <View className="flex-row flex-wrap -mx-2">
                             {filteredEvents.map((event) => {
                                 const isOngoing = checkIsOngoing(event);
@@ -974,12 +1009,12 @@ export default function EventTracker() {
                                             }
                                         }}
                                     >
-                                        <View className={`h-full bg-[#1e293b]/95 rounded-[28px] border-2 overflow-hidden transition-all duration-300 ${highlightId === event.id ? 'border-[#38bdf8] shadow-2xl shadow-blue-500/30 scale-[1.02]' : 'border-slate-700/60 shadow-lg'}`}>
+                                        <View className={`h-full rounded-2xl border-2 overflow-hidden transition-all duration-300 ${highlightId === event.id ? 'border-[#38bdf8] shadow-2xl shadow-blue-500/30 scale-[1.01]' : (isDark ? 'bg-[#1e293b]/95 border-slate-700/60 shadow-lg' : 'bg-white border-slate-100 shadow-md shadow-slate-200')}`}>
                                             {/* Card Header - Modern Dashboard Style */}
-                                            <View className="px-5 py-4 flex-row items-center justify-between border-b border-white/5">
+                                            <View className={`px-4 py-3 flex-row items-center justify-between border-b ${isDark ? 'border-white/5' : 'border-slate-100'}`}>
                                                 <View className="flex-row items-center flex-1 mr-2">
                                                     {event.imageUrl ? (
-                                                        <View className="w-14 h-14 rounded-2xl border border-white/10 overflow-hidden bg-slate-900 shadow-lg mr-4">
+                                                        <View className={`w-11 h-11 rounded-xl border overflow-hidden shadow-lg mr-3 ${isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-50 border-slate-100'}`}>
                                                             <Image
                                                                 source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl}
                                                                 className="w-full h-full"
@@ -987,55 +1022,55 @@ export default function EventTracker() {
                                                             />
                                                         </View>
                                                     ) : (
-                                                        <View className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-700 items-center justify-center mr-4">
-                                                            <Text className="text-2xl">📅</Text>
+                                                        <View className={`w-11 h-11 rounded-xl items-center justify-center mr-3 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                                            <Text className="text-xl">📅</Text>
                                                         </View>
                                                     )}
                                                     <View className="flex-1">
-                                                        <View className="bg-cyan-500/10 self-start px-2 py-0.5 rounded-md mb-1 border border-cyan-500/20">
-                                                            <Text className="text-cyan-400 text-[9px] font-black uppercase tracking-widest">{event.category}</Text>
+                                                        <View className={`self-start px-1.5 py-0.5 rounded-md mb-0.5 border ${isDark ? 'bg-cyan-500/10 border-cyan-500/20' : 'bg-sky-50 border-sky-100'}`}>
+                                                            <Text className={`text-[8px] font-bold uppercase tracking-widest ${isDark ? 'text-cyan-400' : 'text-sky-600'}`}>{event.category}</Text>
                                                         </View>
-                                                        <Text className="text-white text-lg font-black leading-tight" numberOfLines={1}>{event.title}</Text>
+                                                        <Text className={`text-base font-bold leading-tight ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{event.title}</Text>
                                                     </View>
                                                 </View>
 
                                                 {/* Admin Setting & Status area */}
-                                                <View className="items-end gap-2 relative">
+                                                <View className="items-end gap-1.5 relative">
                                                     {auth.isLoggedIn && (
                                                         <View className="relative">
                                                             {/* Tooltip - Modern Dashboard style (Moved below to prevent clipping) */}
                                                             {hoveredClockId === event.id && (
-                                                                <View className="absolute top-11 right-0 bg-slate-800/95 border border-slate-600 px-3 py-1.5 rounded-lg shadow-xl z-50 min-w-[70px]">
-                                                                    <Text className="text-white text-[10px] font-bold text-center whitespace-nowrap">시간 설정</Text>
+                                                                <View className={`absolute top-10 right-0 border px-2.5 py-1 rounded-lg shadow-xl z-50 min-w-[60px] ${isDark ? 'bg-slate-800/95 border-slate-600' : 'bg-white border-slate-200'}`}>
+                                                                    <Text className={`text-[9px] font-semibold text-center whitespace-nowrap ${isDark ? 'text-white' : 'text-slate-700'}`}>시간 설정</Text>
                                                                     {/* Tooltip arrow at top */}
-                                                                    <View className="absolute -top-1 right-4 w-2 h-2 bg-slate-800 border-l border-t border-slate-600 rotate-45" />
+                                                                    <View className={`absolute -top-1 right-3.5 w-1.5 h-1.5 border-l border-t rotate-45 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`} />
                                                                 </View>
                                                             )}
                                                             <TouchableOpacity
                                                                 onPress={() => openScheduleModal(event)}
-                                                                className="w-10 h-10 bg-slate-800 rounded-full items-center justify-center border border-slate-700 shadow-sm transition-all hover:bg-slate-700 hover:border-cyan-500/50"
+                                                                className={`w-9 h-9 rounded-full items-center justify-center border shadow-sm transition-all ${isDark ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-white border-slate-200 hover:bg-slate-50'}`}
                                                             >
-                                                                <Ionicons name="time" size={20} color="#38bdf8" />
+                                                                <Ionicons name="time" size={18} color="#38bdf8" />
                                                             </TouchableOpacity>
                                                         </View>
                                                     )}
                                                     {isOngoing && (
-                                                        <View className="bg-red-500 px-2.5 py-1 rounded-lg shadow-lg shadow-red-500/20">
-                                                            <Text className="text-white text-[9px] font-black">진행중</Text>
+                                                        <View className="bg-red-500 px-2 py-0.5 rounded-md shadow-lg shadow-red-500/20">
+                                                            <Text className="text-white text-[8px] font-bold">진행중</Text>
                                                         </View>
                                                     )}
                                                 </View>
                                             </View>
 
                                             {/* Card Content Area - Premium Dashboard hierarchy */}
-                                            <View className="p-5 flex-1 justify-between">
-                                                <View className="mb-6">
+                                            <View className="p-3.5 flex-1 justify-between">
+                                                <View className="mb-4">
                                                     {event.id !== 'a_fortress' && (
                                                         (!event.day && !event.time) ? (
                                                             /* Distinctive TBD Status - Not looking like a button */
-                                                            <View className="w-full py-8 border-2 border-dashed border-slate-700/50 rounded-3xl items-center justify-center bg-slate-900/20">
-                                                                <Ionicons name="calendar-outline" size={24} color="#475569" className="mb-2" />
-                                                                <Text className="text-slate-500 text-sm font-bold">다음 일정을 준비 중입니다</Text>
+                                                            <View className={`w-full py-6 border-2 border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-700/50 bg-slate-900/20' : 'border-slate-200 bg-slate-50/50'}`}>
+                                                                <Ionicons name="calendar-outline" size={20} color={isDark ? "#475569" : "#94a3b8"} className="mb-1.5" />
+                                                                <Text className={`text-xs font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>다음 일정을 준비 중입니다</Text>
                                                             </View>
                                                         ) : (
                                                             event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
@@ -1084,11 +1119,11 @@ export default function EventTracker() {
                                                                         };
 
                                                                         return (
-                                                                            <View key={dIdx} className="bg-slate-900/60 flex-1 min-w-[200px] p-5 rounded-2xl border border-slate-700 shadow-inner">
-                                                                                {renderResponsivePeriod(formattedDay, "text-cyan-400 font-black text-lg")}
+                                                                            <View key={dIdx} className={`flex-1 min-w-[180px] p-3 rounded-xl border shadow-inner ${isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                                                                {renderResponsivePeriod(formattedDay, isDark ? "text-cyan-400 font-bold text-base" : "text-sky-600 font-bold text-base")}
                                                                                 {!!utcText && (
-                                                                                    <View className="mt-1.5 pt-1.5 border-t border-white/5">
-                                                                                        {renderResponsivePeriod(utcText, "text-slate-500 text-[11px] font-bold", true)}
+                                                                                    <View className={`mt-1 pt-1 border-t ${isDark ? 'border-white/5' : 'border-slate-200/50'}`}>
+                                                                                        {renderResponsivePeriod(utcText, isDark ? "text-slate-500 text-[10px] font-semibold" : "text-slate-400 text-[10px] font-semibold", true)}
                                                                                     </View>
                                                                                 )}
                                                                             </View>
@@ -1119,7 +1154,7 @@ export default function EventTracker() {
                                                                         {label && (
                                                                             <View className="flex-row items-center mb-2.5 ml-1">
                                                                                 <View className="w-1 h-3 bg-cyan-500 rounded-full mr-2" />
-                                                                                <Text className="text-slate-400 text-[11px] font-black uppercase tracking-widest">{label}</Text>
+                                                                                <Text className="text-slate-400 text-[11px] font-bold uppercase tracking-widest">{label}</Text>
                                                                             </View>
                                                                         )}
                                                                         <View className="flex-row flex-wrap gap-3">
@@ -1127,10 +1162,10 @@ export default function EventTracker() {
                                                                                 const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                                                 const utcStr = getUTCTimeString(item.trim());
                                                                                 return (
-                                                                                    <View key={iIdx} className="bg-slate-900/60 px-6 py-4 rounded-3xl border border-slate-700/50 shadow-inner min-w-[140px]">
-                                                                                        <Text className="text-cyan-400 font-black text-lg">{formatted}</Text>
+                                                                                    <View key={iIdx} className={`px-6 py-4 rounded-3xl border shadow-inner min-w-[140px] ${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}>
+                                                                                        <Text className={`${isDark ? 'text-cyan-400' : 'text-sky-600'} font-bold text-lg`}>{formatted}</Text>
                                                                                         {!!utcStr && (
-                                                                                            <Text className="text-slate-500 text-[11px] font-bold mt-1.5">{utcStr}</Text>
+                                                                                            <Text className={`text-[11px] font-semibold mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{utcStr}</Text>
                                                                                         )}
                                                                                     </View>
                                                                                 );
@@ -1149,7 +1184,7 @@ export default function EventTracker() {
                                                         onPress={() => openGuideModal(event)}
                                                         className="flex-[1.5] rounded-3xl bg-[#38bdf8] items-center justify-center flex-row shadow-2xl shadow-cyan-500/40 active:scale-95 transition-all overflow-hidden"
                                                     >
-                                                        <Text className="text-slate-900 text-[16px] font-black mr-2">
+                                                        <Text className="text-slate-900 text-[16px] font-bold mr-2">
                                                             {(event.category === '연맹' || event.category === '서버') ? '⚔️ 전략 시트' : '📘 가이드 보기'}
                                                         </Text>
                                                         <Ionicons name="chevron-forward-circle" size={18} color="rgba(15, 23, 42, 0.4)" />
@@ -1158,10 +1193,10 @@ export default function EventTracker() {
                                                     {(event.category === '연맹' || event.category === '서버') && (
                                                         <TouchableOpacity
                                                             onPress={() => openAttendeeModal(event)}
-                                                            className="flex-1 rounded-3xl bg-slate-800/80 border-2 border-slate-700 items-center justify-center flex-row active:scale-95 transition-all"
+                                                            className={`flex-1 rounded-3xl border-2 items-center justify-center flex-row active:scale-95 transition-all ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-100 shadow-sm'}`}
                                                         >
                                                             <Ionicons name="people" size={20} color="#38bdf8" className="mr-2" />
-                                                            <Text className="text-white text-[16px] font-black">참석 관리</Text>
+                                                            <Text className={`text-[16px] font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>참석 관리</Text>
                                                         </TouchableOpacity>
                                                     )}
                                                 </View>
@@ -1193,7 +1228,7 @@ export default function EventTracker() {
                                             <ImageBackground source={{ uri: selectedEventForGuide.imageUrl }} className="w-full h-full" />
                                         </View>
                                         <View>
-                                            <Text className="text-white text-2xl font-black">{selectedEventForGuide?.title}</Text>
+                                            <Text className="text-white text-2xl font-bold">{selectedEventForGuide?.title}</Text>
                                         </View>
                                     </View>
                                     <TouchableOpacity onPress={() => setGuideModalVisible(false)} className="absolute top-4 right-4 bg-black/40 p-2 rounded-full border border-white/10">
@@ -1202,7 +1237,7 @@ export default function EventTracker() {
                                 </ImageBackground>
                             ) : (
                                 <View className="h-24 bg-slate-800 w-full justify-center px-6">
-                                    <Text className="text-white text-2xl font-black">{selectedEventForGuide?.title}</Text>
+                                    <Text className="text-white text-2xl font-bold">{selectedEventForGuide?.title}</Text>
                                     <TouchableOpacity onPress={() => setGuideModalVisible(false)} className="absolute top-4 right-4">
                                         <Ionicons name="close" size={24} color="white" />
                                     </TouchableOpacity>
@@ -1215,13 +1250,13 @@ export default function EventTracker() {
                                     <View className="flex-row items-center justify-between mb-2">
                                         <View className="flex-row items-center">
                                             <View className="w-1 h-4 bg-brand-accent rounded-full mr-2" />
-                                            <Text className="text-white font-bold text-sm">실전 진행 방식 (Wiki)</Text>
+                                            <Text className="text-white font-semibold text-sm">실전 진행 방식 (Wiki)</Text>
                                         </View>
                                         <TouchableOpacity
                                             onPress={() => openWikiLink(selectedEventForGuide?.wikiUrl || '')}
                                             className="bg-[#38bdf8]/10 px-3 py-1.5 rounded-lg border border-[#38bdf8]/20"
                                         >
-                                            <Text className="text-[#38bdf8] text-xs font-bold">🌐 위키 이동</Text>
+                                            <Text className="text-[#38bdf8] text-xs font-semibold">🌐 위키 이동</Text>
                                         </TouchableOpacity>
                                     </View>
                                     <Text className="text-slate-400 text-xs leading-5">
@@ -1233,10 +1268,10 @@ export default function EventTracker() {
                                 {(selectedEventForGuide?.category === '연맹' || selectedEventForGuide?.category === '서버') && (
                                     <View className="mb-6">
                                         <View className="flex-row items-center justify-between mb-3">
-                                            <Text className="text-purple-400 font-black text-sm uppercase tracking-widest">🛡️ 연맹 작전 지시</Text>
+                                            <Text className="text-purple-400 font-bold text-sm uppercase tracking-widest">🛡️ 연맹 작전 지시</Text>
                                             {isAdmin && !isEditingStrategy && (
                                                 <TouchableOpacity onPress={() => setIsEditingStrategy(true)} className="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-                                                    <Text className="text-slate-400 text-[10px] font-bold">수정</Text>
+                                                    <Text className="text-slate-400 text-[10px] font-semibold">수정</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </View>
@@ -1255,10 +1290,10 @@ export default function EventTracker() {
                                                     />
                                                     <View className="flex-row justify-end space-x-2">
                                                         <TouchableOpacity onPress={() => { setIsEditingStrategy(false); setStrategyContent(selectedEventForGuide?.strategy || ''); }} className="bg-slate-700 px-4 py-2 rounded-xl">
-                                                            <Text className="text-slate-300 font-bold text-xs">취소</Text>
+                                                            <Text className="text-slate-300 font-semibold text-xs">취소</Text>
                                                         </TouchableOpacity>
                                                         <TouchableOpacity onPress={() => saveStrategy(selectedEventForGuide!)} className="bg-purple-600 px-4 py-2 rounded-xl">
-                                                            <Text className="text-white font-bold text-xs">저장</Text>
+                                                            <Text className="text-white font-semibold text-xs">저장</Text>
                                                         </TouchableOpacity>
                                                     </View>
                                                 </View>
@@ -1276,18 +1311,18 @@ export default function EventTracker() {
                                 {/* Overview Section */}
                                 {guideContent && (
                                     <View className="mb-6">
-                                        <Text className="text-slate-500 text-xs font-black uppercase mb-3">이벤트 개요</Text>
+                                        <Text className="text-slate-500 text-xs font-bold uppercase mb-3">이벤트 개요</Text>
                                         <Text className="text-slate-300 text-sm leading-6 mb-6">{guideContent.overview}</Text>
 
                                         {/* How to Play */}
                                         {guideContent.howToPlay && guideContent.howToPlay.length > 0 && (
                                             <View className="mb-6">
-                                                <Text className="text-slate-500 text-xs font-black uppercase mb-3">상세 진행 가이드</Text>
+                                                <Text className="text-slate-500 text-xs font-bold uppercase mb-3">상세 진행 가이드</Text>
                                                 <View className="space-y-3">
                                                     {guideContent.howToPlay.map((step: { text: string; images?: string[] }, idx: number) => (
                                                         <View key={idx} className="flex-row">
                                                             <View className="w-5 h-5 rounded-full bg-slate-800 items-center justify-center mr-3 mt-0.5 border border-slate-700">
-                                                                <Text className="text-slate-500 text-[10px] font-bold">{idx + 1}</Text>
+                                                                <Text className="text-slate-500 text-[10px] font-semibold">{idx + 1}</Text>
                                                             </View>
                                                             <Text className="text-slate-300 text-sm leading-6 flex-1">{step.text}</Text>
                                                         </View>
@@ -1301,7 +1336,7 @@ export default function EventTracker() {
                                             <View className="mb-6 bg-yellow-500/5 p-5 rounded-2xl border border-yellow-500/10">
                                                 <View className="flex-row items-center mb-4">
                                                     <Ionicons name="bulb" size={16} color="#eab308" className="mr-2" />
-                                                    <Text className="text-yellow-500 text-xs font-black uppercase">이벤트 공략 꿀팁</Text>
+                                                    <Text className="text-yellow-500 text-xs font-bold uppercase">이벤트 공략 꿀팁</Text>
                                                 </View>
                                                 <View className="space-y-2">
                                                     {guideContent.tips.map((tip: string, idx: number) => (
@@ -1323,7 +1358,7 @@ export default function EventTracker() {
                                 onPress={() => setGuideModalVisible(false)}
                                 className="bg-slate-800 py-4 items-center border-t border-slate-700"
                             >
-                                <Text className="text-slate-400 font-bold text-sm">닫기</Text>
+                                <Text className="text-slate-400 font-semibold text-sm">닫기</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1347,17 +1382,17 @@ export default function EventTracker() {
                                 setActiveDateDropdown(null);
                                 setActiveFortressDropdown(null);
                             }}
-                            className="bg-slate-900 p-5 rounded-t-[40px] border-t border-slate-800 max-h-[85%]"
+                            className={`p-5 rounded-t-[40px] border-t max-h-[85%] ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}
                         >
                             <View className="flex-row justify-between items-start mb-4">
                                 <View>
-                                    <Text className="text-white text-2xl font-black mb-1">{editingEvent?.title}</Text>
-                                    <Text className="text-slate-400 text-sm">
+                                    <Text className={`text-2xl font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{editingEvent?.title}</Text>
+                                    <Text className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                         {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
                                     </Text>
                                 </View>
-                                <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className="bg-slate-800 p-2 rounded-full border border-slate-700">
-                                    <Ionicons name="close" size={20} color="#94a3b8" />
+                                <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
                                 </TouchableOpacity>
                             </View>
 
@@ -1390,7 +1425,7 @@ export default function EventTracker() {
                                                         className="mb-6"
                                                     >
                                                         <View className="flex-row justify-between items-center mb-4 bg-brand-accent/5 p-4 rounded-2xl border border-brand-accent/20">
-                                                            <Text className="text-white text-lg font-black tracking-widest uppercase">요새전 ⚔️</Text>
+                                                            <Text className="text-white text-lg font-bold tracking-widest uppercase">요새전 ⚔️</Text>
                                                             <TouchableOpacity
                                                                 onPress={() => setFortressList([...fortressList, {
                                                                     id: Date.now().toString(),
@@ -1400,7 +1435,7 @@ export default function EventTracker() {
                                                                 }])}
                                                                 className="bg-brand-accent px-4 py-2 rounded-xl shadow-lg shadow-brand-accent/30"
                                                             >
-                                                                <Text className="text-brand-dark font-black text-xs">+ 요새 추가</Text>
+                                                                <Text className="text-brand-dark font-bold text-xs">+ 요새 추가</Text>
                                                             </TouchableOpacity>
                                                         </View>
 
@@ -1419,7 +1454,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'fortress' ? null : { id: f.id, type: 'fortress' })}
                                                                                 className="bg-slate-900/80 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-brand-accent text-xs font-black">{f.name}</Text>
+                                                                                <Text className="text-brand-accent text-xs font-bold">{f.name}</Text>
                                                                                 <Ionicons name={activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'fortress' ? "caret-up" : "caret-down"} size={12} color="#38bdf8" />
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'fortress' && (
@@ -1439,7 +1474,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`p-3 border-b border-slate-800 ${f.name === opt ? 'bg-brand-accent/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black ${f.name === opt ? 'text-brand-accent' : 'text-white'}`}>{opt}</Text>
+                                                                                                <Text className={`text-xs font-bold ${f.name === opt ? 'text-brand-accent' : 'text-white'}`}>{opt}</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1453,7 +1488,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'd' ? null : { id: f.id, type: 'd' })}
                                                                                 className="bg-slate-900 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-white text-xs font-bold">{f.day || '토'}</Text>
+                                                                                <Text className="text-white text-xs font-semibold">{f.day || '토'}</Text>
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'd' && (
                                                                                 <View
@@ -1472,7 +1507,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`p-3 border-b border-slate-800 ${f.day === d ? 'bg-brand-accent/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black ${f.day === d ? 'text-brand-accent' : 'text-white'}`}>{d}</Text>
+                                                                                                <Text className={`text-xs font-bold ${f.day === d ? 'text-brand-accent' : 'text-white'}`}>{d}</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1486,7 +1521,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'h' ? null : { id: f.id, type: 'h' })}
                                                                                 className="bg-slate-900 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-white text-xs font-bold">{f.h}시</Text>
+                                                                                <Text className="text-white text-xs font-semibold">{f.h}시</Text>
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'h' && (
                                                                                 <View
@@ -1505,7 +1540,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`py-3 px-2 border-b border-slate-800 ${f.h === h ? 'bg-brand-accent/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black text-center ${f.h === h ? 'text-brand-accent' : 'text-white'}`}>{h}시</Text>
+                                                                                                <Text className={`text-xs font-bold text-center ${f.h === h ? 'text-brand-accent' : 'text-white'}`}>{h}시</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1519,7 +1554,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'm' ? null : { id: f.id, type: 'm' })}
                                                                                 className="bg-slate-900 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-white text-xs font-bold">{f.m}분</Text>
+                                                                                <Text className="text-white text-xs font-semibold">{f.m}분</Text>
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'm' && (
                                                                                 <View
@@ -1538,7 +1573,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`py-3 px-2 border-b border-slate-800 ${f.m === m ? 'bg-brand-accent/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black text-center ${f.m === m ? 'text-brand-accent' : 'text-white'}`}>{m}분</Text>
+                                                                                                <Text className={`text-xs font-bold text-center ${f.m === m ? 'text-brand-accent' : 'text-white'}`}>{m}분</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1558,7 +1593,7 @@ export default function EventTracker() {
                                                     {/* 성채전 섹션 */}
                                                     <View style={{ zIndex: isCitadelActive ? 20 : 1 }}>
                                                         <View className="flex-row justify-between items-center mb-4 bg-blue-500/5 p-4 rounded-2xl border border-blue-500/20">
-                                                            <Text className="text-white text-lg font-black tracking-widest uppercase">성채전 🏰</Text>
+                                                            <Text className="text-white text-lg font-bold tracking-widest uppercase">성채전 🏰</Text>
                                                             <TouchableOpacity
                                                                 onPress={() => setCitadelList([...citadelList, {
                                                                     id: Date.now().toString(),
@@ -1568,7 +1603,7 @@ export default function EventTracker() {
                                                                 }])}
                                                                 className="bg-blue-600 px-4 py-2 rounded-xl shadow-lg shadow-blue-600/30"
                                                             >
-                                                                <Text className="text-white font-black text-xs">+ 성채 추가</Text>
+                                                                <Text className="text-white font-bold text-xs">+ 성채 추가</Text>
                                                             </TouchableOpacity>
                                                         </View>
 
@@ -1587,7 +1622,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'citadel' ? null : { id: c.id, type: 'citadel' })}
                                                                                 className="bg-slate-900/80 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-blue-400 text-xs font-black">{c.name}</Text>
+                                                                                <Text className="text-blue-400 text-xs font-bold">{c.name}</Text>
                                                                                 <Ionicons name={activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'citadel' ? "caret-up" : "caret-down"} size={12} color="#60a5fa" />
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'citadel' && (
@@ -1607,7 +1642,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`p-3 border-b border-slate-800 ${c.name === opt ? 'bg-blue-500/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black ${c.name === opt ? 'text-blue-400' : 'text-white'}`}>{opt}</Text>
+                                                                                                <Text className={`text-xs font-bold ${c.name === opt ? 'text-blue-400' : 'text-white'}`}>{opt}</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1621,7 +1656,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'd' ? null : { id: c.id, type: 'd' })}
                                                                                 className="bg-slate-900 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-white text-xs font-bold">{c.day || '일'}</Text>
+                                                                                <Text className="text-white text-xs font-semibold">{c.day || '일'}</Text>
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'd' && (
                                                                                 <View
@@ -1640,7 +1675,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`p-3 border-b border-slate-800 ${c.day === d ? 'bg-blue-500/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black ${c.day === d ? 'text-blue-400' : 'text-white'}`}>{d}</Text>
+                                                                                                <Text className={`text-xs font-bold ${c.day === d ? 'text-blue-400' : 'text-white'}`}>{d}</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1654,7 +1689,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'h' ? null : { id: c.id, type: 'h' })}
                                                                                 className="bg-slate-900 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-white text-xs font-bold">{c.h}시</Text>
+                                                                                <Text className="text-white text-xs font-semibold">{c.h}시</Text>
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'h' && (
                                                                                 <View
@@ -1673,7 +1708,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`py-3 px-2 border-b border-slate-800 ${c.h === h ? 'bg-blue-500/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black text-center ${c.h === h ? 'text-blue-400' : 'text-white'}`}>{h}시</Text>
+                                                                                                <Text className={`text-xs font-bold text-center ${c.h === h ? 'text-blue-400' : 'text-white'}`}>{h}시</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1687,7 +1722,7 @@ export default function EventTracker() {
                                                                                 onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'm' ? null : { id: c.id, type: 'm' })}
                                                                                 className="bg-slate-900 p-2 rounded-xl border border-slate-600 flex-row justify-between items-center"
                                                                             >
-                                                                                <Text className="text-white text-xs font-bold">{c.m}분</Text>
+                                                                                <Text className="text-white text-xs font-semibold">{c.m}분</Text>
                                                                             </TouchableOpacity>
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'm' && (
                                                                                 <View
@@ -1706,7 +1741,7 @@ export default function EventTracker() {
                                                                                                 }}
                                                                                                 className={`py-3 px-2 border-b border-slate-800 ${c.m === m ? 'bg-blue-500/30' : 'active:bg-slate-800'}`}
                                                                                             >
-                                                                                                <Text className={`text-xs font-black text-center ${c.m === m ? 'text-blue-400' : 'text-white'}`}>{m}분</Text>
+                                                                                                <Text className={`text-xs font-bold text-center ${c.m === m ? 'text-blue-400' : 'text-white'}`}>{m}분</Text>
                                                                                             </TouchableOpacity>
                                                                                         ))}
                                                                                     </ScrollView>
@@ -1781,7 +1816,7 @@ export default function EventTracker() {
                                                                 onPress={() => setActiveDateDropdown(isOpen ? null : { type, field })}
                                                                 className="bg-slate-800 px-3 py-3 rounded-xl border border-slate-700 flex-row items-center justify-between min-w-[60px]"
                                                             >
-                                                                <Text className="text-white font-bold text-xs mr-1">{currentVal}{field === 'y' ? '년' : field === 'm' ? '월' : field === 'd' ? '일' : field === 'h' ? '시' : '분'}</Text>
+                                                                <Text className="text-white font-semibold text-xs mr-1">{currentVal}{field === 'y' ? '년' : field === 'm' ? '월' : field === 'd' ? '일' : field === 'h' ? '시' : '분'}</Text>
                                                                 <Ionicons name={isOpen ? "caret-up" : "caret-down"} size={10} color="#64748b" />
                                                             </TouchableOpacity>
                                                             {isOpen && (
@@ -1799,7 +1834,7 @@ export default function EventTracker() {
                                                                                 onPress={() => updatePart(field, opt)}
                                                                                 className={`px-2 rounded-lg ${currentVal === opt ? 'bg-brand-accent/20' : ''}`}
                                                                             >
-                                                                                <Text className={`text-center font-bold ${currentVal === opt ? 'text-brand-accent' : 'text-slate-400'}`}>{opt}</Text>
+                                                                                <Text className={`text-center font-semibold ${currentVal === opt ? 'text-brand-accent' : 'text-slate-400'}`}>{opt}</Text>
                                                                             </TouchableOpacity>
                                                                         )}
                                                                     />
@@ -1811,16 +1846,16 @@ export default function EventTracker() {
 
                                                 return (
                                                     <View className="mb-6" style={{ zIndex: activeDateDropdown?.type === type ? 5000 : 1 }}>
-                                                        <Text className="text-brand-accent text-xs font-black mb-2 uppercase">{label}</Text>
+                                                        <Text className="text-brand-accent text-xs font-bold mb-2 uppercase">{label}</Text>
                                                         <View className="flex-row flex-wrap items-center">
                                                             <Dropdown field="y" options={years} currentVal={dateParts.y} />
                                                             <Dropdown field="m" options={months} currentVal={dateParts.m} />
                                                             <Dropdown field="d" options={days} currentVal={dateParts.d} />
-                                                            <View className="mx-2"><Text className="text-slate-600 font-black">/</Text></View>
+                                                            <View className="mx-2"><Text className="text-slate-600 font-bold">/</Text></View>
                                                             <Dropdown field="h" options={hours} currentVal={dateParts.h} />
                                                             {!!editingEvent && (
                                                                 <React.Fragment>
-                                                                    <View className="mx-1"><Text className="text-slate-600 font-black">:</Text></View>
+                                                                    <View className="mx-1"><Text className="text-slate-600 font-bold">:</Text></View>
                                                                     <Dropdown field="min" options={minutes} currentVal={dateParts.min} />
                                                                 </React.Fragment>
                                                             )}
@@ -1853,20 +1888,20 @@ export default function EventTracker() {
                                             ];
                                             if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                 return (
-                                                    <View className="flex-row mb-6 bg-slate-800 p-1 rounded-xl">
+                                                    <View className={`flex-row mb-6 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                                                         <TouchableOpacity
                                                             onPress={() => setActiveTab(1)}
-                                                            className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? 'bg-slate-700' : ''}`}
+                                                            className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}
                                                         >
-                                                            <Text className={`font-bold ${activeTab === 1 ? 'text-white font-black' : 'text-slate-500'}`}>
+                                                            <Text className={`font-semibold ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
                                                                 {(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰1 설정' : '1군 설정'}
                                                             </Text>
                                                         </TouchableOpacity>
                                                         <TouchableOpacity
                                                             onPress={() => setActiveTab(2)}
-                                                            className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? 'bg-slate-700' : ''}`}
+                                                            className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}
                                                         >
-                                                            <Text className={`font-bold ${activeTab === 2 ? 'text-white font-black' : 'text-slate-500'}`}>
+                                                            <Text className={`font-semibold ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
                                                                 {(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰2 설정' : '2군 설정'}
                                                             </Text>
                                                         </TouchableOpacity>
@@ -1879,7 +1914,7 @@ export default function EventTracker() {
                                         {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                             <>
                                                 <View className="mb-4">
-                                                    <Text className="text-brand-accent text-xs font-black mb-2 ml-1 uppercase">
+                                                    <Text className="text-brand-accent text-xs font-bold mb-2 ml-1 uppercase">
                                                         {(() => {
                                                             const singleSlotIDs = [
                                                                 'a_center', 'alliance_center',
@@ -1907,7 +1942,7 @@ export default function EventTracker() {
                                                                     onPress={() => toggleDay(d)}
                                                                     className={`w-10 h-10 rounded-xl items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}
                                                                 >
-                                                                    <Text className={`font-black text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text>
+                                                                    <Text className={`font-bold text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text>
                                                                 </TouchableOpacity>
                                                             );
                                                         })}
@@ -1917,7 +1952,7 @@ export default function EventTracker() {
                                                 {editingEvent?.id !== 'a_center' && (
                                                     <View className="mb-4 mt-2">
                                                         <View className="flex-row items-center mb-4 gap-3">
-                                                            <Text className="text-brand-accent text-[10px] font-black uppercase opacity-60">진행 시간</Text>
+                                                            <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">진행 시간</Text>
                                                             <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
                                                                 {(activeTab === 1 ? slots1 : slots2).map(slot => (
                                                                     <TouchableOpacity
@@ -1937,7 +1972,7 @@ export default function EventTracker() {
                                                                         }}
                                                                         className={`mr-3 border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}
                                                                     >
-                                                                        <Text className="text-white text-xs font-black mr-2">
+                                                                        <Text className="text-white text-xs font-bold mr-2">
                                                                             {slot.day}{slot.time ? `(${slot.time})` : ''}
                                                                         </Text>
                                                                         <TouchableOpacity onPress={() => removeTimeSlot(slot.id)}>
@@ -1957,7 +1992,7 @@ export default function EventTracker() {
                                                                             onPress={() => setHourDropdownVisible(!hourDropdownVisible)}
                                                                             className="bg-slate-800 p-3.5 rounded-xl border border-slate-700 flex-row justify-between items-center"
                                                                         >
-                                                                            <Text className="text-white font-black">{editHour}시</Text>
+                                                                            <Text className="text-white font-bold">{editHour}시</Text>
                                                                             <Ionicons name={hourDropdownVisible ? "caret-up" : "caret-down"} size={12} color="#64748b" />
                                                                         </TouchableOpacity>
 
@@ -1976,21 +2011,21 @@ export default function EventTracker() {
                                                                                             onPress={() => { setEditHour(h); setHourDropdownVisible(false); }}
                                                                                             className={`h-[50px] justify-center px-4 border-b border-slate-800/50 ${editHour === h ? 'bg-brand-accent/10' : ''}`}
                                                                                         >
-                                                                                            <Text className={`font-bold ${editHour === h ? 'text-brand-accent' : 'text-slate-300'}`}>{h}시</Text>
+                                                                                            <Text className={`font-semibold ${editHour === h ? 'text-brand-accent' : 'text-slate-300'}`}>{h}시</Text>
                                                                                         </TouchableOpacity>
                                                                                     )}
                                                                                 />
                                                                             </View>
                                                                         )}
                                                                     </View>
-                                                                    <View className="w-4 items-center"><Text className="text-slate-500 font-bold">:</Text></View>
+                                                                    <View className="w-4 items-center"><Text className="text-slate-500 font-semibold">:</Text></View>
                                                                     {/* Minute Picker */}
                                                                     <View className="flex-1 relative">
                                                                         <TouchableOpacity
                                                                             onPress={() => setMinuteDropdownVisible(!minuteDropdownVisible)}
                                                                             className="bg-slate-800 p-3.5 rounded-xl border border-slate-700 flex-row justify-between items-center"
                                                                         >
-                                                                            <Text className="text-white font-black">{editMinute}분</Text>
+                                                                            <Text className="text-white font-bold">{editMinute}분</Text>
                                                                             <Ionicons name={minuteDropdownVisible ? "caret-up" : "caret-down"} size={12} color="#64748b" />
                                                                         </TouchableOpacity>
 
@@ -2007,7 +2042,7 @@ export default function EventTracker() {
                                                                                             onPress={() => { setEditMinute(m); setMinuteDropdownVisible(false); }}
                                                                                             className={`h-[50px] justify-center px-4 border-b border-slate-800/50 ${editMinute === m ? 'bg-brand-accent/10' : ''}`}
                                                                                         >
-                                                                                            <Text className={`font-bold ${editMinute === m ? 'text-brand-accent' : 'text-slate-300'}`}>{m}분</Text>
+                                                                                            <Text className={`font-semibold ${editMinute === m ? 'text-brand-accent' : 'text-slate-300'}`}>{m}분</Text>
                                                                                         </TouchableOpacity>
                                                                                     )}
                                                                                 />
@@ -2022,7 +2057,7 @@ export default function EventTracker() {
                                                                         className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-3 rounded-xl border items-center flex-row justify-center`}
                                                                     >
                                                                         <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 8 }} />
-                                                                        <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-black`}>
+                                                                        <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-bold`}>
                                                                             {editingSlotId ? '수정 완료' : '이 시간 추가 등록'}
                                                                         </Text>
                                                                     </TouchableOpacity>
@@ -2035,7 +2070,7 @@ export default function EventTracker() {
                                                                             }}
                                                                             className="bg-slate-800 px-4 py-3 rounded-xl border border-slate-700 justify-center"
                                                                         >
-                                                                            <Text className="text-slate-400 font-bold text-sm">취소</Text>
+                                                                            <Text className="text-slate-400 font-semibold text-sm">취소</Text>
                                                                         </TouchableOpacity>
                                                                     )}
                                                                 </View>
@@ -2046,7 +2081,7 @@ export default function EventTracker() {
                                                                 onPress={addTimeSlot}
                                                                 className="bg-brand-accent/20 py-4 rounded-xl border border-brand-accent/40 items-center"
                                                             >
-                                                                <Text className="text-brand-accent font-black">상시 진행으로 등록</Text>
+                                                                <Text className="text-brand-accent font-bold">상시 진행으로 등록</Text>
                                                             </TouchableOpacity>
                                                         )}
                                                     </View>
@@ -2060,14 +2095,14 @@ export default function EventTracker() {
                                         onPress={handleDeleteSchedule}
                                         className="flex-1 bg-slate-800 py-3.5 rounded-2xl items-center border border-red-500/20 active:bg-slate-700"
                                     >
-                                        <Text className="text-red-400 font-bold text-lg">초기화</Text>
+                                        <Text className="text-red-400 font-semibold text-lg">초기화</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
                                         onPress={saveSchedule}
                                         className="flex-[2] bg-brand-accent py-3.5 rounded-2xl items-center shadow-lg shadow-brand-accent/20 active:bg-brand-accent/90"
                                     >
-                                        <Text className="text-brand-dark font-black text-lg">설정 저장하기</Text>
+                                        <Text className="text-brand-dark font-bold text-lg">설정 저장하기</Text>
                                     </TouchableOpacity>
                                 </View>
                             </ScrollView>
@@ -2078,11 +2113,11 @@ export default function EventTracker() {
                 {/* Attendee Modal */}
                 <Modal visible={attendeeModalVisible} transparent animationType="slide" >
                     <View className="flex-1 bg-black/90 pt-16">
-                        <View className="flex-1 bg-slate-900 rounded-t-[40px] overflow-hidden border-t border-slate-700">
-                            <View className="h-16 bg-slate-800 flex-row items-center justify-between px-6 border-b border-slate-700">
-                                <Text className="text-white text-xl font-black">{managedEvent?.title} 명단 관리</Text>
-                                <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className="bg-slate-900 p-2 rounded-full border border-slate-700">
-                                    <Ionicons name="close" size={20} color="#94a3b8" />
+                        <View className={`flex-1 rounded-t-[40px] overflow-hidden border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
+                            <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} 명단 관리</Text>
+                                <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
                                 </TouchableOpacity>
                             </View>
 
@@ -2090,19 +2125,19 @@ export default function EventTracker() {
                                 {bulkAttendees.length === 0 ? (
                                     <View className="items-center justify-center py-10 opacity-50">
                                         <Ionicons name="documents-outline" size={48} color="#94a3b8" />
-                                        <Text className="text-slate-400 mt-4 font-bold">등록된 참석 명단이 없습니다.</Text>
+                                        <Text className="text-slate-400 mt-4 font-semibold">등록된 참석 명단이 없습니다.</Text>
                                         <Text className="text-slate-600 text-xs mt-1">관리자가 명단을 추가하면 여기에 표시됩니다.</Text>
                                     </View>
                                 ) : (
                                     bulkAttendees.map((attendee, index) => (
                                         <View
                                             key={attendee.id || index}
-                                            className="mb-4 bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50 relative"
+                                            className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
                                             style={{ zIndex: bulkAttendees.length - index }}
                                         >
                                             <View className="flex-row items-center mb-3" style={{ zIndex: 50 }}>
-                                                <View className="w-8 h-8 rounded-full bg-slate-700 items-center justify-center mr-3">
-                                                    <Text className="text-white font-black">{index + 1}</Text>
+                                                <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                                    <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
                                                 </View>
                                                 <MemberPicker
                                                     value={attendee.name}
@@ -2111,7 +2146,7 @@ export default function EventTracker() {
                                                     isAdmin={!!isAdmin}
                                                 />
                                                 {!!isAdmin && (
-                                                    <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className="ml-2 bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                                                    <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`ml-2 p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
                                                         <Ionicons name="trash-outline" size={16} color="#ef4444" />
                                                     </TouchableOpacity>
                                                 )}
@@ -2127,20 +2162,20 @@ export default function EventTracker() {
                                 )}
 
                                 {isAdmin && (
-                                    <TouchableOpacity onPress={addAttendeeRow} className="bg-slate-800 p-4 rounded-2xl border border-slate-700 border-dashed items-center mb-10 mt-4">
-                                        <Text className="text-slate-400 font-bold">+ 영주 추가하기</Text>
+                                    <TouchableOpacity onPress={addAttendeeRow} className={`p-4 rounded-2xl border border-dashed items-center mb-10 mt-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                        <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>+ 영주 추가하기</Text>
                                     </TouchableOpacity>
                                 )}
                             </ScrollView>
 
-                            <View className="p-6 bg-slate-900 border-t border-slate-800">
+                            <View className={`p-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                 {isAdmin ? (
                                     <TouchableOpacity onPress={saveAttendees} className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-600/20">
-                                        <Text className="text-white font-black text-lg">명단 저장 ({bulkAttendees.filter(a => a.name?.trim()).length}명)</Text>
+                                        <Text className="text-white font-bold text-lg">명단 저장 ({bulkAttendees.filter(a => a.name?.trim()).length}명)</Text>
                                     </TouchableOpacity>
                                 ) : (
                                     <View className="w-full py-4 items-center">
-                                        <Text className="text-slate-500 text-xs">관리자만 명단을 수정할 수 있습니다.</Text>
+                                        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>관리자만 명단을 수정할 수 있습니다.</Text>
                                     </View>
                                 )}
                             </View>
@@ -2154,14 +2189,14 @@ export default function EventTracker() {
                     <View className="flex-1 bg-white">
                         <View className="h-16 bg-slate-900 flex-row items-center justify-between px-4 border-b border-slate-700">
                             <View className="flex-row items-center flex-1 mr-4">
-                                <Text className="text-white font-bold mr-2">🌐 WIKI</Text>
+                                <Text className="text-white font-semibold mr-2">🌐 WIKI</Text>
                                 <Text className="text-slate-400 text-xs truncate flex-1" numberOfLines={1}>{currentWikiUrl}</Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => setBrowserVisible(false)}
                                 className="bg-slate-700 px-4 py-2 rounded-lg hover:bg-slate-600"
                             >
-                                <Text className="text-white font-bold text-sm">닫기 ✖️</Text>
+                                <Text className="text-white font-semibold text-sm">닫기 ✖️</Text>
                             </TouchableOpacity>
                         </View>
                         <View className="flex-1 bg-slate-100">
@@ -2179,7 +2214,7 @@ export default function EventTracker() {
                 <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
                     <View className="flex-1 bg-black/60 items-center justify-center p-6">
                         <BlurView intensity={20} className="absolute inset-0" />
-                        <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[40px] border border-slate-800 shadow-2xl items-center">
+                        <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                             <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? 'bg-emerald-500/10' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
                                 <Ionicons
                                     name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'}
@@ -2187,8 +2222,8 @@ export default function EventTracker() {
                                     color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'}
                                 />
                             </View>
-                            <Text className="text-white text-2xl font-black mb-4 text-center">{customAlert.title}</Text>
-                            <Text className="text-slate-400 text-center mb-8 text-lg leading-7 font-medium">
+                            <Text className={`text-2xl font-bold mb-4 text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>{customAlert.title}</Text>
+                            <Text className={`text-center mb-8 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                 {customAlert.message}
                             </Text>
 
@@ -2196,9 +2231,9 @@ export default function EventTracker() {
                                 <View className="flex-row gap-3 w-full">
                                     <TouchableOpacity
                                         onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                        className="flex-1 py-4 bg-slate-800 rounded-2xl border border-slate-700"
+                                        className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                                     >
-                                        <Text className="text-slate-400 text-center font-black text-lg">취소</Text>
+                                        <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>취소</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => {
@@ -2207,7 +2242,7 @@ export default function EventTracker() {
                                         }}
                                         className="flex-1 py-4 bg-red-600 rounded-2xl"
                                     >
-                                        <Text className="text-white text-center font-black text-lg">삭제</Text>
+                                        <Text className="text-white text-center font-bold text-lg">삭제</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
@@ -2215,7 +2250,7 @@ export default function EventTracker() {
                                     onPress={() => setCustomAlert({ ...customAlert, visible: false })}
                                     className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
                                 >
-                                    <Text className="text-white text-center font-black text-lg">확인</Text>
+                                    <Text className="text-white text-center font-bold text-lg">확인</Text>
                                 </TouchableOpacity>
                             )}
                         </View>

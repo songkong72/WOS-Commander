@@ -4,6 +4,7 @@ import { Stack, Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
+import { useTheme } from '../_layout';
 
 import { heroImages } from '../../assets/images/heroes';
 
@@ -54,6 +55,8 @@ const roleIcons: { [key: string]: any } = {
 export default function HeroManagement() {
     const router = useRouter();
     const params = useLocalSearchParams();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [selectedCategory, setSelectedCategory] = useState('레어'); // Default first tab
 
     // Update category from URL parameter if provided
@@ -85,22 +88,22 @@ export default function HeroManagement() {
         });
 
     return (
-        <View className="flex-1 bg-brand-dark">
+        <View className={`flex-1 ${isDark ? 'bg-brand-dark' : 'bg-slate-50'}`}>
             <Stack.Screen options={{
                 headerShown: false,
             }} />
 
             <View className="flex-1 flex-row">
                 {/* Fixed Sidebar for PC / Scrollable for Mobile */}
-                <View className="w-20 md:w-32 bg-slate-900/50 border-r border-slate-800 pt-12">
+                <View className={`w-16 md:w-24 border-r pt-12 ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                     <ScrollView showsVerticalScrollIndicator={false}>
                         {categories.map((cat) => (
                             <TouchableOpacity
                                 key={cat.id}
                                 onPress={() => setSelectedCategory(cat.id)}
-                                className={`py-4 items-center border-l-4 ${selectedCategory === cat.id ? 'bg-brand-accent/10 border-brand-accent' : 'border-transparent'}`}
+                                className={`py-2.5 items-center border-l-4 ${selectedCategory === cat.id ? (isDark ? 'bg-[#38bdf8]/10 border-[#38bdf8]' : 'bg-blue-50 border-blue-600') : 'border-transparent'}`}
                             >
-                                <Text className={`font-black text-xs md:text-sm ${selectedCategory === cat.id ? 'text-brand-accent' : 'text-slate-300'}`}>
+                                <Text className={`font-bold text-[10px] md:text-xs ${selectedCategory === cat.id ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
                                     {cat.label}
                                 </Text>
                             </TouchableOpacity>
@@ -110,20 +113,20 @@ export default function HeroManagement() {
                 </View>
 
                 {/* Main Content Area */}
-                <View className="flex-1 bg-brand-dark/40">
-                    <View className="p-6 md:p-10">
-                        <View className="mb-10 flex-row justify-between items-end">
+                <View className={`flex-1 ${isDark ? 'bg-brand-dark/40' : 'bg-white'}`}>
+                    <View className="p-4 md:p-6">
+                        <View className="mb-6 flex-row justify-between items-end">
                             <View className="flex-1">
-                                <Text className="text-brand-accent font-black text-xs tracking-widest mb-1 uppercase">Hero Archive</Text>
-                                <Text className="text-4xl md:text-5xl font-black text-white mb-2 tracking-tighter">{selectedCategory} 영웅 목록</Text>
-                                <View className="h-1 w-12 bg-brand-accent rounded-full" />
+                                <Text className={`font-bold text-[10px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Hero Archive</Text>
+                                <Text className={`text-3xl md:text-4xl font-bold mb-1.5 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{selectedCategory} 영웅 목록</Text>
+                                <View className={`h-1 w-12 rounded-full ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
                             </View>
                             <TouchableOpacity
                                 onPress={() => router.replace('/')}
-                                className="flex-row items-center bg-white/5 px-4 py-2 rounded-xl border border-white/10"
+                                className={`flex-row items-center px-3 py-1.5 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}
                             >
-                                <Ionicons name="home-outline" size={18} color="#FFD700" className="mr-2" />
-                                <Text className="text-white font-black text-xs">뒤로가기</Text>
+                                <Ionicons name="home-outline" size={16} color={isDark ? "#FFD700" : "#d97706"} className="mr-1.5" />
+                                <Text className={`font-bold text-[11px] ${isDark ? 'text-white' : 'text-slate-800'}`}>뒤로가기</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -137,9 +140,9 @@ export default function HeroManagement() {
                                             className="p-2"
                                         >
                                             <Link href={`/hero-management/${hero.id}`} asChild>
-                                                <TouchableOpacity activeOpacity={0.8} className="overflow-hidden bg-slate-900 rounded-3xl border border-slate-800 shadow-2xl group">
+                                                <TouchableOpacity activeOpacity={0.8} className={`overflow-hidden rounded-xl border shadow-2xl group ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                                     {/* Image Placeholder with Gradients */}
-                                                    <View className="aspect-square bg-slate-800 relative">
+                                                    <View className={`aspect-square relative ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
                                                         <Image
                                                             source={heroImages[hero.image]} // Use local image
                                                             className="w-full h-full"
@@ -158,8 +161,8 @@ export default function HeroManagement() {
                                                     </View>
 
                                                     {/* Name Bar */}
-                                                    <View className="bg-slate-900 py-3 items-center justify-center border-t border-slate-800">
-                                                        <Text className="text-white font-black text-[12px] md:text-sm tracking-tighter" numberOfLines={1}>
+                                                    <View className={`py-2 items-center justify-center border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
+                                                        <Text className={`font-bold text-[10px] md:text-xs tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>
                                                             {hero.name}
                                                         </Text>
                                                     </View>
@@ -169,7 +172,7 @@ export default function HeroManagement() {
                                     ))
                                 ) : (
                                     <View className="w-full py-20 items-center justify-center">
-                                        <Text className="text-slate-600 font-bold text-lg">해당 세대의 영웅 정보가 아직 준비 중입니다.</Text>
+                                        <Text className="text-slate-600 font-semibold text-lg">해당 세대의 영웅 정보가 아직 준비 중입니다.</Text>
                                     </View>
                                 )}
                             </View>

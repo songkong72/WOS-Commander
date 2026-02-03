@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform, ActivityIndicator, Modal } from 'react-native';
 import { useRouter, Redirect, useRootNavigationState } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from './_layout';
+import { useAuth, useTheme } from './_layout';
 import { useFirestoreMembers } from '../hooks/useFirestoreMembers';
 import { useFirestoreStrategySheet } from '../hooks/useFirestoreStrategySheet';
 import * as DocumentPicker from 'expo-document-picker';
@@ -11,6 +11,8 @@ import * as XLSX from 'xlsx';
 export default function AdminPage() {
     const router = useRouter();
     const { auth } = useAuth();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember } = useFirestoreMembers();
     const { sheetData, saveSheetUrl, uploadStrategyFile } = useFirestoreStrategySheet();
 
@@ -244,57 +246,57 @@ export default function AdminPage() {
     );
 
     return (
-        <View className="flex-1 bg-[#020617] p-6">
+        <View className={`flex-1 p-6 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
             <View className="max-w-4xl mx-auto w-full flex-1">
-                <View className="flex-row items-center mb-8 mt-12">
-                    <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2 bg-slate-800 rounded-full shadow-lg border border-slate-700">
-                        <Ionicons name="arrow-back" size={24} color="white" />
+                <View className="flex-row items-center mb-6 mt-8">
+                    <TouchableOpacity onPress={() => router.back()} className={`mr-4 p-1.5 rounded-full shadow-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                        <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
                     </TouchableOpacity>
-                    <Text className="text-white text-3xl font-black">관리자 대시보드</Text>
+                    <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>관리자 대시보드</Text>
                 </View>
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
                     {/* Strategy Document Section - Updated for Link Method */}
-                    <View className="bg-slate-900/80 p-8 rounded-[32px] border border-slate-800 shadow-2xl mb-8">
-                        <View className="flex-row items-center mb-6 border-b border-slate-800 pb-4">
-                            <View className="w-10 h-10 bg-amber-500/20 rounded-xl items-center justify-center mr-3">
-                                <Ionicons name="map-outline" size={24} color="#f59e0b" />
+                    <View className={`p-5 rounded-2xl border shadow-2xl mb-6 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                        <View className={`flex-row items-center mb-4 border-b pb-3 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                            <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                <Ionicons name="map-outline" size={20} color={isDark ? "#f59e0b" : "#d97706"} />
                             </View>
-                            <Text className="text-white text-2xl font-bold">전략 문서 관리</Text>
+                            <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>전략 문서 관리</Text>
                         </View>
 
-                        <View className="bg-amber-500/10 p-5 rounded-2xl border border-amber-500/30 mb-8">
+                        <View className={`p-4 rounded-xl border mb-6 ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50/50 border-amber-100'}`}>
                             <View className="flex-row items-center mb-3">
-                                <Ionicons name="information-circle" size={20} color="#f59e0b" className="mr-2" />
-                                <Text className="text-amber-500 font-black text-sm">중요: 외부 링크 사용 안내</Text>
+                                <Ionicons name="information-circle" size={20} color={isDark ? "#f59e0b" : "#d97706"} className="mr-2" />
+                                <Text className={`font-bold text-sm ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>중요: 외부 링크 사용 안내</Text>
                             </View>
-                            <Text className="text-slate-300 text-xs leading-5 font-medium">
+                            <Text className={`text-xs leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
                                 서버 저장 공간 제한으로 인해 직접 업로드 대신 {"\n"}
-                                <Text className="text-white font-bold">외부 파일 링크</Text>를 활용하는 것을 권장합니다.
+                                <Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-semibold`}>외부 파일 링크</Text>를 활용하는 것을 권장합니다.
                             </Text>
 
                             <View className="mt-4 space-y-2">
                                 <View className="flex-row items-center">
                                     <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2" />
-                                    <Text className="text-slate-400 text-[11px] font-bold">이미지: ImgBB 등에 올린 뒤 '직접 링크' 사용</Text>
+                                    <Text className="text-slate-400 text-[11px] font-semibold">이미지: ImgBB 등에 올린 뒤 '직접 링크' 사용</Text>
                                 </View>
                                 <View className="flex-row items-center">
                                     <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2" />
-                                    <Text className="text-slate-400 text-[11px] font-bold">구글 시트/드라이브: '모든 사용자 보기' 권한 설정 후 주소 복사</Text>
+                                    <Text className="text-slate-400 text-[11px] font-semibold">구글 시트/드라이브: '모든 사용자 보기' 권한 설정 후 주소 복사</Text>
                                 </View>
                             </View>
                         </View>
 
 
                         {/* Link Input Area - Main Section */}
-                        <View className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-inner">
-                            <Text className="text-white font-black text-base mb-4">문서 / 시트 / 이미지 주소(URL)</Text>
+                        <View className={`p-4 rounded-2xl border shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                            <Text className={`font-bold text-sm mb-3 ${isDark ? 'text-white' : 'text-slate-800'}`}>문서 / 시트 / 이미지 주소(URL)</Text>
                             <View className="space-y-4">
                                 <TextInput
-                                    className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-600 font-bold text-sm"
+                                    className={`p-5 rounded-2xl border font-semibold text-sm ${isDark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
                                     placeholder="https://docs.google.com/..."
-                                    placeholderTextColor="#475569"
+                                    placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
                                     value={strategyUrl}
                                     onChangeText={setStrategyUrl}
                                     multiline={false}
@@ -309,16 +311,16 @@ export default function AdminPage() {
                                     ) : (
                                         <View className="flex-row items-center">
                                             <Ionicons name="save-outline" size={20} color="#0f172a" className="mr-2" />
-                                            <Text className="text-[#0f172a] font-black text-lg">전략 문서 주소 저장</Text>
+                                            <Text className="text-[#0f172a] font-bold text-lg">전략 문서 주소 저장</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
                             </View>
 
                             {sheetData && (
-                                <View className="mt-6 pt-6 border-t border-slate-700">
-                                    <Text className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">현재 설정된 정보</Text>
-                                    <View className="flex-row items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                                <View className={`mt-6 pt-6 border-t ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+                                    <Text className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-2">현재 설정된 정보</Text>
+                                    <View className={`flex-row items-center justify-between p-3 rounded-xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                                         <View className="flex-row items-center flex-1 mr-4">
                                             <Ionicons
                                                 name={sheetData.type === 'file' ? "image" : "link"}
@@ -331,7 +333,7 @@ export default function AdminPage() {
                                             </Text>
                                         </View>
                                         <View className="bg-amber-500/10 px-2 py-1 rounded-md">
-                                            <Text className="text-amber-500 text-[10px] font-black">
+                                            <Text className="text-amber-500 text-[10px] font-bold">
                                                 {sheetData.type === 'file' ? '파일' : 'URL'}
                                             </Text>
                                         </View>
@@ -345,31 +347,31 @@ export default function AdminPage() {
                             onPress={handleStrategyFileUpload}
                             className="mt-4 self-center opacity-20"
                         >
-                            <Text className="text-slate-500 text-[10px] font-bold underline">직접 업로드 (스토리지 설정 필요 시)</Text>
+                            <Text className="text-slate-500 text-[10px] font-semibold underline">직접 업로드 (스토리지 설정 필요 시)</Text>
                         </TouchableOpacity>
                     </View>
 
                     {/* Member Management Section */}
-                    <View className="bg-slate-900/80 p-8 rounded-[32px] border border-slate-800 shadow-2xl">
-                        <View className="flex-row items-center justify-between mb-6 border-b border-slate-800 pb-4">
+                    <View className={`p-8 rounded-[32px] border shadow-2xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                        <View className={`flex-row items-center justify-between mb-6 border-b pb-4 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                             <View className="flex-row items-center">
-                                <View className="w-10 h-10 bg-indigo-500/20 rounded-xl items-center justify-center mr-3">
-                                    <Ionicons name="people" size={24} color="#818cf8" />
+                                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                    <Ionicons name="people" size={24} color={isDark ? "#818cf8" : "#4f46e5"} />
                                 </View>
-                                <Text className="text-white text-2xl font-bold">연맹원 명단 관리</Text>
+                                <Text className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>연맹원 명단 관리</Text>
                             </View>
-                            <Text className="text-indigo-400 font-black">{members.length}명</Text>
+                            <Text className={`font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{members.length}명</Text>
                         </View>
 
                         {/* Upload Section */}
-                        <View className="bg-slate-800/50 p-6 rounded-2xl border border-dashed border-slate-700 mb-8 items-center">
-                            <Ionicons name="cloud-upload" size={40} color="#6366f1" />
-                            <Text className="text-white font-bold text-lg mt-2 mb-1">엑셀 파일 일괄 등록</Text>
+                        <View className={`p-6 rounded-2xl border border-dashed mb-8 items-center ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                            <Ionicons name="cloud-upload" size={40} color={isDark ? "#6366f1" : "#4f46e5"} />
+                            <Text className={`font-semibold text-lg mt-2 mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>엑셀 파일 일괄 등록</Text>
                             <View className="flex-row items-center mb-6">
                                 <Text className="text-slate-500 text-xs text-center mr-2">ID와 닉네임 컬럼이 포함된 파일을 선택하세요.</Text>
                                 <TouchableOpacity onPress={() => setShowGuide(true)}>
                                     <View className="bg-slate-700 w-5 h-5 rounded-full items-center justify-center">
-                                        <Text className="text-white text-[10px] font-bold">?</Text>
+                                        <Text className="text-white text-[10px] font-semibold">?</Text>
                                     </View>
                                 </TouchableOpacity>
                             </View>
@@ -378,14 +380,14 @@ export default function AdminPage() {
                                 <TouchableOpacity
                                     onPress={handleExcelUpload}
                                     disabled={uploading}
-                                    className="flex-1 bg-slate-700 py-4 rounded-xl border border-slate-600 items-center"
+                                    className={`flex-1 py-4 rounded-xl border items-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}
                                 >
                                     {uploading ? (
-                                        <ActivityIndicator size="small" color="white" />
+                                        <ActivityIndicator size="small" color={isDark ? "white" : "#4f46e5"} />
                                     ) : (
                                         <View className="flex-row items-center">
-                                            <Ionicons name="document-text-outline" size={18} color="white" style={{ marginRight: 6 }} />
-                                            <Text className="text-white font-black">파일 선택</Text>
+                                            <Ionicons name="document-text-outline" size={18} color={isDark ? "white" : "#475569"} style={{ marginRight: 6 }} />
+                                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-600'}`}>파일 선택</Text>
                                         </View>
                                     )}
                                 </TouchableOpacity>
@@ -394,16 +396,16 @@ export default function AdminPage() {
                                         onPress={handleSaveMembers}
                                         className="flex-1 bg-indigo-600 py-4 rounded-xl items-center shadow-lg shadow-indigo-500/30"
                                     >
-                                        <Text className="text-white font-black">명단 저장 ({previewData.length}건)</Text>
+                                        <Text className="text-white font-bold">명단 저장 ({previewData.length}건)</Text>
                                     </TouchableOpacity>
                                 ) : (
                                     <TouchableOpacity
                                         onPress={downloadTemplate}
-                                        className="flex-1 bg-slate-800 py-4 rounded-xl border border-indigo-500/30 items-center"
+                                        className={`flex-1 py-4 rounded-xl border items-center ${isDark ? 'bg-slate-800 border-indigo-500/30' : 'bg-white border-indigo-100'}`}
                                     >
                                         <View className="flex-row items-center">
-                                            <Ionicons name="download-outline" size={18} color="#818cf8" style={{ marginRight: 6 }} />
-                                            <Text className="text-indigo-400 font-black">양식 다운로드</Text>
+                                            <Ionicons name="download-outline" size={18} color={isDark ? "#818cf8" : "#4f46e5"} style={{ marginRight: 6 }} />
+                                            <Text className={`font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>양식 다운로드</Text>
                                         </View>
                                     </TouchableOpacity>
                                 )}
@@ -412,18 +414,18 @@ export default function AdminPage() {
 
                         {/* Preview Table for Uploaded Data */}
                         {previewData.length > 0 && (
-                            <View className="bg-slate-800/80 p-5 rounded-2xl border border-indigo-500/30 mb-8">
+                            <View className={`p-5 rounded-2xl border mb-8 ${isDark ? 'bg-slate-800/80 border-indigo-500/30' : 'bg-slate-50 border-indigo-100'}`}>
                                 <View className="flex-row justify-between items-center mb-4">
-                                    <Text className="text-indigo-400 font-black">업로드 미리보기</Text>
+                                    <Text className="text-indigo-400 font-bold">업로드 미리보기</Text>
                                     <TouchableOpacity onPress={() => setPreviewData([])}>
-                                        <Text className="text-red-400 text-xs font-bold">취소</Text>
+                                        <Text className="text-red-400 text-xs font-semibold">취소</Text>
                                     </TouchableOpacity>
                                 </View>
                                 <ScrollView className="max-h-60" nestedScrollEnabled>
                                     {previewData.map((p, idx) => (
-                                        <View key={idx} className="flex-row justify-between py-2 border-b border-slate-700/50">
-                                            <Text className="text-slate-400 text-xs">{p.id}</Text>
-                                            <Text className="text-white text-xs font-bold">{p.nickname}</Text>
+                                        <View key={idx} className={`flex-row justify-between py-2 border-b ${isDark ? 'border-slate-700/50' : 'border-slate-100'}`}>
+                                            <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{p.id}</Text>
+                                            <Text className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-slate-700'}`}>{p.nickname}</Text>
                                         </View>
                                     ))}
                                 </ScrollView>
@@ -432,33 +434,33 @@ export default function AdminPage() {
 
                         {/* Search & List */}
                         <View className="mb-4">
-                            <View className="flex-row items-center bg-slate-800 rounded-xl px-4 py-3 border border-slate-700">
-                                <Ionicons name="search" size={20} color="#94a3b8" className="mr-2" />
+                            <View className={`flex-row items-center rounded-xl px-4 py-3 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                <Ionicons name="search" size={20} color={isDark ? "#94a3b8" : "#64748b"} className="mr-2" />
                                 <TextInput
                                     placeholder="닉네임 또는 ID로 검색..."
-                                    placeholderTextColor="#475569"
+                                    placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
                                     value={searchTerm}
                                     onChangeText={setSearchTerm}
-                                    className="flex-1 text-white font-bold"
+                                    className={`flex-1 font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}
                                 />
                             </View>
                         </View>
 
-                        <View className="bg-slate-800/30 rounded-2xl border border-slate-800 overflow-hidden">
+                        <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-800/30 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                             {membersLoading ? (
                                 <View className="py-10 items-center">
                                     <ActivityIndicator color="#818cf8" />
                                 </View>
                             ) : filteredMembers.length === 0 ? (
                                 <View className="py-10 items-center">
-                                    <Text className="text-slate-500 font-bold">등록된 연맹원이 없습니다.</Text>
+                                    <Text className={`font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 연맹원이 없습니다.</Text>
                                 </View>
                             ) : (
                                 <ScrollView className="max-h-96" nestedScrollEnabled>
                                     {filteredMembers.map((m, idx) => (
-                                        <View key={m.id} className={`flex-row items-center justify-between p-4 ${idx !== filteredMembers.length - 1 ? 'border-b border-slate-800' : ''}`}>
+                                        <View key={m.id} className={`flex-row items-center justify-between p-4 ${idx !== filteredMembers.length - 1 ? (isDark ? 'border-b border-slate-800' : 'border-b border-slate-100') : ''}`}>
                                             <View>
-                                                <Text className="text-white font-black text-base">{m.nickname}</Text>
+                                                <Text className={`font-bold text-base ${isDark ? 'text-white' : 'text-slate-800'}`}>{m.nickname}</Text>
                                                 <Text className="text-slate-500 text-[10px] mt-0.5">ID: {m.id}</Text>
                                             </View>
                                             <View className="flex-row gap-2">
@@ -507,7 +509,7 @@ export default function AdminPage() {
                             }}
                             className="mt-6 self-end"
                         >
-                            <Text className="text-red-500/50 text-xs font-bold underline">명단 전체 초기화</Text>
+                            <Text className="text-red-500/50 text-xs font-semibold underline">명단 전체 초기화</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -516,7 +518,7 @@ export default function AdminPage() {
             {/* Custom Alert Modal */}
             <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
                 <View className="flex-1 bg-black/60 items-center justify-center p-6">
-                    <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[40px] border border-slate-800 shadow-2xl items-center">
+                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
                         <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? 'bg-emerald-500/10' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
                             <Ionicons
                                 name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'}
@@ -524,8 +526,8 @@ export default function AdminPage() {
                                 color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'}
                             />
                         </View>
-                        <Text className="text-white text-2xl font-black mb-4 text-center">{customAlert.title}</Text>
-                        <Text className="text-slate-400 text-center mb-8 text-lg leading-7 font-medium">
+                        <Text className={`text-2xl font-bold mb-4 text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>{customAlert.title}</Text>
+                        <Text className={`text-center mb-8 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                             {customAlert.message}
                         </Text>
 
@@ -533,9 +535,9 @@ export default function AdminPage() {
                             <View className="flex-row gap-3 w-full">
                                 <TouchableOpacity
                                     onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                    className="flex-1 py-4 bg-slate-800 rounded-2xl border border-slate-700"
+                                    className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-sm'}`}
                                 >
-                                    <Text className="text-slate-400 text-center font-black text-lg">취소</Text>
+                                    <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>취소</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => {
@@ -544,7 +546,7 @@ export default function AdminPage() {
                                     }}
                                     className="flex-1 py-4 bg-red-600 rounded-2xl"
                                 >
-                                    <Text className="text-white text-center font-black text-lg">확인</Text>
+                                    <Text className="text-white text-center font-bold text-lg">확인</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
@@ -552,7 +554,7 @@ export default function AdminPage() {
                                 onPress={() => setCustomAlert({ ...customAlert, visible: false })}
                                 className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
                             >
-                                <Text className="text-white text-center font-black text-lg">확인</Text>
+                                <Text className="text-white text-center font-bold text-lg">확인</Text>
                             </TouchableOpacity>
                         )}
                     </View>
@@ -567,33 +569,33 @@ export default function AdminPage() {
                 onRequestClose={() => setShowGuide(false)}
             >
                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                    <View className="bg-slate-900 border border-slate-700 p-8 rounded-[32px] w-full max-w-md shadow-2xl">
+                    <View className={`border p-8 rounded-[32px] w-full max-w-md shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
                         <View className="flex-row justify-between items-center mb-6">
                             <View className="flex-row items-center">
-                                <Ionicons name="information-circle-outline" size={24} color="#818cf8" style={{ marginRight: 8 }} />
-                                <Text className="text-white text-xl font-black">엑셀 양식 안내</Text>
+                                <Ionicons name="information-circle-outline" size={24} color={isDark ? "#818cf8" : "#4f46e5"} style={{ marginRight: 8 }} />
+                                <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>엑셀 양식 안내</Text>
                             </View>
                             <TouchableOpacity onPress={() => setShowGuide(false)}>
-                                <Ionicons name="close" size={24} color="#94a3b8" />
+                                <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
                             </TouchableOpacity>
                         </View>
 
                         <View className="space-y-6">
                             <View>
-                                <Text className="text-indigo-400 font-bold mb-2 text-sm">필수 포함 컬럼</Text>
-                                <View className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                    <Text className="text-slate-300 text-xs leading-5">
-                                        • <Text className="text-white font-bold">ID</Text>: 게임 내 영주 고유 ID (숫자) {"\n"}
-                                        • <Text className="text-white font-bold">닉네임</Text>: 게임 내 현재 사용 중인 영주 이름
+                                <Text className={`font-semibold mb-2 text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>필수 포함 컬럼</Text>
+                                <View className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                    <Text className={`text-xs leading-5 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                        • <Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-semibold`}>ID</Text>: 게임 내 영주 고유 ID (숫자) {"\n"}
+                                        • <Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-semibold`}>닉네임</Text>: 게임 내 현재 사용 중인 영주 이름
                                     </Text>
                                 </View>
                             </View>
 
                             <View>
-                                <Text className="text-indigo-400 font-bold mb-2 text-sm">주의 사항</Text>
-                                <View className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                    <Text className="text-slate-300 text-xs leading-5">
-                                        • 파일 형식은 <Text className="text-amber-500 font-bold">.xlsx</Text> 또는 <Text className="text-amber-500 font-bold">.xls</Text>를 권장합니다. {"\n"}
+                                <Text className={`font-semibold mb-2 text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>주의 사항</Text>
+                                <View className={`p-4 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                    <Text className={`text-xs leading-5 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                        • 파일 형식은 <Text className="text-amber-500 font-semibold">.xlsx</Text> 또는 <Text className="text-amber-500 font-semibold">.xls</Text>를 권장합니다. {"\n"}
                                         • 컬럼 이름은 'ID', '닉네임'이 포함되어 있어야 자동으로 인식됩니다. {"\n"}
                                         • 첫 번째 시트에 있는 데이터만 불러옵니다.
                                     </Text>
@@ -604,14 +606,14 @@ export default function AdminPage() {
                                 onPress={() => { downloadTemplate(); setShowGuide(false); }}
                                 className="bg-indigo-600 py-4 rounded-2xl items-center shadow-lg shadow-indigo-500/20"
                             >
-                                <Text className="text-white font-black">표준 양식 다운로드</Text>
+                                <Text className="text-white font-bold">표준 양식 다운로드</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
                                 onPress={() => setShowGuide(false)}
-                                className="bg-slate-800 py-4 rounded-2xl items-center border border-slate-700"
+                                className={`py-4 rounded-2xl items-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                             >
-                                <Text className="text-slate-400 font-bold">닫기</Text>
+                                <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>닫기</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

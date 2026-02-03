@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Modal, TextInput, Alert, Platform, ScrollView, Switch, ImageBackground, Image, Pressable } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { useAuth } from './_layout';
+import { useAuth, useTheme } from './_layout';
 import { MASTER_CREDENTIALS, SUPER_ADMINS } from '../data/admin-config';
 import { useFirestoreEventSchedules } from '../hooks/useFirestoreEventSchedules';
 import { useFirestoreAdmins } from '../hooks/useFirestoreAdmins';
@@ -17,6 +17,8 @@ import { hashPassword } from '../utils/crypto';
 export default function Home() {
     const router = useRouter();
     const { auth, login, logout } = useAuth();
+    const { theme, toggleTheme } = useTheme();
+    const isDark = theme === 'dark';
     const noticeData = useFirestoreNotice ? useFirestoreNotice() : { notice: null, saveNotice: async () => { } };
     const { notice, saveNotice } = noticeData;
     const { schedules, loading, clearAllSchedules } = useFirestoreEventSchedules();
@@ -56,6 +58,8 @@ export default function Home() {
         dynamicAdmins.find(a => a.name === auth.adminName)?.role === 'super_admin'
     );
 
+    const [hoveredHeaderBtn, setHoveredHeaderBtn] = useState<string | null>(null);
+
     useEffect(() => {
         AsyncStorage.getItem('lastAdminId').then((savedId) => {
             if (savedId) setLoginInput(savedId);
@@ -85,51 +89,69 @@ export default function Home() {
         } catch (e) { return false; }
     };
 
+    // -- 일정 단위가 활성 상태인지 체크하는 헬퍼 함수 --
+    const checkItemActive = (str: string) => {
+        if (!str) return false;
+        const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+        const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+        const totalWeekMinutes = 7 * 1440;
+
+        if (str.includes('상시') || str.includes('상설')) return true;
+
+        // 1. 기간형 체크 (예: 2024.01.01 10:00 ~ 2024.01.03 10:00)
+        const dateRangeMatch = str.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+        if (dateRangeMatch) {
+            const sStr = `${dateRangeMatch[1].replace(/\./g, '-')}T${dateRangeMatch[2]}:00`;
+            const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
+            const start = new Date(sStr);
+            const end = new Date(eStr);
+            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+                return now >= start && now <= end;
+            }
+        }
+
+        // 2. 주간 요일 범위 체크 (예: 월 10:00 ~ 수 10:00)
+        const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
+        if (weeklyMatch) {
+            const startTotal = dayMapObj[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
+            const endTotal = dayMapObj[weeklyMatch[4]] * 1440 + parseInt(weeklyMatch[5]) * 60 + parseInt(weeklyMatch[6]);
+            if (startTotal <= endTotal) return currentTotal >= startTotal && currentTotal <= endTotal;
+            return currentTotal >= startTotal || currentTotal <= endTotal;
+        }
+
+        // 3. 점형 일시 체크 (예: 화 23:50, 매일 10:00)
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+        if (explicitMatches.length > 0) {
+            return explicitMatches.some(m => {
+                const dayStr = m[1];
+                const h = parseInt(m[2]);
+                const min = parseInt(m[3]);
+
+                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+
+                return scheduledDays.some(d => {
+                    const dayOffset = dayMapObj[d];
+                    if (dayOffset === undefined) return false;
+                    const startTotal = dayOffset * 1440 + h * 60 + min;
+                    const endTotal = startTotal + 30;
+
+                    if (currentTotal >= startTotal && currentTotal <= endTotal) return true;
+                    if (endTotal >= totalWeekMinutes && currentTotal <= (endTotal % totalWeekMinutes)) return true;
+                    return false;
+                });
+            });
+        }
+        return false;
+    };
+
     const isEventActive = (event: any) => {
         try {
             const id = event.id || event.eventId;
             const schedule = schedules.find(s => s.eventId === id);
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
-            const combined = dayStr + ' ' + timeStr;
 
-            const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
-            if (dateRangeMatch) {
-                const sStr = `${dateRangeMatch[1].replace(/\./g, '-')}T${dateRangeMatch[2]}:00`;
-                const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
-                const start = new Date(sStr);
-                const end = new Date(eStr);
-                if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-                    return now >= start && now <= end;
-                }
-            }
-
-            const weeklyMatch = combined.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
-            if (weeklyMatch) {
-                const dayMap: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-                const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
-                const startTotal = dayMap[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
-                const endTotal = dayMap[weeklyMatch[4]] * 1440 + parseInt(weeklyMatch[5]) * 60 + parseInt(weeklyMatch[6]);
-                if (startTotal <= endTotal) return currentTotal >= startTotal && currentTotal <= endTotal;
-                return currentTotal >= startTotal || currentTotal <= endTotal;
-            }
-
-            const days = dayStr.split(/[,|]/).map(d => d.trim());
-            if (days.includes('상시') || days.includes('상설')) return true;
-
-            const dayMap = ['일', '월', '화', '수', '목', '금', '토'];
-            if (days.includes('매일') || days.includes(dayMap[now.getDay()])) {
-                const timeMatches = timeStr.match(/(\d{1,2}):(\d{2})/g);
-                if (timeMatches) {
-                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-                    return timeMatches.some(t => {
-                        const [h, m] = t.split(':').map(Number);
-                        const startTime = h * 60 + m;
-                        return currentMinutes >= startTime && currentMinutes <= startTime + 30;
-                    });
-                }
-            }
-            return false;
+            return checkItemActive(dayStr) || checkItemActive(timeStr);
         } catch (e) { return false; }
     };
 
@@ -181,47 +203,75 @@ export default function Home() {
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
     const handleLogin = async () => {
-        const input = loginInput.trim();
-        const pw = passwordInput.trim();
-        if (!input || !pw) return;
+        const input = (loginInput || '').trim();
+        const pw = (passwordInput || '').trim();
 
-        const hashedPw = await hashPassword(pw);
+        console.log('Login attempt:', { id: input, pw_len: pw.length });
 
-        // 1. Check Master Credentials
-        // 마스터는 해시값 비교 + 호환성을 위해 'wos1234' 평문 직접 비교도 포함
-        const master = MASTER_CREDENTIALS.find(m =>
-            m.id === input && (m.pw === hashedPw || pw === 'wos1234')
-        );
-
-        // 2. Check Dynamic Admins
-        // 기존 DB의 평문 비번과 신규 암호화 비번 모두 호환되도록 체크
-        const dynamic = dynamicAdmins.find(a =>
-            a.name === input && (a.password === hashedPw || a.password === pw || !a.password)
-        );
-
-        if (master || dynamic) {
-            try {
-                // Firebase 익명 로그인 연동 (Storage/Firestore 보안 규칙 대응)
-                const { signInAnonymously } = require('firebase/auth');
-                const { auth: firebaseAuth } = require('../firebaseConfig');
-                await signInAnonymously(firebaseAuth);
-                console.log('Firebase anonymous auth successful');
-            } catch (authError) {
-                console.warn('Firebase anonymous auth failed, but proceeding with local login:', authError);
-            }
-
-            await AsyncStorage.setItem('lastAdminId', input);
-            await login(input);
-            setLoginModalVisible(false);
-            setPasswordInput('');
-            showCustomAlert('인증 성공', '관리자 권한으로 로그인되었습니다.', 'success');
-        } else {
-            showCustomAlert(
-                '인증 실패',
-                '아이디 또는 비밀번호가 일치하지 않습니다.',
-                'error'
-            );
+        if (!input || !pw) {
+            console.log('Login failed: Empty input');
+            return;
         }
+
+        // 해시 생성 (소문자로 통일)
+        const currentHash = (await hashPassword(pw)).toLowerCase().trim();
+        const normalizedInput = input.normalize('NFC').toLowerCase().trim();
+
+        // 마스터 비밀번호 후보들 (wos1234, Wos1234 등)
+        const MASTER_HASH_VARIANTS = [
+            'ed9f02f10e07faa4b8c450098c23ad7d2e96a2396523897c0beec0ecdf327', // wos1234
+            '4da72ed92a6a6773ef5b7b89b787968c12a7999d9f8d0b43a9dcb54875d12e63', // Wos1234
+            '94c348f56641680d226f31623190df627e85741f0a2e269f88c96ae229dd5bcd'  // legacy
+        ];
+
+        // 1. 마스터 계정 체크 (관리자, master)
+        const isMasterId = ['관리자', 'master'].some(id =>
+            id.normalize('NFC').toLowerCase().trim() === normalizedInput
+        );
+
+        // 비밀번호 체크 (해시값 목록 대조 또는 평문 대소문자 무시 체크)
+        const isMasterPw = MASTER_HASH_VARIANTS.includes(currentHash) ||
+            pw.toLowerCase() === 'wos1234';
+
+        console.log('Master check result:', { isMasterId, isMasterPw, currentHash });
+
+        if (isMasterId && isMasterPw) {
+            const finalId = normalizedInput.includes('관리자') ? '관리자' : 'master';
+            await performLogin(finalId);
+            return;
+        }
+
+        // 2. 일반 운영진 계정 체크
+        console.log('Checking dynamic admins:', dynamicAdmins.length);
+        const dynamic = dynamicAdmins.find(a => {
+            const aNameNormal = a.name.normalize('NFC').toLowerCase().trim();
+            const aPw = (a.password || '').toLowerCase().trim();
+            const isIdMatch = aNameNormal === normalizedInput;
+            const isPwMatch = aPw === currentHash || aPw.toLowerCase() === pw.toLowerCase() || !aPw;
+            return isIdMatch && isPwMatch;
+        });
+
+        if (dynamic) {
+            console.log('Dynamic admin matched:', dynamic.name);
+            await performLogin(dynamic.name);
+        } else {
+            console.log('Auth failed: No match found');
+            showCustomAlert('인증 실패', '아이디 또는 비밀번호가 일치하지 않습니다.', 'error');
+        }
+    };
+
+    const performLogin = async (id: string) => {
+        try {
+            const { signInAnonymously } = require('firebase/auth');
+            const { auth: firebaseAuth } = require('../firebaseConfig');
+            signInAnonymously(firebaseAuth).catch(() => { });
+        } catch (e) { }
+
+        await AsyncStorage.setItem('lastAdminId', id);
+        await login(id);
+        setLoginModalVisible(false);
+        setPasswordInput('');
+        showCustomAlert('인증 성공', '관리자 권한으로 로그인되었습니다.', 'success');
     };
 
     const handleSettingsPress = () => auth.isLoggedIn ? setAdminMenuVisible(true) : setLoginModalVisible(true);
@@ -269,7 +319,7 @@ export default function Home() {
                 const rankB = getDayRank(b.day);
                 return rankA !== rankB ? rankA - rankB : (a.time || '').localeCompare(b.time || '');
             });
-    }, [schedules]);
+    }, [schedules, now]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -292,157 +342,198 @@ export default function Home() {
         <View style={{ flex: 1 }}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            <ScrollView
-                className="flex-1"
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ flexGrow: 1 }}
-            >
+            <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                 <View className="w-full items-center">
                     <View className="w-full max-w-6xl px-4 md:px-8 pb-20">
-                        {/* Header Section */}
-                        <View className="pt-20 pb-10 flex-row justify-between items-start">
-                            <View>
-                                <Text className="text-[#38bdf8] font-black text-[10px] md:text-sm tracking-[0.5em] mb-2 uppercase">Whiteout Survival</Text>
-                                <Text className="text-white text-4xl md:text-6xl font-black tracking-tighter shadow-xl shadow-blue-500/20">WOS 커맨더</Text>
-                                <View className="w-12 md:w-16 h-1 md:h-1.5 bg-[#38bdf8] rounded-full mt-3 md:mt-4" />
-                                <Text className="text-slate-400 font-bold text-xs md:text-sm mt-4 leading-6">최적의 영웅 조합과 전략으로{"\n"}빙하기의 생존을 지휘하세요</Text>
+                        <View className="pt-12 pb-6 flex-row justify-between items-start">
+                            <View className="flex-1 mr-4">
+                                <Text className={`font-bold text-[9px] md:text-xs tracking-[0.4em] mb-1.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Whiteout Survival</Text>
+                                <Text className={`text-3xl md:text-5xl font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>WOS 커맨더</Text>
+                                <View className={`w-10 md:w-14 h-1 rounded-full mt-2.5 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                <Text className={`font-semibold text-[11px] md:text-xs mt-3.5 leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>최적의 영웅 조합과 전략으로{"\n"}빙하기의 생존을 지휘하세요</Text>
                             </View>
-                            <View className="flex-row gap-3 mt-2">
-                                <Pressable onPress={handleInstallClick} className="p-3 bg-slate-800/80 rounded-full border border-slate-700 active:bg-slate-700">
-                                    <Ionicons name="download-outline" size={28} color="#38bdf8" />
-                                </Pressable>
-                                <Pressable onPress={handleSettingsPress} className="p-3 bg-slate-800/80 rounded-full border border-slate-700 active:bg-slate-700">
-                                    <Ionicons name="person-circle-outline" size={28} color={auth.isLoggedIn ? "#38bdf8" : "white"} />
-                                </Pressable>
+                            <View className="flex-row gap-2 mt-1">
+                                <View className="relative">
+                                    <Pressable
+                                        onPress={toggleTheme}
+                                        onHoverIn={() => setHoveredHeaderBtn('theme')}
+                                        onHoverOut={() => setHoveredHeaderBtn(null)}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                    >
+                                        <Ionicons name={isDark ? "sunny" : "moon"} size={22} color={isDark ? "#fbbf24" : "#1e293b"} />
+                                    </Pressable>
+                                    {hoveredHeaderBtn === 'theme' && (
+                                        <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
+                                            <View className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'} border px-4 py-2.5 rounded-xl shadow-2xl`} style={{ alignSelf: 'flex-end' }}>
+                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}>
+                                                    테마 전환 (다크/라이트)
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View className="relative">
+                                    <Pressable
+                                        onPress={handleInstallClick}
+                                        onHoverIn={() => setHoveredHeaderBtn('install')}
+                                        onHoverOut={() => setHoveredHeaderBtn(null)}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                    >
+                                        <Ionicons name="download" size={22} color="#38bdf8" />
+                                    </Pressable>
+                                    {hoveredHeaderBtn === 'install' && (
+                                        <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
+                                            <View className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'} border px-4 py-2.5 rounded-xl shadow-2xl`} style={{ alignSelf: 'flex-end' }}>
+                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}>
+                                                    홈 화면에 설치 방법
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View className="relative">
+                                    <Pressable
+                                        onPress={handleSettingsPress}
+                                        onHoverIn={() => setHoveredHeaderBtn('admin')}
+                                        onHoverOut={() => setHoveredHeaderBtn(null)}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                    >
+                                        <Ionicons name="person-circle" size={22} color={auth.isLoggedIn ? "#38bdf8" : (isDark ? "white" : "#475569")} />
+                                    </Pressable>
+                                    {hoveredHeaderBtn === 'admin' && (
+                                        <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
+                                            <View className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'} border px-4 py-2.5 rounded-xl shadow-2xl`} style={{ alignSelf: 'flex-end' }}>
+                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}>
+                                                    {auth.isLoggedIn ? '관리자 메뉴 열기' : '관리자 로그인'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                         </View>
 
                         {/* Notice Section */}
                         {!!notice && (!!notice.visible || !!auth.isLoggedIn) && (
-                            <TouchableOpacity onPress={() => setNoticeDetailVisible(true)} className="mb-10 w-full">
-                                <View className={`p-6 rounded-[32px] border flex-row items-center ${notice.visible ? 'bg-amber-900/20 border-amber-500/30' : 'bg-slate-800/40 border-slate-700 border-dashed'}`}>
-                                    <View className="mr-5">
-                                        <View className="w-14 h-14 bg-amber-500/10 rounded-full items-center justify-center">
-                                            <Ionicons name={notice.visible ? "megaphone" : "eye-off"} size={28} color={notice.visible ? "#fbbf24" : "#94a3b8"} />
+                            <TouchableOpacity onPress={() => setNoticeDetailVisible(true)} className="mb-6 w-full active:scale-[0.99] transition-transform">
+                                <View className={`p-4 rounded-2xl border-2 flex-row items-center shadow-lg ${notice.visible ? (isDark ? 'bg-amber-900/20 border-amber-500/30' : 'bg-amber-50 border-amber-200') : (isDark ? 'bg-slate-800/40 border-slate-700 border-dashed' : 'bg-slate-50 border-slate-200 border-dashed')}`}>
+                                    <View className="mr-4">
+                                        <View className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-amber-500/10' : 'bg-amber-100'}`}>
+                                            <Ionicons name={notice.visible ? "notifications" : "notifications-off"} size={20} color={notice.visible ? "#f59e0b" : "#94a3b8"} />
                                         </View>
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="text-amber-500 font-black text-xs tracking-widest uppercase mb-1">NOTICE</Text>
-                                        <Text className="text-xl font-bold text-amber-100" numberOfLines={1}>{notice.content || '(공지 내용 없음)'}</Text>
+                                        <Text className={`font-bold text-[10px] tracking-widest uppercase mb-0.5 ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>NOTICE</Text>
+                                        <Text className={`text-base font-semibold ${isDark ? 'text-amber-100' : 'text-slate-800'}`} numberOfLines={1}>{notice.content || '(공지 내용 없음)'}</Text>
                                     </View>
-                                    <Ionicons name="chevron-forward" size={24} color="#fbbf24" style={{ opacity: 0.5 }} />
+                                    <Ionicons name="chevron-forward" size={20} color={isDark ? "#f59e0b" : "#d97706"} style={{ opacity: 0.5 }} />
                                     {!!auth.isLoggedIn && (
-                                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleOpenNotice(); }} className="ml-3 p-2 bg-slate-800 rounded-full border border-slate-700">
-                                            <Ionicons name="pencil" size={16} color="#38bdf8" />
-                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleOpenNotice(); }} className={`ml-3 p-1.5 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}><Ionicons name="pencil" size={14} color="#38bdf8" /></TouchableOpacity>
                                     )}
                                 </View>
                             </TouchableOpacity>
                         )}
 
                         {/* Feature Cards Grid */}
-                        <View className="flex-col md:flex-row gap-4 md:gap-6 mb-12">
-                            <TouchableOpacity onPress={() => router.push('/hero-management')} className="flex-1 bg-[#0f172a] p-6 md:p-8 rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
+                        <View className="flex-col md:flex-row gap-3 md:gap-4 mb-8">
+                            <TouchableOpacity onPress={() => router.push('/hero-management')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-blue-900/20' : 'bg-white border-slate-100 shadow-slate-200'}`}>
                                 <View className="flex-row items-center">
-                                    <View className="w-12 h-12 bg-[#38bdf8]/10 rounded-2xl items-center justify-center border border-[#38bdf8]/20 mr-4 md:mr-6"><Ionicons name="shield-outline" size={28} color="#38bdf8" /></View>
-                                    <View><Text className="text-white text-2xl md:text-3xl font-black">영웅 정보</Text><Text className="text-slate-400 font-bold">스탯 및 스킬</Text></View>
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 md:mr-4 ${isDark ? 'bg-[#38bdf8]/10 border-[#38bdf8]/20' : 'bg-blue-50 border-blue-100'}`}>
+                                        <Ionicons name="people" size={22} color={isDark ? "#38bdf8" : "#2563eb"} />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>영웅 정보</Text>
+                                        <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>스탯 및 스킬</Text>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => router.push('/growth/events')} className="flex-1 bg-[#0f172a] p-6 md:p-8 rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
+
+                            <TouchableOpacity onPress={() => router.push('/growth/events')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-blue-900/20' : 'bg-white border-slate-100 shadow-slate-200'}`}>
                                 <View className="flex-row items-center">
-                                    <View className="w-12 h-12 bg-blue-500/10 rounded-2xl items-center justify-center border border-blue-400/20 mr-4 md:mr-6"><Ionicons name="calendar-outline" size={28} color="#60a5fa" /></View>
-                                    <View><Text className="text-white text-2xl md:text-3xl font-black">이벤트</Text><Text className="text-slate-400 font-bold">연맹전략 및 일정</Text></View>
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 md:mr-4 ${isDark ? 'bg-blue-500/10 border-blue-400/20' : 'bg-sky-50 border-sky-100'}`}>
+                                        <Ionicons name="calendar" size={22} color={isDark ? "#60a5fa" : "#0284c7"} />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>이벤트</Text>
+                                        <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>연맹전략 및 일정</Text>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => router.push('/strategy-sheet')} className="flex-1 bg-[#0f172a] p-6 md:p-8 rounded-[32px] border border-slate-800 shadow-xl active:scale-95 transition-transform">
+
+                            <TouchableOpacity onPress={() => router.push('/strategy-sheet')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-emerald-900/20' : 'bg-white border-slate-100 shadow-slate-200'}`}>
                                 <View className="flex-row items-center">
-                                    <View className="w-12 h-12 bg-emerald-500/10 rounded-2xl items-center justify-center border border-emerald-400/20 mr-4 md:mr-6"><Ionicons name="map-outline" size={28} color="#10b981" /></View>
-                                    <View><Text className="text-white text-2xl md:text-3xl font-black">전략 문서</Text><Text className="text-slate-400 font-bold">배치도 및 공지</Text></View>
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 md:mr-4 ${isDark ? 'bg-emerald-500/10 border-emerald-400/20' : 'bg-emerald-50 border-emerald-100'}`}>
+                                        <Ionicons name="map" size={22} color={isDark ? "#10b981" : "#059669"} />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>전략 문서</Text>
+                                        <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>배치도 및 공지</Text>
+                                    </View>
                                 </View>
                             </TouchableOpacity>
                         </View>
 
                         {/* Weekly Events List */}
-                        <View className="bg-[#0f172a]/60 rounded-[40px] border border-slate-800/80 shadow-2xl overflow-hidden">
-                            <View className="p-6 border-b border-slate-800/50 flex-row items-center">
-                                <View className="w-2 h-10 bg-[#38bdf8] rounded-full mr-5" />
-                                <Text className="text-white text-3xl font-black">금주의 이벤트</Text>
+                        <View className={`rounded-3xl border shadow-2xl overflow-hidden ${isDark ? 'bg-[#0f172a]/60 border-slate-800/80' : 'bg-white border-slate-100 shadow-slate-200'}`}>
+                            <View className={`p-4 border-b flex-row items-center ${isDark ? 'border-slate-800/50' : 'border-slate-100'}`}>
+                                <View className={`w-1.5 h-8 rounded-full mr-4 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>금주의 이벤트</Text>
                             </View>
-                            <View className="p-6">
+                            <View className="p-4">
                                 {loading ? (
-                                    <Text className="text-slate-500 p-12 text-center font-bold">일정을 불러오는 중...</Text>
+                                    <Text className={`p-12 text-center font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>일정을 불러오는 중...</Text>
                                 ) : displayEvents.length > 0 ? (
-                                    <View className="gap-4">
+                                    <View className="gap-2.5">
                                         {displayEvents.map((event, idx) => {
                                             const isActive = isEventActive(event);
                                             return (
-                                                <TouchableOpacity key={idx} onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.eventId } })}>
-                                                    <View className={`p-5 md:p-6 rounded-[32px] border-2 flex-row items-center ${isActive ? 'bg-red-500/25 border-red-500/50' : 'border-slate-600/60 bg-[#1e293b]'}`}>
-                                                        <View className={`w-4 h-4 rounded-full mr-4 ${isActive ? 'bg-red-500 animate-pulse' : 'bg-blue-500'}`} />
+                                                <TouchableOpacity key={idx} onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.eventId } })} className="active:scale-[0.99] transition-transform">
+                                                    <View className={`p-3.5 md:p-4 rounded-2xl border-2 flex-row items-center shadow-sm ${isActive ? (isDark ? 'bg-red-500/25 border-red-500/50 shadow-red-900/10' : 'bg-red-50 border-red-200 shadow-red-100') : (isDark ? 'bg-[#1e293b] border-slate-700/60 shadow-black/20' : 'bg-slate-50 border-slate-200 shadow-slate-200')}`}>
+                                                        <View className={`w-3 h-3 rounded-full mr-3.5 shadow-sm ${isActive ? 'bg-red-500 animate-pulse' : (isDark ? 'bg-blue-500' : 'bg-blue-600')}`} />
                                                         <View className="flex-1">
-                                                            <Text className="text-white text-xl font-black mb-1">{event.title}</Text>
+                                                            <View className="flex-row justify-between items-center mb-0.5">
+                                                                <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{event.title}</Text>
+                                                                {!!isActive && <View className="bg-red-500 px-2 py-0.5 rounded-md shadow-sm shadow-red-500/20"><Text className="text-white text-[8px] font-bold uppercase tracking-wider">진행중</Text></View>}
+                                                            </View>
                                                             <View className="flex-row flex-wrap gap-2">
                                                                 {!!event.day && !event.time && event.day !== '요새전/성채전' && (
-                                                                    <View className="bg-black/60 px-4 py-2 rounded-xl border border-slate-500 max-w-full">
+                                                                    <View className={`px-3 py-1.5 rounded-xl border max-w-full shadow-sm ${isDark ? 'bg-black/60 border-slate-500' : 'bg-white border-slate-200'}`}>
                                                                         {(() => {
                                                                             const formattedDay = event.day.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                                             let utcText = '';
                                                                             const isRange = event.day.includes('~');
                                                                             if (isRange) {
                                                                                 const parts = event.day.split('~').map((x: string) => x.trim());
-                                                                                // Try date range first
                                                                                 const sDateUtc = getUTCString(parts[0]);
                                                                                 const eDateUtc = getUTCString(parts[1]);
-                                                                                if (sDateUtc && eDateUtc) {
-                                                                                    utcText = `UTC: ${sDateUtc} ~ ${eDateUtc}`;
-                                                                                } else {
-                                                                                    // Try weekly range
+                                                                                if (sDateUtc && eDateUtc) utcText = `UTC: ${sDateUtc} ~ ${eDateUtc}`;
+                                                                                else {
                                                                                     const sWeeklyUtc = getUTCTimeString(parts[0], false);
                                                                                     const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                                                    if (sWeeklyUtc && eWeeklyUtc) {
-                                                                                        utcText = `UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
-                                                                                    }
+                                                                                    if (sWeeklyUtc && eWeeklyUtc) utcText = `UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
                                                                                 }
                                                                             } else {
                                                                                 const dateUtc = getUTCString(event.day);
-                                                                                if (dateUtc) {
-                                                                                    utcText = `UTC: ${dateUtc}`;
-                                                                                } else {
+                                                                                if (dateUtc) utcText = `UTC: ${dateUtc}`;
+                                                                                else {
                                                                                     const weeklyUtc = getUTCTimeString(event.day);
                                                                                     if (weeklyUtc) utcText = weeklyUtc;
                                                                                 }
                                                                             }
-
                                                                             const renderLine = (str: string, textClass: string) => {
                                                                                 if (!str.includes('~')) return <Text className={textClass}>{str}</Text>;
                                                                                 const [s, e] = str.split('~').map(x => x.trim());
-                                                                                return (
-                                                                                    <View className="flex-row flex-wrap items-center">
-                                                                                        <Text className={textClass}>{s}</Text>
-                                                                                        <Text className={`${textClass} mx-1.5 opacity-50`}>~</Text>
-                                                                                        <Text className={textClass}>{e}</Text>
-                                                                                    </View>
-                                                                                );
+                                                                                return (<View className="flex-row flex-wrap items-center"><Text className={textClass}>{s}</Text><Text className={`${textClass} mx-1.5 opacity-50`}>~</Text><Text className={textClass}>{e}</Text></View>);
                                                                             };
-
-                                                                            return (
-                                                                                <>
-                                                                                    {renderLine(formattedDay, "text-[#38bdf8] font-bold")}
-                                                                                    {!!utcText && (
-                                                                                        <View className="mt-0.5">
-                                                                                            {renderLine(utcText, "text-slate-500 text-[9px] font-bold")}
-                                                                                        </View>
-                                                                                    )}
-                                                                                </>
-                                                                            )
+                                                                            const dayColor = isDark ? "text-[#38bdf8]" : "text-blue-600";
+                                                                            const utcColor = isDark ? "text-slate-500" : "text-slate-400";
+                                                                            return (<>{renderLine(formattedDay, `${dayColor} font-semibold text-xs`)}{!!utcText && (<View className="mt-0.5">{renderLine(utcText, `${utcColor} text-[8px] font-semibold`)}</View>)}</>);
                                                                         })()}
                                                                     </View>
                                                                 )}
-                                                                {!event.day && !event.time && (
-                                                                    <View className="bg-black/60 px-4 py-2 rounded-xl border border-slate-500 max-w-full">
-                                                                        <Text className="text-[#38bdf8] font-bold">일정 미정</Text>
-                                                                    </View>
-                                                                )}
+                                                                {!event.day && !event.time && <View className={`px-3 py-1.5 rounded-xl border max-w-full shadow-sm ${isDark ? 'bg-black/60 border-slate-500' : 'bg-white border-slate-200'}`}><Text className={`${isDark ? 'text-[#38bdf8]' : 'text-blue-600'} font-semibold text-xs`}>일정 미정</Text></View>}
                                                                 {!!event.time && (
                                                                     <View className="flex-1 mt-1">
                                                                         {event.time.split(' / ').map((part: string, pIdx: number) => {
@@ -458,37 +549,28 @@ export default function Home() {
                                                                             const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                                                                             return (
                                                                                 <View key={pIdx} className="mb-3 last:mb-0">
-                                                                                    {!!label && (
-                                                                                        <Text className="text-slate-400 text-[10px] font-black uppercase mb-1 ml-1">{label}</Text>
-                                                                                    )}
+                                                                                    <View className="flex-row items-center mb-1">
+                                                                                        {!!label && <Text className={`text-[10px] font-bold uppercase ml-1 mr-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</Text>}
+                                                                                        {content.split(/[,|]/).some(item => checkItemActive(item.trim())) && (
+                                                                                            <View className="bg-red-500 px-1.5 py-0.5 rounded-md shadow-sm shadow-red-500/20"><Text className="text-white text-[8px] font-bold">진행중</Text></View>
+                                                                                        )}
+                                                                                    </View>
                                                                                     <View className="flex-row flex-wrap gap-2">
                                                                                         {content.split(/[,|]/).map((item, iIdx) => {
+                                                                                            const isLive = checkItemActive(item.trim());
                                                                                             const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                                                             const utcStr = getUTCTimeString(item.trim());
                                                                                             return (
-                                                                                                <View key={iIdx} className="bg-black/50 px-3 py-1.5 rounded-xl border border-slate-600/50 max-w-full">
+                                                                                                <View key={iIdx} className={`px-2.5 py-1.5 rounded-xl border max-w-full shadow-sm ${isLive ? (isDark ? 'bg-red-500/20 border-red-500/50' : 'bg-red-100 border-red-200') : (isDark ? 'bg-black/50 border-slate-600/50' : 'bg-white border-slate-200')}`}>
                                                                                                     {(() => {
                                                                                                         const renderTextLine = (str: string, tClass: string) => {
                                                                                                             if (!str.includes('~')) return <Text className={tClass}>{str}</Text>;
                                                                                                             const [s, e] = str.split('~').map(x => x.trim());
-                                                                                                            return (
-                                                                                                                <View className="flex-row flex-wrap items-center">
-                                                                                                                    <Text className={tClass}>{s}</Text>
-                                                                                                                    <Text className={`${tClass} mx-1.5 opacity-50`}>~</Text>
-                                                                                                                    <Text className={tClass}>{e}</Text>
-                                                                                                                </View>
-                                                                                                            );
+                                                                                                            return (<View className="flex-row flex-wrap items-center"><Text className={tClass}>{s}</Text><Text className={`${tClass} mx-1.5 opacity-50`}>~</Text><Text className={tClass}>{e}</Text></View>);
                                                                                                         };
-                                                                                                        return (
-                                                                                                            <>
-                                                                                                                {renderTextLine(formatted, "text-[#38bdf8] font-bold text-sm")}
-                                                                                                                {!!utcStr && (
-                                                                                                                    <View className="mt-0.5">
-                                                                                                                        {renderTextLine(utcStr, "text-slate-500 text-[10px] font-bold")}
-                                                                                                                    </View>
-                                                                                                                )}
-                                                                                                            </>
-                                                                                                        );
+                                                                                                        const mainColorText = isLive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-[#38bdf8]' : 'text-blue-600');
+                                                                                                        const subColorText = isLive ? (isDark ? 'text-red-900/60' : 'text-red-400') : (isDark ? 'text-slate-500' : 'text-slate-400');
+                                                                                                        return (<>{renderTextLine(formatted, `${mainColorText} font-semibold text-xs`)}{!!utcStr && (<View className="mt-0.5">{renderTextLine(utcStr, `${subColorText} text-[9px] font-semibold`)}</View>)}</>);
                                                                                                     })()}
                                                                                                 </View>
                                                                                             );
@@ -501,15 +583,14 @@ export default function Home() {
                                                                 )}
                                                             </View>
                                                         </View>
-                                                        {!!isActive && <View className="bg-red-500 px-2 py-1 rounded-lg ml-2"><Text className="text-white text-xs font-black">진행중</Text></View>}
-                                                        <Ionicons name="chevron-forward" size={24} color="#475569" className="ml-2" />
+                                                        <Ionicons name="chevron-forward" size={20} color={isDark ? "#475569" : "#cbd5e1"} className="ml-2" />
                                                     </View>
                                                 </TouchableOpacity>
                                             );
                                         })}
                                     </View>
                                 ) : (
-                                    <Text className="text-slate-500 p-12 text-center font-bold">등록된 일정이 없습니다.</Text>
+                                    <Text className={`p-12 text-center font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다.</Text>
                                 )}
                             </View>
                         </View>
@@ -517,32 +598,17 @@ export default function Home() {
                 </View>
             </ScrollView>
 
-            {/* Modals outside scrollview */}
+            {/* Modals */}
             <Modal visible={loginModalVisible} transparent animationType="fade">
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[40px] border border-slate-800 shadow-2xl">
-                        <Text className="text-white text-2xl font-black mb-8">관리자 인증</Text>
-                        <TextInput
-                            placeholder="영주 이름" placeholderTextColor="#475569"
-                            value={loginInput} onChangeText={setLoginInput}
-                            autoCapitalize="none"
-                            className="bg-slate-950 p-5 rounded-2xl text-white font-bold mb-4 border border-slate-800 text-lg"
-                        />
-                        <TextInput
-                            placeholder="비밀번호" placeholderTextColor="#475569"
-                            value={passwordInput} onChangeText={setPasswordInput}
-                            secureTextEntry={true}
-                            autoCapitalize="none" onSubmitEditing={handleLogin}
-                            className="bg-slate-950 p-5 rounded-2xl text-white font-bold mb-8 border border-slate-800 text-lg"
-                        />
+                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <Text className={`text-2xl font-bold mb-8 ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 인증</Text>
+                        <TextInput placeholder="영주 이름" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={loginInput} onChangeText={setLoginInput} autoCapitalize="none" className={`p-5 rounded-2xl font-semibold mb-4 border text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-800 border-slate-200'}`} />
+                        <TextInput placeholder="비밀번호" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={passwordInput} onChangeText={setPasswordInput} secureTextEntry={true} autoCapitalize="none" onSubmitEditing={handleLogin} className={`p-5 rounded-2xl font-semibold mb-8 border text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-800 border-slate-200'}`} />
                         <View className="flex-row gap-3">
-                            <TouchableOpacity onPress={() => setLoginModalVisible(false)} className="flex-1 bg-slate-800 py-4 rounded-2xl">
-                                <Text className="text-slate-400 text-center font-black">취소</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleLogin} className="flex-[2] bg-[#38bdf8] py-4 rounded-2xl shadow-lg shadow-cyan-500/20">
-                                <Text className="text-[#0f172a] text-center font-black">로그인</Text>
-                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setLoginModalVisible(false)} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}><Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>취소</Text></TouchableOpacity>
+                            <TouchableOpacity onPress={handleLogin} className="flex-[2] bg-[#38bdf8] py-4 rounded-2xl shadow-lg shadow-cyan-500/20"><Text className="text-[#0f172a] text-center font-bold">로그인</Text></TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -550,198 +616,77 @@ export default function Home() {
 
             <Modal visible={adminMenuVisible} transparent animationType="fade" onRequestClose={() => setAdminMenuVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <View className="bg-slate-900 w-full max-w-sm p-6 rounded-[32px] border border-slate-700 shadow-2xl">
-                        <Text className="text-white text-2xl font-black mb-8 text-center">관리자 메뉴</Text>
-                        <TouchableOpacity onPress={async () => { await logout(); setAdminMenuVisible(false); }} className="bg-slate-800 p-5 rounded-2xl mb-4 flex-row items-center justify-center border border-slate-700"><Ionicons name="log-out-outline" size={24} color="#ef4444" style={{ marginRight: 8 }} /><Text className="text-white font-black text-xl">로그아웃</Text></TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => {
-                                setAdminMenuVisible(false);
-                                router.push('/admin');
-                            }}
-                            className="bg-slate-800 p-5 rounded-2xl mb-4 flex-row items-center justify-center border border-slate-700"
-                        >
-                            <Ionicons name="people-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
-                            <Text className="text-white font-black text-xl">연맹원 관리</Text>
-                        </TouchableOpacity>
-
+                    <View className={`w-full max-w-sm p-6 rounded-[32px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <Text className={`text-2xl font-bold mb-8 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 메뉴</Text>
+                        <TouchableOpacity onPress={async () => { await logout(); setAdminMenuVisible(false); }} className={`p-5 rounded-2xl mb-4 flex-row items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><Ionicons name="log-out-outline" size={24} color="#ef4444" style={{ marginRight: 8 }} /><Text className={`font-bold text-xl ${isDark ? 'text-white' : 'text-slate-800'}`}>로그아웃</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => { setAdminMenuVisible(false); router.push('/admin'); }} className={`p-5 rounded-2xl mb-4 flex-row items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><Ionicons name="people-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} /><Text className={`font-bold text-xl ${isDark ? 'text-white' : 'text-slate-800'}`}>연맹원 관리</Text></TouchableOpacity>
                         {!!isSuperAdmin && (
-                            <View className="mt-4 pt-4 border-t border-slate-800">
-                                <Text className="text-[#38bdf8] font-bold mb-3 text-center text-xs">슈퍼 관리자 메뉴</Text>
-                                <TouchableOpacity onPress={() => setShowAdminList(!showAdminList)} className="bg-slate-800 p-4 rounded-xl border border-slate-700 mb-3 flex-row justify-center items-center">
-                                    <Ionicons name="people-outline" size={18} color="#38bdf8" style={{ marginRight: 8 }} />
-                                    <Text className="text-white font-bold text-sm">운영진 관리</Text>
-                                </TouchableOpacity>
-
+                            <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                <Text className={`font-semibold mb-3 text-center text-xs ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>슈퍼 관리자 메뉴</Text>
+                                <TouchableOpacity onPress={() => setShowAdminList(!showAdminList)} className={`p-4 rounded-xl border mb-3 flex-row justify-center items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><Ionicons name="people-outline" size={18} color="#38bdf8" style={{ marginRight: 8 }} /><Text className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>운영진 관리</Text></TouchableOpacity>
                                 {!!showAdminList && (
-                                    <View className="bg-black/40 p-3 rounded-xl mb-3 border border-slate-800">
+                                    <View className={`p-3 rounded-xl mb-3 border ${isDark ? 'bg-black/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                                         <View className="mb-3 space-y-2">
-                                            <TextInput
-                                                className="w-full bg-slate-950 text-white p-3 rounded-xl border border-slate-800 text-xs font-bold"
-                                                placeholder="운영진 이름" value={newAdminName} onChangeText={setNewAdminName}
-                                            />
-                                            <TextInput
-                                                className="w-full bg-slate-950 text-white p-3 rounded-xl border border-slate-800 text-xs font-bold"
-                                                placeholder="비밀번호 설정" value={newAdminPassword} onChangeText={setNewAdminPassword} secureTextEntry={true}
-                                            />
+                                            <TextInput className={`w-full p-3 rounded-xl border text-xs font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="운영진 이름" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminName} onChangeText={setNewAdminName} />
+                                            <TextInput className={`w-full p-3 rounded-xl border text-xs font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="비밀번호 설정" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminPassword} onChangeText={setNewAdminPassword} secureTextEntry={true} />
                                             <View className="flex-row gap-2 pt-1">
-                                                <TouchableOpacity
-                                                    onPress={() => setNewAdminRole(newAdminRole === 'admin' ? 'super_admin' : 'admin')}
-                                                    className={`flex-[2.5] py-3 px-4 justify-center items-center rounded-xl border ${newAdminRole === 'super_admin' ? 'bg-amber-600/20 border-amber-500' : 'bg-slate-800 border-slate-700'}`}
-                                                >
-                                                    <View className="flex-row items-center">
-                                                        <Ionicons name={newAdminRole === 'super_admin' ? 'shield-checkmark' : 'person'} size={14} color={newAdminRole === 'super_admin' ? '#fbbf24' : '#94a3b8'} style={{ marginRight: 6 }} />
-                                                        <Text className={`${newAdminRole === 'super_admin' ? 'text-amber-500' : 'text-slate-400'} text-xs font-black`}>{newAdminRole === 'super_admin' ? '슈퍼 관리자' : '일반 운영진'}</Text>
-                                                    </View>
-                                                </TouchableOpacity>
-                                                <TouchableOpacity
-                                                    onPress={async () => {
-                                                        const hashed = newAdminPassword ? await hashPassword(newAdminPassword) : '';
-                                                        if (await addAdmin(newAdminName, auth.adminName || '', newAdminRole, hashed)) {
-                                                            setNewAdminName('');
-                                                            setNewAdminPassword('');
-                                                            showCustomAlert('성공', '운영진이 추가되었습니다.', 'success');
-                                                        }
-                                                    }}
-                                                    className="flex-1 bg-blue-600 py-3 justify-center items-center rounded-xl shadow-lg shadow-blue-500/30"
-                                                >
-                                                    <Ionicons name="add" size={20} color="white" />
-                                                </TouchableOpacity>
+                                                <TouchableOpacity onPress={() => setNewAdminRole(newAdminRole === 'admin' ? 'super_admin' : 'admin')} className={`flex-[2.5] py-3 px-4 justify-center items-center rounded-xl border ${newAdminRole === 'super_admin' ? (isDark ? 'bg-amber-600/20 border-amber-500' : 'bg-amber-50 border-amber-200') : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}><View className="flex-row items-center"><Ionicons name={newAdminRole === 'super_admin' ? 'shield-checkmark' : 'person'} size={14} color={newAdminRole === 'super_admin' ? '#fbbf24' : '#94a3b8'} style={{ marginRight: 6 }} /><Text className={`${newAdminRole === 'super_admin' ? 'text-amber-500' : 'text-slate-400'} text-xs font-bold`}>{newAdminRole === 'super_admin' ? '슈퍼 관리자' : '일반 운영진'}</Text></View></TouchableOpacity>
+                                                <TouchableOpacity onPress={async () => { const hashed = newAdminPassword ? await hashPassword(newAdminPassword) : ''; if (await addAdmin(newAdminName, auth.adminName || '', newAdminRole, hashed)) { setNewAdminName(''); setNewAdminPassword(''); showCustomAlert('성공', '운영진이 추가되었습니다.', 'success'); } }} className="flex-1 bg-blue-600 py-3 justify-center items-center rounded-xl shadow-lg shadow-blue-500/30"><Ionicons name="add" size={20} color="white" /></TouchableOpacity>
                                             </View>
                                         </View>
-                                        <View className="max-h-48">
-                                            <ScrollView nestedScrollEnabled>
-                                                {dynamicAdmins.map(a => (
-                                                    <View key={a.name} className="flex-row justify-between items-center py-2 border-b border-white/5">
-                                                        <View className="flex-row items-center">
-                                                            <Text className="text-slate-300 text-xs mr-2">{a.name}</Text>
-                                                            <View className={`px-1.5 py-0.5 rounded ${a.role === 'super_admin' ? 'bg-amber-500/20' : 'bg-slate-700/50'}`}>
-                                                                <Text className={`${a.role === 'super_admin' ? 'text-amber-500' : 'text-slate-500'} text-[8px] font-black`}>{a.role === 'super_admin' ? 'SUPER' : 'ADMIN'}</Text>
-                                                            </View>
-                                                        </View>
-                                                        <TouchableOpacity onPress={() => removeAdmin(a.name)}><Ionicons name="trash-outline" size={14} color="#ef4444" /></TouchableOpacity>
-                                                    </View>
-                                                ))}
-                                            </ScrollView>
-                                        </View>
+                                        <View className="max-h-48"><ScrollView nestedScrollEnabled>{dynamicAdmins.map(a => (<View key={a.name} className={`flex-row justify-between items-center py-2 border-b ${isDark ? 'border-white/5' : 'border-slate-100'}`}><View className="flex-row items-center"><Text className={`text-xs mr-2 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{a.name}</Text><View className={`px-1.5 py-0.5 rounded ${a.role === 'super_admin' ? (isDark ? 'bg-amber-500/20' : 'bg-amber-100') : (isDark ? 'bg-slate-700/50' : 'bg-slate-100')}`}><Text className={`${a.role === 'super_admin' ? 'text-amber-500' : (isDark ? 'text-slate-500' : 'text-slate-400')} text-[8px] font-bold`}>{a.role === 'super_admin' ? 'SUPER' : 'ADMIN'}</Text></View></View><TouchableOpacity onPress={() => removeAdmin(a.name)}><Ionicons name="trash-outline" size={14} color="#ef4444" /></TouchableOpacity></View>))}</ScrollView></View>
                                     </View>
                                 )}
-
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        showCustomAlert(
-                                            '전체 데이터 초기화',
-                                            '🚨 모든 이벤트 일정이 영구적으로 삭제됩니다.\n정말 진행하시겠습니까?',
-                                            'confirm',
-                                            async () => {
-                                                await clearAllSchedules();
-                                                showCustomAlert('초기화 완료', '모든 일정이 성공적으로 삭제되었습니다.', 'success');
-                                            }
-                                        );
-                                    }}
-                                    className="bg-red-500/10 p-4 rounded-xl border border-red-500/40 flex-row justify-center items-center"
-                                >
-                                    <Ionicons name="trash-bin-outline" size={18} color="#ef4444" style={{ marginRight: 8 }} />
-                                    <Text className="text-red-400 font-bold text-sm">전체 일정 초기화</Text>
-                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => { showCustomAlert('전체 데이터 초기화', '🚨 모든 이벤트 일정이 영구적으로 삭제됩니다.\n정말 진행하시겠습니까?', 'confirm', async () => { await clearAllSchedules(); showCustomAlert('초기화 완료', '모든 일정이 성공적으로 삭제되었습니다.', 'success'); }); }} className={`p-4 rounded-xl border flex-row justify-center items-center ${isDark ? 'bg-red-500/10 border-red-500/40' : 'bg-red-50 border-red-100'}`}><Ionicons name="trash-bin-outline" size={18} color="#ef4444" style={{ marginRight: 8 }} /><Text className="text-red-400 font-semibold text-sm">전체 일정 초기화</Text></TouchableOpacity>
                             </View>
                         )}
-
-                        <TouchableOpacity onPress={() => setAdminMenuVisible(false)} className="bg-slate-800/50 py-4 rounded-2xl border border-slate-700/50 mt-4"><Text className="text-slate-400 text-center font-bold">닫기</Text></TouchableOpacity>
+                        <TouchableOpacity onPress={() => setAdminMenuVisible(false)} className={`py-4 rounded-2xl border mt-4 ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'}`}><Text className={`text-center font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>닫기</Text></TouchableOpacity>
                     </View>
                 </View>
             </Modal>
 
-            {/* Custom Alert Modal */}
             <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
                 <View className="flex-1 bg-black/60 items-center justify-center p-6">
                     <BlurView intensity={20} className="absolute inset-0" />
-                    <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[40px] border border-slate-800 shadow-2xl items-center">
-                        <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? 'bg-emerald-500/10' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
-                            <Ionicons
-                                name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'}
-                                size={48}
-                                color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'}
-                            />
-                        </View>
-                        <Text className="text-white text-2xl font-black mb-4 text-center">{customAlert.title}</Text>
-                        <Text className="text-slate-400 text-center mb-8 text-lg leading-7 font-medium">
-                            {customAlert.message}
-                        </Text>
-
+                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}><Ionicons name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'} size={48} color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'} /></View>
+                        <Text className={`text-2xl font-bold mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                        <Text className={`text-center mb-8 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
                         {customAlert.type === 'confirm' ? (
-                            <View className="flex-row gap-3 w-full">
-                                <TouchableOpacity
-                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                    className="flex-1 py-4 bg-slate-800 rounded-2xl border border-slate-700"
-                                >
-                                    <Text className="text-slate-400 text-center font-black text-lg">취소</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setCustomAlert({ ...customAlert, visible: false });
-                                        if (customAlert.onConfirm) customAlert.onConfirm();
-                                    }}
-                                    className="flex-1 py-4 bg-red-600 rounded-2xl"
-                                >
-                                    <Text className="text-white text-center font-black text-lg">삭제</Text>
-                                </TouchableOpacity>
-                            </View>
+                            <View className="flex-row gap-3 w-full"><TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}><Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text></TouchableOpacity><TouchableOpacity onPress={() => { setCustomAlert({ ...customAlert, visible: false }); if (customAlert.onConfirm) customAlert.onConfirm(); }} className="flex-1 py-4 bg-red-600 rounded-2xl"><Text className="text-white text-center font-bold text-lg">삭제</Text></TouchableOpacity></View>
                         ) : (
-                            <TouchableOpacity
-                                onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
-                            >
-                                <Text className="text-white text-center font-black text-lg">확인</Text>
-                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}><Text className="text-white text-center font-bold text-lg">확인</Text></TouchableOpacity>
                         )}
                     </View>
                 </View>
-            </Modal >
+            </Modal>
 
             <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
                 <View className="flex-1 bg-black/85 items-center justify-center p-6">
-                    <View className="bg-slate-900 w-full max-w-lg p-0 rounded-[32px] border border-slate-700 shadow-2xl overflow-hidden max-h-[80%] flex-col">
-                        <View className="bg-slate-800/80 p-6 border-b border-slate-700/50 flex-row items-center justify-between">
-                            <Text className="text-white text-2xl font-black">공지사항</Text>
-                            <TouchableOpacity onPress={() => setNoticeDetailVisible(false)} className="p-2 bg-slate-800 rounded-full border border-slate-700"><Ionicons name="close" size={24} color="white" /></TouchableOpacity>
-                        </View>
-                        <ScrollView className="p-8"><Text className="text-amber-100/90 text-xl leading-9 font-medium tracking-wide">{notice?.content || ''}</Text></ScrollView>
+                    <View className={`w-full max-w-lg p-0 rounded-[32px] border shadow-2xl overflow-hidden max-h-[80%] flex-col ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <View className={`p-6 border-b flex-row items-center justify-between ${isDark ? 'bg-slate-800/80 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}><Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>공지사항</Text><TouchableOpacity onPress={() => setNoticeDetailVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}><Ionicons name="close" size={24} color={isDark ? "white" : "#1e293b"} /></TouchableOpacity></View>
+                        <ScrollView className="p-8"><Text className={`text-xl leading-9 font-medium tracking-wide ${isDark ? 'text-amber-100/90' : 'text-slate-700'}`}>{notice?.content || ''}</Text></ScrollView>
                     </View>
                 </View>
             </Modal>
 
             <Modal visible={installModalVisible} transparent animationType="fade" onRequestClose={() => setInstallModalVisible(false)}>
                 <View className="flex-1 bg-black/90 items-center justify-center p-6">
-                    <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[32px] border border-slate-700 items-center">
-                        <Ionicons name="download-outline" size={48} color="#38bdf8" style={{ marginBottom: 24 }} />
-                        <Text className="text-white text-2xl font-black mb-4">앱 설치 방법</Text>
-                        <Text className="text-slate-400 text-center mb-8 text-lg leading-7">브라우저 메뉴에서{"\n"}<Text className="text-white font-bold">'홈 화면에 추가'</Text>를 선택하세요.</Text>
-                        <TouchableOpacity onPress={() => setInstallModalVisible(false)} className="bg-[#38bdf8] py-4 w-full rounded-2xl"><Text className="text-[#0f172a] text-center font-black">확인</Text></TouchableOpacity>
-                    </View>
+                    <View className={`w-full max-w-sm p-8 rounded-[32px] border items-center ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100 shadow-2xl'}`}><Ionicons name="download-outline" size={48} color="#38bdf8" style={{ marginBottom: 24 }} /><Text className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`}>앱 설치 방법</Text><Text className={`text-center mb-8 text-lg leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>브라우저 메뉴에서{"\n"}<Text className={`font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>'홈 화면에 추가'</Text>를 선택하세요.</Text><TouchableOpacity onPress={() => setInstallModalVisible(false)} className="bg-[#38bdf8] py-4 w-full rounded-2xl"><Text className="text-[#0f172a] text-center font-bold">확인</Text></TouchableOpacity></View>
                 </View>
             </Modal>
 
-            {/* Notice Edit Modal */}
             <Modal visible={noticeModalVisible} transparent animationType="fade" onRequestClose={() => setNoticeModalVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <View className="bg-slate-900 w-full max-w-md p-6 rounded-[32px] border border-slate-700 shadow-2xl">
-                        <Text className="text-white text-xl font-black mb-6">공지사항 설정</Text>
-                        <TextInput
-                            multiline value={editNoticeContent} onChangeText={setEditNoticeContent}
-                            className="bg-slate-800 p-4 rounded-2xl text-white text-lg h-40 mb-6 border border-slate-700"
-                        />
-                        <View className="flex-row items-center justify-between mb-8 bg-slate-800/30 p-4 rounded-2xl border border-slate-700/30">
-                            <Text className="text-white font-bold">공지 노출</Text>
-                            <Switch value={editNoticeVisible} onValueChange={setEditNoticeVisible} trackColor={{ false: '#334155', true: '#38bdf8' }} />
-                        </View>
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className="flex-1 bg-slate-800 py-4 rounded-2xl"><Text className="text-slate-400 text-center">취소</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={handleSaveNotice} className="flex-1 bg-[#38bdf8] py-4 rounded-2xl"><Text className="text-[#0f172a] text-center font-black">저장</Text></TouchableOpacity>
-                        </View>
+                    <View className={`w-full max-w-md p-6 rounded-[32px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <Text className={`text-xl font-bold mb-6 ${isDark ? 'text-white' : 'text-slate-900'}`}>공지사항 설정</Text>
+                        <TextInput multiline value={editNoticeContent} onChangeText={setEditNoticeContent} className={`p-4 rounded-2xl text-lg h-40 mb-6 border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-slate-50 text-slate-800 border-slate-200'}`} />
+                        <View className={`flex-row items-center justify-between mb-8 p-4 rounded-2xl border ${isDark ? 'bg-slate-800/30 border-slate-700/30' : 'bg-slate-50 border-slate-200'}`}><Text className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>공지 노출</Text><Switch value={editNoticeVisible} onValueChange={setEditNoticeVisible} trackColor={{ false: '#cbd5e1', true: '#38bdf8' }} /></View>
+                        <View className="flex-row gap-3"><TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-100'}`}><Text className={isDark ? "text-slate-400 text-center" : "text-slate-500 text-center"}>취소</Text></TouchableOpacity><TouchableOpacity onPress={handleSaveNotice} className="flex-1 bg-[#38bdf8] py-4 rounded-2xl"><Text className="text-[#0f172a] text-center font-bold">저장</Text></TouchableOpacity></View>
                     </View>
                 </View>
             </Modal>
-        </View >
+        </View>
     );
 }
+

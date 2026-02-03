@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ImageBackground, StyleSheet, TextInput, Modal, Alert } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { useAuth } from '../../_layout';
-import { ADMIN_USERS } from '../../../data/admin-config';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth, useTheme } from '../../_layout';
 
 const INITIAL_ATTENDEES = [
     { id: '1', name: '영광의사령관', power: '245.8M', furnace: 'Lv.30 (심화 5)', role: '맹주', heroCombo: '플린트/바히티/몰리' },
@@ -19,6 +19,8 @@ export default function EventDetail() {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { auth } = useAuth();
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
     const [activeTab, setActiveTab] = useState<'guide' | 'attendees'>('guide');
     const [attendees, setAttendees] = useState(INITIAL_ATTENDEES);
 
@@ -100,7 +102,7 @@ export default function EventDetail() {
     const content = getEventContent(id as string);
 
     return (
-        <View className="flex-1 bg-brand-dark">
+        <View className={`flex-1 ${isDark ? 'bg-brand-dark' : 'bg-slate-50'}`}>
             <Stack.Screen options={{ headerShown: false }} />
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
@@ -114,9 +116,9 @@ export default function EventDetail() {
                         <View className="mt-16 px-6">
                             <TouchableOpacity
                                 onPress={() => router.back()}
-                                className="w-10 h-10 rounded-full bg-black/40 items-center justify-center border border-white/20"
+                                className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-black/40 border-white/20' : 'bg-white/90 border-slate-200 shadow-sm'}`}
                             >
-                                <Text className="text-white text-xl font-bold">←</Text>
+                                <Ionicons name="chevron-back" size={24} color={isDark ? "white" : "#1e293b"} />
                             </TouchableOpacity>
                         </View>
 
@@ -128,13 +130,13 @@ export default function EventDetail() {
                         </View>
                     </ImageBackground>
                 ) : (
-                    <View className="h-80 w-full bg-slate-900">
+                    <View className={`h-80 w-full ${isDark ? 'bg-slate-900' : 'bg-slate-200'}`}>
                         <View className="mt-16 px-6">
                             <TouchableOpacity
                                 onPress={() => router.back()}
-                                className="w-10 h-10 rounded-full bg-black/40 items-center justify-center border border-white/20"
+                                className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-black/40 border-white/20' : 'bg-white/90 border-slate-200 shadow-sm'}`}
                             >
-                                <Text className="text-white text-xl font-bold">←</Text>
+                                <Ionicons name="chevron-back" size={24} color={isDark ? "white" : "#1e293b"} />
                             </TouchableOpacity>
                         </View>
 
@@ -147,21 +149,21 @@ export default function EventDetail() {
                     </View>
                 )}
 
-                <View className="p-6 -mt-8 bg-brand-dark rounded-t-[40px]">
+                <View className={`p-6 -mt-8 rounded-t-[40px] ${isDark ? 'bg-brand-dark' : 'bg-slate-50'}`}>
                     {/* Tab Switcher */}
                     {isAllianceEvent && (
-                        <View className="flex-row bg-slate-900/60 p-1.5 rounded-2xl mb-8 border border-slate-800">
+                        <View className={`flex-row p-1.5 rounded-2xl mb-8 border ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                             <TouchableOpacity
                                 onPress={() => setActiveTab('guide')}
-                                className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'guide' ? 'bg-brand-accent' : ''}`}
+                                className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'guide' ? (isDark ? 'bg-[#38bdf8]' : 'bg-blue-600') : ''}`}
                             >
-                                <Text className={`font-black text-xs ${activeTab === 'guide' ? 'text-brand-dark' : 'text-slate-300'}`}>공략 가이드</Text>
+                                <Text className={`font-black text-xs ${activeTab === 'guide' ? (isDark ? 'text-brand-dark' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-500')}`}>공략 가이드</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setActiveTab('attendees')}
-                                className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'attendees' ? 'bg-brand-accent' : ''}`}
+                                className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'attendees' ? (isDark ? 'bg-[#38bdf8]' : 'bg-blue-600') : ''}`}
                             >
-                                <Text className={`font-black text-xs ${activeTab === 'attendees' ? 'text-brand-dark' : 'text-slate-300'}`}>참석 영주 ({attendees.length})</Text>
+                                <Text className={`font-black text-xs ${activeTab === 'attendees' ? (isDark ? 'text-brand-dark' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-500')}`}>참석 영주 ({attendees.length})</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -210,33 +212,33 @@ export default function EventDetail() {
                             </View>
 
                             {attendees.map((attendee) => (
-                                <View key={attendee.id} className="bg-slate-900/60 p-5 rounded-3xl border border-slate-800 flex-row items-center">
-                                    <View className="w-12 h-12 rounded-full bg-slate-800 items-center justify-center mr-4 border border-slate-700">
+                                <View key={attendee.id} className={`p-5 rounded-3xl border flex-row items-center mb-4 shadow-sm ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                                         <Text className="text-white text-lg">🛡️</Text>
                                     </View>
                                     <View className="flex-1">
                                         <View className="flex-row justify-between items-center mb-1">
-                                            <Text className="text-white text-lg font-black">{attendee.name}</Text>
-                                            <View className="px-2 py-0.5 bg-brand-accent/20 rounded">
-                                                <Text className="text-brand-accent text-[10px] font-black">{attendee.role}</Text>
+                                            <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{attendee.name}</Text>
+                                            <View className={`px-2 py-0.5 rounded ${isDark ? 'bg-[#38bdf8]/20' : 'bg-blue-50'}`}>
+                                                <Text className={`text-[10px] font-black ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>{attendee.role}</Text>
                                             </View>
                                         </View>
                                         <View className="flex-row items-center">
                                             <Text className="text-slate-500 text-[10px] font-bold mr-1">전투력</Text>
-                                            <Text className="text-slate-200 text-xs font-black mr-4">{attendee.power}</Text>
+                                            <Text className={`text-xs font-black mr-4 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{attendee.power}</Text>
                                             <Text className="text-slate-500 text-[10px] font-bold mr-1">용광로</Text>
-                                            <Text className="text-slate-200 text-xs font-black mr-4">{attendee.furnace}</Text>
-                                            <Text className="text-brand-accent text-[10px] font-black mr-1">조합</Text>
-                                            <Text className="text-brand-accent/80 text-[10px] font-bold">{attendee.heroCombo}</Text>
+                                            <Text className={`text-xs font-black mr-4 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{attendee.furnace}</Text>
+                                            <Text className={`text-[10px] font-black mr-1 ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>조합</Text>
+                                            <Text className={`text-[10px] font-bold ${isDark ? 'text-[#38bdf8]/80' : 'text-blue-400'}`}>{attendee.heroCombo}</Text>
                                         </View>
                                     </View>
                                     {auth.isLoggedIn && (
                                         <View className="flex-row ml-2 space-x-2">
-                                            <TouchableOpacity onPress={() => openEditModal(attendee)} className="p-2 bg-blue-500/20 rounded-lg">
-                                                <Text className="text-blue-400 font-black text-[10px]">편집</Text>
+                                            <TouchableOpacity onPress={() => openEditModal(attendee)} className={`p-2 rounded-lg ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
+                                                <Text className={`font-black text-[10px] ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>편집</Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity onPress={() => deleteAttendee(attendee.id)} className="p-2 bg-red-500/20 rounded-lg">
-                                                <Text className="text-red-400 font-black text-[10px]">삭제</Text>
+                                            <TouchableOpacity onPress={() => deleteAttendee(attendee.id)} className={`p-2 rounded-lg ${isDark ? 'bg-red-500/20' : 'bg-red-50'}`}>
+                                                <Text className={`font-black text-[10px] ${isDark ? 'text-red-400' : 'text-red-600'}`}>삭제</Text>
                                             </TouchableOpacity>
                                         </View>
                                     )}
