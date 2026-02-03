@@ -20,6 +20,25 @@ export default function AdminPage() {
     const [previewData, setPreviewData] = useState<{ id: string, nickname: string }[]>([]);
     const [showGuide, setShowGuide] = useState(false);
     const [strategyUrl, setStrategyUrl] = useState('');
+    const [saveLoading, setSaveLoading] = useState(false);
+
+    // Custom Alert State
+    const [customAlert, setCustomAlert] = useState<{
+        visible: boolean,
+        title: string,
+        message: string,
+        type: 'success' | 'error' | 'warning' | 'confirm',
+        onConfirm?: () => void
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error'
+    });
+
+    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
+        setCustomAlert({ visible: true, title, message, type, onConfirm });
+    };
 
     useEffect(() => {
         if (sheetData?.url) {
@@ -121,6 +140,7 @@ export default function AdminPage() {
 
     const handleStrategyFileUpload = async () => {
         try {
+            console.log('--- Strategy File Upload Start ---');
             const result = await DocumentPicker.getDocumentAsync({
                 type: [
                     'image/*',
@@ -131,42 +151,90 @@ export default function AdminPage() {
                 ],
             });
 
-            if (result.canceled) return;
+            if (result.canceled) {
+                console.log('File picker canceled');
+                return;
+            }
 
             setStrategyUploading(true);
             const file = result.assets[0];
+            console.log('File selected:', {
+                name: file.name,
+                size: file.size,
+                mimeType: file.mimeType,
+                uri: file.uri.substring(0, 50) + '...'
+            });
 
             let blob: Blob;
             if (Platform.OS === 'web') {
-                // @ts-ignore
-                blob = file.file;
+                try {
+                    console.log('Fetching blob from URI for web...');
+                    const response = await fetch(file.uri);
+                    blob = await response.blob();
+                    console.log('Blob created from URI, size:', blob.size);
+                } catch (fetchError) {
+                    console.warn('Failed to fetch blob from URI, trying direct file object:', fetchError);
+                    // @ts-ignore
+                    if (file.file) {
+                        // @ts-ignore
+                        blob = file.file;
+                        console.log('Using direct file object from assets');
+                    } else {
+                        throw new Error('파일 데이터를 가져올 수 없습니다.');
+                    }
+                }
             } else {
+                console.log('Fetching blob from URI for native...');
                 const response = await fetch(file.uri);
                 blob = await response.blob();
+                console.log('Blob created for native, size:', blob.size);
             }
 
-            await uploadStrategyFile(blob, file.name);
+            console.log('Calling uploadStrategyFile...');
+            const downloadURL = await uploadStrategyFile(blob, file.name);
+            console.log('Upload success! URL:', downloadURL);
+
             Alert.alert('성공', '전략 문서 파일이 등록되었습니다.');
         } catch (error: any) {
-            console.error('Strategy upload error:', error);
-            // Check for CORS or Network errors to give better feedback
-            if (error.message?.includes('Network Error') || error.message?.includes('CORS')) {
-                Alert.alert('업로드 실패 (CORS)', '서버 보안 설정으로 인해 업로드가 차단되었습니다. 관리자에게 문의하거나 잠시 후 다시 시도해 주세요.');
-            } else {
-                Alert.alert('오류', '파일 등록 중 문제가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
+            console.error('Detailed Strategy upload error:', error);
+
+            let errorMessage = '파일 등록 중 문제가 발생했습니다.';
+            if (error.code === 'storage/unauthorized') {
+                errorMessage = '업로드 권한이 없습니다. Firebase Storage 보안 규칙을 확인하세요.';
+            } else if (error.code === 'storage/retry-limit-exceeded') {
+                errorMessage = '업로드 시간이 초과되었습니다. 네트워크 상태를 확인하세요.';
+            } else if (error.message) {
+                errorMessage += ` (${error.message})`;
             }
+
+            Alert.alert('오류', errorMessage);
         } finally {
             setStrategyUploading(false);
+            console.log('--- Strategy File Upload End ---');
         }
     };
 
     const handleSaveStrategyUrl = async () => {
-        if (!strategyUrl.trim()) return;
+        if (!strategyUrl.trim()) {
+            const msg = '주소를 입력해주세요.';
+            Platform.OS === 'web' ? window.alert(msg) : Alert.alert('알림', msg);
+            return;
+        }
+
+        setSaveLoading(true);
+        console.log('--- Strategy URL Save Start ---');
+        console.log('Target URL:', strategyUrl);
+
         try {
-            await saveSheetUrl(strategyUrl, 'url');
-            Alert.alert('성공', '전략 문서 주소가 저장되었습니다.');
-        } catch (error) {
-            Alert.alert('오류', '주소 저장 중 문제가 발생했습니다.');
+            await saveSheetUrl(strategyUrl.trim(), 'url');
+            console.log('Firestore save successful');
+            showCustomAlert('저장 성공', '전략 문서 주소가 성공적으로 저장되었습니다.', 'success');
+        } catch (error: any) {
+            console.error('Strategy URL Save Error:', error);
+            showCustomAlert('저장 실패', '주소 저장 중 문제가 발생했습니다: ' + (error.message || '알 수 없는 오류'), 'error');
+        } finally {
+            setSaveLoading(false);
+            console.log('--- Strategy URL Save End ---');
         }
     };
 
@@ -187,7 +255,7 @@ export default function AdminPage() {
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
-                    {/* Strategy Document Section - New! */}
+                    {/* Strategy Document Section - Updated for Link Method */}
                     <View className="bg-slate-900/80 p-8 rounded-[32px] border border-slate-800 shadow-2xl mb-8">
                         <View className="flex-row items-center mb-6 border-b border-slate-800 pb-4">
                             <View className="w-10 h-10 bg-amber-500/20 rounded-xl items-center justify-center mr-3">
@@ -196,53 +264,89 @@ export default function AdminPage() {
                             <Text className="text-white text-2xl font-bold">전략 문서 관리</Text>
                         </View>
 
-                        <Text className="text-slate-400 text-sm mb-6 leading-relaxed font-medium">
-                            구글 시트 소유권 문제로 시트가 안 보일 경우, {"\n"}
-                            <Text className="text-amber-500 font-bold">대체 파일(이미지/PDF/엑셀)</Text>을 등록하거나 외부 URL을 입력하세요.
-                        </Text>
+                        <View className="bg-amber-500/10 p-5 rounded-2xl border border-amber-500/30 mb-8">
+                            <View className="flex-row items-center mb-3">
+                                <Ionicons name="information-circle" size={20} color="#f59e0b" className="mr-2" />
+                                <Text className="text-amber-500 font-black text-sm">중요: 외부 링크 사용 안내</Text>
+                            </View>
+                            <Text className="text-slate-300 text-xs leading-5 font-medium">
+                                서버 저장 공간 제한으로 인해 직접 업로드 대신 {"\n"}
+                                <Text className="text-white font-bold">외부 파일 링크</Text>를 활용하는 것을 권장합니다.
+                            </Text>
 
-                        {/* File Upload Area */}
-                        <TouchableOpacity
-                            onPress={handleStrategyFileUpload}
-                            disabled={strategyUploading}
-                            className={`mb-6 p-10 rounded-2xl border-2 border-dashed ${strategyUploading ? 'border-slate-700' : 'border-amber-500/30 bg-amber-500/5'} items-center justify-center`}
-                        >
-                            {strategyUploading ? (
-                                <ActivityIndicator color="#f59e0b" />
-                            ) : (
-                                <>
-                                    <Ionicons name="cloud-upload-outline" size={48} color="#f59e0b" />
-                                    <Text className="text-white font-black text-lg mt-4">파일 등록 (이미지 / PDF / EXCEL)</Text>
-                                    <Text className="text-slate-500 text-xs mt-2 font-bold text-center">지원 확장자: JPG, PNG, WEBP, PDF, XLSX, XLS, CSV</Text>
-                                    {sheetData?.type === 'file' && (
-                                        <View className="mt-4 bg-slate-800 px-4 py-2 rounded-full border border-slate-700">
-                                            <Text className="text-amber-400 text-[10px] font-bold">현재 등록됨: {sheetData.fileName || '파일'}</Text>
-                                        </View>
-                                    )}
-                                </>
-                            )}
-                        </TouchableOpacity>
+                            <View className="mt-4 space-y-2">
+                                <View className="flex-row items-center">
+                                    <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2" />
+                                    <Text className="text-slate-400 text-[11px] font-bold">이미지: ImgBB 등에 올린 뒤 '직접 링크' 사용</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <View className="w-1.5 h-1.5 rounded-full bg-amber-500 mr-2" />
+                                    <Text className="text-slate-400 text-[11px] font-bold">구글 시트/드라이브: '모든 사용자 보기' 권한 설정 후 주소 복사</Text>
+                                </View>
+                            </View>
+                        </View>
 
 
-                        {/* URL Input Area */}
-                        <View className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-                            <Text className="text-slate-300 font-bold text-sm mb-3">또는 외부 연동 URL 입력</Text>
-                            <View className="flex-row gap-2">
+                        {/* Link Input Area - Main Section */}
+                        <View className="bg-slate-800 p-6 rounded-3xl border border-slate-700 shadow-inner">
+                            <Text className="text-white font-black text-base mb-4">문서 / 시트 / 이미지 주소(URL)</Text>
+                            <View className="space-y-4">
                                 <TextInput
-                                    className="flex-1 bg-slate-900 text-white p-4 rounded-xl border border-slate-600 font-medium"
-                                    placeholder="https://..."
+                                    className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-600 font-bold text-sm"
+                                    placeholder="https://docs.google.com/..."
                                     placeholderTextColor="#475569"
                                     value={strategyUrl}
                                     onChangeText={setStrategyUrl}
+                                    multiline={false}
                                 />
                                 <TouchableOpacity
                                     onPress={handleSaveStrategyUrl}
-                                    className="bg-amber-600 px-6 rounded-xl items-center justify-center shadow-lg shadow-amber-500/20"
+                                    disabled={saveLoading}
+                                    className={`py-5 rounded-2xl items-center justify-center shadow-xl shadow-amber-500/20 ${saveLoading ? 'bg-slate-700' : 'bg-amber-500 active:bg-amber-600'}`}
                                 >
-                                    <Text className="text-white font-black">저장</Text>
+                                    {saveLoading ? (
+                                        <ActivityIndicator color="white" />
+                                    ) : (
+                                        <View className="flex-row items-center">
+                                            <Ionicons name="save-outline" size={20} color="#0f172a" className="mr-2" />
+                                            <Text className="text-[#0f172a] font-black text-lg">전략 문서 주소 저장</Text>
+                                        </View>
+                                    )}
                                 </TouchableOpacity>
                             </View>
+
+                            {sheetData && (
+                                <View className="mt-6 pt-6 border-t border-slate-700">
+                                    <Text className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-2">현재 설정된 정보</Text>
+                                    <View className="flex-row items-center justify-between bg-slate-900/50 p-3 rounded-xl border border-slate-800">
+                                        <View className="flex-row items-center flex-1 mr-4">
+                                            <Ionicons
+                                                name={sheetData.type === 'file' ? "image" : "link"}
+                                                size={16}
+                                                color="#64748b"
+                                                className="mr-2"
+                                            />
+                                            <Text className="text-slate-300 text-xs font-medium truncate flex-1" numberOfLines={1}>
+                                                {sheetData.url}
+                                            </Text>
+                                        </View>
+                                        <View className="bg-amber-500/10 px-2 py-1 rounded-md">
+                                            <Text className="text-amber-500 text-[10px] font-black">
+                                                {sheetData.type === 'file' ? '파일' : 'URL'}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
                         </View>
+
+                        {/* Secret manual upload button (hidden/minimized) */}
+                        <TouchableOpacity
+                            onPress={handleStrategyFileUpload}
+                            className="mt-4 self-center opacity-20"
+                        >
+                            <Text className="text-slate-500 text-[10px] font-bold underline">직접 업로드 (스토리지 설정 필요 시)</Text>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Member Management Section */}
@@ -408,6 +512,52 @@ export default function AdminPage() {
                     </View>
                 </ScrollView>
             </View>
+
+            {/* Custom Alert Modal */}
+            <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                <View className="flex-1 bg-black/60 items-center justify-center p-6">
+                    <View className="bg-slate-900 w-full max-w-sm p-8 rounded-[40px] border border-slate-800 shadow-2xl items-center">
+                        <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? 'bg-emerald-500/10' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
+                            <Ionicons
+                                name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'}
+                                size={48}
+                                color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'}
+                            />
+                        </View>
+                        <Text className="text-white text-2xl font-black mb-4 text-center">{customAlert.title}</Text>
+                        <Text className="text-slate-400 text-center mb-8 text-lg leading-7 font-medium">
+                            {customAlert.message}
+                        </Text>
+
+                        {customAlert.type === 'confirm' ? (
+                            <View className="flex-row gap-3 w-full">
+                                <TouchableOpacity
+                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                    className="flex-1 py-4 bg-slate-800 rounded-2xl border border-slate-700"
+                                >
+                                    <Text className="text-slate-400 text-center font-black text-lg">취소</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setCustomAlert({ ...customAlert, visible: false });
+                                        if (customAlert.onConfirm) customAlert.onConfirm();
+                                    }}
+                                    className="flex-1 py-4 bg-red-600 rounded-2xl"
+                                >
+                                    <Text className="text-white text-center font-black text-lg">확인</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
+                            >
+                                <Text className="text-white text-center font-black text-lg">확인</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </Modal >
 
             {/* Format Guide Modal */}
             <Modal

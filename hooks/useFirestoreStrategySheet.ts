@@ -33,24 +33,53 @@ export const useFirestoreStrategySheet = () => {
 
     const saveSheetUrl = async (url: string, type: 'url' | 'file' = 'url', fileName?: string) => {
         const docRef = doc(db, 'settings', 'strategySheet');
-        await setDoc(docRef, {
+        const data: any = {
             url,
             type,
-            fileName,
             updatedAt: Date.now()
-        }, { merge: true });
+        };
+
+        // fileName이 있을 때만 포함하여 undefined 에러 방지
+        if (fileName) {
+            data.fileName = fileName;
+        }
+
+        await setDoc(docRef, data, { merge: true });
     };
 
     const uploadStrategyFile = async (fileBlob: Blob, fileName: string) => {
-        const timestamp = Date.now();
-        const safeFileName = fileName.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
-        const storageRef = ref(storage, `strategy/${timestamp}_${safeFileName}`);
+        try {
+            console.log('--- uploadStrategyFile Hook Start ---');
+            const timestamp = Date.now();
+            const safeFileName = fileName.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+            const storagePath = `strategy/${timestamp}_${safeFileName}`;
+            const storageRef = ref(storage, storagePath);
 
-        await uploadBytes(storageRef, fileBlob);
-        const downloadURL = await getDownloadURL(storageRef);
+            console.log('Uploading blob to path:', storagePath, 'Blob size:', fileBlob.size);
 
-        await saveSheetUrl(downloadURL, 'file', fileName);
-        return downloadURL;
+            // uploadBytes performs the actual upload
+            const uploadResult = await uploadBytes(storageRef, fileBlob);
+            console.log('uploadBytes successful:', uploadResult.metadata.fullPath);
+
+            const downloadURL = await getDownloadURL(storageRef);
+            console.log('getDownloadURL successful:', downloadURL);
+
+            await saveSheetUrl(downloadURL, 'file', fileName);
+            console.log('saveSheetUrl (Firestore) successful');
+
+            return downloadURL;
+        } catch (error: any) {
+            console.error('Error in uploadStrategyFile hook:', error);
+            // More detailed error classification if possible
+            if (error.code === 'storage/unauthorized') {
+                throw new Error('Firebase Storage 권한이 없습니다. (Rules 확인 필요)');
+            } else if (error.code === 'storage/canceled') {
+                throw new Error('업로드가 취소되었습니다.');
+            }
+            throw error;
+        } finally {
+            console.log('--- uploadStrategyFile Hook End ---');
+        }
     };
 
     return { sheetData, loading, saveSheetUrl, uploadStrategyFile };

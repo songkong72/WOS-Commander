@@ -200,6 +200,16 @@ export default function Home() {
         );
 
         if (master || dynamic) {
+            try {
+                // Firebase 익명 로그인 연동 (Storage/Firestore 보안 규칙 대응)
+                const { signInAnonymously } = require('firebase/auth');
+                const { auth: firebaseAuth } = require('../firebaseConfig');
+                await signInAnonymously(firebaseAuth);
+                console.log('Firebase anonymous auth successful');
+            } catch (authError) {
+                console.warn('Firebase anonymous auth failed, but proceeding with local login:', authError);
+            }
+
             await AsyncStorage.setItem('lastAdminId', input);
             await login(input);
             setLoginModalVisible(false);
