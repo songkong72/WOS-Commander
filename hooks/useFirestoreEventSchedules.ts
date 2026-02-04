@@ -9,6 +9,24 @@ export interface EventSchedule {
     strategy?: string;
 }
 
+const ID_MAP: { [key: string]: string } = {
+    'a_bear': 'alliance_bear',
+    'a_joe': 'alliance_joe',
+    'a_mercenary': 'alliance_mercenary',
+    'a_mobilization': 'alliance_mobilization',
+    'a_operation': 'alliance_operation',
+    'a_trade': 'alliance_trade',
+    'a_champ': 'alliance_champion',
+    'a_center': 'alliance_center',
+    'a_canyon': 'alliance_canyon',
+    'a_foundry': 'alliance_foundry',
+    'a_weapon': 'alliance_frost_league',
+    'a_castle': 'alliance_castle',
+    'a_svs': 'server_svs_prep'
+};
+
+const normalizeId = (id: string) => ID_MAP[id] || id;
+
 export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?: string | null) => {
     const [schedules, setSchedules] = useState<EventSchedule[]>([]);
     const [loading, setLoading] = useState(true);
@@ -46,11 +64,19 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
                     const mergedMap = new Map();
 
                     legacyArray.forEach((s) => {
-                        if (s && s.eventId) mergedMap.set(s.eventId, s);
+                        if (s && s.eventId) {
+                            const nid = normalizeId(s.eventId);
+                            const existing = mergedMap.get(nid);
+                            mergedMap.set(nid, { ...existing, ...s, eventId: nid });
+                        }
                     });
 
                     Object.values(newScheduleMap).forEach((s: any) => {
-                        if (s && s.eventId) mergedMap.set(s.eventId, s);
+                        if (s && s.eventId) {
+                            const nid = normalizeId(s.eventId);
+                            const existing = mergedMap.get(nid);
+                            mergedMap.set(nid, { ...existing, ...s, eventId: nid });
+                        }
                     });
 
                     const finalArray = Array.from(mergedMap.values());
@@ -86,7 +112,8 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
     const saveSchedules = async (newSchedules: EventSchedule[]) => {
         try {
             const scheduleDocRef = getDocRef();
-            const data: any = { schedules: newSchedules };
+            const normalizedSchedules = newSchedules.map(s => ({ ...s, eventId: normalizeId(s.eventId) }));
+            const data: any = { schedules: normalizedSchedules };
             if (serverId && allianceId) {
                 data.serverId = serverId;
                 data.allianceId = allianceId;
@@ -101,9 +128,10 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
     const updateSchedule = async (scheduleToUpdate: EventSchedule) => {
         const scheduleDocRef = getDocRef();
         try {
+            const nid = normalizeId(scheduleToUpdate.eventId);
             const updateData: any = {
                 scheduleMap: {
-                    [scheduleToUpdate.eventId]: scheduleToUpdate
+                    [nid]: { ...scheduleToUpdate, eventId: nid }
                 }
             };
             if (serverId && allianceId) {

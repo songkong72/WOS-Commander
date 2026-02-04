@@ -544,7 +544,14 @@ export default function Home() {
 
         // 1. First, map schedules to base event info and filter out invalid/unnecessary items
         const rawList = schedules.map(s => {
-            const searchId = s.eventId === 'alliance_frost_league' ? 'a_weapon' : s.eventId;
+            let searchId = s.eventId;
+            if (s.eventId === 'alliance_frost_league' || s.eventId === 'a_weapon') searchId = 'a_weapon';
+            if (s.eventId === 'alliance_operation' || s.eventId === 'a_operation') searchId = 'alliance_operation';
+            if (s.eventId === 'alliance_trade' || s.eventId === 'a_trade') searchId = 'alliance_trade';
+            if (s.eventId === 'alliance_champion' || s.eventId === 'a_champ') searchId = 'alliance_champion';
+            if (s.eventId === 'alliance_bear' || s.eventId === 'a_bear') searchId = 'alliance_bear';
+            if (s.eventId === 'alliance_joe' || s.eventId === 'a_joe') searchId = 'alliance_joe';
+            if (s.eventId === 'alliance_center' || s.eventId === 'a_center') searchId = 'alliance_center';
             const eventInfo = allBaseEvents.find(e => e.id === searchId);
             const cleanDay = (s.day === '.' || s.day?.trim() === '.') ? '' : (s.day || '');
             const cleanTime = (s.time === '.' || s.time?.trim() === '.') ? '' : (s.time || '');

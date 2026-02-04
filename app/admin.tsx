@@ -39,6 +39,10 @@ export default function AdminPage() {
     const [strategyUrl, setStrategyUrl] = useState('');
     const [saveLoading, setSaveLoading] = useState(false);
 
+    // -- Manual Entry States --
+    const [manualNick, setManualNick] = useState('');
+    const [manualId, setManualId] = useState('');
+
     // Custom Alert State
     const [customAlert, setCustomAlert] = useState<{
         visible: boolean,
@@ -152,6 +156,21 @@ export default function AdminPage() {
             Alert.alert('성공', `${previewData.length}명의 연맹원 정보가 저장되었습니다.`);
         } catch (error) {
             Alert.alert('오류', '명단 저장 중 오류가 발생했습니다.');
+        }
+    };
+
+    const handleManualAdd = async () => {
+        if (!manualNick.trim() || !manualId.trim()) {
+            showCustomAlert('입력 오류', '닉네임과 ID를 모두 입력해주세요.', 'warning');
+            return;
+        }
+        try {
+            await saveMembers([{ id: manualId.trim(), nickname: manualNick.trim() }]);
+            setManualNick('');
+            setManualId('');
+            showCustomAlert('성공', '연맹원이 성공적으로 등록되었습니다.', 'success');
+        } catch (error) {
+            showCustomAlert('오류', '멤버 등록 중 오류가 발생했습니다.', 'error');
         }
     };
 
@@ -427,6 +446,43 @@ export default function AdminPage() {
                             </View>
                         </View>
 
+                        <View className={`mb-8 p-6 rounded-[24px] border ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}>
+                            <View className="flex-row items-center mb-5">
+                                <View className={`p-1.5 rounded-lg mr-2 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
+                                    <Ionicons name="person-add" size={16} color={isDark ? "#818cf8" : "#4f46e5"} />
+                                </View>
+                                <Text className={`font-bold text-base ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>개별 영주 등록</Text>
+                            </View>
+                            <View className="flex-row gap-2 items-stretch h-14">
+                                <View className="flex-1">
+                                    <TextInput
+                                        className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800 shadow-sm'}`}
+                                        placeholder="닉네임"
+                                        placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                        value={manualNick}
+                                        onChangeText={setManualNick}
+                                    />
+                                </View>
+                                <View className="flex-[1.2]">
+                                    <TextInput
+                                        className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800 shadow-sm'}`}
+                                        placeholder="게임 ID (숫자)"
+                                        placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                        value={manualId}
+                                        onChangeText={setManualId}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <TouchableOpacity
+                                    onPress={handleManualAdd}
+                                    activeOpacity={0.7}
+                                    className="bg-indigo-600 px-6 rounded-xl items-center justify-center shadow-lg shadow-indigo-500/30"
+                                >
+                                    <Text className="text-white font-black text-sm">등록</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
                         {/* Preview Table for Uploaded Data */}
                         {previewData.length > 0 && (
                             <View className={`p-5 rounded-2xl border mb-8 ${isDark ? 'bg-slate-800/80 border-indigo-500/30' : 'bg-slate-50 border-indigo-100'}`}>
@@ -482,23 +538,18 @@ export default function AdminPage() {
                                                 <TouchableOpacity
                                                     className="w-8 h-8 rounded-lg bg-red-500/10 items-center justify-center"
                                                     onPress={() => {
-                                                        Alert.alert(
+                                                        showCustomAlert(
                                                             '멤버 삭제',
                                                             `${m.nickname}님을 명단에서 삭제하시겠습니까?`,
-                                                            [
-                                                                { text: '취소', style: 'cancel' },
-                                                                {
-                                                                    text: '삭제',
-                                                                    style: 'destructive',
-                                                                    onPress: async () => {
-                                                                        try {
-                                                                            await deleteMember(m.id);
-                                                                        } catch (error) {
-                                                                            Alert.alert('오류', '멤버 삭제 중 오류가 발생했습니다.');
-                                                                        }
-                                                                    }
+                                                            'confirm',
+                                                            async () => {
+                                                                try {
+                                                                    await deleteMember(m.id);
+                                                                    showCustomAlert('삭제 완료', `${m.nickname}님이 삭제되었습니다.`, 'success');
+                                                                } catch (error) {
+                                                                    showCustomAlert('오류', '멤버 삭제 중 오류가 발생했습니다.', 'error');
                                                                 }
-                                                            ]
+                                                            }
                                                         );
                                                     }}
                                                 >
@@ -513,13 +564,18 @@ export default function AdminPage() {
 
                         <TouchableOpacity
                             onPress={() => {
-                                Alert.alert(
+                                showCustomAlert(
                                     '전체 삭제',
                                     '등록된 모든 연맹원 명단을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-                                    [
-                                        { text: '취소', style: 'cancel' },
-                                        { text: '전체 삭제', style: 'destructive', onPress: clearAllMembers }
-                                    ]
+                                    'confirm',
+                                    async () => {
+                                        try {
+                                            await clearAllMembers();
+                                            showCustomAlert('삭제 완료', '모든 명단이 삭제되었습니다.', 'success');
+                                        } catch (error) {
+                                            showCustomAlert('오류', '명단 삭제 중 오류가 발생했습니다.', 'error');
+                                        }
+                                    }
                                 );
                             }}
                             className="mt-6 self-end"

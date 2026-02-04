@@ -9,6 +9,7 @@ import { useFirestoreAttendees } from '../../hooks/useFirestoreAttendees';
 import { useFirestoreEventSchedules } from '../../hooks/useFirestoreEventSchedules';
 import { useFirestoreMembers } from '../../hooks/useFirestoreMembers';
 import { useFirestoreAdmins } from '../../hooks/useFirestoreAdmins';
+import { useFirestoreEventsWithAttendees } from '../../hooks/useFirestoreEventsWithAttendees';
 import heroesData from '../../data/heroes.json';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -163,12 +164,16 @@ export default function EventTracker() {
     const { auth } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
-    const { dynamicAdmins } = useFirestoreAdmins(serverId, allianceId);
-    const router = useRouter();
-    const params = useLocalSearchParams();
-
     const [serverId, setServerId] = useState<string | null>(undefined as any);
     const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
+
+    const { dynamicAdmins } = useFirestoreAdmins(serverId, allianceId);
+    const { schedules, loading: schedulesLoading, updateSchedule } = useFirestoreEventSchedules(serverId, allianceId);
+    const { members } = useFirestoreMembers(serverId, allianceId);
+    const { eventsWithAttendees } = useFirestoreEventsWithAttendees(serverId, allianceId);
+
+    const router = useRouter();
+    const params = useLocalSearchParams();
 
     useEffect(() => {
         const loadIds = async () => {
@@ -193,9 +198,7 @@ export default function EventTracker() {
     const [fortressList, setFortressList] = useState<{ id: string, name: string, day?: string, h: string, m: string }[]>([]);
     const [citadelList, setCitadelList] = useState<{ id: string, name: string, day?: string, h: string, m: string }[]>([]);
 
-    // Firebase Event Schedules
-    const { schedules, loading: schedulesLoading, updateSchedule } = useFirestoreEventSchedules(serverId, allianceId);
-    const { members } = useFirestoreMembers(serverId, allianceId);
+    // Firebase Event Schedules removed from here (moved up)
 
     // Merge Firebase schedules with initial events
     useEffect(() => {
@@ -205,7 +208,9 @@ export default function EventTracker() {
                 const savedSchedule = schedules.find(s =>
                     s.eventId === event.id ||
                     (event.id === 'a_weapon' && s.eventId === 'alliance_frost_league') ||
-                    (event.id === 'alliance_frost_league' && s.eventId === 'a_weapon')
+                    (event.id === 'alliance_frost_league' && s.eventId === 'a_weapon') ||
+                    (event.id === 'a_operation' && s.eventId === 'alliance_operation') ||
+                    (event.id === 'alliance_operation' && s.eventId === 'a_operation')
                 );
                 if (savedSchedule) {
                     // Sanitize stray dots from DB
@@ -1328,7 +1333,7 @@ export default function EventTracker() {
                                                             <Ionicons name="arrow-forward-outline" size={16} color="white" />
                                                         </TouchableOpacity>
 
-                                                        {(event.category === '연맹' || event.category === '서버') && (
+                                                        {(event.category === '연맹' || event.category === '서버') && (auth.isLoggedIn || eventsWithAttendees.has(event.id)) && (
                                                             <TouchableOpacity
                                                                 onPress={() => openAttendeeModal(event)}
                                                                 className={`flex-1 rounded-2xl items-center justify-center flex-row border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700 shadow-black/20' : 'bg-white border-slate-200 active:bg-slate-50 shadow-slate-100'}`}
