@@ -59,14 +59,14 @@ export default function Layout() {
                     </Head>
                 )}
 
-                <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#f8fafc' }]}>
+                <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9' }]}>
                     {/* Global Background Image */}
                     <ImageBackground
                         source={require('../assets/images/bg-main.png')}
                         style={styles.background}
-                        imageStyle={[styles.backgroundImage, { opacity: isDark ? 1 : 0.8 }]}
+                        imageStyle={[styles.backgroundImage, { opacity: isDark ? 1 : 0.85 }]}
                     >
-                        <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.7)' }]}>
+                        <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(250, 250, 249, 0.75)' }]}>
                             <Slot />
                         </View>
                     </ImageBackground>

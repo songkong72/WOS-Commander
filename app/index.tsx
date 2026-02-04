@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Modal, TextInput, Alert, Platform, ScrollView, Switch, ImageBackground, Image, Pressable } from 'react-native';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { View, Text, TouchableOpacity, Modal, TextInput, Alert, Platform, ScrollView, Switch, ImageBackground, Image, Pressable, Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useAuth, useTheme } from './_layout';
@@ -27,6 +27,7 @@ export default function Home() {
     const [loginModalVisible, setLoginModalVisible] = useState(false);
     const [loginInput, setLoginInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
+    const [loginError, setLoginError] = useState('');
     const [noticeDetailVisible, setNoticeDetailVisible] = useState(false);
 
     // Custom Alert State
@@ -200,11 +201,38 @@ export default function Home() {
     const [editNoticeVisible, setEditNoticeVisible] = useState(true);
     const [adminMenuVisible, setAdminMenuVisible] = useState(false);
     const [installModalVisible, setInstallModalVisible] = useState(false);
+    const flickerAnim = useRef(new Animated.Value(1)).current;
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        const createPulse = () => {
+            return Animated.sequence([
+                Animated.timing(flickerAnim, { toValue: 0.5, duration: 1000, useNativeDriver: true }),
+                Animated.timing(flickerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+            ]);
+        };
+
+        const createScale = () => {
+            return Animated.sequence([
+                Animated.timing(scaleAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
+                Animated.timing(scaleAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+            ]);
+        };
+
+        Animated.loop(
+            Animated.parallel([
+                createPulse(),
+                createScale()
+            ])
+        ).start();
+    }, []);
+
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
     const handleLogin = async () => {
         const input = (loginInput || '').trim();
         const pw = (passwordInput || '').trim();
+        setLoginError('');
 
         console.log('Login attempt:', { id: input, pw_len: pw.length });
 
@@ -256,7 +284,7 @@ export default function Home() {
             await performLogin(dynamic.name);
         } else {
             console.log('Auth failed: No match found');
-            showCustomAlert('인증 실패', '아이디 또는 비밀번호가 일치하지 않습니다.', 'error');
+            setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
         }
     };
 
@@ -271,7 +299,7 @@ export default function Home() {
         await login(id);
         setLoginModalVisible(false);
         setPasswordInput('');
-        showCustomAlert('인증 성공', '관리자 권한으로 로그인되었습니다.', 'success');
+        showCustomAlert('인증 성공', '관리자 권한을 획득하였습니다.', 'success');
     };
 
     const handleSettingsPress = () => auth.isLoggedIn ? setAdminMenuVisible(true) : setLoginModalVisible(true);
@@ -287,38 +315,95 @@ export default function Home() {
     const handleSaveNotice = async () => {
         await saveNotice(editNoticeContent, editNoticeVisible);
         setNoticeModalVisible(false);
-        showCustomAlert('저장 완료', '공지사항이 업데이트되었습니다.', 'success');
+        showCustomAlert('저장 완료', '공지사항이 성공적으로 업데이트되었습니다.', 'success');
     };
 
     const displayEvents = useMemo(() => {
         if (!schedules) return [];
         const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
-        return schedules.map(s => {
+
+        // 1. First, map schedules to base event info and filter out invalid/unnecessary items
+        const rawList = schedules.map(s => {
             const searchId = s.eventId === 'alliance_frost_league' ? 'a_weapon' : s.eventId;
             const eventInfo = allBaseEvents.find(e => e.id === searchId);
             const cleanDay = (s.day === '.' || s.day?.trim() === '.') ? '' : (s.day || '');
             const cleanTime = (s.time === '.' || s.time?.trim() === '.') ? '' : (s.time || '');
             return { ...s, day: cleanDay, time: cleanTime, title: eventInfo ? eventInfo.title : '알 수 없는 이벤트' };
-        }).filter(e => e.title !== '알 수 없는 이벤트' && !isEventExpired(e) && (!!e.day || !!e.time))
-            .sort((a, b) => {
-                const activeA = isEventActive(a);
-                const activeB = isEventActive(b);
-                if (activeA && !activeB) return -1;
-                if (!activeA && activeB) return 1;
+        }).filter(e => {
+            if (e.title === '알 수 없는 이벤트') return false;
+            if (!(!!e.day || !!e.time)) return false;
+            if (!isEventExpired(e)) return true;
+            const todayStr = now.getFullYear() + '.' + String(now.getMonth() + 1).padStart(2, '0') + '.' + String(now.getDate()).padStart(2, '0');
+            return (e.day || '').includes(todayStr) || (e.time || '').includes(todayStr);
+        });
 
-                const hasA = !!a.day && a.day !== '일정 미정';
-                const hasB = !!b.day && b.day !== '일정 미정';
-                if (hasA && !hasB) return -1;
-                if (!hasA && hasB) return 1;
-                const dayOrder = ['월', '화', '수', '목', '금', '토', '일', '매일', '상시', '상설'];
-                const getDayRank = (d: string) => {
-                    const idx = dayOrder.findIndex(key => (d || '').startsWith(key));
-                    return idx === -1 ? 999 : idx;
-                };
-                const rankA = getDayRank(a.day);
-                const rankB = getDayRank(b.day);
-                return rankA !== rankB ? rankA - rankB : (a.time || '').localeCompare(b.time || '');
-            });
+        // 2. Split Bear Hunt into separate cards for Team 1 and Team 2
+        const processedList: any[] = [];
+        rawList.forEach(e => {
+            if (e.eventId === 'a_bear' || e.eventId === 'alliance_bear') {
+                const parts = (e.time || '').split(' / ');
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : `곰${idx + 1}`;
+                        // Simplify Team Label
+                        const cleanLabel = rawLabel.includes('곰') ? rawLabel : `곰 ${rawLabel.replace(/팀|군/g, '').trim()}팀`;
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        // Simplify individual times (Remove Departure/Return etc)
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            eventId: `${e.eventId}_team${idx + 1}`,
+                            title: `곰 사냥 작전 (${cleanLabel})`,
+                            time: simplifiedTime,
+                            isBearSplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: `🐻${idx + 1}`
+                        });
+                    });
+                } else {
+                    processedList.push(e);
+                }
+            } else {
+                processedList.push(e);
+            }
+        });
+
+        // 3. Sort the final processed list
+        return processedList.sort((a, b) => {
+            const activeA = isEventActive(a);
+            const activeB = isEventActive(b);
+            const expiredA = isEventExpired(a);
+            const expiredB = isEventExpired(b);
+
+            if (activeA && !activeB) return -1;
+            if (!activeA && activeB) return 1;
+            if (!expiredA && expiredB) return -1;
+            if (expiredA && !expiredB) return 1;
+
+            const dayOrder = ['월', '화', '수', '목', '금', '토', '일', '매일', '상시', '상설'];
+            const getDayRank = (d: string) => {
+                const idx = dayOrder.findIndex(key => (d || '').startsWith(key));
+                return idx === -1 ? 999 : idx;
+            };
+            const rankA = getDayRank(a.day);
+            const rankB = getDayRank(b.day);
+            if (rankA !== rankB) return rankA - rankB;
+
+            // Fix Bear Hunt team order (Team 1 -> Team 2)
+            if (a.isBearSplit && b.isBearSplit && a.eventId.substring(0, 6) === b.eventId.substring(0, 6)) {
+                return a.eventId.localeCompare(b.eventId);
+            }
+
+            return (a.time || '').localeCompare(b.time || '');
+        });
     }, [schedules, now]);
 
     useEffect(() => {
@@ -344,7 +429,7 @@ export default function Home() {
 
             <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
                 <View className="w-full items-center">
-                    <View className="w-full max-w-6xl px-4 md:px-8 pb-20">
+                    <View className="w-full max-w-6xl px-4 md:px-8 pb-24">
                         <View className="pt-12 pb-6 flex-row justify-between items-start">
                             <View className="flex-1 mr-4">
                                 <Text className={`font-bold text-[9px] md:text-xs tracking-[0.4em] mb-1.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Whiteout Survival</Text>
@@ -358,9 +443,9 @@ export default function Home() {
                                         onPress={toggleTheme}
                                         onHoverIn={() => setHoveredHeaderBtn('theme')}
                                         onHoverOut={() => setHoveredHeaderBtn(null)}
-                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm'}`}
                                     >
-                                        <Ionicons name={isDark ? "sunny" : "moon"} size={22} color={isDark ? "#fbbf24" : "#1e293b"} />
+                                        <Ionicons name={isDark ? "sunny" : "moon"} size={22} color={isDark ? "#fbbf24" : "#333333"} />
                                     </Pressable>
                                     {hoveredHeaderBtn === 'theme' && (
                                         <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
@@ -378,9 +463,9 @@ export default function Home() {
                                         onPress={handleInstallClick}
                                         onHoverIn={() => setHoveredHeaderBtn('install')}
                                         onHoverOut={() => setHoveredHeaderBtn(null)}
-                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm'}`}
                                     >
-                                        <Ionicons name="download" size={22} color="#38bdf8" />
+                                        <Ionicons name="download" size={22} color={isDark ? "#38bdf8" : "#0284c7"} />
                                     </Pressable>
                                     {hoveredHeaderBtn === 'install' && (
                                         <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
@@ -398,9 +483,9 @@ export default function Home() {
                                         onPress={handleSettingsPress}
                                         onHoverIn={() => setHoveredHeaderBtn('admin')}
                                         onHoverOut={() => setHoveredHeaderBtn(null)}
-                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm'}`}
                                     >
-                                        <Ionicons name="person-circle" size={22} color={auth.isLoggedIn ? "#38bdf8" : (isDark ? "white" : "#475569")} />
+                                        <Ionicons name="person-circle" size={22} color={auth.isLoggedIn ? (isDark ? "#38bdf8" : "#0284c7") : (isDark ? "white" : "#333333")} />
                                     </Pressable>
                                     {hoveredHeaderBtn === 'admin' && (
                                         <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
@@ -425,7 +510,7 @@ export default function Home() {
                                         </View>
                                     </View>
                                     <View className="flex-1">
-                                        <Text className={`font-bold text-[10px] tracking-widest uppercase mb-0.5 ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>NOTICE</Text>
+                                        <Text className={`font-bold text-[10px] tracking-widest uppercase mb-0.5 ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>알림</Text>
                                         <Text className={`text-base font-semibold ${isDark ? 'text-amber-100' : 'text-slate-800'}`} numberOfLines={1}>{notice.content || '(공지 내용 없음)'}</Text>
                                     </View>
                                     <Ionicons name="chevron-forward" size={20} color={isDark ? "#f59e0b" : "#d97706"} style={{ opacity: 0.5 }} />
@@ -438,105 +523,224 @@ export default function Home() {
 
                         {/* Feature Cards Grid */}
                         <View className="flex-col md:flex-row gap-3 md:gap-4 mb-8">
-                            <TouchableOpacity onPress={() => router.push('/hero-management')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-blue-900/20' : 'bg-white border-slate-100 shadow-slate-200'}`}>
+                            <TouchableOpacity onPress={() => router.push('/hero-management')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-blue-900/20' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
                                 <View className="flex-row items-center">
                                     <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 md:mr-4 ${isDark ? 'bg-[#38bdf8]/10 border-[#38bdf8]/20' : 'bg-blue-50 border-blue-100'}`}>
                                         <Ionicons name="people" size={22} color={isDark ? "#38bdf8" : "#2563eb"} />
                                     </View>
                                     <View>
-                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>영웅 정보</Text>
+                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>영웅 정보</Text>
                                         <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>스탯 및 스킬</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => router.push('/growth/events')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-blue-900/20' : 'bg-white border-slate-100 shadow-slate-200'}`}>
+                            <TouchableOpacity onPress={() => router.push('/growth/events')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-blue-900/20' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
                                 <View className="flex-row items-center">
                                     <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 md:mr-4 ${isDark ? 'bg-blue-500/10 border-blue-400/20' : 'bg-sky-50 border-sky-100'}`}>
                                         <Ionicons name="calendar" size={22} color={isDark ? "#60a5fa" : "#0284c7"} />
                                     </View>
                                     <View>
-                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>이벤트</Text>
+                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>이벤트</Text>
                                         <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>연맹전략 및 일정</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => router.push('/strategy-sheet')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-emerald-900/20' : 'bg-white border-slate-100 shadow-slate-200'}`}>
+                            <TouchableOpacity onPress={() => router.push('/strategy-sheet')} className={`flex-1 p-4 md:p-5 rounded-2xl border shadow-2xl active:scale-[0.98] transition-all ${isDark ? 'bg-[#0f172a] border-slate-800 shadow-emerald-900/20' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
                                 <View className="flex-row items-center">
                                     <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 md:mr-4 ${isDark ? 'bg-emerald-500/10 border-emerald-400/20' : 'bg-emerald-50 border-emerald-100'}`}>
                                         <Ionicons name="map" size={22} color={isDark ? "#10b981" : "#059669"} />
                                     </View>
                                     <View>
-                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>전략 문서</Text>
+                                        <Text className={`text-xl md:text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>전략 문서</Text>
                                         <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>배치도 및 공지</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
                         </View>
 
-                        {/* Weekly Events List */}
-                        <View className={`rounded-3xl border shadow-2xl overflow-hidden ${isDark ? 'bg-[#0f172a]/60 border-slate-800/80' : 'bg-white border-slate-100 shadow-slate-200'}`}>
-                            <View className={`p-4 border-b flex-row items-center ${isDark ? 'border-slate-800/50' : 'border-slate-100'}`}>
-                                <View className={`w-1.5 h-8 rounded-full mr-4 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
-                                <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>금주의 이벤트</Text>
+                        {/* Weekly Events List - Minimalist App Style */}
+                        <View className="mb-14">
+                            <View className={`flex-row items-center justify-between mb-8 px-5 py-4 rounded-3xl ${isDark ? 'bg-slate-900/40' : 'bg-slate-100/60'}`}>
+                                <View className="flex-row items-center">
+                                    <View className={`w-1.5 h-6 rounded-full mr-4 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                    <Text className={`text-2xl md:text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>금주의 이벤트</Text>
+                                </View>
+                                <View className={`px-3 py-1 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-white shadow-sm'}`}>
+                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>WEEKLY</Text>
+                                </View>
                             </View>
-                            <View className="p-4">
+
+                            <View className="flex-col gap-3">
                                 {loading ? (
-                                    <Text className={`p-12 text-center font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>일정을 불러오는 중...</Text>
+                                    <View className={`p-16 rounded-[32px] border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                        <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>일정을 불러오는 중...</Text>
+                                    </View>
                                 ) : displayEvents.length > 0 ? (
-                                    <View className="gap-2.5">
+                                    <View className="flex-col gap-4">
                                         {displayEvents.map((event, idx) => {
                                             const isActive = isEventActive(event);
+                                            const isExpired = isEventExpired(event);
+                                            const isUpcoming = !isActive && !isExpired;
+
+                                            const getEventIcon = (id: string) => {
+                                                if (id.includes('bear')) return 'paw-outline';
+                                                if (id.includes('frost') || id.includes('weapon')) return 'shield-half-outline';
+                                                if (id.includes('castle') || id.includes('fortress')) return 'business-outline';
+                                                if (id.includes('championship')) return 'trophy-outline';
+                                                return 'calendar-clear-outline';
+                                            };
+
+                                            const pointColor = '#0ea5e9'; // Point Blue
+                                            const titleColor = isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900');
+                                            const scheduleColor = isExpired ? (isDark ? 'text-slate-700' : 'text-slate-300') : (isUpcoming ? (isDark ? 'text-slate-400' : 'text-slate-600') : (isDark ? 'text-slate-200' : 'text-slate-700'));
+                                            const infoColor = isDark ? 'text-slate-500' : 'text-slate-500';
+
                                             return (
-                                                <TouchableOpacity key={idx} onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.eventId } })} className="active:scale-[0.99] transition-transform">
-                                                    <View className={`p-3.5 md:p-4 rounded-2xl border-2 flex-row items-center shadow-sm ${isActive ? (isDark ? 'bg-red-500/25 border-red-500/50 shadow-red-900/10' : 'bg-red-50 border-red-200 shadow-red-100') : (isDark ? 'bg-[#1e293b] border-slate-700/60 shadow-black/20' : 'bg-slate-50 border-slate-200 shadow-slate-200')}`}>
-                                                        <View className={`w-3 h-3 rounded-full mr-3.5 shadow-sm ${isActive ? 'bg-red-500 animate-pulse' : (isDark ? 'bg-blue-500' : 'bg-blue-600')}`} />
-                                                        <View className="flex-1">
-                                                            <View className="flex-row justify-between items-center mb-0.5">
-                                                                <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{event.title}</Text>
-                                                                {!!isActive && <View className="bg-red-500 px-2 py-0.5 rounded-md shadow-sm shadow-red-500/20"><Text className="text-white text-[8px] font-bold uppercase tracking-wider">진행중</Text></View>}
-                                                            </View>
-                                                            <View className="flex-row flex-wrap gap-2">
-                                                                {!!event.day && !event.time && event.day !== '요새전/성채전' && (
-                                                                    <View className={`px-3 py-1.5 rounded-xl border max-w-full shadow-sm ${isDark ? 'bg-black/60 border-slate-500' : 'bg-white border-slate-200'}`}>
-                                                                        {(() => {
-                                                                            const formattedDay = event.day.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                            let utcText = '';
-                                                                            const isRange = event.day.includes('~');
-                                                                            if (isRange) {
-                                                                                const parts = event.day.split('~').map((x: string) => x.trim());
-                                                                                const sDateUtc = getUTCString(parts[0]);
-                                                                                const eDateUtc = getUTCString(parts[1]);
-                                                                                if (sDateUtc && eDateUtc) utcText = `UTC: ${sDateUtc} ~ ${eDateUtc}`;
-                                                                                else {
-                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
-                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                                                    if (sWeeklyUtc && eWeeklyUtc) utcText = `UTC: ${sWeeklyUtc} ~ ${eWeeklyUtc}`;
-                                                                                }
-                                                                            } else {
-                                                                                const dateUtc = getUTCString(event.day);
-                                                                                if (dateUtc) utcText = `UTC: ${dateUtc}`;
-                                                                                else {
-                                                                                    const weeklyUtc = getUTCTimeString(event.day);
-                                                                                    if (weeklyUtc) utcText = weeklyUtc;
-                                                                                }
-                                                                            }
-                                                                            const renderLine = (str: string, textClass: string) => {
-                                                                                if (!str.includes('~')) return <Text className={textClass}>{str}</Text>;
-                                                                                const [s, e] = str.split('~').map(x => x.trim());
-                                                                                return (<View className="flex-row flex-wrap items-center"><Text className={textClass}>{s}</Text><Text className={`${textClass} mx-1.5 opacity-50`}>~</Text><Text className={textClass}>{e}</Text></View>);
-                                                                            };
-                                                                            const dayColor = isDark ? "text-[#38bdf8]" : "text-blue-600";
-                                                                            const utcColor = isDark ? "text-slate-500" : "text-slate-400";
-                                                                            return (<>{renderLine(formattedDay, `${dayColor} font-semibold text-xs`)}{!!utcText && (<View className="mt-0.5">{renderLine(utcText, `${utcColor} text-[8px] font-semibold`)}</View>)}</>);
-                                                                        })()}
+                                                <TouchableOpacity
+                                                    key={idx}
+                                                    onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.eventId } })}
+                                                    className="active:scale-[0.98] transition-all"
+                                                >
+                                                    <View className={`p-8 md:p-10 rounded-[40px] border shadow-2xl ${isActive ? (isDark ? 'bg-slate-900 border-[#0ea5e9]/50 shadow-[#0ea5e9]/10' : 'bg-white border-[#0ea5e9]/20 shadow-blue-100/20') : (isDark ? 'bg-slate-900 border-slate-800 shadow-black/20' : 'bg-white border-slate-200 shadow-slate-200/40')}`}>
+                                                        <View className="flex-row items-center justify-between mb-8">
+                                                            <View className="flex-row items-center flex-1 mr-3">
+                                                                <View className={`w-14 h-14 rounded-[22px] items-center justify-center mr-5 ${isDark ? 'bg-slate-800/80' : 'bg-white shadow-sm border border-slate-100/80'}`}>
+                                                                    <Ionicons name={getEventIcon(event.eventId)} size={28} color={isActive ? pointColor : (isExpired ? '#64748b' : '#94a3b8')} />
+                                                                </View>
+                                                                <View className="flex-1">
+                                                                    <Text className={`text-2xl md:text-3xl font-black tracking-tight mb-2 ${titleColor} ${isExpired ? 'line-through opacity-40' : ''}`}>{event.title}</Text>
+                                                                    <View className="flex-row items-center">
+                                                                        <Ionicons
+                                                                            name={isActive ? "checkmark-circle" : (isUpcoming ? "time" : "checkmark-circle-outline")}
+                                                                            size={13}
+                                                                            color={isActive ? "#10b981" : (isUpcoming ? pointColor : "#94a3b8")}
+                                                                            style={{ marginRight: 6 }}
+                                                                        />
+                                                                        <Text className={`text-[11px] font-black uppercase tracking-[0.12em] ${infoColor}`}>
+                                                                            {isActive ? '진행 중' : (isUpcoming ? '예정' : '종료')}
+                                                                        </Text>
                                                                     </View>
-                                                                )}
-                                                                {!event.day && !event.time && <View className={`px-3 py-1.5 rounded-xl border max-w-full shadow-sm ${isDark ? 'bg-black/60 border-slate-500' : 'bg-white border-slate-200'}`}><Text className={`${isDark ? 'text-[#38bdf8]' : 'text-blue-600'} font-semibold text-xs`}>일정 미정</Text></View>}
-                                                                {!!event.time && (
-                                                                    <View className="flex-1 mt-1">
-                                                                        {event.time.split(' / ').map((part: string, pIdx: number) => {
+                                                                </View>
+                                                            </View>
+                                                            {isActive ? (
+                                                                <Animated.View
+                                                                    className={`flex-row items-center px-6 py-3 rounded-2xl bg-[#FFD700] shadow-2xl`}
+                                                                    style={{
+                                                                        opacity: flickerAnim,
+                                                                        transform: [{ scale: scaleAnim }],
+                                                                        shadowColor: '#FFD700',
+                                                                        shadowOffset: { width: 0, height: 4 },
+                                                                        shadowOpacity: 0.8,
+                                                                        shadowRadius: 15,
+                                                                        elevation: 12
+                                                                    }}
+                                                                >
+                                                                    <Text className={`text-black text-[13px] font-black tracking-widest mr-2`}>지금 진행</Text>
+                                                                    <Ionicons name="chevron-forward-circle" size={18} color="black" />
+                                                                </Animated.View>
+                                                            ) : isExpired ? (
+                                                                <View className={`px-4 py-2 rounded-full border ${isDark ? 'bg-black/40 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                                                    <Text className={`text-slate-500 text-[11px] font-black tracking-tighter`}>종료</Text>
+                                                                </View>
+                                                            ) : (
+                                                                <View className={`px-4 py-2 rounded-full border ${isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                                                    <Text className={`text-slate-400 text-[11px] font-black tracking-tighter`}>예정</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+
+                                                        <View className="flex-col gap-3">
+                                                            {!!event.day && !event.time && event.day !== '요새전/성채전' && (
+                                                                <View className={`p-6 rounded-3xl border ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50/80 border-slate-100'}`}>
+                                                                    {(() => {
+                                                                        const formattedDay = event.day.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                        let utcText = '';
+                                                                        const isRange = event.day.includes('~');
+                                                                        if (isRange) {
+                                                                            const parts = event.day.split('~').map((x: string) => x.trim());
+                                                                            const sDateUtc = getUTCString(parts[0]);
+                                                                            const eDateUtc = getUTCString(parts[1]);
+                                                                            if (sDateUtc && eDateUtc) utcText = `${sDateUtc} ~ ${eDateUtc}`;
+                                                                            else {
+                                                                                const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                            }
+                                                                        } else {
+                                                                            const dateUtc = getUTCString(event.day);
+                                                                            if (dateUtc) utcText = dateUtc;
+                                                                            else {
+                                                                                const weeklyUtc = getUTCTimeString(event.day);
+                                                                                if (weeklyUtc) utcText = weeklyUtc;
+                                                                            }
+                                                                        }
+                                                                        const renderLine = (str: string, textClass: string, isUtc = false) => {
+                                                                            if (!str.includes('~')) return <View className="flex-row items-center">{isUtc && <Text className="mr-2 text-xs">🌐</Text>}<Text className={textClass}>{str}</Text></View>;
+                                                                            const [s, e] = str.split('~').map(x => x.trim());
+                                                                            return (
+                                                                                <View className="flex-row flex-wrap items-center">
+                                                                                    {isUtc && <Text className="mr-2 text-xs">🌐</Text>}
+                                                                                    <Text className={textClass}>{s}</Text>
+                                                                                    <Text className={`${textClass} mx-3 opacity-30 font-normal`}>~</Text>
+                                                                                    <Text className={textClass}>{e}</Text>
+                                                                                </View>
+                                                                            );
+                                                                        };
+                                                                        const dayColor = isExpired ? (isDark ? "text-slate-600" : "text-slate-400") : (isDark ? "text-slate-200" : "text-slate-700");
+                                                                        const utcColor = isDark ? "text-slate-500" : "text-slate-500";
+                                                                        return (
+                                                                            <>
+                                                                                {renderLine(formattedDay, `${dayColor} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`)}
+                                                                                {!!utcText && (
+                                                                                    <View className="mt-3 pt-3 border-t border-slate-800/10">
+                                                                                        {renderLine(utcText, `${utcColor} text-xs font-bold`, true)}
+                                                                                    </View>
+                                                                                )}
+                                                                            </>
+                                                                        );
+                                                                    })()}
+                                                                </View>
+                                                            )}
+                                                            {!!event.time && (
+                                                                <View className="gap-3">
+                                                                    {event.isBearSplit ? (
+                                                                        <View className={`rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                                                            {/* Table Header */}
+                                                                            <View className={`flex-row px-4 py-2 border-b ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                                                <Text className={`flex-1 text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>요일</Text>
+                                                                                <Text className={`flex-[1.5] text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>로컬 시간</Text>
+                                                                                <Text className={`flex-[1.5] text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>UTC 시간</Text>
+                                                                            </View>
+                                                                            {/* Table Body */}
+                                                                            <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
+                                                                                {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
+                                                                                    const trimmed = item.trim();
+                                                                                    if (!trimmed) return null;
+                                                                                    const isLive = checkItemActive(trimmed);
+
+                                                                                    // Extract Day and Time more robustly
+                                                                                    const dayMatch = trimmed.match(/[일월화수목금토]/);
+                                                                                    const day = dayMatch ? dayMatch[0] : '-';
+                                                                                    const localTime = trimmed.replace(/[일월화수목금토]\s*/, '').trim();
+                                                                                    const utcStr = getUTCTimeString(trimmed);
+
+                                                                                    return (
+                                                                                        <View key={iIdx} className={`flex-row items-center px-5 py-5 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-200/50'} last:border-0`}>
+                                                                                            <Text className={`flex-1 font-black text-base ${isLive ? 'text-amber-500' : (isDark ? 'text-slate-200' : 'text-slate-900')} ${isExpired ? 'line-through opacity-40' : ''}`}>{day}</Text>
+                                                                                            <Text className={`flex-[1.5] font-bold text-base ${isLive ? 'text-amber-500' : (isDark ? 'text-slate-400' : 'text-slate-700')} ${isExpired ? 'line-through opacity-40' : ''}`}>{localTime}</Text>
+                                                                                            <View className="flex-[1.5] flex-row items-center">
+                                                                                                <Text className="text-xs mr-2 opacity-30">🌐</Text>
+                                                                                                <Text className={`text-[13px] font-bold ${isLive ? 'text-amber-500/80' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{utcStr || '-'}</Text>
+                                                                                            </View>
+                                                                                        </View>
+                                                                                    );
+                                                                                })}
+                                                                            </View>
+                                                                        </View>
+                                                                    ) : (
+                                                                        event.time.split(' / ').map((part: string, pIdx: number) => {
                                                                             const trimmed = part.trim();
                                                                             if (!trimmed) return null;
                                                                             const colonIdx = trimmed.indexOf(':');
@@ -548,49 +752,56 @@ export default function Home() {
                                                                             }
                                                                             const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                                                                             return (
-                                                                                <View key={pIdx} className="mb-3 last:mb-0">
-                                                                                    <View className="flex-row items-center mb-1">
-                                                                                        {!!label && <Text className={`text-[10px] font-bold uppercase ml-1 mr-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</Text>}
-                                                                                        {content.split(/[,|]/).some(item => checkItemActive(item.trim())) && (
-                                                                                            <View className="bg-red-500 px-1.5 py-0.5 rounded-md shadow-sm shadow-red-500/20"><Text className="text-white text-[8px] font-bold">진행중</Text></View>
-                                                                                        )}
-                                                                                    </View>
-                                                                                    <View className="flex-row flex-wrap gap-2">
+                                                                                <View key={pIdx} className={`p-6 rounded-3xl border ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50/80 border-slate-100'}`}>
+                                                                                    {!!label && (
+                                                                                        <View className="flex-row items-center mb-4">
+                                                                                            <View className={`px-2.5 py-1 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                                                                                <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{label}</Text>
+                                                                                            </View>
+                                                                                            {content.split(/[,|]/).some(item => checkItemActive(item.trim())) && (
+                                                                                                <Animated.View
+                                                                                                    className={`ml-3 flex-row items-center px-2 py-0.5 rounded-full bg-[#FFD700]`}
+                                                                                                    style={{ opacity: flickerAnim, transform: [{ scale: scaleAnim }] }}
+                                                                                                >
+                                                                                                    <Text className={`text-black text-[9px] font-black uppercase tracking-tighter`}>진행중</Text>
+                                                                                                </Animated.View>
+                                                                                            )}
+                                                                                        </View>
+                                                                                    )}
+                                                                                    <View className="flex-row flex-wrap gap-4">
                                                                                         {content.split(/[,|]/).map((item, iIdx) => {
                                                                                             const isLive = checkItemActive(item.trim());
                                                                                             const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                                                             const utcStr = getUTCTimeString(item.trim());
                                                                                             return (
-                                                                                                <View key={iIdx} className={`px-2.5 py-1.5 rounded-xl border max-w-full shadow-sm ${isLive ? (isDark ? 'bg-red-500/20 border-red-500/50' : 'bg-red-100 border-red-200') : (isDark ? 'bg-black/50 border-slate-600/50' : 'bg-white border-slate-200')}`}>
-                                                                                                    {(() => {
-                                                                                                        const renderTextLine = (str: string, tClass: string) => {
-                                                                                                            if (!str.includes('~')) return <Text className={tClass}>{str}</Text>;
-                                                                                                            const [s, e] = str.split('~').map(x => x.trim());
-                                                                                                            return (<View className="flex-row flex-wrap items-center"><Text className={tClass}>{s}</Text><Text className={`${tClass} mx-1.5 opacity-50`}>~</Text><Text className={tClass}>{e}</Text></View>);
-                                                                                                        };
-                                                                                                        const mainColorText = isLive ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-[#38bdf8]' : 'text-blue-600');
-                                                                                                        const subColorText = isLive ? (isDark ? 'text-red-900/60' : 'text-red-400') : (isDark ? 'text-slate-500' : 'text-slate-400');
-                                                                                                        return (<>{renderTextLine(formatted, `${mainColorText} font-semibold text-xs`)}{!!utcStr && (<View className="mt-0.5">{renderTextLine(utcStr, `${subColorText} text-[9px] font-semibold`)}</View>)}</>);
-                                                                                                    })()}
+                                                                                                <View key={iIdx} className="flex-1 min-w-[150px]">
+                                                                                                    <Text className={`${isLive ? 'text-amber-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-200' : 'text-slate-700'))} font-semibold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{formatted}</Text>
+                                                                                                    {!!utcStr && (
+                                                                                                        <View className="flex-row items-center mt-1.5">
+                                                                                                            <Text className="text-xs mr-2 opacity-30">🌐</Text>
+                                                                                                            <Text className={`${isLive ? 'text-amber-500/80' : (isDark ? 'text-slate-500' : 'text-slate-400')} text-xs font-medium`}>{utcStr}</Text>
+                                                                                                        </View>
+                                                                                                    )}
                                                                                                 </View>
                                                                                             );
                                                                                         })}
                                                                                     </View>
                                                                                 </View>
                                                                             );
-                                                                        })}
-                                                                    </View>
-                                                                )}
-                                                            </View>
+                                                                        })
+                                                                    )}
+                                                                </View>
+                                                            )}
                                                         </View>
-                                                        <Ionicons name="chevron-forward" size={20} color={isDark ? "#475569" : "#cbd5e1"} className="ml-2" />
                                                     </View>
                                                 </TouchableOpacity>
                                             );
                                         })}
                                     </View>
                                 ) : (
-                                    <Text className={`p-12 text-center font-semibold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다.</Text>
+                                    <View className={`p-16 rounded-[32px] border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                        <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다.</Text>
+                                    </View>
                                 )}
                             </View>
                         </View>
@@ -599,16 +810,70 @@ export default function Home() {
             </ScrollView>
 
             {/* Modals */}
-            <Modal visible={loginModalVisible} transparent animationType="fade">
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <Text className={`text-2xl font-bold mb-8 ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 인증</Text>
-                        <TextInput placeholder="영주 이름" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={loginInput} onChangeText={setLoginInput} autoCapitalize="none" className={`p-5 rounded-2xl font-semibold mb-4 border text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-800 border-slate-200'}`} />
-                        <TextInput placeholder="비밀번호" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={passwordInput} onChangeText={setPasswordInput} secureTextEntry={true} autoCapitalize="none" onSubmitEditing={handleLogin} className={`p-5 rounded-2xl font-semibold mb-8 border text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-800 border-slate-200'}`} />
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity onPress={() => setLoginModalVisible(false)} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}><Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>취소</Text></TouchableOpacity>
-                            <TouchableOpacity onPress={handleLogin} className="flex-[2] bg-[#38bdf8] py-4 rounded-2xl shadow-lg shadow-cyan-500/20"><Text className="text-[#0f172a] text-center font-bold">로그인</Text></TouchableOpacity>
+            <Modal visible={loginModalVisible} transparent animationType="fade" onRequestClose={() => setLoginModalVisible(false)}>
+                <View className="flex-1 bg-black/85 items-center justify-center p-6">
+                    <BlurView intensity={60} className="absolute inset-0" />
+                    <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className="items-center mb-8">
+                            <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                                <Ionicons name="shield-checkmark" size={32} color="#38bdf8" />
+                            </View>
+                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 인증</Text>
+                            <Text className={`mt-2 text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>보안 구역: 운영진만 접근 가능합니다</Text>
+                        </View>
+
+                        <View className="space-y-6 mb-12">
+                            <View className="relative">
+                                <View className="absolute left-6 top-6 z-10">
+                                    <Ionicons name="person" size={20} color={isDark ? "#38bdf8" : "#2563eb"} />
+                                </View>
+                                <TextInput
+                                    placeholder="영주 이름"
+                                    placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                    value={loginInput}
+                                    onChangeText={(t) => { setLoginInput(t); setLoginError(''); }}
+                                    autoCapitalize="none"
+                                    className={`p-6 pl-16 rounded-3xl font-black border-2 text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-800 border-slate-100 focus:border-blue-500'}`}
+                                />
+                            </View>
+
+                            <View className="relative mt-2">
+                                <View className="absolute left-6 top-6 z-10">
+                                    <Ionicons name="lock-closed" size={20} color={isDark ? "#38bdf8" : "#2563eb"} />
+                                </View>
+                                <TextInput
+                                    placeholder="비밀번호"
+                                    placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                    value={passwordInput}
+                                    onChangeText={(t) => { setPasswordInput(t); setLoginError(''); }}
+                                    secureTextEntry={true}
+                                    autoCapitalize="none"
+                                    onSubmitEditing={handleLogin}
+                                    className={`p-6 pl-16 rounded-3xl font-black border-2 text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-800 border-slate-100 focus:border-blue-500'}`}
+                                />
+                            </View>
+
+                            {!!loginError && (
+                                <View className="flex-row items-center mt-3 px-2 animate-in fade-in slide-in-from-top-1">
+                                    <Ionicons name="alert-circle" size={18} color="#ef4444" style={{ marginRight: 8 }} />
+                                    <Text className="text-red-500 font-black text-sm">{loginError}</Text>
+                                </View>
+                            )}
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <TouchableOpacity
+                                onPress={() => { setLoginModalVisible(false); setLoginError(''); setPasswordInput(''); }}
+                                className={`flex-1 py-5 rounded-[28px] border items-center justify-center active:scale-95 transition-all ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-100 border-slate-200'}`}
+                            >
+                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleLogin}
+                                className="flex-[2] bg-[#0091ff] py-5 rounded-[28px] shadow-2xl shadow-blue-500/60 items-center justify-center hover:bg-[#1a9dff] active:scale-95 transition-all"
+                            >
+                                <Text className="text-white text-center font-black text-xl tracking-tight">로그인</Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
@@ -646,16 +911,39 @@ export default function Home() {
             </Modal>
 
             <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                <View className="flex-1 bg-black/60 items-center justify-center p-6">
-                    <BlurView intensity={20} className="absolute inset-0" />
-                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}><Ionicons name={customAlert.type === 'success' ? 'checkmark-circle' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'alert-circle' : 'warning'} size={48} color={customAlert.type === 'success' ? '#10b981' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? '#ef4444' : '#fbbf24'} /></View>
-                        <Text className={`text-2xl font-bold mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                        <Text className={`text-center mb-8 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                        {/* Icon Section */}
+                        <View className={`w-24 h-24 rounded-full items-center justify-center mb-8 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}>
+                            <View className={`w-16 h-16 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500' : 'bg-amber-500'}`}>
+                                <Ionicons
+                                    name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'close' : 'warning'}
+                                    size={36}
+                                    color={isDark ? "black" : "white"}
+                                />
+                            </View>
+                        </View>
+
+                        <Text className={`text-3xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                        <Text className={`text-center mb-10 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+
                         {customAlert.type === 'confirm' ? (
-                            <View className="flex-row gap-3 w-full"><TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}><Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text></TouchableOpacity><TouchableOpacity onPress={() => { setCustomAlert({ ...customAlert, visible: false }); if (customAlert.onConfirm) customAlert.onConfirm(); }} className="flex-1 py-4 bg-red-600 rounded-2xl"><Text className="text-white text-center font-bold text-lg">삭제</Text></TouchableOpacity></View>
+                            <View className="flex-row gap-3 w-full">
+                                <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`flex-1 py-5 rounded-3xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                    <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => { setCustomAlert({ ...customAlert, visible: false }); if (customAlert.onConfirm) customAlert.onConfirm(); }} className="flex-[2] py-5 bg-red-600 rounded-3xl shadow-lg shadow-red-500/30">
+                                    <Text className="text-white text-center font-black text-lg">삭제하기</Text>
+                                </TouchableOpacity>
+                            </View>
                         ) : (
-                            <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}><Text className="text-white text-center font-bold text-lg">확인</Text></TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                className={`py-5 w-full rounded-3xl shadow-xl active:scale-[0.98] transition-all ${customAlert.type === 'success' ? 'bg-emerald-500 shadow-emerald-500/20' : customAlert.type === 'error' ? 'bg-red-600 shadow-red-500/20' : 'bg-amber-500 shadow-amber-500/20'}`}
+                            >
+                                <Text className="text-white text-center font-black text-xl">확인</Text>
+                            </TouchableOpacity>
                         )}
                     </View>
                 </View>
@@ -689,4 +977,3 @@ export default function Home() {
         </View>
     );
 }
-
