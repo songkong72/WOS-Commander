@@ -1513,7 +1513,7 @@ export default function EventTracker() {
                                 <View className="flex-1 mr-4">
                                     <View className="flex-row items-center mb-1">
                                         <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
-                                        <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                        <Text className={`text-3xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                                             {editingEvent?.title}
                                         </Text>
                                     </View>
@@ -1947,35 +1947,36 @@ export default function EventTracker() {
 
                                                 const Dropdown = ({ field, options, currentVal }: { field: 'y' | 'm' | 'd' | 'h' | 'min', options: string[], currentVal: string }) => {
                                                     const isOpen = activeDateDropdown?.type === type && activeDateDropdown?.field === field;
-                                                    const ITEM_HEIGHT = 40;
+                                                    const ITEM_HEIGHT = 44;
 
                                                     return (
-                                                        <View className="relative mr-1">
+                                                        <View className="relative mr-2 mb-2">
                                                             <TouchableOpacity
                                                                 onPress={() => setActiveDateDropdown(isOpen ? null : { type, field })}
-                                                                className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'} px-3 py-3 rounded-xl border flex-row items-center justify-between min-w-[65px]`}
+                                                                className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} px-3.5 py-3.5 rounded-2xl border flex-row items-center justify-between min-w-[70px] active:scale-[0.98] transition-all`}
                                                             >
                                                                 <Text className={`${isDark ? 'text-white' : 'text-slate-700'} font-bold text-xs mr-2`}>
                                                                     {currentVal}{field === 'y' ? '년' : field === 'm' ? '월' : field === 'd' ? '일' : field === 'h' ? '시' : '분'}
                                                                 </Text>
-                                                                <Ionicons name={isOpen ? "caret-up" : "caret-down"} size={10} color={isDark ? "#94a3b8" : "#64748b"} />
+                                                                <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={12} color={isDark ? "#94a3b8" : "#64748b"} />
                                                             </TouchableOpacity>
                                                             {isOpen && (
                                                                 <View
-                                                                    className={`absolute left-0 min-w-[80px] bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-2xl bottom-12`}
-                                                                    style={{ height: 280, zIndex: 1000, elevation: 10 }}
+                                                                    className={`absolute left-0 min-w-[90px] ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-2xl'} border-2 rounded-2xl overflow-hidden bottom-[60px]`}
+                                                                    style={{ height: 260, zIndex: 1000, elevation: 10 }}
                                                                 >
                                                                     <FlatList
                                                                         data={options}
                                                                         keyExtractor={(item) => item}
+                                                                        initialScrollIndex={options.indexOf(currentVal) !== -1 ? options.indexOf(currentVal) : 0}
                                                                         getItemLayout={(data, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
                                                                         renderItem={({ item: opt }) => (
                                                                             <TouchableOpacity
                                                                                 style={{ height: ITEM_HEIGHT, justifyContent: 'center' }}
                                                                                 onPress={() => updatePart(field, opt)}
-                                                                                className={`px-2 rounded-lg ${currentVal === opt ? 'bg-brand-accent/20' : ''}`}
+                                                                                className={`px-4 ${currentVal === opt ? 'bg-brand-accent/15' : ''} border-b border-slate-800/20`}
                                                                             >
-                                                                                <Text className={`text-center font-semibold ${currentVal === opt ? 'text-brand-accent' : 'text-slate-400'}`}>{opt}</Text>
+                                                                                <Text className={`text-center font-bold text-sm ${currentVal === opt ? 'text-brand-accent' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{opt}</Text>
                                                                             </TouchableOpacity>
                                                                         )}
                                                                     />
@@ -2134,13 +2135,13 @@ export default function EventTracker() {
                                                                     <View className="flex-1 relative">
                                                                         <TouchableOpacity
                                                                             onPress={() => setHourDropdownVisible(!hourDropdownVisible)}
-                                                                            className="bg-slate-800 p-3.5 rounded-xl border border-slate-700 flex-row justify-between items-center"
+                                                                            className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} p-3.5 rounded-2xl border flex-row justify-between items-center`}
                                                                         >
                                                                             <View className="flex-row items-center">
-                                                                                <Ionicons name="time-outline" size={16} color="#38bdf8" className="mr-2" />
-                                                                                <Text className="text-white font-bold">{editHour}시</Text>
+                                                                                <Ionicons name="settings-outline" size={16} color="#38bdf8" className="mr-2" />
+                                                                                <Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-bold`}>{editHour}시</Text>
                                                                             </View>
-                                                                            <Ionicons name={hourDropdownVisible ? "caret-up" : "caret-down"} size={12} color="#64748b" />
+                                                                            <Ionicons name={hourDropdownVisible ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
                                                                         </TouchableOpacity>
 
                                                                         {hourDropdownVisible && (
@@ -2165,18 +2166,22 @@ export default function EventTracker() {
                                                                             </View>
                                                                         )}
                                                                     </View>
-                                                                    <View className="w-4 items-center"><Text className="text-slate-500 font-semibold">:</Text></View>
+
+                                                                    <View className="w-4 items-center">
+                                                                        <Text className="text-slate-500 font-semibold">:</Text>
+                                                                    </View>
+
                                                                     {/* Minute Picker */}
                                                                     <View className="flex-1 relative">
                                                                         <TouchableOpacity
                                                                             onPress={() => setMinuteDropdownVisible(!minuteDropdownVisible)}
-                                                                            className="bg-slate-800 p-3.5 rounded-xl border border-slate-700 flex-row justify-between items-center"
+                                                                            className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} p-3.5 rounded-2xl border flex-row justify-between items-center`}
                                                                         >
                                                                             <View className="flex-row items-center">
-                                                                                <Ionicons name="timer-outline" size={16} color="#38bdf8" className="mr-2" />
-                                                                                <Text className="text-white font-bold">{editMinute}분</Text>
+                                                                                <Ionicons name="settings-outline" size={16} color="#38bdf8" className="mr-2" />
+                                                                                <Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-bold`}>{editMinute}분</Text>
                                                                             </View>
-                                                                            <Ionicons name={minuteDropdownVisible ? "caret-up" : "caret-down"} size={12} color="#64748b" />
+                                                                            <Ionicons name={minuteDropdownVisible ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
                                                                         </TouchableOpacity>
 
                                                                         {minuteDropdownVisible && (
@@ -2203,11 +2208,11 @@ export default function EventTracker() {
 
                                                                 <View className="flex-row gap-2">
                                                                     <TouchableOpacity
-                                                                        onPress={addTimeSlot}
-                                                                        className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-3 rounded-xl border items-center flex-row justify-center`}
+                                                                        onPress={() => addTimeSlot()}
+                                                                        className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-4 rounded-xl border items-center flex-row justify-center`}
                                                                     >
                                                                         <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 8 }} />
-                                                                        <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-bold`}>
+                                                                        <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-bold text-base`}>
                                                                             {editingSlotId ? '수정 완료' : '이 시간 추가 등록'}
                                                                         </Text>
                                                                     </TouchableOpacity>
@@ -2218,7 +2223,7 @@ export default function EventTracker() {
                                                                                 setEditHour('22');
                                                                                 setEditMinute('00');
                                                                             }}
-                                                                            className="bg-slate-800 px-4 py-3 rounded-xl border border-slate-700 justify-center"
+                                                                            className="bg-slate-800 px-4 py-4 rounded-xl border border-slate-700 justify-center"
                                                                         >
                                                                             <Text className="text-slate-400 font-semibold text-sm">취소</Text>
                                                                         </TouchableOpacity>
@@ -2247,16 +2252,16 @@ export default function EventTracker() {
                                 <View className="flex-row gap-4">
                                     <TouchableOpacity
                                         onPress={handleDeleteSchedule}
-                                        className={`flex-1 ${isDark ? 'bg-slate-800/50' : 'bg-white border border-slate-200'} py-4.5 rounded-[22px] items-center active:scale-[0.98] transition-all`}
+                                        className={`flex-1 ${isDark ? 'bg-slate-800/30' : 'bg-slate-100'} py-5 rounded-[24px] border ${isDark ? 'border-slate-700' : 'border-slate-200'} items-center active:scale-[0.98] transition-all`}
                                     >
-                                        <Text className={`${isDark ? 'text-slate-500' : 'text-slate-400'} font-bold text-lg`}>초기화</Text>
+                                        <Text className={`${isDark ? 'text-slate-600' : 'text-slate-400'} font-bold text-lg`}>설정 초기화</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
                                         onPress={saveSchedule}
-                                        className="flex-[2.5] bg-sky-500 py-4.5 rounded-[22px] items-center shadow-2xl shadow-sky-500/40 active:scale-[0.98] transition-all"
+                                        className="flex-[2] bg-sky-500 py-5 rounded-[24px] items-center shadow-xl shadow-sky-500/40 active:scale-[0.98] transition-all"
                                     >
-                                        <Text className="text-white font-black text-lg">설정 저장하기</Text>
+                                        <Text className="text-white font-black text-xl">저장하기</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
