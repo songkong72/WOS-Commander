@@ -80,10 +80,20 @@ export default function Home() {
             const schedule = schedules.find(s => s.eventId === id);
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
-            const combined = dayStr + ' ' + timeStr;
-            const match = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
-            if (match) {
-                const eStr = `${match[3].replace(/\./g, '-')}T${match[4]}:00`;
+            const combined = `${dayStr} ${timeStr}`;
+
+            // 1. Date Range Match
+            const rangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+            if (rangeMatch) {
+                const eStr = `${rangeMatch[3].replace(/\./g, '-')}T${rangeMatch[4]}:00`;
+                const end = new Date(eStr);
+                return isNaN(end.getTime()) ? null : end;
+            }
+
+            // 2. Single Date Match
+            const singleMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+            if (singleMatch) {
+                const eStr = `${singleMatch[1].replace(/\./g, '-')}T${singleMatch[2]}:00`;
                 const end = new Date(eStr);
                 return isNaN(end.getTime()) ? null : end;
             }
@@ -152,25 +162,12 @@ export default function Home() {
     };
 
     const isVisibleInList = (event: any) => {
-        const isExp = isEventExpired(event);
-        if (!isExp) return true; // If not expired, always visible
+        const end = getEventEndDate(event);
+        if (!end) return true; // For weekly/everlasting events, keep them visible.
 
-        // If expired, check if it's within the 2-day grace period for date range events
-        const dayStr = event.day || '';
-        const timeStr = event.time || '';
-        const combined = dayStr + ' ' + timeStr;
-        const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
-
-        if (dateRangeMatch) {
-            const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
-            const end = new Date(eStr);
-            if (!isNaN(end.getTime())) {
-                const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
-                const threshold = new Date(end.getTime() + twoDaysInMs);
-                return now <= threshold;
-            }
-        }
-        return true; // For non-date-range events (weekly, etc.) that are expired, keep them visible.
+        const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+        const threshold = new Date(end.getTime() + twoDaysInMs);
+        return now <= threshold;
     };
 
     const isEventActive = (event: any) => {
@@ -408,6 +405,7 @@ export default function Home() {
                         processedList.push({
                             ...e,
                             eventId: `${e.eventId}_team${idx + 1}`,
+                            originalEventId: e.eventId,
                             title: cleanLabel ? `곰 사냥 작전 (${cleanLabel})` : '곰 사냥 작전',
                             time: simplifiedTime,
                             isBearSplit: true,
@@ -667,218 +665,243 @@ export default function Home() {
                                             return 'calendar-clear-outline';
                                         };
 
-                                        const pointColor = '#0ea5e9'; // Point Blue
+                                        const pointColor = isDark ? '#38bdf8' : '#2563eb';
                                         const titleColor = isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900');
-                                        const scheduleColor = isExpired ? (isDark ? 'text-slate-700' : 'text-slate-300') : (isUpcoming ? (isDark ? 'text-slate-400' : 'text-slate-600') : (isDark ? 'text-slate-200' : 'text-slate-700'));
-                                        const infoColor = isDark ? 'text-slate-500' : 'text-slate-500';
+
+                                        // Section Header Logic
+                                        const showHeader = idx === 0 ||
+                                            (isEventActive(displayEvents[idx - 1]) !== isActive && isActive) ||
+                                            (isEventActive(displayEvents[idx - 1]) && !isActive && !isExpired) ||
+                                            (!isEventExpired(displayEvents[idx - 1]) && isExpired);
+
+                                        let headerTitle = '';
+                                        if (showHeader) {
+                                            if (isActive) headerTitle = '진행 중인 이벤트';
+                                            else if (isUpcoming) headerTitle = '진행 예정 이벤트';
+                                            else if (isExpired) headerTitle = '종료된 이벤트';
+                                        }
 
                                         return (
-                                            <TouchableOpacity
-                                                key={idx}
-                                                onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.eventId } })}
-                                                className="active:scale-[0.98] transition-all"
-                                            >
-                                                <View className={`p-8 md:p-10 rounded-[40px] border shadow-2xl ${isActive ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40')}`}>
-                                                    <View className="flex-row items-center justify-between mb-8">
-                                                        <View className="flex-row items-center flex-1 mr-3">
-                                                            <View className={`w-14 h-14 rounded-[22px] items-center justify-center mr-5 ${isDark ? 'bg-slate-800/80' : 'bg-slate-50 border border-slate-100'}`}>
-                                                                <Ionicons name={getEventIcon(event.eventId)} size={28} color={isActive ? "#3b82f6" : (isExpired ? '#64748b' : '#94a3b8')} />
-                                                            </View>
-                                                            <View className="flex-1">
-                                                                <Text className={`text-2xl md:text-3xl font-black tracking-tight mb-2 ${titleColor}`}>{event.title}</Text>
-                                                                <View className="flex-row gap-2">
-                                                                    {isActive ? (
-                                                                        <View className="bg-blue-600 px-3 py-1 rounded-lg flex-row items-center">
-                                                                            <Ionicons name="flash" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                            <Text className="text-white text-[10px] font-black uppercase">진행 중</Text>
-                                                                        </View>
-                                                                    ) : isExpired ? (
-                                                                        <View className="bg-slate-500 px-3 py-1 rounded-lg flex-row items-center">
-                                                                            <Ionicons name="checkmark-circle" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                            <Text className="text-white text-[10px] font-black uppercase">종료</Text>
-                                                                        </View>
-                                                                    ) : (
-                                                                        <View className="bg-emerald-600 px-3 py-1 rounded-lg flex-row items-center">
-                                                                            <Ionicons name="time" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                            <Text className="text-white text-[10px] font-black uppercase">예정</Text>
-                                                                        </View>
-                                                                    )}
+                                            <View key={idx} className="flex-col gap-4">
+                                                {!!headerTitle && (
+                                                    <View className={`mt-8 mb-4 flex-row items-center px-6 py-3 rounded-2xl ${isDark ? 'bg-slate-900/40 border-l-4 border-l-[#38bdf8]' : 'bg-slate-100/80 border-l-4 border-l-blue-600 shadow-sm'}`}>
+                                                        <Ionicons
+                                                            name={isActive ? "flash" : (isUpcoming ? "calendar" : "checkmark-circle")}
+                                                            size={16}
+                                                            color={isActive ? "#38bdf8" : (isUpcoming ? "#60a5fa" : "#64748b")}
+                                                            style={{ marginRight: 10 }}
+                                                        />
+                                                        <Text className={`text-[12px] font-black tracking-widest uppercase ${isDark ? (isActive || isUpcoming ? 'text-slate-200' : 'text-slate-500') : 'text-slate-600'}`}>
+                                                            {headerTitle}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                                <TouchableOpacity
+                                                    onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } })}
+                                                    className="active:scale-[0.98] transition-all"
+                                                >
+                                                    <View className={`p-8 md:p-10 rounded-[40px] border shadow-2xl ${isActive ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40')}`}>
+                                                        <View className="flex-row items-center justify-between mb-8">
+                                                            <View className="flex-row items-center flex-1 mr-3">
+                                                                <View className={`w-14 h-14 rounded-[22px] items-center justify-center mr-5 ${isDark ? 'bg-slate-800/80' : 'bg-slate-50 border border-slate-100'}`}>
+                                                                    <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={28} color={isActive ? "#3b82f6" : (isExpired ? '#64748b' : '#94a3b8')} />
+                                                                </View>
+                                                                <View className="flex-1">
+                                                                    <Text className={`text-2xl md:text-3xl font-black tracking-tight mb-2 ${!isExpired ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : titleColor}`}>{event.title}</Text>
+                                                                    <View className="flex-row gap-2">
+                                                                        {isActive ? (
+                                                                            <View className="bg-blue-600 px-3 py-1 rounded-lg flex-row items-center">
+                                                                                <Ionicons name="flash" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                                <Text className="text-white text-[10px] font-black uppercase">진행 중</Text>
+                                                                            </View>
+                                                                        ) : isExpired ? (
+                                                                            <View className="bg-slate-500 px-3 py-1 rounded-lg flex-row items-center">
+                                                                                <Ionicons name="checkmark-circle" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                                <Text className="text-white text-[10px] font-black uppercase">종료</Text>
+                                                                            </View>
+                                                                        ) : (
+                                                                            <View className="bg-emerald-600 px-3 py-1 rounded-lg flex-row items-center">
+                                                                                <Ionicons name="time" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                                <Text className="text-white text-[10px] font-black uppercase">예정</Text>
+                                                                            </View>
+                                                                        )}
+                                                                    </View>
                                                                 </View>
                                                             </View>
+                                                            {isActive && (
+                                                                <Animated.View
+                                                                    className={`flex-row items-center px-6 py-3 rounded-2xl bg-blue-600 shadow-2xl`}
+                                                                    style={{
+                                                                        opacity: flickerAnim,
+                                                                        transform: [{ scale: scaleAnim }],
+                                                                        shadowColor: '#3b82f6',
+                                                                        shadowOffset: { width: 0, height: 4 },
+                                                                        shadowOpacity: 0.8,
+                                                                        shadowRadius: 15,
+                                                                        elevation: 12
+                                                                    }}
+                                                                >
+                                                                    <Text className={`text-white text-[13px] font-black tracking-widest mr-2`}>지금 진행</Text>
+                                                                    <Ionicons name="chevron-forward-circle" size={18} color="white" />
+                                                                </Animated.View>
+                                                            )}
                                                         </View>
-                                                        {isActive && (
-                                                            <Animated.View
-                                                                className={`flex-row items-center px-6 py-3 rounded-2xl bg-blue-600 shadow-2xl`}
-                                                                style={{
-                                                                    opacity: flickerAnim,
-                                                                    transform: [{ scale: scaleAnim }],
-                                                                    shadowColor: '#3b82f6',
-                                                                    shadowOffset: { width: 0, height: 4 },
-                                                                    shadowOpacity: 0.8,
-                                                                    shadowRadius: 15,
-                                                                    elevation: 12
-                                                                }}
-                                                            >
-                                                                <Text className={`text-white text-[13px] font-black tracking-widest mr-2`}>지금 진행</Text>
-                                                                <Ionicons name="chevron-forward-circle" size={18} color="white" />
-                                                            </Animated.View>
-                                                        )}
-                                                    </View>
 
-                                                    <View className="flex-col gap-3">
-                                                        {!!event.day && !event.isBearSplit && (
-                                                            <View className={`rounded-3xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                                                <View className="p-6 gap-3">
-                                                                    {(() => {
-                                                                        const formattedDay = (event.day || '').replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                        let kstText = formattedDay;
-                                                                        let utcText = '';
+                                                        <View className="flex-col gap-3">
+                                                            {!!event.day && !event.isBearSplit && (
+                                                                <View className={`rounded-3xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                                                    <View className="p-6 gap-3">
+                                                                        {(() => {
+                                                                            const formattedDay = (event.day || '').replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                            let kstText = formattedDay;
+                                                                            let utcText = '';
 
-                                                                        if (kstText.includes('~')) {
-                                                                            const parts = kstText.split('~').map(x => x.trim());
-                                                                            const sDateUtc = getUTCString(parts[0]);
-                                                                            const eDateUtc = getUTCString(parts[1]);
-                                                                            if (sDateUtc && eDateUtc) utcText = `${sDateUtc} ~ ${eDateUtc}`;
-                                                                            else {
-                                                                                const sWeeklyUtc = getUTCTimeString(parts[0], false);
-                                                                                const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                                                if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                            if (kstText.includes('~')) {
+                                                                                const parts = kstText.split('~').map(x => x.trim());
+                                                                                const sDateUtc = getUTCString(parts[0]);
+                                                                                const eDateUtc = getUTCString(parts[1]);
+                                                                                if (sDateUtc && eDateUtc) utcText = `${sDateUtc} ~ ${eDateUtc}`;
+                                                                                else {
+                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                    if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                                }
+                                                                            } else {
+                                                                                const dateUtc = getUTCString(event.day);
+                                                                                if (dateUtc) utcText = dateUtc;
+                                                                                else {
+                                                                                    const weeklyUtc = getUTCTimeString(event.day);
+                                                                                    if (weeklyUtc) utcText = weeklyUtc;
+                                                                                }
                                                                             }
-                                                                        } else {
-                                                                            const dateUtc = getUTCString(event.day);
-                                                                            if (dateUtc) utcText = dateUtc;
-                                                                            else {
-                                                                                const weeklyUtc = getUTCTimeString(event.day);
-                                                                                if (weeklyUtc) utcText = weeklyUtc;
-                                                                            }
-                                                                        }
 
-                                                                        const displayText = timezone === 'KST' ? kstText : (utcText || kstText);
+                                                                            const displayText = timezone === 'KST' ? kstText : (utcText || kstText);
 
-                                                                        const renderPart = (str: string) => {
-                                                                            const isRange = str.includes('~');
-                                                                            const parts = isRange ? str.split('~').map(x => x.trim()) : [str];
+                                                                            const renderPart = (str: string) => {
+                                                                                const isRange = str.includes('~');
+                                                                                const parts = isRange ? str.split('~').map(x => x.trim()) : [str];
 
-                                                                            return parts.map((p, pIdx) => {
-                                                                                const split = splitSchedulePart(p);
-                                                                                return (
-                                                                                    <View key={pIdx} className="flex-row items-center py-1">
-                                                                                        <View className="w-8 items-center mr-1">
-                                                                                            {pIdx > 0 && <Text className={`opacity-40 text-lg font-black ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>~</Text>}
-                                                                                        </View>
-                                                                                        <View className="flex-row items-center flex-1">
-                                                                                            <View className="flex-row items-center" style={{ width: 155 }}>
-                                                                                                <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
-                                                                                                <Text className={`text-[16px] font-black tracking-tight ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
+                                                                                return parts.map((p, pIdx) => {
+                                                                                    const split = splitSchedulePart(p);
+                                                                                    return (
+                                                                                        <View key={pIdx} className="flex-row items-center py-1">
+                                                                                            <View className="w-8 items-center mr-1">
+                                                                                                {pIdx > 0 && <Text className={`opacity-40 text-lg font-black ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>~</Text>}
                                                                                             </View>
-                                                                                            {!!split.time && (
-                                                                                                <View className="flex-row items-center">
-                                                                                                    <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
-                                                                                                    <Text className={`text-[16px] font-black tracking-tight ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
+                                                                                            <View className="flex-row items-center flex-1">
+                                                                                                <View className="flex-row items-center" style={{ width: 155 }}>
+                                                                                                    <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
+                                                                                                    <Text className={`text-[16px] font-black tracking-tight ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
                                                                                                 </View>
+                                                                                                {!!split.time && (
+                                                                                                    <View className="flex-row items-center">
+                                                                                                        <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
+                                                                                                        <Text className={`text-[16px] font-black tracking-tight ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
+                                                                                                    </View>
+                                                                                                )}
+                                                                                            </View>
+                                                                                        </View>
+                                                                                    );
+                                                                                });
+                                                                            };
+
+                                                                            return renderPart(displayText);
+                                                                        })()}
+                                                                    </View>
+                                                                </View>
+                                                            )}
+                                                            {!!event.time && (
+                                                                <View className="gap-3">
+                                                                    {event.isBearSplit ? (
+                                                                        <View className={`rounded-[32px] border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                                                            <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
+                                                                                {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
+                                                                                    const trimmed = item.trim();
+                                                                                    if (!trimmed) return null;
+                                                                                    const isLive = checkItemActive(trimmed);
+
+                                                                                    const dayMatch = trimmed.match(/[일월화수목금토매일]+/);
+                                                                                    const day = dayMatch ? dayMatch[0] : '-';
+                                                                                    const localTime = trimmed.replace(/[일월화수목금토매일]+\s*/, '').trim();
+                                                                                    const utcStr = getUTCTimeString(trimmed, false);
+                                                                                    const displayTime = timezone === 'KST' ? localTime : utcStr;
+                                                                                    const displayDay = timezone === 'KST' ? day : (utcStr.match(/[일월화수목금토매일]+/)?.[0] || day);
+                                                                                    const cleanDisplayTime = displayTime.replace(/[일월화수목금토매일]+\s*/, '').replace(/[()]/g, '');
+
+                                                                                    return (
+                                                                                        <View key={iIdx} className={`flex-row items-center px-10 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-200/50'} last:border-0`}>
+                                                                                            <View className="flex-row items-center flex-1">
+                                                                                                <View className="flex-row items-center mr-8">
+                                                                                                    <Text className={`font-black text-xl ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-200' : 'text-slate-900')} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
+                                                                                                </View>
+                                                                                                <View className="flex-row items-center">
+                                                                                                    <Text className={`font-black text-xl ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-400' : 'text-slate-700')} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
+                                                                                                </View>
+                                                                                            </View>
+                                                                                            {isLive && (
+                                                                                                <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                                                             )}
                                                                                         </View>
-                                                                                    </View>
-                                                                                );
-                                                                            });
-                                                                        };
-
-                                                                        return renderPart(displayText);
-                                                                    })()}
-                                                                </View>
-                                                            </View>
-                                                        )}
-                                                        {!!event.time && (
-                                                            <View className="gap-3">
-                                                                {event.isBearSplit ? (
-                                                                    <View className={`rounded-[32px] border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                                                        <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
-                                                                            {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
-                                                                                const trimmed = item.trim();
+                                                                                    );
+                                                                                })}
+                                                                            </View>
+                                                                        </View>
+                                                                    ) : (
+                                                                        <>
+                                                                            {event.time.split(' / ').map((part: string, pIdx: number) => {
+                                                                                const trimmed = part.trim();
                                                                                 if (!trimmed) return null;
-                                                                                const isLive = checkItemActive(trimmed);
-
-                                                                                const dayMatch = trimmed.match(/[일월화수목금토매일]+/);
-                                                                                const day = dayMatch ? dayMatch[0] : '-';
-                                                                                const localTime = trimmed.replace(/[일월화수목금토매일]+\s*/, '').trim();
-                                                                                const utcStr = getUTCTimeString(trimmed, false);
-                                                                                const displayTime = timezone === 'KST' ? localTime : utcStr;
-                                                                                const displayDay = timezone === 'KST' ? day : (utcStr.match(/[일월화수목금토매일]+/)?.[0] || day);
-                                                                                const cleanDisplayTime = displayTime.replace(/[일월화수목금토매일]+\s*/, '').replace(/[()]/g, '');
-
+                                                                                const colonIdx = trimmed.indexOf(':');
+                                                                                const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
+                                                                                const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
+                                                                                let label = rawLabel;
+                                                                                if (event.eventId === 'a_bear' || event.eventId === 'alliance_bear') {
+                                                                                    label = label.replace('1군', '곰1').replace('2군', '곰2');
+                                                                                }
+                                                                                const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                                                                                 return (
-                                                                                    <View key={iIdx} className={`flex-row items-center px-10 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-200/50'} last:border-0`}>
-                                                                                        <View className="flex-row items-center flex-1">
-                                                                                            <View className="flex-row items-center mr-8">
-                                                                                                <Text className={`font-black text-xl ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-200' : 'text-slate-900')} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
+                                                                                    <View key={pIdx} className={`rounded-[32px] border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                                                                        {!!label && (
+                                                                                            <View className={`px-8 py-4 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-200 border-slate-300'}`}>
+                                                                                                <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>{label}</Text>
                                                                                             </View>
-                                                                                            <View className="flex-row items-center">
-                                                                                                <Text className={`font-black text-xl ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-400' : 'text-slate-700')} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
-                                                                                            </View>
-                                                                                        </View>
-                                                                                        {isLive && (
-                                                                                            <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                                                         )}
+                                                                                        <View className="flex-col">
+                                                                                            {content.split(/[,|]/).map((item, iIdx) => {
+                                                                                                const isLive = checkItemActive(item.trim());
+                                                                                                const utcStr = getUTCTimeString(item.trim(), false);
+                                                                                                const displayFull = timezone === 'KST' ? item.trim() : utcStr;
+                                                                                                const split = splitSchedulePart(displayFull);
+
+                                                                                                return (
+                                                                                                    <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                                                        <View className="flex-row items-center flex-1">
+                                                                                                            <View className="flex-row items-center" style={{ width: 165 }}>
+                                                                                                                <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
+                                                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{split.date}</Text>
+                                                                                                            </View>
+                                                                                                            {!!split.time && (
+                                                                                                                <View className="flex-row items-center">
+                                                                                                                    <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
+                                                                                                                    <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{split.time}</Text>
+                                                                                                                </View>
+                                                                                                            )}
+                                                                                                        </View>
+                                                                                                    </View>
+                                                                                                );
+                                                                                            })}
+                                                                                        </View>
                                                                                     </View>
                                                                                 );
                                                                             })}
-                                                                        </View>
-                                                                    </View>
-                                                                ) : (
-                                                                    <>
-                                                                        {event.time.split(' / ').map((part: string, pIdx: number) => {
-                                                                            const trimmed = part.trim();
-                                                                            if (!trimmed) return null;
-                                                                            const colonIdx = trimmed.indexOf(':');
-                                                                            const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                                                            const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
-                                                                            let label = rawLabel;
-                                                                            if (event.eventId === 'a_bear' || event.eventId === 'alliance_bear') {
-                                                                                label = label.replace('1군', '곰1').replace('2군', '곰2');
-                                                                            }
-                                                                            const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-                                                                            return (
-                                                                                <View key={pIdx} className={`rounded-[32px] border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                                                                    {!!label && (
-                                                                                        <View className={`px-8 py-4 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-200 border-slate-300'}`}>
-                                                                                            <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>{label}</Text>
-                                                                                        </View>
-                                                                                    )}
-                                                                                    <View className="flex-col">
-                                                                                        {content.split(/[,|]/).map((item, iIdx) => {
-                                                                                            const isLive = checkItemActive(item.trim());
-                                                                                            const utcStr = getUTCTimeString(item.trim(), false);
-                                                                                            const displayFull = timezone === 'KST' ? item.trim() : utcStr;
-                                                                                            const split = splitSchedulePart(displayFull);
-
-                                                                                            return (
-                                                                                                <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
-                                                                                                    <View className="flex-row items-center flex-1">
-                                                                                                        <View className="flex-row items-center" style={{ width: 165 }}>
-                                                                                                            <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
-                                                                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{split.date}</Text>
-                                                                                                        </View>
-                                                                                                        {!!split.time && (
-                                                                                                            <View className="flex-row items-center">
-                                                                                                                <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
-                                                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{split.time}</Text>
-                                                                                                            </View>
-                                                                                                        )}
-                                                                                                    </View>
-                                                                                                </View>
-                                                                                            );
-                                                                                        })}
-                                                                                    </View>
-                                                                                </View>
-                                                                            );
-                                                                        })}
-                                                                    </>
-                                                                )}
-                                                            </View>
-                                                        )}
+                                                                        </>
+                                                                    )}
+                                                                </View>
+                                                            )}
+                                                        </View>
                                                     </View>
-                                                </View>
-                                            </TouchableOpacity>
+                                                </TouchableOpacity>
+                                            </View>
                                         );
                                     })}
                                 </View>

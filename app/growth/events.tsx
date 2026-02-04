@@ -488,8 +488,31 @@ export default function EventTracker() {
         } catch (e) { return false; }
     };
 
+    const isVisibleInList = (event: WikiEvent) => {
+        const isExp = checkIsExpired(event);
+        if (!isExp) return true;
+
+        const dayStr = event.day || '';
+        const timeStr = event.time || '';
+        const combined = dayStr + ' ' + timeStr;
+        const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+
+        if (dateRangeMatch) {
+            const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
+            const end = new Date(eStr);
+            if (!isNaN(end.getTime())) {
+                const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+                const threshold = new Date(end.getTime() + twoDaysInMs);
+                return now <= threshold;
+            }
+        }
+        return true;
+    };
+
     const filteredEvents = useMemo(() => {
         let base = selectedCategory === '전체' ? [...events] : events.filter(e => e.category === selectedCategory);
+
+        base = base.filter(e => isVisibleInList(e));
 
         base.sort((a, b) => {
             const activeA = checkIsOngoing(a);
@@ -1099,7 +1122,7 @@ export default function EventTracker() {
                                         >
                                             {/* Event Card Container - Enhanced depth */}
                                             <View
-                                                className={`h-full rounded-[40px] border transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-emerald-500/20 shadow-xl shadow-emerald-900/10' : 'bg-white border-emerald-100 shadow-xl shadow-emerald-100/30') : (isUpcoming ? (isDark ? 'bg-slate-900/60 border-slate-800/60' : 'bg-slate-50 border-slate-100') : (isDark ? 'bg-slate-900/30 border-slate-800/30' : 'bg-slate-50/50 border-slate-100'))}`}
+                                                className={`h-full rounded-[40px] border shadow-2xl transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
                                             >
                                                 {/* Card Header - Enhanced spacing & category icons */}
                                                 <View className={`px-6 py-5 flex-row items-center justify-between border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
@@ -1130,22 +1153,19 @@ export default function EventTracker() {
                                                                     <Text className={`text-[9px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{event.category}</Text>
                                                                 </View>
                                                                 {isOngoing ? (
-                                                                    <Animated.View
-                                                                        className={`flex-row items-center px-2 py-0.5 rounded-lg border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100'}`}
-                                                                        style={{ opacity: flickerAnim }}
-                                                                    >
-                                                                        <Ionicons name="checkmark-circle" size={10} color="#10b981" style={{ marginRight: 4 }} />
-                                                                        <Text className={`text-emerald-600 text-[9px] font-black tracking-tighter`}>진행 중</Text>
-                                                                    </Animated.View>
+                                                                    <View className="bg-blue-600 px-3 py-1 rounded-lg flex-row items-center">
+                                                                        <Ionicons name="flash" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                        <Text className="text-white text-[9px] font-black uppercase">진행 중</Text>
+                                                                    </View>
                                                                 ) : isExpired ? (
-                                                                    <View className={`flex-row items-center px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                                                        <Ionicons name="checkmark-circle-outline" size={10} color="#94a3b8" style={{ marginRight: 4 }} />
-                                                                        <Text className={`text-slate-500 text-[9px] font-black tracking-tighter`}>종료</Text>
+                                                                    <View className="bg-slate-500 px-3 py-1 rounded-lg flex-row items-center">
+                                                                        <Ionicons name="checkmark-circle" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                        <Text className="text-white text-[9px] font-black uppercase">종료</Text>
                                                                     </View>
                                                                 ) : (
-                                                                    <View className={`flex-row items-center px-2 py-0.5 rounded-lg border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
-                                                                        <Ionicons name="time" size={10} color="#3b82f6" style={{ marginRight: 4 }} />
-                                                                        <Text className={`text-blue-500 text-[9px] font-black tracking-tighter`}>예정</Text>
+                                                                    <View className="bg-emerald-600 px-3 py-1 rounded-lg flex-row items-center">
+                                                                        <Ionicons name="time" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                        <Text className="text-white text-[9px] font-black uppercase">예정</Text>
                                                                     </View>
                                                                 )}
                                                             </View>
@@ -1173,68 +1193,67 @@ export default function EventTracker() {
                                                                 </View>
                                                             ) : (
                                                                 event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
-                                                                    <View className="w-full flex-row flex-wrap gap-3">
-                                                                        {event.day.split('/').map((d, dIdx) => {
-                                                                            const cleanD = d.trim();
-                                                                            const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                            const isRange = cleanD.includes('~');
-                                                                            let utcText = '';
+                                                                    <View className={`w-full rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                                                        {/* Schedule Table Header */}
+                                                                        <View className={`flex-row px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                                            <Text className={`flex-[1.5] text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>로컬 시간 (KST)</Text>
+                                                                            <Text className={`flex-1 text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Universal (UTC)</Text>
+                                                                        </View>
+                                                                        <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
+                                                                            {event.day.split('/').map((d, dIdx) => {
+                                                                                const cleanD = d.trim();
+                                                                                const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                                let utcText = '';
+                                                                                if (cleanD.includes('~')) {
+                                                                                    const parts = cleanD.split('~').map(x => x.trim());
+                                                                                    const sDateUtc = getUTCString(parts[0]);
+                                                                                    const eDateUtc = getUTCString(parts[1]);
+                                                                                    if (sDateUtc && eDateUtc) utcText = `${sDateUtc} ~ ${eDateUtc}`;
+                                                                                    else {
+                                                                                        const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                        const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                        if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc} ~ ${eWeeklyUtc}`;
+                                                                                    }
+                                                                                } else {
+                                                                                    const dateUtc = getUTCString(cleanD);
+                                                                                    if (dateUtc) utcText = dateUtc;
+                                                                                    else {
+                                                                                        const weeklyUtc = getUTCTimeString(cleanD);
+                                                                                        if (weeklyUtc) utcText = weeklyUtc;
+                                                                                    }
+                                                                                }
 
-                                                                            if (isRange) {
-                                                                                const parts = cleanD.split('~').map(x => x.trim());
-                                                                                const sDateUtc = getUTCString(parts[0]);
-                                                                                const eDateUtc = getUTCString(parts[1]);
-                                                                                if (sDateUtc && eDateUtc) utcText = `${sDateUtc} ~ ${eDateUtc}`;
-                                                                                else {
-                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
-                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                                                    if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc} ~ ${eWeeklyUtc}`;
-                                                                                }
-                                                                            } else {
-                                                                                const dateUtc = getUTCString(cleanD);
-                                                                                if (dateUtc) utcText = dateUtc;
-                                                                                else {
-                                                                                    const weeklyUtc = getUTCTimeString(cleanD);
-                                                                                    if (weeklyUtc) utcText = weeklyUtc;
-                                                                                }
-                                                                            }
+                                                                                const renderResponsivePeriod = (str: string, textClass: string, isUtc = false) => {
+                                                                                    if (!str.includes('~')) return <Text className={textClass}>{isUtc ? str : formatDisplayDate(str)}</Text>;
+                                                                                    const parts = str.split('~').map(s => s.trim());
+                                                                                    return (
+                                                                                        <View className="flex-row items-center">
+                                                                                            <Text className={`${textClass} font-black`}>{isUtc ? parts[0] : formatDisplayDate(parts[0])}</Text>
+                                                                                            <Text className={`${textClass} mx-2 opacity-30 font-normal`}>~</Text>
+                                                                                            <Text className={`${textClass} font-black`}>{isUtc ? parts[1] : formatDisplayDate(parts[1])}</Text>
+                                                                                        </View>
+                                                                                    );
+                                                                                };
 
-                                                                            const renderResponsivePeriod = (str: string, textClass: string, isUtc = false) => {
-                                                                                if (!str.includes('~')) {
-                                                                                    return <Text className={textClass}>{isUtc ? str : formatDisplayDate(str)}</Text>;
-                                                                                }
-                                                                                const parts = str.split('~').map(s => s.trim());
                                                                                 return (
-                                                                                    <View className="flex-row items-center">
-                                                                                        <Text className={textClass}>{isUtc ? parts[0] : formatDisplayDate(parts[0])}</Text>
-                                                                                        <Text className={`${textClass} mx-1 opacity-40`}>~</Text>
-                                                                                        <Text className={textClass}>{isUtc ? parts[1] : formatDisplayDate(parts[1])}</Text>
+                                                                                    <View key={dIdx} className={`flex-row items-center px-4 py-4 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                                                        <View className="flex-[1.5]">
+                                                                                            {renderResponsivePeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} text-[13px] ${isExpired ? 'line-through' : ''}`)}
+                                                                                        </View>
+                                                                                        <View className="flex-1 opacity-70">
+                                                                                            {!!utcText && renderResponsivePeriod(utcText, "text-slate-500 text-[11px] font-medium", true)}
+                                                                                        </View>
                                                                                     </View>
                                                                                 );
-                                                                            };
-
-                                                                            return (
-                                                                                <View key={dIdx} className={`flex-1 min-w-[140px] p-4 rounded-2xl border ${isDark ? 'bg-slate-800/20 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                                                                                    <View className="flex-row items-center mb-1.5">
-                                                                                        <Ionicons name={isOngoing ? "checkmark-circle" : (isUpcoming ? "time" : "checkmark-circle-outline")} size={13} color={isOngoing ? "#10b981" : (isUpcoming ? "#3b82f6" : "#94a3b8")} className="mr-2" />
-                                                                                        {renderResponsivePeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isUpcoming ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} font-bold text-sm ${isExpired ? 'line-through' : ''}`)}
-                                                                                    </View>
-                                                                                    {!!utcText && (
-                                                                                        <View className="ml-5 flex-row items-center">
-                                                                                            <Ionicons name="earth-outline" size={10} color="#64748b" style={{ marginRight: 4, opacity: 0.6 }} />
-                                                                                            {renderResponsivePeriod(utcText, "text-slate-500 text-[10px] font-medium opacity-80", true)}
-                                                                                        </View>
-                                                                                    )}
-                                                                                </View>
-                                                                            );
-                                                                        })}
+                                                                            })}
+                                                                        </View>
                                                                     </View>
                                                                 ) : null
                                                             )
                                                         )}
 
                                                         {event.time && (
-                                                            <View className="w-full space-y-4">
+                                                            <View className="w-full gap-4">
                                                                 {event.time.split(' / ').map((part, idx) => {
                                                                     const trimmed = part.trim();
                                                                     if (!trimmed) return null;
@@ -1249,26 +1268,29 @@ export default function EventTracker() {
                                                                     if (content === "." || !content) return null;
 
                                                                     return (
-                                                                        <View key={idx} className="mb-2">
-                                                                            {label && (
-                                                                                <Text className={`text-[11px] font-bold uppercase tracking-wider mb-2 ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{label}</Text>
+                                                                        <View key={idx} className={`rounded-3xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                                                            {!!label && (
+                                                                                <View className={`px-5 py-3 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                                                                    <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{label}</Text>
+                                                                                </View>
                                                                             )}
-                                                                            <View className="flex-row flex-wrap gap-2.5">
+                                                                            {/* Table Header */}
+                                                                            <View className={`flex-row px-5 py-2 border-b border-slate-800/10`}>
+                                                                                <Text className={`flex-[1.5] text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Local KST</Text>
+                                                                                <Text className={`flex-1 text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Universal UTC</Text>
+                                                                            </View>
+                                                                            <View className="flex-col">
                                                                                 {content.split(/[,|]/).map((item, iIdx) => {
                                                                                     const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                                    const utcStr = getUTCTimeString(item.trim());
+                                                                                    const utcStr = getUTCTimeString(item.trim(), false);
                                                                                     return (
-                                                                                        <View key={iIdx} className={`px-4 py-2.5 rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                                                                                            <View className="flex-row items-center">
-                                                                                                <Ionicons name="time-outline" size={13} color="#6366f1" className="mr-2" />
-                                                                                                <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'} font-bold text-[13px]`}>{formatDisplayDate(formatted)}</Text>
+                                                                                        <View key={iIdx} className={`flex-row items-center px-4 py-4 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                                            <View className="flex-[1.5]">
+                                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-[13px] ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted)}</Text>
                                                                                             </View>
-                                                                                            {!!utcStr && (
-                                                                                                <View className="flex-row items-center ml-5 mt-0.5">
-                                                                                                    <Ionicons name="earth-outline" size={10} color="#64748b" style={{ marginRight: 4, opacity: 0.6 }} />
-                                                                                                    <Text className="text-[10px] font-medium text-slate-500 opacity-80">{utcStr}</Text>
-                                                                                                </View>
-                                                                                            )}
+                                                                                            <View className="flex-1 opacity-70">
+                                                                                                <Text className="text-slate-500 text-[11px] font-medium">{utcStr || '-'}</Text>
+                                                                                            </View>
                                                                                         </View>
                                                                                     );
                                                                                 })}
