@@ -4,6 +4,7 @@ import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth, useTheme } from '../_layout';
 import { getGuideContent } from '../../data/event-guides';
 import { Attendee } from '../../data/mock-attendees';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirestoreAttendees } from '../../hooks/useFirestoreAttendees';
 import { useFirestoreEventSchedules } from '../../hooks/useFirestoreEventSchedules';
 import { useFirestoreMembers } from '../../hooks/useFirestoreMembers';
@@ -162,9 +163,22 @@ export default function EventTracker() {
     const { auth } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
-    const { dynamicAdmins } = useFirestoreAdmins();
+    const { dynamicAdmins } = useFirestoreAdmins(serverId, allianceId);
     const router = useRouter();
     const params = useLocalSearchParams();
+
+    const [serverId, setServerId] = useState<string | null>(undefined as any);
+    const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
+
+    useEffect(() => {
+        const loadIds = async () => {
+            const s = await AsyncStorage.getItem('serverId');
+            const a = await AsyncStorage.getItem('allianceId');
+            setServerId(s);
+            setAllianceId(a);
+        };
+        loadIds();
+    }, []);
 
     const [now, setNow] = useState(new Date());
     useEffect(() => {
@@ -180,8 +194,8 @@ export default function EventTracker() {
     const [citadelList, setCitadelList] = useState<{ id: string, name: string, day?: string, h: string, m: string }[]>([]);
 
     // Firebase Event Schedules
-    const { schedules, loading: schedulesLoading, updateSchedule } = useFirestoreEventSchedules();
-    const { members } = useFirestoreMembers();
+    const { schedules, loading: schedulesLoading, updateSchedule } = useFirestoreEventSchedules(serverId, allianceId);
+    const { members } = useFirestoreMembers(serverId, allianceId);
 
     // Merge Firebase schedules with initial events
     useEffect(() => {
@@ -392,7 +406,7 @@ export default function EventTracker() {
     // Attendee Modal
     const [attendeeModalVisible, setAttendeeModalVisible] = useState(false);
     const [managedEvent, setManagedEvent] = useState<WikiEvent | null>(null);
-    const { attendees: firestoreAttendees, loading: firestoreLoading, saveAttendeesToFirestore } = useFirestoreAttendees(managedEvent?.id);
+    const { attendees: firestoreAttendees, loading: firestoreLoading, saveAttendeesToFirestore } = useFirestoreAttendees(managedEvent?.id, serverId, allianceId);
     const [bulkAttendees, setBulkAttendees] = useState<Partial<Attendee>[]>([]);
 
     // Scheduling Logic

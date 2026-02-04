@@ -10,12 +10,21 @@ export interface StrategySheetData {
     fileName?: string;
 }
 
-export const useFirestoreStrategySheet = () => {
+export const useFirestoreStrategySheet = (serverId?: string | null, allianceId?: string | null) => {
     const [sheetData, setSheetData] = useState<StrategySheetData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const getDocRef = () => {
+        if (serverId && allianceId) {
+            // servers/{serverId}/alliances/{allianceId}/settings/strategySheet
+            return doc(db, "servers", serverId, "alliances", allianceId, "settings", "strategySheet");
+        }
+        return doc(db, 'settings', 'strategySheet');
+    };
+
     useEffect(() => {
-        const docRef = doc(db, 'settings', 'strategySheet');
+        if (serverId === undefined || allianceId === undefined) return;
+        const docRef = getDocRef();
         const unsubscribe = onSnapshot(docRef, (snap) => {
             if (snap.exists()) {
                 setSheetData(snap.data() as StrategySheetData);
@@ -29,10 +38,10 @@ export const useFirestoreStrategySheet = () => {
             setLoading(false);
         });
         return () => unsubscribe();
-    }, []);
+    }, [serverId, allianceId]);
 
     const saveSheetUrl = async (url: string, type: 'url' | 'file' = 'url', fileName?: string) => {
-        const docRef = doc(db, 'settings', 'strategySheet');
+        const docRef = getDocRef();
         const data: any = {
             url,
             type,
@@ -42,6 +51,11 @@ export const useFirestoreStrategySheet = () => {
         // fileName이 있을 때만 포함하여 undefined 에러 방지
         if (fileName) {
             data.fileName = fileName;
+        }
+
+        if (serverId && allianceId) {
+            data.serverId = serverId;
+            data.allianceId = allianceId;
         }
 
         await setDoc(docRef, data, { merge: true });

@@ -6,6 +6,7 @@ import { useAuth, useTheme } from './_layout';
 import { useFirestoreMembers } from '../hooks/useFirestoreMembers';
 import { useFirestoreStrategySheet } from '../hooks/useFirestoreStrategySheet';
 import * as DocumentPicker from 'expo-document-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as XLSX from 'xlsx';
 
 export default function AdminPage() {
@@ -13,8 +14,22 @@ export default function AdminPage() {
     const { auth } = useAuth();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
-    const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember } = useFirestoreMembers();
-    const { sheetData, saveSheetUrl, uploadStrategyFile } = useFirestoreStrategySheet();
+
+    const [serverId, setServerId] = useState<string | null>(undefined as any);
+    const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
+
+    useEffect(() => {
+        const loadIds = async () => {
+            const s = await AsyncStorage.getItem('serverId');
+            const a = await AsyncStorage.getItem('allianceId');
+            setServerId(s);
+            setAllianceId(a);
+        };
+        loadIds();
+    }, []);
+
+    const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember } = useFirestoreMembers(serverId, allianceId);
+    const { sheetData, saveSheetUrl, uploadStrategyFile } = useFirestoreStrategySheet(serverId, allianceId);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [uploading, setUploading] = useState(false);

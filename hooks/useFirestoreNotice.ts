@@ -8,13 +8,20 @@ export interface Notice {
     updatedAt: number;
 }
 
-export const useFirestoreNotice = () => {
+export const useFirestoreNotice = (serverId?: string | null, allianceId?: string | null) => {
     const [notice, setNotice] = useState<Notice | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const getDocRef = () => {
+        if (serverId && allianceId) {
+            return doc(db, "servers", serverId, "alliances", allianceId, "settings", "notice");
+        }
+        return doc(db, 'config', 'notice');
+    };
+
     useEffect(() => {
-        // 'config' collection, 'notice' document
-        const docRef = doc(db, 'config', 'notice');
+        if (serverId === undefined || allianceId === undefined) return;
+        const docRef = getDocRef();
         const unsubscribe = onSnapshot(docRef, (snap) => {
             if (snap.exists()) {
                 setNotice(snap.data() as Notice);
@@ -36,15 +43,22 @@ export const useFirestoreNotice = () => {
             unsubscribe();
             clearTimeout(timeout);
         };
-    }, []);
+    }, [serverId, allianceId]);
 
     const saveNotice = async (content: string, visible: boolean) => {
-        const docRef = doc(db, 'config', 'notice');
-        await setDoc(docRef, {
+        const docRef = getDocRef();
+        const data: any = {
             content,
             visible,
             updatedAt: Date.now()
-        }, { merge: true });
+        };
+
+        if (serverId && allianceId) {
+            data.serverId = serverId;
+            data.allianceId = allianceId;
+        }
+
+        await setDoc(docRef, data, { merge: true });
     };
 
     return { notice, loading, saveNotice };

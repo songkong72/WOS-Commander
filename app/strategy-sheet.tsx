@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
 import { useAuth, useTheme } from './_layout';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirestoreStrategySheet } from '../hooks/useFirestoreStrategySheet';
 
 const DEFAULT_SHEET_ID = '1p-Q6jvTITyFmQjMGlTR4PSw9aFZW3jih-9NNNI0QIiI';
@@ -16,10 +17,23 @@ export default function StrategySheet() {
     const { auth } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
-    const { sheetData, saveSheetUrl } = useFirestoreStrategySheet();
-
     const [zoom, setZoom] = useState(1.0);
     const webViewRef = useRef<any>(null);
+
+    const [serverId, setServerId] = useState<string | null>(undefined as any);
+    const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
+
+    useEffect(() => {
+        const loadIds = async () => {
+            const s = await AsyncStorage.getItem('serverId');
+            const a = await AsyncStorage.getItem('allianceId');
+            setServerId(s);
+            setAllianceId(a);
+        };
+        loadIds();
+    }, []);
+
+    const { sheetData, saveSheetUrl } = useFirestoreStrategySheet(serverId, allianceId);
 
     // Edit Modal Logic
     const [modalVisible, setModalVisible] = useState(false);

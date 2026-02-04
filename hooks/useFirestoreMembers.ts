@@ -8,12 +8,22 @@ export interface Member {
     updatedAt: number;
 }
 
-export const useFirestoreMembers = () => {
+export const useFirestoreMembers = (serverId?: string | null, allianceId?: string | null) => {
     const [members, setMembers] = useState<Member[]>([]);
     const [loading, setLoading] = useState(true);
 
+    const getCollectionRef = () => {
+        if (serverId && allianceId) {
+            // New structure: servers/{serverId}/alliances/{allianceId}/members
+            return collection(db, "servers", serverId, "alliances", allianceId, "members");
+        }
+        return collection(db, 'members');
+    };
+
     useEffect(() => {
-        const q = query(collection(db, 'members'));
+        if (serverId === undefined || allianceId === undefined) return;
+
+        const q = query(getCollectionRef());
         const unsubscribe = onSnapshot(q, (snap) => {
             const list: Member[] = [];
             snap.forEach((docSnap) => {
@@ -27,26 +37,29 @@ export const useFirestoreMembers = () => {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [serverId, allianceId]);
 
     const saveMembers = async (newList: { id: string, nickname: string }[]) => {
         if (newList.length === 0) return;
 
-        // Use batch to save multiple members
         const batch = writeBatch(db);
+        const colRef = getCollectionRef();
         newList.forEach((m) => {
             if (!m.id) return;
-            const docRef = doc(db, 'members', String(m.id));
+            const docRef = doc(colRef, String(m.id));
             batch.set(docRef, {
                 nickname: m.nickname,
-                updatedAt: Date.now()
+                updatedAt: Date.now(),
+                serverId: serverId || null,
+                allianceId: allianceId || null
             }, { merge: true });
         });
         await batch.commit();
     };
 
     const clearAllMembers = async () => {
-        const q = query(collection(db, 'members'));
+        const colRef = getCollectionRef();
+        const q = query(colRef);
         const snap = await getDocs(q);
         const batch = writeBatch(db);
         snap.forEach((docSnap) => {
@@ -57,7 +70,8 @@ export const useFirestoreMembers = () => {
 
     const deleteMember = async (memberId: string) => {
         try {
-            const docRef = doc(db, 'members', memberId);
+            const colRef = getCollectionRef();
+            const docRef = doc(colRef, memberId);
             await deleteDoc(docRef);
         } catch (error) {
             console.error("Delete member error:", error);
