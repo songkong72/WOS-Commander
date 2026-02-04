@@ -1202,26 +1202,36 @@ export default function Home() {
                                 <View className="space-y-6">
                                     <View>
                                         <Text className="text-white/60 text-xs font-black ml-4 mb-2 uppercase tracking-widest">Server Number</Text>
-                                        <TextInput
-                                            placeholder="#000"
-                                            placeholderTextColor="#475569"
-                                            value={inputServer}
-                                            onChangeText={setInputServer}
-                                            className="bg-slate-950/50 p-6 rounded-3xl text-white font-black text-xl border-2 border-slate-800 focus:border-sky-500/50"
-                                            keyboardType="number-pad"
-                                        />
+                                        <View className="relative">
+                                            <View className="absolute left-6 top-1/2 -mt-2.5 z-10">
+                                                <Ionicons name="server-outline" size={20} color="#38bdf8" />
+                                            </View>
+                                            <TextInput
+                                                placeholder="#000"
+                                                placeholderTextColor="#475569"
+                                                value={inputServer}
+                                                onChangeText={setInputServer}
+                                                className="bg-slate-950/50 p-6 pl-16 rounded-3xl text-white font-black text-xl border-2 border-slate-800 focus:border-sky-500/50"
+                                                keyboardType="number-pad"
+                                            />
+                                        </View>
                                     </View>
 
                                     <View className="mt-4">
                                         <Text className="text-white/60 text-xs font-black ml-4 mb-2 uppercase tracking-widest">Alliance Name</Text>
-                                        <TextInput
-                                            placeholder="Alliance ID"
-                                            placeholderTextColor="#475569"
-                                            value={inputAlliance}
-                                            onChangeText={setInputAlliance}
-                                            className="bg-slate-950/50 p-6 rounded-3xl text-white font-black text-xl border-2 border-slate-800 focus:border-sky-500/50"
-                                            autoCapitalize="characters"
-                                        />
+                                        <View className="relative">
+                                            <View className="absolute left-6 top-1/2 -mt-2.5 z-10">
+                                                <Ionicons name="shield-outline" size={20} color="#38bdf8" />
+                                            </View>
+                                            <TextInput
+                                                placeholder="Alliance ID"
+                                                placeholderTextColor="#475569"
+                                                value={inputAlliance}
+                                                onChangeText={setInputAlliance}
+                                                className="bg-slate-950/50 p-6 pl-16 rounded-3xl text-white font-black text-xl border-2 border-slate-800 focus:border-sky-500/50"
+                                                autoCapitalize="characters"
+                                            />
+                                        </View>
                                     </View>
 
                                     <TouchableOpacity
