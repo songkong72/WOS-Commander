@@ -1180,22 +1180,23 @@ export default function EventTracker() {
                                     return (
                                         <View
                                             key={event.id}
-                                            className={`w-full md:w-1/2 lg:w-1/3 xl:w-1/4 p-2`} // Responsive Grid
+                                            className={`w-1/2 md:w-1/2 lg:w-1/3 xl:w-1/4 p-2`} // 2-column on mobile
                                             onLayout={(e) => {
                                                 if (itemLayouts.current) {
                                                     itemLayouts.current[event.id] = e.nativeEvent.layout.y;
                                                 }
                                             }}
                                         >
-                                            {/* Event Card Container - Enhanced depth */}
+                                            {/* Event Card Container - Compact for 2-column */}
                                             <View
-                                                className={`h-full rounded-[40px] border shadow-2xl transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
+                                                className={`h-full rounded-3xl border shadow-lg transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
                                             >
-                                                {/* Card Header - Enhanced spacing & category icons */}
-                                                <View className={`px-6 py-5 flex-row items-center justify-between border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
-                                                    <View className="flex-row items-center flex-1 mr-2">
+                                                {/* Card Header - Compact */}
+                                                <View className={`px-4 py-3 flex-col border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
+                                                    {/* Image & Title Row */}
+                                                    <View className="flex-row items-center mb-2">
                                                         {event.imageUrl ? (
-                                                            <View className={`w-12 h-12 rounded-2xl border overflow-hidden mr-4 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-slate-50'}`}>
+                                                            <View className={`w-10 h-10 rounded-xl border overflow-hidden mr-3 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-slate-50'}`}>
                                                                 <Image
                                                                     source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl}
                                                                     className="w-full h-full"
@@ -1203,94 +1204,53 @@ export default function EventTracker() {
                                                                 />
                                                             </View>
                                                         ) : (
-                                                            <View className={`w-12 h-12 rounded-2xl items-center justify-center border mr-4 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                                                                <Ionicons name="calendar-outline" size={20} color={isDark ? '#475569' : '#94a3b8'} />
+                                                            <View className={`w-10 h-10 rounded-xl items-center justify-center border mr-3 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+                                                                <Ionicons name="calendar-outline" size={18} color={isDark ? '#475569' : '#94a3b8'} />
                                                             </View>
                                                         )}
-
-                                                        <View className="flex-1">
-                                                            <View className="flex-row items-center mb-1.5 flex-wrap gap-2">
-                                                                <View className={`flex-row items-center px-2 py-0.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                                                    <Ionicons
-                                                                        name={event.category === '연맹' ? 'flag-outline' : event.category === '개인' ? 'person-outline' : event.category === '서버' ? 'earth-outline' : event.category === '초보자' ? 'star-outline' : 'apps-outline'}
-                                                                        size={10}
-                                                                        color={isDark ? '#94a3b8' : '#64748b'}
-                                                                        className="mr-1.5"
-                                                                    />
-                                                                    <Text className={`text-[9px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{event.category}</Text>
-                                                                </View>
-                                                                {isOngoing ? (
-                                                                    <View className="relative">
-                                                                        {/* Glow Layer */}
-                                                                        <Animated.View
-                                                                            style={{
-                                                                                transform: [{ scale: Animated.multiply(pulseAnim, 1.3) }],
-                                                                                opacity: glowAnim,
-                                                                                position: 'absolute',
-                                                                                top: 0, left: 0, right: 0, bottom: 0,
-                                                                                backgroundColor: '#3b82f6',
-                                                                                borderRadius: 12,
-                                                                                // @ts-ignore
-                                                                                filter: Platform.OS === 'web' ? 'blur(10px)' : undefined,
-                                                                            }}
-                                                                        />
-                                                                        <Animated.View
-                                                                            style={{ transform: [{ scale: pulseAnim }] }}
-                                                                            className="bg-blue-600 px-3 py-1 rounded-lg flex-row items-center shadow-lg shadow-blue-500/50"
-                                                                        >
-                                                                            <Ionicons name="flash" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                            <Text className="text-white text-[9px] font-black uppercase">진행 중</Text>
-                                                                        </Animated.View>
-                                                                    </View>
-                                                                ) : isExpired ? (
-                                                                    <View className="bg-slate-500 px-3 py-1 rounded-lg flex-row items-center">
-                                                                        <Ionicons name="checkmark-circle" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                        <Text className="text-white text-[9px] font-black uppercase">종료</Text>
-                                                                    </View>
-                                                                ) : (
-                                                                    <View className="bg-emerald-600 px-3 py-1 rounded-lg flex-row items-center">
-                                                                        <Ionicons name="time" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                        <Text className="text-white text-[9px] font-black uppercase">예정</Text>
-                                                                    </View>
-                                                                )}
-                                                            </View>
-                                                            <Text className={`text-xl font-extrabold tracking-tight ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
-                                                        </View>
+                                                        <Text className={`text-base font-bold flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
                                                     </View>
 
-                                                    {/* Admin Tools */}
-                                                    {auth.isLoggedIn && (
-                                                        <View className="relative w-9 h-9">
-                                                            <Pressable
-                                                                onPress={() => openScheduleModal(event)}
-                                                                onHoverIn={() => setHoveredScheduleId(event.id)}
-                                                                onHoverOut={() => setHoveredScheduleId(null)}
-                                                                className={`w-9 h-9 rounded-xl items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
-                                                            >
-                                                                <Ionicons name="calendar-outline" size={18} color="#6366f1" />
-                                                            </Pressable>
-                                                            {hoveredScheduleId === event.id && (
-                                                                <View
-                                                                    pointerEvents="none"
-                                                                    style={{ position: 'absolute', right: 42, top: 0, bottom: 0, justifyContent: 'center', width: 200, alignItems: 'flex-end', zIndex: 100 }}
-                                                                >
-                                                                    <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border px-3 py-2 rounded-lg shadow-xl flex-row items-center`}>
-                                                                        <Text
-                                                                            style={{ flexShrink: 0 }}
-                                                                            className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[10px] font-black whitespace-nowrap`}
-                                                                        >
-                                                                            일정 등록
-                                                                        </Text>
-                                                                        <View className={`absolute top-1/2 -mt-1.5 -right-1.5 w-3 h-3 rotate-45 border-t border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} />
-                                                                    </View>
-                                                                </View>
-                                                            )}
+                                                    {/* Category & Status Badges */}
+                                                    <View className="flex-row items-center flex-wrap gap-1.5">
+                                                        <View className={`flex-row items-center px-2 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                            <Ionicons
+                                                                name={event.category === '연맹' ? 'flag-outline' : event.category === '개인' ? 'person-outline' : event.category === '서버' ? 'earth-outline' : event.category === '초보자' ? 'star-outline' : 'apps-outline'}
+                                                                size={10}
+                                                                color={isDark ? '#94a3b8' : '#64748b'}
+                                                            />
+                                                            <Text className={`text-[9px] font-bold ml-1 uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{event.category}</Text>
                                                         </View>
-                                                    )}
+                                                        {isOngoing ? (
+                                                            <View className="bg-blue-600 px-2 py-0.5 rounded-md flex-row items-center">
+                                                                <Ionicons name="flash" size={9} color="white" />
+                                                                <Text className="text-white text-[8px] font-black ml-0.5">진행중</Text>
+                                                            </View>
+                                                        ) : isExpired ? (
+                                                            <View className="bg-slate-500 px-2 py-0.5 rounded-md flex-row items-center">
+                                                                <Ionicons name="checkmark-circle" size={9} color="white" />
+                                                                <Text className="text-white text-[8px] font-black ml-0.5">종료</Text>
+                                                            </View>
+                                                        ) : (
+                                                            <View className="bg-emerald-600 px-2 py-0.5 rounded-md flex-row items-center">
+                                                                <Ionicons name="time" size={9} color="white" />
+                                                                <Text className="text-white text-[8px] font-black ml-0.5">예정</Text>
+                                                            </View>
+                                                        )}
+                                                        {/* Admin Schedule Button */}
+                                                        {auth.isLoggedIn && (
+                                                            <TouchableOpacity
+                                                                onPress={() => openScheduleModal(event)}
+                                                                className={`ml-auto w-7 h-7 rounded-lg items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                                                            >
+                                                                <Ionicons name="calendar-outline" size={14} color="#6366f1" />
+                                                            </TouchableOpacity>
+                                                        )}
+                                                    </View>
                                                 </View>
 
-                                                <View className="p-8 flex-1 justify-between">
-                                                    <View className="mb-8">
+                                                <View className="p-4 flex-1 justify-between">
+                                                    <View className="mb-4">
                                                         {event.id !== 'a_fortress' && (
                                                             (!event.day && !event.time) ? (
                                                                 <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
@@ -1403,16 +1363,16 @@ export default function EventTracker() {
                                                         )}
                                                     </View>
 
-                                                    {/* Modern Rounded Action Buttons - Enhanced depth */}
-                                                    <View className="flex-row gap-3 h-[48px]">
+                                                    {/* Compact Action Buttons */}
+                                                    <View className="flex-row gap-2 h-[36px]">
                                                         <TouchableOpacity
                                                             onPress={() => openGuideModal(event)}
-                                                            className={`flex-[1.5] bg-indigo-600 rounded-2xl items-center justify-center flex-row active:bg-indigo-700 shadow-lg ${isDark ? 'shadow-indigo-900/20' : 'shadow-indigo-200'}`}
+                                                            className={`flex-1 bg-indigo-600 rounded-xl items-center justify-center flex-row active:bg-indigo-700 ${isDark ? 'shadow-indigo-900/20' : 'shadow-indigo-200'}`}
                                                         >
-                                                            <Text className="text-white text-sm font-bold mr-2">
-                                                                {(event.category === '연맹' || event.category === '서버') ? '전략 문서' : '공략 보기'}
+                                                            <Text className="text-white text-xs font-bold">
+                                                                {(event.category === '연맹' || event.category === '서버') ? '전략' : '공략'}
                                                             </Text>
-                                                            <Ionicons name="arrow-forward-outline" size={16} color="white" />
+                                                            <Ionicons name="arrow-forward-outline" size={12} color="white" style={{ marginLeft: 4 }} />
                                                         </TouchableOpacity>
 
                                                         {(() => {
@@ -1438,10 +1398,10 @@ export default function EventTracker() {
                                                         })() && (
                                                                 <TouchableOpacity
                                                                     onPress={() => openAttendeeModal(event)}
-                                                                    className={`flex-1 rounded-2xl items-center justify-center flex-row border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700 shadow-black/20' : 'bg-white border-slate-200 active:bg-slate-50 shadow-slate-100'}`}
+                                                                    className={`flex-1 rounded-xl items-center justify-center flex-row border ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700' : 'bg-white border-slate-200 active:bg-slate-50'}`}
                                                                 >
-                                                                    <Ionicons name="people-outline" size={18} color={isDark ? "white" : "#475569"} className="mr-2" />
-                                                                    <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>참석 관리</Text>
+                                                                    <Ionicons name="people-outline" size={14} color={isDark ? "white" : "#475569"} />
+                                                                    <Text className={`text-xs font-bold ml-1 ${isDark ? 'text-white' : 'text-slate-700'}`}>참석</Text>
                                                                 </TouchableOpacity>
                                                             )}
                                                     </View>
@@ -2537,7 +2497,7 @@ export default function EventTracker() {
                         </View>
                     </View>
                 </Modal>
-            </View>
+            </View >
 
         </View >
     );
