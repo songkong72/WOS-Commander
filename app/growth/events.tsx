@@ -32,6 +32,122 @@ const HERO_NAMES = heroesData.map(h => h.name);
 const FORTRESS_OPTIONS = Array.from({ length: 12 }, (_, i) => `요새 ${i + 1}`);
 const CITADEL_OPTIONS = Array.from({ length: 4 }, (_, i) => `성채 ${i + 1}`);
 
+// Shimmer Icon Component with animated light sweep effect
+const ShimmerIcon = ({ children, colors, isDark }: { children: React.ReactNode, colors: { bg: string, shadow: string, shimmer: string }, isDark: boolean }) => {
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const animate = () => {
+            shimmerAnim.setValue(0);
+            Animated.timing(shimmerAnim, {
+                toValue: 1,
+                duration: 2000,
+                useNativeDriver: false,
+            }).start(() => animate());
+        };
+        animate();
+    }, []);
+
+    const translateX = shimmerAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-40, 40],
+    });
+
+    return (
+        <View className="relative overflow-hidden w-10 h-10 rounded-xl mr-3"
+            style={{ shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 5 }}
+        >
+            <LinearGradient
+                colors={isDark ? [colors.bg, colors.bg] : ['#ffffff', colors.bg]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="absolute inset-0 w-full h-full items-center justify-center"
+            >
+                {children}
+            </LinearGradient>
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    width: 20,
+                    transform: [{ translateX }],
+                }}
+            >
+                <LinearGradient
+                    colors={['transparent', colors.shimmer, 'transparent']}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    style={{ flex: 1, opacity: 0.6 }}
+                />
+            </Animated.View>
+        </View>
+    );
+};
+
+// Shimmer Schedule Button Component (for admin schedule button)
+const ShimmerScheduleButton = ({ onPress, isDark }: { onPress: () => void, isDark: boolean }) => {
+    const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        const animate = () => {
+            shimmerAnim.setValue(0);
+            Animated.timing(shimmerAnim, {
+                toValue: 1,
+                duration: 1500,
+                useNativeDriver: false,
+            }).start(() => animate());
+        };
+        animate();
+    }, []);
+
+    const shimmerTranslate = shimmerAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [-28, 28],
+    });
+
+    const pulseOpacity = shimmerAnim.interpolate({
+        inputRange: [0, 0.5, 1],
+        outputRange: [0.8, 1, 0.8],
+    });
+
+    return (
+        <TouchableOpacity onPress={onPress} className="ml-auto">
+            <Animated.View
+                style={{ opacity: pulseOpacity }}
+                className="relative overflow-hidden w-8 h-8 rounded-xl items-center justify-center"
+            >
+                <LinearGradient
+                    colors={isDark ? ['#7c3aed', '#4f46e5'] : ['#a78bfa', '#818cf8']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    className="absolute inset-0 w-full h-full"
+                    style={{ borderRadius: 12 }}
+                />
+                <View className="absolute inset-0 items-center justify-center">
+                    <Ionicons name="calendar" size={16} color="white" />
+                </View>
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        width: 12,
+                        transform: [{ translateX: shimmerTranslate }],
+                    }}
+                >
+                    <LinearGradient
+                        colors={['transparent', 'rgba(255,255,255,0.5)', 'transparent']}
+                        start={{ x: 0, y: 0.5 }}
+                        end={{ x: 1, y: 0.5 }}
+                        style={{ flex: 1 }}
+                    />
+                </Animated.View>
+            </Animated.View>
+        </TouchableOpacity>
+    );
+};
+
 // Mini Hero Picker Component
 const HeroPicker = ({ value, onSelect, label }: { value: string, onSelect: (v: string) => void, label: string }) => {
     const { theme } = useTheme();
@@ -198,6 +314,8 @@ export default function EventTracker() {
     const [highlightId, setHighlightId] = useState<string | null>(null);
     const [fortressList, setFortressList] = useState<{ id: string, name: string, day?: string, h: string, m: string }[]>([]);
     const [citadelList, setCitadelList] = useState<{ id: string, name: string, day?: string, h: string, m: string }[]>([]);
+    // Track selected team tab for bear/foundry events (eventId -> tab index)
+    const [selectedTeamTabs, setSelectedTeamTabs] = useState<{ [eventId: string]: number }>({});
 
     // Firebase Event Schedules removed from here (moved up)
 
@@ -1237,130 +1355,216 @@ export default function EventTracker() {
                                                                 <Text className="text-white text-[8px] font-black ml-0.5">예정</Text>
                                                             </View>
                                                         )}
-                                                        {/* Admin Schedule Button */}
+                                                        {/* Admin Schedule Button with Shimmer Effect */}
                                                         {auth.isLoggedIn && (
-                                                            <TouchableOpacity
+                                                            <ShimmerScheduleButton
                                                                 onPress={() => openScheduleModal(event)}
-                                                                className={`ml-auto w-7 h-7 rounded-lg items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
-                                                            >
-                                                                <Ionicons name="calendar-outline" size={14} color="#6366f1" />
-                                                            </TouchableOpacity>
+                                                                isDark={isDark}
+                                                            />
                                                         )}
                                                     </View>
                                                 </View>
 
                                                 <View className="p-4 flex-1 justify-between">
                                                     <View className="mb-4">
-                                                        {event.id !== 'a_fortress' && (
-                                                            (!event.day && !event.time) ? (
-                                                                <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
-                                                                    <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다</Text>
-                                                                </View>
-                                                            ) : (
-                                                                event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
-                                                                    <View className={`w-full rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                                        <View className={`px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                                                            <Text className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                                                                {timezone === 'KST' ? '이벤트 일정 (로컬 시간 KST)' : 'EVENT SCHEDULE (UNIVERSAL UTC)'}
-                                                                            </Text>
-                                                                        </View>
-                                                                        <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
-                                                                            {event.day.split('/').map((d, dIdx) => {
-                                                                                const cleanD = d.trim();
-                                                                                const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                                let utcText = '';
-                                                                                if (cleanD.includes('~')) {
-                                                                                    const parts = cleanD.split('~').map(x => x.trim());
-                                                                                    const sDateUtc = getUTCString(parts[0]);
-                                                                                    const eDateUtc = getUTCString(parts[1]);
-                                                                                    if (sDateUtc && eDateUtc) utcText = `${sDateUtc} ~ ${eDateUtc}`;
-                                                                                    else {
-                                                                                        const sWeeklyUtc = getUTCTimeString(parts[0], false);
-                                                                                        const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                                                        if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc} ~ ${eWeeklyUtc}`;
-                                                                                    }
-                                                                                } else {
-                                                                                    const dateUtc = getUTCString(cleanD);
-                                                                                    if (dateUtc) utcText = dateUtc;
-                                                                                    else {
-                                                                                        const weeklyUtc = getUTCTimeString(cleanD);
-                                                                                        if (weeklyUtc) utcText = weeklyUtc;
-                                                                                    }
+                                                        {(!event.day && !event.time) ? (
+                                                            <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
+                                                                <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다</Text>
+                                                            </View>
+                                                        ) : (
+                                                            event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
+                                                                <View className={`w-full rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                                                    <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
+                                                                        {event.day.split('/').map((d, dIdx) => {
+                                                                            const cleanD = d.trim();
+                                                                            const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                            let utcText = '';
+                                                                            if (cleanD.includes('~')) {
+                                                                                const parts = cleanD.split('~').map(x => x.trim());
+                                                                                const sDateUtc = getUTCString(parts[0]);
+                                                                                const eDateUtc = getUTCString(parts[1]);
+                                                                                if (sDateUtc && eDateUtc) utcText = `${sDateUtc}~${eDateUtc}`;
+                                                                                else {
+                                                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
+                                                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
+                                                                                    if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc}~${eWeeklyUtc}`;
                                                                                 }
+                                                                            } else {
+                                                                                const dateUtc = getUTCString(cleanD);
+                                                                                if (dateUtc) utcText = dateUtc;
+                                                                                else {
+                                                                                    const weeklyUtc = getUTCTimeString(cleanD);
+                                                                                    if (weeklyUtc) utcText = weeklyUtc;
+                                                                                }
+                                                                            }
 
-                                                                                const renderResponsivePeriod = (str: string, textClass: string, isUtc = false) => {
-                                                                                    if (!str.includes('~')) return <Text className={textClass}>{isUtc ? str : formatDisplayDate(str)}</Text>;
-                                                                                    const parts = str.split('~').map(s => s.trim());
-                                                                                    return (
-                                                                                        <View className="flex-row items-center">
-                                                                                            <Text className={`${textClass} font-black`}>{isUtc ? parts[0] : formatDisplayDate(parts[0])}</Text>
-                                                                                            <Text className={`${textClass} mx-2 opacity-30 font-normal`}>~</Text>
-                                                                                            <Text className={`${textClass} font-black`}>{isUtc ? parts[1] : formatDisplayDate(parts[1])}</Text>
-                                                                                        </View>
-                                                                                    );
-                                                                                };
-
-                                                                                return (
-                                                                                    <View key={dIdx} className={`px-4 py-4 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                                                        {timezone === 'KST' ? (
-                                                                                            renderResponsivePeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} text-[14px] ${isExpired ? 'line-through' : ''}`)
-                                                                                        ) : (
-                                                                                            !!utcText ? renderResponsivePeriod(utcText, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} text-[14px] ${isExpired ? 'line-through' : ''}`, true) : null
-                                                                                        )}
+                                                                            const renderStartEndPeriod = (str: string, textClass: string, isUtc = false) => {
+                                                                                if (!str.includes('~')) return (
+                                                                                    <View className="flex-row items-center">
+                                                                                        <ShimmerIcon
+                                                                                            isDark={isDark}
+                                                                                            colors={{
+                                                                                                bg: isDark ? '#1e3a5f' : '#dbeafe',
+                                                                                                shadow: isDark ? '#38bdf8' : '#0284c7',
+                                                                                                shimmer: isDark ? '#38bdf8' : '#60a5fa'
+                                                                                            }}
+                                                                                        >
+                                                                                            <Ionicons name="calendar" size={20} color={isDark ? '#38bdf8' : '#0284c7'} />
+                                                                                        </ShimmerIcon>
+                                                                                        <Text className={`${textClass} text-base font-medium`}>{isUtc ? str : formatDisplayDate(str)}</Text>
                                                                                     </View>
+                                                                                );
+                                                                                const parts = str.split('~').map(s => s.trim());
+                                                                                return (
+                                                                                    <View className="gap-3">
+                                                                                        <View className="flex-row items-center">
+                                                                                            <ShimmerIcon
+                                                                                                isDark={isDark}
+                                                                                                colors={{
+                                                                                                    bg: isDark ? '#064e3b' : '#d1fae5',
+                                                                                                    shadow: isDark ? '#34d399' : '#059669',
+                                                                                                    shimmer: isDark ? '#34d399' : '#6ee7b7'
+                                                                                                }}
+                                                                                            >
+                                                                                                <Ionicons name="play-circle" size={20} color={isDark ? '#34d399' : '#059669'} />
+                                                                                            </ShimmerIcon>
+                                                                                            <Text className={`text-[10px] font-semibold mr-2 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>시작</Text>
+                                                                                            <Text className={`${textClass} text-base font-medium`}>{isUtc ? parts[0] : formatDisplayDate(parts[0])}</Text>
+                                                                                        </View>
+                                                                                        <View className="flex-row items-center">
+                                                                                            <ShimmerIcon
+                                                                                                isDark={isDark}
+                                                                                                colors={{
+                                                                                                    bg: isDark ? '#4c0519' : '#ffe4e6',
+                                                                                                    shadow: isDark ? '#fb7185' : '#e11d48',
+                                                                                                    shimmer: isDark ? '#fb7185' : '#fda4af'
+                                                                                                }}
+                                                                                            >
+                                                                                                <Ionicons name="stop-circle" size={20} color={isDark ? '#fb7185' : '#e11d48'} />
+                                                                                            </ShimmerIcon>
+                                                                                            <Text className={`text-[10px] font-semibold mr-2 ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>종료</Text>
+                                                                                            <Text className={`${textClass} text-base font-medium`}>{isUtc ? parts[1] : formatDisplayDate(parts[1])}</Text>
+                                                                                        </View>
+                                                                                    </View>
+                                                                                );
+                                                                            };
+
+                                                                            return (
+                                                                                <View key={dIdx} className={`px-4 py-3 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                                                    {timezone === 'KST' ? (
+                                                                                        renderStartEndPeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`)
+                                                                                    ) : (
+                                                                                        !!utcText ? renderStartEndPeriod(utcText, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`, true) : null
+                                                                                    )}
+                                                                                </View>
+                                                                            );
+                                                                        })}
+                                                                    </View>
+                                                                </View>
+                                                            ) : null
+                                                        )}
+
+                                                        {event.time && (() => {
+                                                            const isBearOrFoundry = event.id === 'a_bear' || event.id === 'alliance_bear' ||
+                                                                event.id === 'a_foundry' || event.id === 'alliance_foundry';
+                                                            const parts = event.time.split(' / ').filter((p: string) => p.trim());
+                                                            const hasMultipleParts = parts.length > 1;
+                                                            const selectedTab = selectedTeamTabs[event.id] ?? 0;
+
+                                                            // For bear/foundry with multiple parts, show tabs
+                                                            if (isBearOrFoundry && hasMultipleParts) {
+                                                                const getTabLabel = (part: string, idx: number) => {
+                                                                    const trimmed = part.trim();
+                                                                    const colonIdx = trimmed.indexOf(':');
+                                                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
+                                                                    if (colonIdx > -1 && !isTimeColon) {
+                                                                        return trimmed.substring(0, colonIdx).trim();
+                                                                    }
+                                                                    return `${idx + 1}군`;
+                                                                };
+
+                                                                const getPartContent = (part: string) => {
+                                                                    const trimmed = part.trim();
+                                                                    const colonIdx = trimmed.indexOf(':');
+                                                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
+                                                                    if (colonIdx > -1 && !isTimeColon) {
+                                                                        return trimmed.substring(colonIdx + 1).trim();
+                                                                    }
+                                                                    return trimmed;
+                                                                };
+
+                                                                const selectedContent = getPartContent(parts[selectedTab] || parts[0]);
+
+                                                                return (
+                                                                    <View className="w-full gap-3">
+                                                                        {/* Tab buttons */}
+                                                                        <View className="flex-row gap-2">
+                                                                            {parts.map((part: string, idx: number) => {
+                                                                                const label = getTabLabel(part, idx);
+                                                                                const isSelected = idx === selectedTab;
+                                                                                return (
+                                                                                    <TouchableOpacity
+                                                                                        key={idx}
+                                                                                        onPress={() => setSelectedTeamTabs(prev => ({ ...prev, [event.id]: idx }))}
+                                                                                        className={`flex-1 py-2.5 rounded-xl items-center justify-center ${isSelected ? 'bg-blue-600' : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}
+                                                                                    >
+                                                                                        <Text className={`text-xs font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{label}</Text>
+                                                                                    </TouchableOpacity>
                                                                                 );
                                                                             })}
                                                                         </View>
-                                                                    </View>
-                                                                ) : null
-                                                            )
-                                                        )}
-
-                                                        {event.time && (
-                                                            <View className="w-full gap-4">
-                                                                {event.time.split(' / ').map((part, idx) => {
-                                                                    const trimmed = part.trim();
-                                                                    if (!trimmed) return null;
-                                                                    const colonIdx = trimmed.indexOf(':');
-                                                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                                                    const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
-                                                                    let label = rawLabel;
-                                                                    if (event.id === 'a_bear' || event.id === 'alliance_bear') {
-                                                                        label = label.replace('1군', 'Group 1').replace('2군', 'Group 2');
-                                                                    }
-                                                                    const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-                                                                    if (content === "." || !content) return null;
-
-                                                                    return (
-                                                                        <View key={idx} className={`rounded-3xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                                                            {!!label && (
-                                                                                <View className={`px-5 py-3 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                                                                    <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{label}</Text>
-                                                                                </View>
-                                                                            )}
-                                                                            <View className={`px-5 py-2 border-b border-slate-800/10`}>
-                                                                                <Text className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                                                                    {timezone === 'KST' ? '로컬 시간 (KST)' : 'UNIVERSAL (UTC)'}
-                                                                                </Text>
-                                                                            </View>
+                                                                        {/* Selected tab content */}
+                                                                        <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
                                                                             <View className="flex-col">
-                                                                                {content.split(/[,|]/).map((item, iIdx) => {
+                                                                                {selectedContent.split(/[,|]/).map((item: string, iIdx: number) => {
                                                                                     const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                                                    const utcStr = getUTCTimeString(item.trim(), false);
                                                                                     return (
-                                                                                        <View key={iIdx} className={`px-4 py-4 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
-                                                                                            <View className="flex-1">
-                                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-[14px] ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted, timezone)}</Text>
-                                                                                            </View>
+                                                                                        <View key={iIdx} className={`px-4 py-3 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-sm ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted, timezone)}</Text>
                                                                                         </View>
                                                                                     );
                                                                                 })}
                                                                             </View>
                                                                         </View>
-                                                                    );
-                                                                })}
-                                                            </View>
-                                                        )}
+                                                                    </View>
+                                                                );
+                                                            }
+
+                                                            // Default rendering for other events
+                                                            return (
+                                                                <View className="w-full gap-3">
+                                                                    {parts.map((part: string, idx: number) => {
+                                                                        const trimmed = part.trim();
+                                                                        if (!trimmed) return null;
+                                                                        const colonIdx = trimmed.indexOf(':');
+                                                                        const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
+                                                                        const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
+                                                                        const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                                                                        if (content === "." || !content) return null;
+
+                                                                        return (
+                                                                            <View key={idx} className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                                                                {!!rawLabel && (
+                                                                                    <View className={`px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                                                                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{rawLabel}</Text>
+                                                                                    </View>
+                                                                                )}
+                                                                                <View className="flex-col">
+                                                                                    {content.split(/[,|]/).map((item: string, iIdx: number) => {
+                                                                                        const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                                                        return (
+                                                                                            <View key={iIdx} className={`px-4 py-3 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-sm ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted, timezone)}</Text>
+                                                                                            </View>
+                                                                                        );
+                                                                                    })}
+                                                                                </View>
+                                                                            </View>
+                                                                        );
+                                                                    })}
+                                                                </View>
+                                                            );
+                                                        })()}
                                                     </View>
 
                                                     {/* Compact Action Buttons */}
@@ -1370,7 +1574,7 @@ export default function EventTracker() {
                                                             className={`flex-1 bg-indigo-600 rounded-xl items-center justify-center flex-row active:bg-indigo-700 ${isDark ? 'shadow-indigo-900/20' : 'shadow-indigo-200'}`}
                                                         >
                                                             <Text className="text-white text-xs font-bold">
-                                                                {(event.category === '연맹' || event.category === '서버') ? '전략' : '공략'}
+                                                                전략
                                                             </Text>
                                                             <Ionicons name="arrow-forward-outline" size={12} color="white" style={{ marginLeft: 4 }} />
                                                         </TouchableOpacity>

@@ -911,6 +911,38 @@ export default function Home() {
                 } else {
                     processedList.push(e);
                 }
+            } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
+                // Split Weapon Factory into Team 1 and Team 2
+                const parts = (e.time || '').split(' / ');
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const isSingleTeam = parts.length === 1;
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const cleanLabel = rawLabel || '';
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            eventId: `${e.eventId}_team${idx + 1}`,
+                            originalEventId: e.eventId,
+                            title: cleanLabel ? `무기공장 쟁탈전(${cleanLabel})` : '무기공장 쟁탈전',
+                            time: simplifiedTime,
+                            isFoundrySplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: '🏭'
+                        });
+                    });
+                } else {
+                    processedList.push(e);
+                }
             } else {
                 processedList.push(e);
             }
@@ -942,6 +974,11 @@ export default function Home() {
                 return a.eventId.localeCompare(b.eventId);
             }
 
+            // Fix Foundry team order (Team 1 -> Team 2)
+            if (a.isFoundrySplit && b.isFoundrySplit && a.eventId.substring(0, 10) === b.eventId.substring(0, 10)) {
+                return a.eventId.localeCompare(b.eventId);
+            }
+
             return (a.time || '').localeCompare(b.time || '');
         });
     }, [schedules, now]);
@@ -968,6 +1005,11 @@ export default function Home() {
         const isExpired = isEventExpired(event);
         const isUpcoming = !isActive && !isExpired;
 
+        // Get event info with image
+        const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
+        const eventInfo = allBaseEvents.find(e => e.id === (event.originalEventId || event.eventId));
+        const eventImageUrl = eventInfo?.imageUrl;
+
         const getEventIcon = (id: string) => {
             if (id.includes('bear')) return 'paw-outline';
             if (id.includes('frost') || id.includes('weapon')) return 'shield-half-outline';
@@ -985,39 +1027,47 @@ export default function Home() {
                 className="active:scale-[0.98] transition-all"
                 style={{ flex: 1, minWidth: 300, maxWidth: '100%' }}
             >
-                <View className={`p-5 rounded-[24px] border shadow-xl ${isActive ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40')}`}>
-                    <View className="flex-row items-center justify-between mb-4">
+                <View className={`p-3 rounded-2xl border shadow-lg ${isActive ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40')}`}>
+                    <View className="flex-row items-center justify-between mb-2">
                         <View className="flex-row items-center flex-1 mr-2">
-                            <View className={`w-11 h-11 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-slate-800/80' : 'bg-slate-50 border border-slate-100'}`}>
-                                <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={22} color={isActive ? "#3b82f6" : (isExpired ? '#64748b' : '#94a3b8')} />
+                            <View className={`w-9 h-9 rounded-lg items-center justify-center mr-2 overflow-hidden ${isDark ? 'bg-slate-800/80' : 'bg-slate-50 border border-slate-100'}`}>
+                                {eventImageUrl ? (
+                                    <Image
+                                        source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
+                                        className="w-full h-full"
+                                        resizeMode="cover"
+                                    />
+                                ) : (
+                                    <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={18} color={isActive ? "#3b82f6" : (isExpired ? '#64748b' : '#94a3b8')} />
+                                )}
                             </View>
                             <View className="flex-1">
-                                <Text className={`text-lg font-black tracking-tight mb-1 ${!isExpired ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : titleColor}`} numberOfLines={1}>{event.title}</Text>
+                                <Text className={`text-base font-bold tracking-tight ${!isExpired ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : titleColor}`} numberOfLines={1}>{event.title}</Text>
                             </View>
                         </View>
                         {isActive && (
                             <Animated.View
-                                className={`flex-row items-center px-6 py-3 rounded-2xl bg-blue-600 shadow-2xl`}
+                                className={`flex-row items-center px-3 py-1.5 rounded-xl bg-blue-600`}
                                 style={{
                                     opacity: flickerAnim,
                                     transform: [{ scale: scaleAnim }],
                                     shadowColor: '#3b82f6',
-                                    shadowOffset: { width: 0, height: 4 },
-                                    shadowOpacity: 0.8,
-                                    shadowRadius: 15,
-                                    elevation: 12
+                                    shadowOffset: { width: 0, height: 2 },
+                                    shadowOpacity: 0.6,
+                                    shadowRadius: 8,
+                                    elevation: 8
                                 }}
                             >
-                                <Text className={`text-white text-[13px] font-black tracking-widest mr-2`}>오늘 진행</Text>
-                                <Ionicons name="chevron-forward-circle" size={18} color="white" />
+                                <Text className={`text-white text-[11px] font-black tracking-wider mr-1`}>진행중</Text>
+                                <Ionicons name="chevron-forward-circle" size={14} color="white" />
                             </Animated.View>
                         )}
                     </View>
 
                     <View className="flex-col gap-3">
-                        {!!event.day && !event.isBearSplit && !event.time && (
-                            <View className={`rounded-3xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                <View className="p-6 gap-3">
+                        {!!event.day && !event.isBearSplit && !event.isFoundrySplit && !event.time && (
+                            <View className={`rounded-xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                <View className="p-3 gap-2">
                                     {(() => {
                                         const formattedDay = (event.day || '').replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                         let kstText = formattedDay;
@@ -1079,8 +1129,8 @@ export default function Home() {
                         )}
                         {!!event.time && (
                             <View className="gap-3">
-                                {event.isBearSplit ? (
-                                    <View className={`rounded-[32px] border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                {(event.isBearSplit || event.isFoundrySplit) ? (
+                                    <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
                                         <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
                                             {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
                                                 const trimmed = item.trim();
@@ -1096,16 +1146,13 @@ export default function Home() {
                                                 const cleanDisplayTime = displayTime.replace(/[일월화수목금토매일]+\s*/, '').replace(/[()]/g, '');
 
                                                 return (
-                                                    <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                    <View key={iIdx} className={`flex-row items-center px-4 py-2 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
                                                         <View className="flex-row items-center flex-1">
-                                                            <View className="flex-row items-center" style={{ width: 80 }}>
-                                                                <Ionicons name="calendar-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 6 }} />
-                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
-                                                            </View>
-                                                            <View className="flex-row items-center">
-                                                                <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
-                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
-                                                            </View>
+                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                            <Text className={`font-bold text-base ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
+                                                            <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                            <Text className={`font-bold text-base ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
                                                         </View>
                                                         {isLive && (
                                                             <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
