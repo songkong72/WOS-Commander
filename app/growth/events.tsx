@@ -1277,7 +1277,7 @@ export default function EventTracker() {
                                                                     <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border px-3 py-2 rounded-lg shadow-xl flex-row items-center`}>
                                                                         <Text
                                                                             style={{ flexShrink: 0 }}
-                                                                            className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}
+                                                                            className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[10px] font-black whitespace-nowrap`}
                                                                         >
                                                                             일정 등록
                                                                         </Text>

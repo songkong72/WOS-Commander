@@ -1199,7 +1199,19 @@ export default function Home() {
                     <View className="w-full max-w-md p-8 rounded-[40px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden">
                         <BlurView intensity={80} className="absolute inset-0" />
 
-                        <View className="items-center mb-6">
+                        <View className="items-center mb-6 relative">
+                            {/* Help Button */}
+                            <Pressable
+                                onPress={() => {
+                                    if (Platform.OS === 'web') {
+                                        window.open('/login-guide.html', '_blank');
+                                    }
+                                }}
+                                className="absolute top-0 right-0 p-2 rounded-full bg-slate-800/60 border border-slate-700 active:scale-95"
+                            >
+                                <Ionicons name="help-circle-outline" size={20} color="#a78bfa" />
+                            </Pressable>
+
                             <View className={`w-14 h-14 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
                                 <Ionicons name="snow" size={28} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                             </View>
@@ -1212,21 +1224,25 @@ export default function Home() {
                             <TouchableOpacity
                                 onPress={() => setIsRegisterMode(false)}
                                 className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${!isRegisterMode ? 'bg-sky-500/20 border border-sky-500/30' : 'opacity-40'}`}
+                                // @ts-ignore - Web-specific property
+                                tabIndex={-1}
                             >
                                 <Text className={`font-black text-xs ${!isRegisterMode ? 'text-sky-400' : 'text-white'}`}>대시보드 입장</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setIsRegisterMode(true)}
                                 className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${isRegisterMode ? 'bg-amber-500/20 border border-amber-500/30' : 'opacity-40'}`}
+                                // @ts-ignore - Web-specific property
+                                tabIndex={-1}
                             >
-                                <Text className={`font-black text-xs ${isRegisterMode ? 'text-amber-400' : 'text-white'}`}>연맹 관리자 신청</Text>
+                                <Text className={`font-black text-sm ${isRegisterMode ? 'text-amber-400' : 'text-white'}`}>연맹 관리자 신청</Text>
                             </TouchableOpacity>
                         </View>
 
                         <View className="space-y-4">
-                            <View>
+                            <View style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
                                 <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">서버 번호</Text>
-                                <View className="relative z-[50]">
+                                <View className="relative" style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
                                     <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
                                         <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                     </View>
@@ -1239,14 +1255,16 @@ export default function Home() {
                                         onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                         className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
                                         keyboardType="number-pad"
+                                        // @ts-ignore - Web-specific property
+                                        tabIndex={1}
                                     />
                                     {renderHistorySuggestions('server')}
                                 </View>
                             </View>
 
-                            <View className="mt-2">
+                            <View className="mt-2" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
                                 <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">연맹 이름</Text>
-                                <View className="relative z-[40]">
+                                <View className="relative" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
                                     <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
                                         <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                     </View>
@@ -1259,14 +1277,16 @@ export default function Home() {
                                         onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                         className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
                                         autoCapitalize="characters"
+                                        // @ts-ignore - Web-specific property
+                                        tabIndex={2}
                                     />
                                     {renderHistorySuggestions('alliance')}
                                 </View>
                             </View>
 
-                            <View className="mt-2">
+                            <View className="mt-2" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
                                 <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">영주 이름 (닉네임)</Text>
-                                <View className="relative z-[30]">
+                                <View className="relative" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
                                     <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
                                         <Ionicons name="person-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                     </View>
@@ -1278,12 +1298,14 @@ export default function Home() {
                                         onFocus={() => setActiveInput('userid')}
                                         onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                         className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                        // @ts-ignore - Web-specific property
+                                        tabIndex={3}
                                     />
                                     {renderHistorySuggestions('userid')}
                                 </View>
                             </View>
 
-                            <View className="mt-2">
+                            <View className="mt-2" style={{ zIndex: 20 }}>
                                 <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
                                     <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest text-left ">비밀번호</Text>
                                     {isRegisterMode && (
@@ -1301,6 +1323,8 @@ export default function Home() {
                                         onChangeText={setInputPassword}
                                         secureTextEntry={true}
                                         className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                        // @ts-ignore - Web-specific property
+                                        tabIndex={4}
                                     />
                                 </View>
                             </View>
@@ -1486,6 +1510,30 @@ export default function Home() {
 
                                 <View className="relative">
                                     <Pressable
+                                        onPress={() => {
+                                            if (Platform.OS === 'web') {
+                                                window.open('/manual.html', '_blank');
+                                            }
+                                        }}
+                                        onHoverIn={() => setHoveredHeaderBtn('help')}
+                                        onHoverOut={() => setHoveredHeaderBtn(null)}
+                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm'}`}
+                                    >
+                                        <Ionicons name="help-circle-outline" size={22} color={isDark ? "#a78bfa" : "#7c3aed"} />
+                                    </Pressable>
+                                    {hoveredHeaderBtn === 'help' && (
+                                        <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
+                                            <View className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'} border px-4 py-2.5 rounded-xl shadow-2xl`} style={{ alignSelf: 'flex-end' }}>
+                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[10px] font-black whitespace-nowrap`}>
+                                                    📖 사용자 매뉴얼
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    )}
+                                </View>
+
+                                <View className="relative">
+                                    <Pressable
                                         onPress={handleInstallClick}
                                         onHoverIn={() => setHoveredHeaderBtn('install')}
                                         onHoverOut={() => setHoveredHeaderBtn(null)}
@@ -1496,7 +1544,7 @@ export default function Home() {
                                     {hoveredHeaderBtn === 'install' && (
                                         <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
                                             <View className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'} border px-4 py-2.5 rounded-xl shadow-2xl`} style={{ alignSelf: 'flex-end' }}>
-                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}>
+                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[10px] font-black whitespace-nowrap`}>
                                                     홈 화면에 설치 방법
                                                 </Text>
                                             </View>
@@ -1509,15 +1557,46 @@ export default function Home() {
                                         onPress={handleSettingsPress}
                                         onHoverIn={() => setHoveredHeaderBtn('admin')}
                                         onHoverOut={() => setHoveredHeaderBtn(null)}
-                                        className={`p-2.5 rounded-full border active:scale-95 transition-transform ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border-2 active:scale-95 transition-transform ${auth.isLoggedIn
+                                            ? (auth.role === 'super_admin' || auth.role === 'master')
+                                                ? (isDark ? 'bg-rose-500/40 border-rose-400' : 'bg-rose-100 border-rose-400')
+                                                : auth.role === 'alliance_admin'
+                                                    ? (isDark ? 'bg-indigo-500/40 border-indigo-400' : 'bg-indigo-100 border-indigo-400')
+                                                    : auth.role === 'admin'
+                                                        ? (isDark ? 'bg-cyan-500/40 border-cyan-400' : 'bg-cyan-100 border-cyan-400')
+                                                        : (isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm')
+                                            : (isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-200 shadow-sm')
+                                            }`}
                                     >
-                                        <Ionicons name="person-circle" size={22} color={auth.isLoggedIn ? (isDark ? "#38bdf8" : "#0284c7") : (isDark ? "white" : "#333333")} />
+                                        <Ionicons
+                                            name="person-circle"
+                                            size={22}
+                                            color={
+                                                auth.isLoggedIn
+                                                    ? (auth.role === 'super_admin' || auth.role === 'master')
+                                                        ? "#fb7185" // Rose-400 - 전체서버관리자/마스터
+                                                        : auth.role === 'alliance_admin'
+                                                            ? "#818cf8" // Indigo-400 - 연맹관리자
+                                                            : auth.role === 'admin'
+                                                                ? "#22d3ee" // Cyan-400 - 운영관리자
+                                                                : (isDark ? "#94a3b8" : "#64748b") // Slate - 일반영주
+                                                    : (isDark ? "white" : "#333333") // 비로그인
+                                            }
+                                        />
                                     </Pressable>
                                     {hoveredHeaderBtn === 'admin' && (
                                         <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
                                             <View className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-black' : 'bg-white border-slate-200 shadow-slate-200'} border px-4 py-2.5 rounded-xl shadow-2xl`} style={{ alignSelf: 'flex-end' }}>
-                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}>
-                                                    {auth.isLoggedIn ? '관리자 메뉴 열기' : '관리자 로그인'}
+                                                <Text numberOfLines={1} className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[10px] font-black whitespace-nowrap`}>
+                                                    {auth.isLoggedIn
+                                                        ? (auth.role === 'super_admin' || auth.role === 'master')
+                                                            ? '🔴 전체서버관리자'
+                                                            : auth.role === 'alliance_admin'
+                                                                ? '🔵 연맹관리자'
+                                                                : auth.role === 'admin'
+                                                                    ? '🟢 운영관리자'
+                                                                    : '⚪ 일반영주'
+                                                        : '관리자 로그인'}
                                                 </Text>
                                             </View>
                                         </View>
@@ -1825,7 +1904,7 @@ export default function Home() {
                                 // @ts-ignore
                                 onMouseEnter={() => setAdminMenuHover('logout')}
                                 onMouseLeave={() => setAdminMenuHover(null)}
-                                className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'logout' ? 'bg-red-500/10 scale-[1.05] border-red-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'logout' ? 'bg-red-500/10 border-red-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                             >
                                 <Ionicons name="log-out-outline" size={22} color={adminMenuHover === 'logout' ? '#ef4444' : '#ef4444'} style={{ marginRight: 10 }} />
                                 <Text className={`font-black text-xl ${adminMenuHover === 'logout' ? (isDark ? 'text-red-400' : 'text-red-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>로그아웃</Text>
@@ -1836,7 +1915,7 @@ export default function Home() {
                                 // @ts-ignore
                                 onMouseEnter={() => setAdminMenuHover('members')}
                                 onMouseLeave={() => setAdminMenuHover(null)}
-                                className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'members' ? 'bg-sky-500/10 scale-[1.05] border-sky-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'members' ? 'bg-sky-500/10 border-sky-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                             >
                                 <Ionicons name="people-outline" size={22} color={adminMenuHover === 'members' ? '#0ea5e9' : '#38bdf8'} style={{ marginRight: 10 }} />
                                 <Text className={`font-black text-xl ${adminMenuHover === 'members' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹원 관리</Text>
@@ -1851,7 +1930,7 @@ export default function Home() {
                                         // @ts-ignore
                                         onMouseEnter={() => setAdminMenuHover('staff')}
                                         onMouseLeave={() => setAdminMenuHover(null)}
-                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'staff' ? 'bg-indigo-600/10 scale-[1.05] border-indigo-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'staff' ? 'bg-indigo-600/10 border-indigo-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                                     >
                                         <Ionicons name="people-outline" size={18} color={adminMenuHover === 'staff' ? '#818cf8' : '#818cf8'} style={{ marginRight: 8 }} />
                                         <Text className={`font-bold text-sm ${adminMenuHover === 'staff' ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>운영진 관리</Text>
@@ -1892,7 +1971,7 @@ export default function Home() {
                                         // @ts-ignore
                                         onMouseEnter={() => setAdminMenuHover('super')}
                                         onMouseLeave={() => setAdminMenuHover(null)}
-                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 scale-[1.05] border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                                     >
                                         <Ionicons name="shield-checkmark-outline" size={18} color={adminMenuHover === 'super' ? '#38bdf8' : '#38bdf8'} style={{ marginRight: 8 }} />
                                         <Text className={`font-bold text-sm ${adminMenuHover === 'super' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>시스템 관리</Text>
@@ -1906,7 +1985,7 @@ export default function Home() {
                             // @ts-ignore
                             onMouseEnter={() => setAdminMenuHover('close')}
                             onMouseLeave={() => setAdminMenuHover(null)}
-                            className={`py-5 mt-6 rounded-[24px] items-center border transition-all duration-300 ${adminMenuHover === 'close' ? 'scale-[1.05] border-slate-400/50' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200')}`}
+                            className={`py-5 mt-6 rounded-[24px] items-center border transition-all duration-300 ${adminMenuHover === 'close' ? 'border-slate-400/50' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200')}`}
                         >
                             <Text className={`font-black text-sm tracking-widest uppercase ${adminMenuHover === 'close' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>닫기</Text>
                         </TouchableOpacity>

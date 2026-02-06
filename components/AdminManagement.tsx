@@ -404,6 +404,23 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                 </View>
                                             )}
                                         </TouchableOpacity>
+
+                                        {/* URL Preview Section */}
+                                        {sheetData?.url && Platform.OS === 'web' && (
+                                            <View className="mt-6">
+                                                <View className="flex-row items-center mb-3">
+                                                    <Ionicons name="eye-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                    <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>미리보기</Text>
+                                                </View>
+                                                <View className={`rounded-xl overflow-hidden border ${isDark ? 'border-slate-700' : 'border-slate-200'}`} style={{ height: 200 }}>
+                                                    <iframe
+                                                        src={sheetData.url}
+                                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                                        title="Strategy Document Preview"
+                                                    />
+                                                </View>
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
                             </View>
@@ -463,9 +480,40 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <Text className={`font-bold text-base ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>개별 영주 등록</Text>
                                     </View>
                                     <View className="flex-row gap-2 items-stretch h-14">
-                                        <View className="flex-1"><TextInput className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`} placeholder="닉네임" value={manualNick} onChangeText={setManualNick} /></View>
-                                        <View className="flex-[1.2]"><TextInput className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`} placeholder="ID(숫자)" value={manualId} onChangeText={setManualId} keyboardType="numeric" /></View>
-                                        <View className="flex-[1]"><TextInput className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`} placeholder="비번(옵션)" value={manualPw} onChangeText={setManualPw} /></View>
+                                        <View className="flex-1">
+                                            <TextInput
+                                                className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                placeholder="닉네임"
+                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                                value={manualNick}
+                                                onChangeText={setManualNick}
+                                                // @ts-ignore - Web-specific property
+                                                style={{ fontStyle: manualNick ? 'normal' : 'italic' }}
+                                            />
+                                        </View>
+                                        <View className="flex-[1.2]">
+                                            <TextInput
+                                                className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                placeholder="ID(숫자)"
+                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                                value={manualId}
+                                                onChangeText={setManualId}
+                                                keyboardType="numeric"
+                                                // @ts-ignore - Web-specific property
+                                                style={{ fontStyle: manualId ? 'normal' : 'italic' }}
+                                            />
+                                        </View>
+                                        <View className="flex-[1]">
+                                            <TextInput
+                                                className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                placeholder="비번(옵션)"
+                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                                value={manualPw}
+                                                onChangeText={setManualPw}
+                                                // @ts-ignore - Web-specific property
+                                                style={{ fontStyle: manualPw ? 'normal' : 'italic' }}
+                                            />
+                                        </View>
                                         <TouchableOpacity onPress={handleManualAdd} className="bg-indigo-600 px-6 rounded-xl items-center justify-center"><Text className="text-white font-black text-sm">등록</Text></TouchableOpacity>
                                     </View>
                                 </View>
@@ -564,9 +612,9 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                                     <Ionicons name={isRowStaff ? "shield-checkmark" : "shield-outline"} size={18} color={isRowStaff ? "white" : (isDark ? "#64748b" : "#94a3b8")} />
                                                                 </TouchableOpacity>
                                                                 {hoveredStaffBtn === m.id && (
-                                                                    <View className="absolute top-1/2 -translate-y-1/2 right-full mr-3 bg-slate-950/95 border border-slate-800 px-3 py-2.5 rounded-xl shadow-2xl z-50 flex-row items-center">
-                                                                        <Text numberOfLines={1} className="text-white text-[10px] font-black whitespace-nowrap">운영진 권한 설정</Text>
-                                                                        <View className="absolute -right-1 top-1/2 -translate-y-1/2 -mt-0 w-2.5 h-2.5 bg-slate-950 border-t border-r border-slate-800 rotate-45" />
+                                                                    <View className={`absolute top-1/2 -translate-y-1/2 right-full mr-3 border px-3 py-2 rounded-lg shadow-xl z-50 flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                                                        <Text numberOfLines={1} className={`text-[10px] font-black whitespace-nowrap ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>운영진 권한 설정</Text>
+                                                                        <View className={`absolute -right-1 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rotate-45 border-t border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} />
                                                                     </View>
                                                                 )}
                                                             </View>

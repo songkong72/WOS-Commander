@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOS 커맨더 - 로그인 가이드</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c1929 0%, #1a3a5c 50%, #0f2744 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+            padding: 50px 40px;
+            background: rgba(15, 39, 68, 0.9);
+            border-radius: 24px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        header .icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #38bdf8, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #7dd3fc;
+            font-size: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .section {
+            background: rgba(15, 39, 68, 0.8);
+            border-radius: 20px;
+            padding: 35px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .section-icon {
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+        }
+
+        .section-icon.blue {
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .section-icon.amber {
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .section-icon.emerald {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .section-icon.rose {
+            background: rgba(251, 113, 133, 0.2);
+            border: 1px solid rgba(251, 113, 133, 0.3);
+        }
+
+        .section-icon.indigo {
+            background: rgba(129, 140, 248, 0.2);
+            border: 1px solid rgba(129, 140, 248, 0.3);
+        }
+
+        .section-icon.cyan {
+            background: rgba(6, 182, 212, 0.2);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .section h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #38bdf8;
+            margin: 25px 0 12px;
+        }
+
+        .section p {
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .section li {
+            padding: 12px 0 12px 30px;
+            position: relative;
+            color: #94a3b8;
+        }
+
+        .section li::before {
+            content: "❄️";
+            position: absolute;
+            left: 0;
+            font-size: 0.9rem;
+        }
+
+        .tab-demo {
+            display: flex;
+            border-radius: 16px;
+            overflow: hidden;
+            margin: 20px 0;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .tab-demo .tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .tab-demo .tab.active {
+            background: rgba(56, 189, 248, 0.3);
+            color: #7dd3fc;
+        }
+
+        .tab-demo .tab.inactive {
+            background: rgba(15, 39, 68, 0.5);
+            color: #64748b;
+        }
+
+        .input-demo {
+            background: rgba(2, 6, 23, 0.5);
+            border: 2px solid #1e3a5f;
+            border-radius: 16px;
+            padding: 16px 20px 16px 50px;
+            margin: 10px 0;
+            color: #e2e8f0;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .input-demo::before {
+            content: attr(data-icon);
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .role-card {
+            background: rgba(15, 39, 68, 0.6);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 15px 0;
+            border-left: 4px solid;
+        }
+
+        .role-card.master {
+            border-color: #fb7185;
+        }
+
+        .role-card.alliance {
+            border-color: #818cf8;
+        }
+
+        .role-card.admin {
+            border-color: #22d3ee;
+        }
+
+        .role-card.user {
+            border-color: #64748b;
+        }
+
+        .role-card h4 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .role-card.master h4 {
+            color: #fb7185;
+        }
+
+        .role-card.alliance h4 {
+            color: #818cf8;
+        }
+
+        .role-card.admin h4 {
+            color: #22d3ee;
+        }
+
+        .role-card.user h4 {
+            color: #94a3b8;
+        }
+
+        .role-card p {
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .flow-chart {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin: 25px 0;
+            padding: 20px;
+            background: rgba(2, 6, 23, 0.3);
+            border-radius: 16px;
+        }
+
+        .flow-step {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 12px 20px;
+            border-radius: 12px;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .flow-step .num {
+            display: block;
+            font-size: 0.75rem;
+            color: #7dd3fc;
+            margin-bottom: 5px;
+        }
+
+        .flow-step .text {
+            font-weight: 700;
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: #38bdf8;
+        }
+
+        .tip-box {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid #38bdf8;
+            padding: 18px 22px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+
+        .tip-box strong {
+            color: #38bdf8;
+        }
+
+        .warning-box {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 4px solid #fbbf24;
+            padding: 18px 22px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+
+        .warning-box strong {
+            color: #fbbf24;
+        }
+
+        .important-box {
+            background: rgba(251, 113, 133, 0.1);
+            border-left: 4px solid #fb7185;
+            padding: 18px 22px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+
+        .important-box strong {
+            color: #fb7185;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            color: #0f172a;
+            padding: 14px 28px;
+            border-radius: 14px;
+            text-decoration: none;
+            font-weight: 700;
+            margin-top: 40px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 10px 30px rgba(56, 189, 248, 0.3);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(56, 189, 248, 0.4);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            color: #475569;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.6rem;
+            }
+
+            .section {
+                padding: 25px 20px;
+            }
+
+            .section-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .flow-chart {
+                flex-direction: column;
+            }
+
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="icon">❄️</div>
+            <h1>WOS COMMANDER</h1>
+            <p>로그인 & 시작 가이드</p>
+        </header>
+
+        <!-- 화면 개요 -->
+        <div class="section" id="overview">
+            <div class="section-header">
+                <div class="section-icon blue">🚪</div>
+                <h2>Gate 화면 개요</h2>
+            </div>
+            <p>WOS 커맨더에 처음 접속하면 Gate(게이트) 화면이 표시됩니다. 이 화면에서 연맹을 선택하고 로그인할 수 있습니다.</p>
+
+            <div class="tab-demo">
+                <div class="tab active">대시보드 입장</div>
+                <div class="tab inactive">연맹 관리자 신청</div>
+            </div>
+
+            <p>화면 상단에 두 개의 탭이 있습니다:</p>
+            <ul>
+                <li><strong>대시보드 입장:</strong> 일반 로그인 (연맹원, 운영관리자, 연맹관리자)</li>
+                <li><strong>연맹 관리자 신청:</strong> 새로운 연맹 관리자 권한 신청</li>
+            </ul>
+        </div>
+
+        <!-- 대시보드 입장 -->
+        <div class="section" id="login">
+            <div class="section-header">
+                <div class="section-icon emerald">🔓</div>
+                <h2>대시보드 입장 (로그인)</h2>
+            </div>
+            <p>이미 연맹에 등록된 사용자가 로그인하는 방법입니다.</p>
+
+            <h3>📝 입력 필드</h3>
+            <div class="input-demo" data-icon="🖥️">#1008 (서버 번호)</div>
+            <div class="input-demo" data-icon="🛡️">WBI (연맹 이름)</div>
+            <div class="input-demo" data-icon="👤">영주 이름 또는 ID</div>
+            <div class="input-demo" data-icon="🔒">비밀번호</div>
+
+            <h3>🔍 입력 방법</h3>
+            <ul>
+                <li><strong>서버 번호:</strong> 게임 서버 번호를 입력합니다 (예: 1008)</li>
+                <li><strong>연맹 이름:</strong> 연맹의 약칭을 영문 대문자로 입력합니다 (예: WBI)</li>
+                <li><strong>영주 이름:</strong> 게임 내 닉네임 또는 등록된 ID를 입력합니다</li>
+                <li><strong>비밀번호:</strong> 연맹 관리자가 설정한 비밀번호를 입력합니다</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 자동 완성 기능:</strong> 이전에 입력한 정보는 자동으로 저장됩니다. 입력란을 클릭하면 최근 기록이 드롭다운으로 표시되어 빠르게 선택할 수 있습니다.
+            </div>
+
+            <h3>✅ 로그인 절차</h3>
+            <div class="flow-chart">
+                <div class="flow-step">
+                    <span class="num">STEP 1</span>
+                    <span class="text">서버/연맹 입력</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">
+                    <span class="num">STEP 2</span>
+                    <span class="text">이름/비밀번호 입력</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">
+                    <span class="num">STEP 3</span>
+                    <span class="text">대시보드 진입</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 역할 체계 -->
+        <div class="section" id="roles">
+            <div class="section-header">
+                <div class="section-icon rose">👥</div>
+                <h2>역할(권한) 체계</h2>
+            </div>
+            <p>WOS 커맨더는 4단계의 권한 체계를 가지고 있으며, 각 역할은 상위 관리자에 의해 부여됩니다.</p>
+
+            <div class="role-card master">
+                <h4>🔴 시스템 관리자 (마스터)</h4>
+                <p>최상위 권한. 모든 서버와 연맹을 관리하며, <strong>연맹 관리자 신청을 승인</strong>합니다.</p>
+            </div>
+
+            <div class="role-card alliance">
+                <h4>🔵 연맹 관리자</h4>
+                <p>해당 연맹의 최고 관리자. <strong>시스템 관리자(마스터)의 승인</strong>을 받아야 권한이 부여됩니다. 운영 관리자와 일반 영주를 등록/관리합니다.</p>
+            </div>
+
+            <div class="role-card admin">
+                <h4>🟢 운영 관리자</h4>
+                <p>연맹 운영을 돕는 부관리자. <strong>연맹 관리자가 등록</strong>합니다. 이벤트 일정 등록, 출석 관리 등이 가능합니다.</p>
+            </div>
+
+            <div class="role-card user">
+                <h4>⚪ 일반 영주</h4>
+                <p>연맹 소속 일반 멤버. <strong>연맹 관리자가 등록</strong>합니다. 정보 열람 및 본인 출석 등록이 가능합니다.</p>
+            </div>
+
+            <div class="important-box">
+                <strong>⚠️ 중요:</strong> 운영 관리자와 일반 영주는 반드시 <strong>연맹 관리자</strong>가 먼저 등록해야 로그인할 수 있습니다. 연맹 관리자가 아직 없다면
+                "연맹 관리자 신청"을 통해 권한을 요청하세요.
+            </div>
+        </div>
+
+        <!-- 연맹 관리자 신청 -->
+        <div class="section" id="apply">
+            <div class="section-header">
+                <div class="section-icon indigo">📋</div>
+                <h2>연맹 관리자 신청</h2>
+            </div>
+            <p>아직 WOS 커맨더에 등록되지 않은 연맹의 관리자가 되려면 신청이 필요합니다.</p>
+
+            <h3>🔄 신청 절차</h3>
+            <div class="flow-chart">
+                <div class="flow-step">
+                    <span class="num">STEP 1</span>
+                    <span class="text">신청 탭 선택</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">
+                    <span class="num">STEP 2</span>
+                    <span class="text">정보 입력</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">
+                    <span class="num">STEP 3</span>
+                    <span class="text">신청 제출</span>
+                </div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">
+                    <span class="num">STEP 4</span>
+                    <span class="text">마스터 승인</span>
+                </div>
+            </div>
+
+            <h3>📝 신청 시 입력 정보</h3>
+            <ul>
+                <li><strong>서버 번호:</strong> 관리할 연맹이 속한 게임 서버</li>
+                <li><strong>연맹 이름:</strong> 관리할 연맹의 태그/약칭</li>
+                <li><strong>영주 이름:</strong> 신청자의 게임 닉네임</li>
+                <li><strong>비밀번호:</strong> 로그인에 사용할 비밀번호 설정</li>
+            </ul>
+
+            <div class="warning-box">
+                <strong>⏳ 대기 시간:</strong> 신청 후 시스템 관리자(마스터)의 승인이 필요합니다. 승인이 완료되면 해당 계정으로 로그인할 수 있습니다.
+            </div>
+
+            <h3>✅ 승인 후</h3>
+            <p>연맹 관리자 권한이 부여되면 다음 기능을 사용할 수 있습니다:</p>
+            <ul>
+                <li>운영 관리자 및 일반 영주 계정 등록</li>
+                <li>연맹원 관리 (추가, 삭제, 권한 변경)</li>
+                <li>공지사항 작성 및 수정</li>
+                <li>이벤트 일정 등록</li>
+                <li>전략 문서 URL 설정</li>
+            </ul>
+        </div>
+
+        <!-- 기존 대시보드로 돌아가기 -->
+        <div class="section" id="existing">
+            <div class="section-header">
+                <div class="section-icon cyan">🔄</div>
+                <h2>기존 대시보드로 돌아가기</h2>
+            </div>
+            <p>이전에 접속했던 연맹 대시보드가 있다면 하단의 "기존 대시보드로 돌아가기" 링크를 클릭하세요.</p>
+
+            <div class="tip-box">
+                <strong>💡 팁:</strong> 이 기능은 서버와 연맹 정보가 저장되어 있을 때만 표시됩니다. 다른 연맹을 조회하려면 새로운 정보를 입력하고 진입하세요.
+            </div>
+        </div>
+
+        <!-- 자주 묻는 질문 -->
+        <div class="section" id="faq">
+            <div class="section-header">
+                <div class="section-icon amber">❓</div>
+                <h2>자주 묻는 질문</h2>
+            </div>
+
+            <h3>Q. 비밀번호를 모르겠어요</h3>
+            <p>A. 연맹 관리자에게 문의하세요. 관리자가 비밀번호를 재설정해줄 수 있습니다.</p>
+
+            <h3>Q. 연맹에 등록되어 있지 않다고 나와요</h3>
+            <p>A. 연맹 관리자가 먼저 귀하의 계정을 "연맹원 관리"에서 등록해야 합니다. 관리자에게 등록을 요청하세요.</p>
+
+            <h3>Q. 연맹 관리자 신청 후 얼마나 기다려야 하나요?</h3>
+            <p>A. 시스템 관리자(마스터)가 신청을 확인하고 승인합니다. 일반적으로 24시간 내에 처리됩니다.</p>
+
+            <h3>Q. 다른 연맹도 관리할 수 있나요?</h3>
+            <p>A. 각 연맹마다 별도의 관리자 신청이 필요합니다. 한 계정이 여러 연맹을 관리하려면 각각 승인을 받아야 합니다.</p>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-btn">
+                ❄️ WOS 커맨더로 돌아가기
+            </a>
+        </div>
+
+        <footer>
+            <p>© 2026 WOS 커맨더. All rights reserved.</p>
+            <p>Whiteout Survival 연맹 관리 도우미</p>
+        </footer>
+    </div>
+</body>
+
+</html>

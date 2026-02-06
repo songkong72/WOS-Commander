@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WOS 커맨더 - 사용자 매뉴얼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 40px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 24px;
+            border: 1px solid #334155;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        
+        .section {
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid #334155;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .section-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .section-icon.blue { background: rgba(56, 189, 248, 0.2); }
+        .section-icon.indigo { background: rgba(129, 140, 248, 0.2); }
+        .section-icon.amber { background: rgba(251, 191, 36, 0.2); }
+        .section-icon.rose { background: rgba(251, 113, 133, 0.2); }
+        .section-icon.emerald { background: rgba(16, 185, 129, 0.2); }
+        .section-icon.cyan { background: rgba(6, 182, 212, 0.2); }
+        
+        .section h2 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+        
+        .section h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #38bdf8;
+            margin: 20px 0 10px;
+        }
+        
+        .section p {
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+        
+        .section ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .section li {
+            padding: 10px 0 10px 25px;
+            position: relative;
+            color: #94a3b8;
+        }
+        
+        .section li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #38bdf8;
+            font-weight: bold;
+        }
+        
+        .role-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin: 5px 5px 5px 0;
+        }
+        
+        .role-master { background: rgba(251, 113, 133, 0.3); color: #fb7185; border: 1px solid #fb7185; }
+        .role-alliance { background: rgba(129, 140, 248, 0.3); color: #818cf8; border: 1px solid #818cf8; }
+        .role-admin { background: rgba(34, 211, 238, 0.3); color: #22d3ee; border: 1px solid #22d3ee; }
+        .role-user { background: rgba(148, 163, 184, 0.3); color: #94a3b8; border: 1px solid #64748b; }
+        
+        .tip-box {
+            background: rgba(56, 189, 248, 0.1);
+            border-left: 4px solid #38bdf8;
+            padding: 15px 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+        
+        .tip-box strong {
+            color: #38bdf8;
+        }
+        
+        .warning-box {
+            background: rgba(251, 191, 36, 0.1);
+            border-left: 4px solid #fbbf24;
+            padding: 15px 20px;
+            border-radius: 0 12px 12px 0;
+            margin: 20px 0;
+        }
+        
+        .warning-box strong {
+            color: #fbbf24;
+        }
+        
+        .shortcut {
+            display: inline-block;
+            background: #1e293b;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table th, table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        
+        table th {
+            background: rgba(30, 41, 59, 0.8);
+            color: #38bdf8;
+            font-weight: 600;
+        }
+        
+        table td {
+            color: #cbd5e1;
+        }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #38bdf8;
+            color: #0f172a;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            margin-top: 40px;
+            transition: transform 0.2s, background 0.2s;
+        }
+        
+        .back-btn:hover {
+            background: #0ea5e9;
+            transform: translateY(-2px);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .section {
+                padding: 20px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📖 WOS 커맨더 사용자 매뉴얼</h1>
+            <p>Whiteout Survival 연맹 관리를 위한 완벽 가이드</p>
+        </header>
+
+        <!-- 권한 관리 -->
+        <div class="section" id="roles">
+            <div class="section-header">
+                <div class="section-icon rose">🔐</div>
+                <h2>권한 관리 시스템</h2>
+            </div>
+            <p>WOS 커맨더는 4단계의 권한 체계를 가지고 있습니다. 각 역할에 따라 접근 가능한 기능이 다릅니다.</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>역할</th>
+                        <th>색상</th>
+                        <th>권한 범위</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="role-badge role-master">🔴 전체서버관리자</span></td>
+                        <td>Rose (빨간색)</td>
+                        <td>모든 서버/연맹 관리, 시스템 설정, 관리자 임명</td>
+                    </tr>
+                    <tr>
+                        <td><span class="role-badge role-alliance">🔵 연맹관리자</span></td>
+                        <td>Indigo (보라색)</td>
+                        <td>해당 연맹 전체 관리, 운영진 임명, 멤버 관리</td>
+                    </tr>
+                    <tr>
+                        <td><span class="role-badge role-admin">🟢 운영관리자</span></td>
+                        <td>Cyan (청록색)</td>
+                        <td>이벤트 일정 등록, 출석 관리, 공지 작성</td>
+                    </tr>
+                    <tr>
+                        <td><span class="role-badge role-user">⚪ 일반영주</span></td>
+                        <td>Gray (회색)</td>
+                        <td>정보 열람, 본인 출석 등록</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="tip-box">
+                <strong>💡 팁:</strong> 오른쪽 상단의 사람 아이콘 색상으로 현재 로그인한 역할을 확인할 수 있습니다.
+            </div>
+        </div>
+
+        <!-- 헤더 버튼 -->
+        <div class="section" id="header">
+            <div class="section-header">
+                <div class="section-icon blue">🔘</div>
+                <h2>헤더 버튼 가이드</h2>
+            </div>
+            
+            <h3>☀️ 테마 전환 버튼</h3>
+            <p>다크 모드와 라이트 모드를 전환합니다. 눈의 피로를 줄이기 위해 기본적으로 다크 모드가 적용되어 있습니다.</p>
+            
+            <h3>📥 설치 버튼</h3>
+            <p>WOS 커맨더를 홈 화면에 설치하는 방법을 안내합니다. PWA(Progressive Web App)로 설치하면 앱처럼 사용할 수 있습니다.</p>
+            
+            <h3>👤 프로필 버튼</h3>
+            <p>현재 로그인 상태와 관리자 메뉴에 접근합니다.</p>
+            <ul>
+                <li><strong>비로그인 상태:</strong> 관리자 로그인 화면으로 이동</li>
+                <li><strong>로그인 상태:</strong> 관리자 메뉴 열기 (로그아웃, 연맹원 관리 등)</li>
+            </ul>
+        </div>
+
+        <!-- 서버/연맹 정보 -->
+        <div class="section" id="server">
+            <div class="section-header">
+                <div class="section-icon indigo">🏰</div>
+                <h2>서버 및 연맹 정보</h2>
+            </div>
+            <p>화면 상단의 <span class="shortcut">#1008 • WBI</span> 버튼은 현재 선택된 서버와 연맹을 표시합니다.</p>
+            
+            <h3>연맹 변경하기</h3>
+            <ul>
+                <li>해당 버튼을 클릭하면 게이트 화면으로 돌아갑니다</li>
+                <li>새로운 서버 번호와 연맹 이름을 입력하여 다른 연맹을 조회할 수 있습니다</li>
+                <li>최근 입력한 정보는 자동으로 저장되어 빠르게 선택할 수 있습니다</li>
+            </ul>
+            
+            <div class="warning-box">
+                <strong>⚠️ 주의:</strong> 관리 권한은 해당 연맹에만 적용됩니다. 다른 연맹으로 이동하면 권한이 달라질 수 있습니다.
+            </div>
+        </div>
+
+        <!-- 공지사항 -->
+        <div class="section" id="notice">
+            <div class="section-header">
+                <div class="section-icon amber">🔔</div>
+                <h2>공지사항 관리</h2>
+            </div>
+            <p>연맹 공지사항을 등록하고 관리합니다. 공지는 대시보드 상단에 눈에 띄게 표시됩니다.</p>
+            
+            <h3>공지 보기</h3>
+            <p>공지 영역을 클릭하면 전체 내용을 확인할 수 있습니다.</p>
+            
+            <h3>공지 수정 (관리자 전용)</h3>
+            <ul>
+                <li>공지 옆의 ✏️ 연필 아이콘을 클릭합니다</li>
+                <li>공지 내용을 입력하고 저장합니다</li>
+                <li>공개/비공개 설정으로 일반 멤버에게 표시 여부를 결정합니다</li>
+            </ul>
+            
+            <div class="tip-box">
+                <strong>💡 팁:</strong> 비공개 상태의 공지는 관리자에게만 보이며, 점선 테두리로 표시됩니다.
+            </div>
+        </div>
+
+        <!-- 주요 메뉴 -->
+        <div class="section" id="menu">
+            <div class="section-header">
+                <div class="section-icon emerald">📋</div>
+                <h2>주요 메뉴</h2>
+            </div>
+            
+            <h3>👥 영웅 정보</h3>
+            <p>게임 내 모든 영웅의 상세 정보를 확인할 수 있습니다.</p>
+            <ul>
+                <li>영웅 스탯 및 성장 정보</li>
+                <li>스킬 설명 및 효과</li>
+                <li>추천 조합 및 운영 팁</li>
+            </ul>
+            
+            <h3>📅 이벤트</h3>
+            <p>연맹 이벤트 일정과 전략을 관리합니다.</p>
+            <ul>
+                <li>이벤트 일정 등록 (관리자)</li>
+                <li>출석 체크 및 참여 현황</li>
+                <li>이벤트별 전략 가이드</li>
+            </ul>
+            
+            <h3>🗺️ 전략 문서</h3>
+            <p>연맹의 전략 문서와 배치도를 확인합니다.</p>
+            <ul>
+                <li>관리자가 등록한 구글 시트 또는 외부 문서 연동</li>
+                <li>실시간 전략 공유</li>
+            </ul>
+        </div>
+
+        <!-- 금주의 이벤트 -->
+        <div class="section" id="weekly">
+            <div class="section-header">
+                <div class="section-icon cyan">📆</div>
+                <h2>금주의 이벤트</h2>
+            </div>
+            <p>현재 진행 중이거나 예정된 이벤트를 한눈에 확인할 수 있습니다.</p>
+            
+            <h3>시간대 설정</h3>
+            <ul>
+                <li><strong>KST:</strong> 한국 표준시 (UTC+9)</li>
+                <li><strong>UTC:</strong> 세계 표준시</li>
+            </ul>
+            
+            <h3>이벤트 상태</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>상태</th>
+                        <th>설명</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>⚡ 진행 중</td>
+                        <td>현재 진행 중인 이벤트 (노란색 강조)</td>
+                    </tr>
+                    <tr>
+                        <td>⏰ 예정</td>
+                        <td>곧 시작될 이벤트 (녹색)</td>
+                    </tr>
+                    <tr>
+                        <td>✅ 종료</td>
+                        <td>이미 종료된 이벤트 (회색, 취소선)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 관리자 기능 -->
+        <div class="section" id="admin">
+            <div class="section-header">
+                <div class="section-icon rose">⚙️</div>
+                <h2>관리자 기능</h2>
+            </div>
+            
+            <h3>연맹원 관리</h3>
+            <ul>
+                <li>멤버 목록 조회 및 검색</li>
+                <li>엑셀 파일로 멤버 일괄 등록</li>
+                <li>개별 멤버 등록/삭제</li>
+                <li>운영진 권한 부여/해제</li>
+                <li>비밀번호 일괄 초기화</li>
+            </ul>
+            
+            <h3>전략 문서 관리</h3>
+            <ul>
+                <li>구글 시트 URL 등록</li>
+                <li>문서 미리보기 확인</li>
+            </ul>
+            
+            <h3>이벤트 일정 등록</h3>
+            <ul>
+                <li>각 이벤트 카드의 📅 캘린더 아이콘 클릭</li>
+                <li>날짜 및 시간 설정</li>
+                <li>반복 일정 지원 (요일별)</li>
+            </ul>
+        </div>
+
+        <!-- 로그인 안내 -->
+        <div class="section" id="login">
+            <div class="section-header">
+                <div class="section-icon blue">🔑</div>
+                <h2>로그인 안내</h2>
+            </div>
+            
+            <h3>일반 사용자 로그인</h3>
+            <p>연맹에 등록된 영주 이름(닉네임)과 비밀번호로 로그인합니다.</p>
+            <ul>
+                <li>서버 번호와 연맹 이름 입력</li>
+                <li>영주 이름과 비밀번호 입력</li>
+                <li>대시보드 입장 클릭</li>
+            </ul>
+            
+            <h3>관리자 신청</h3>
+            <p>연맹 관리자 권한이 필요한 경우:</p>
+            <ul>
+                <li>"연맹 관리자 신청" 탭 선택</li>
+                <li>서버/연맹 정보와 함께 신청</li>
+                <li>시스템 관리자 승인 후 사용 가능</li>
+            </ul>
+            
+            <div class="tip-box">
+                <strong>💡 팁:</strong> 이전에 입력한 정보는 자동 완성으로 제안됩니다. 드롭다운에서 선택하세요.
+            </div>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-btn">
+                ← 대시보드로 돌아가기
+            </a>
+        </div>
+
+        <footer>
+            <p>© 2026 WOS 커맨더. All rights reserved.</p>
+            <p>Whiteout Survival 연맹 관리 도우미</p>
+        </footer>
+    </div>
+</body>
+</html>
