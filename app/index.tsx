@@ -15,12 +15,13 @@ import {
     Animated,
     LayoutAnimation,
     UIManager,
-    ImageBackground
+    ImageBackground,
+    ActivityIndicator
 } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
-import { useAuth, useTheme } from './_layout';
-import { MASTER_CREDENTIALS, SUPER_ADMINS } from '../data/admin-config';
+import { useAuth, useTheme } from './context';
+import { MASTER_CREDENTIALS, SUPER_ADMINS, AdminStatus } from '../data/admin-config';
 import { useFirestoreEventSchedules } from '../hooks/useFirestoreEventSchedules';
 import { useFirestoreAdmins } from '../hooks/useFirestoreAdmins';
 // @ts-ignore
@@ -33,27 +34,80 @@ import { hashPassword } from '../utils/crypto';
 import { LinearGradient } from 'expo-linear-gradient';
 import { doc, setDoc, getDoc, collection, getDocs, query, writeBatch } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import AdminManagement from '../components/AdminManagement';
 
 export default function Home() {
     const router = useRouter();
-    const { auth, login, logout } = useAuth();
+    const params = useLocalSearchParams();
+    const { auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
-    const [serverId, setServerId] = useState<string | null>(undefined as any);
-    const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
-    const [isGateOpen, setIsGateOpen] = useState(false);
+    const [isGateOpen, setIsGateOpen] = useState(!serverId || !allianceId);
+    const [isLoading, setIsLoading] = useState(false);
     const [inputServer, setInputServer] = useState('');
     const [inputAlliance, setInputAlliance] = useState('');
+    const [inputUserId, setInputUserId] = useState('');
+    const [inputPassword, setInputPassword] = useState('');
+    const [isRegisterMode, setIsRegisterMode] = useState(false);
 
     const noticeData = useFirestoreNotice(serverId, allianceId);
     const { notice, saveNotice } = noticeData;
     const { schedules, loading, clearAllSchedules } = useFirestoreEventSchedules(serverId, allianceId);
+    const [adminMenuVisible, setAdminMenuVisible] = useState(params.showAdminMenu === 'true');
+    const mainScrollRef = useRef<ScrollView>(null);
 
-    // -- States --
+    // -- Trigger Admin Menu via Query Params (For Back Button) --
+    useEffect(() => {
+        if (params.showAdminMenu === 'true' && !adminMenuVisible) {
+            setAdminMenuVisible(true);
+        }
+        if (params.showAdminMenu === 'true') {
+            router.setParams({ showAdminMenu: undefined });
+        }
+    }, [params.showAdminMenu]);
+
+    // -- Scroll Restoration --
+    useEffect(() => {
+        if (serverId && allianceId && !isLoading && dashboardScrollY > 0) {
+            // Small timeout to ensure layout is ready
+            const timer = setTimeout(() => {
+                mainScrollRef.current?.scrollTo({ y: dashboardScrollY, animated: false });
+            }, 100);
+            return () => clearTimeout(timer);
+        }
+    }, [serverId, allianceId, isLoading]);
+
+    // -- Modals --
     const [loginModalVisible, setLoginModalVisible] = useState(false);
     const [loginInput, setLoginInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
     const [loginError, setLoginError] = useState('');
+    const [isSuperAdminDashboardVisible, setIsSuperAdminDashboardVisible] = useState(false);
+    const [superAdminTab, setSuperAdminTab] = useState<'pending' | 'alliances'>('pending');
+    const [allRequests, setAllRequests] = useState<any[]>([]);
+    const [isSuperAdminLoading, setIsSuperAdminLoading] = useState(true);
+    const [adminDashboardVisible, setAdminDashboardVisible] = useState(false);
+
+    const [recentServers, setRecentServers] = useState<string[]>([]);
+    const [recentAlliances, setRecentAlliances] = useState<string[]>([]);
+    const [recentUserIds, setRecentUserIds] = useState<string[]>([]);
+    const [activeInput, setActiveInput] = useState<'server' | 'alliance' | 'userid' | null>(null);
+
+    const saveToHistory = async (key: string, value: string) => {
+        if (!value || value.trim() === '') return;
+        const storageKey = `recent_${key}`;
+        try {
+            const existing = await AsyncStorage.getItem(storageKey);
+            let list: string[] = existing ? JSON.parse(existing) : [];
+            list = [value, ...list.filter(item => item !== value)].slice(0, 5);
+            await AsyncStorage.setItem(storageKey, JSON.stringify(list));
+            if (key === 'server') setRecentServers(list);
+            if (key === 'alliance') setRecentAlliances(list);
+            if (key === 'userid') setRecentUserIds(list);
+        } catch (e) {
+            console.error('Save history error:', e);
+        }
+    };
     const [noticeDetailVisible, setNoticeDetailVisible] = useState(false);
     const [timezone, setTimezone] = useState<'KST' | 'UTC'>('KST');
 
@@ -79,14 +133,16 @@ export default function Home() {
     const { dynamicAdmins, addAdmin, removeAdmin } = useFirestoreAdmins(serverId, allianceId);
     const [newAdminName, setNewAdminName] = useState('');
     const [newAdminPassword, setNewAdminPassword] = useState('');
-    const [newAdminRole, setNewAdminRole] = useState<'admin' | 'super_admin'>('admin');
+    const [newAdminRole, setNewAdminRole] = useState<'admin' | 'alliance_admin'>('admin');
     const [showAdminList, setShowAdminList] = useState(false);
-    const isSuperAdmin = auth.isLoggedIn && auth.adminName && (
-        SUPER_ADMINS.includes(auth.adminName) ||
-        dynamicAdmins.find(a => a.name === auth.adminName)?.role === 'super_admin'
+    const isSuperAdmin = auth.isLoggedIn && (
+        auth.role === 'master' ||
+        auth.role === 'super_admin'
     );
 
     const [hoveredHeaderBtn, setHoveredHeaderBtn] = useState<string | null>(null);
+    const [adminMenuHover, setAdminMenuHover] = useState<string | null>(null);
+
 
     const handleMigrateToAlliance = async () => {
         if (!serverId || !allianceId) {
@@ -172,41 +228,242 @@ export default function Home() {
         }
     };
 
+    // -- Super Admin Dashboard Logic --
     useEffect(() => {
-        const loadSettings = async () => {
-            const savedServer = await AsyncStorage.getItem('serverId');
-            const savedAlliance = await AsyncStorage.getItem('allianceId');
-            const savedAdminId = await AsyncStorage.getItem('lastAdminId');
+        if (isSuperAdmin && isSuperAdminDashboardVisible) {
+            const { onSnapshot, collection, query, orderBy } = require('firebase/firestore');
+            const q = query(
+                collection(db, 'alliance_requests'),
+                orderBy('requestedAt', 'desc')
+            );
+            const unsubscribe = onSnapshot(q, (snapshot: any) => {
+                const reqs = snapshot.docs.map((doc: any) => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setAllRequests(reqs);
+                setIsSuperAdminLoading(false);
+            });
+            return () => unsubscribe();
+        }
+    }, [isSuperAdmin, isSuperAdminDashboardVisible]);
 
-            if (savedAdminId) setLoginInput(savedAdminId);
+    const handleApproveRequest = async (req: any) => {
+        showCustomAlert(
+            '연맹 승인',
+            `[${req.serverId}] ${req.allianceName} 연맹을 승인하시겠습니까?`,
+            'confirm',
+            async () => {
+                try {
+                    const { doc, getDoc, setDoc, updateDoc } = require('firebase/firestore');
+                    const userRef = doc(db, 'users', req.adminId);
+                    const userSnap = await getDoc(userRef);
+                    if (userSnap.exists()) {
+                        showCustomAlert('오류', '이미 존재하는 관리자 ID입니다.', 'error');
+                        return;
+                    }
+                    await setDoc(userRef, {
+                        uid: `admin_${req.serverId.replace('#', '')}_${req.allianceId}`,
+                        username: req.adminId,
+                        password: req.adminPassword,
+                        nickname: `${req.allianceId} 관리자`,
+                        role: 'alliance_admin',
+                        status: 'active',
+                        serverId: req.serverId,
+                        allianceId: req.allianceId,
+                        contact: req.contact,
+                        createdAt: Date.now()
+                    });
+                    const reqRef = doc(db, 'alliance_requests', req.id);
+                    await updateDoc(reqRef, { status: 'approved' });
+                    showCustomAlert('성공', '연맹 승인 및 관리자 계정 생성이 완료되었습니다.', 'success');
+                } catch (error: any) {
+                    showCustomAlert('오류', error.message, 'error');
+                }
+            }
+        );
+    };
 
-            if (savedServer && savedAlliance) {
-                setServerId(savedServer);
-                setAllianceId(savedAlliance);
-            } else {
-                setServerId(null);
-                setAllianceId(null);
-                setIsGateOpen(true);
+    const handleRejectRequest = async (req: any) => {
+        showCustomAlert(
+            '연맹 거절',
+            `[${req.serverId}] ${req.allianceName} 연맹 가입 신청을 거절하시겠습니까?`,
+            'confirm',
+            async () => {
+                try {
+                    const { doc, updateDoc } = require('firebase/firestore');
+                    const reqRef = doc(db, 'alliance_requests', req.id);
+                    await updateDoc(reqRef, { status: 'rejected' });
+                    showCustomAlert('완료', '신청이 거절되었습니다.', 'success');
+                } catch (error: any) {
+                    showCustomAlert('오류', error.message, 'error');
+                }
+            }
+        );
+    };
+
+    useEffect(() => {
+        const loadHistory = async () => {
+            try {
+                const savedAdminId = await AsyncStorage.getItem('lastAdminId');
+                const rServers = await AsyncStorage.getItem('recent_server');
+                const rAlliances = await AsyncStorage.getItem('recent_alliance');
+                const rUsers = await AsyncStorage.getItem('recent_userid');
+
+                if (rServers) setRecentServers(JSON.parse(rServers));
+                if (rAlliances) setRecentAlliances(JSON.parse(rAlliances));
+                if (rUsers) setRecentUserIds(JSON.parse(rUsers));
+                if (savedAdminId) setLoginInput(savedAdminId);
+            } catch (e) {
+                console.error('Failed to load history:', e);
             }
         };
-        loadSettings();
+        loadHistory();
     }, []);
 
+    const handleResetSettings = async () => {
+        showCustomAlert('데이터 초기화', '저장된 모든 접속 정보(서버, 연맹, ID)를 초기화하시겠습니까?', 'confirm', async () => {
+            try {
+                await AsyncStorage.multiRemove(['lastAdminId', 'lastAdminRole']);
+                setInputServer('');
+                setInputAlliance('');
+                setInputUserId('');
+                setInputPassword('');
+                setAllianceInfo(null, null);
+                setIsGateOpen(true);
+                showCustomAlert('초기화 완료', '모든 접속 정보가 삭제되었습니다.', 'success');
+            } catch (e) {
+                console.error('Reset error:', e);
+            }
+        });
+    };
+
     const handleEnterAlliance = async () => {
-        if (!inputServer.trim() || !inputAlliance.trim()) {
-            showCustomAlert('입력 오류', '서버 번호와 연맹 이름을 모두 입력해주세요.', 'error');
-            return;
-        }
-
-        const forceServer = inputServer.trim().startsWith('#') ? inputServer.trim() : `#${inputServer.trim()}`;
+        const forceServer = inputServer.trim() ? (inputServer.trim().startsWith('#') ? inputServer.trim() : `#${inputServer.trim()}`) : '';
         const forceAlliance = inputAlliance.trim();
+        const inputId = inputUserId.trim();
+        const inputPw = inputPassword.trim();
 
-        await AsyncStorage.setItem('serverId', forceServer);
-        await AsyncStorage.setItem('allianceId', forceAlliance);
+        if (isRegisterMode) {
+            if (!forceServer || !forceAlliance) {
+                showCustomAlert('입력 오류', '신청할 서버 번호와 연맹 이름을 모두 입력해주세요.', 'error');
+                return;
+            }
+            if (!inputId || !inputPw) {
+                showCustomAlert('입력 오류', '관리자 아이디와 비밀번호를 입력해주세요.', 'error');
+                return;
+            }
 
-        setServerId(forceServer);
-        setAllianceId(forceAlliance);
-        setIsGateOpen(false);
+            try {
+                const hashed = await hashPassword(inputPw);
+                // Instead of direct creation, we create a request for Super Admin approval
+                await setDoc(doc(collection(db, "alliance_requests")), {
+                    serverId: forceServer,
+                    allianceId: forceAlliance,
+                    allianceName: forceAlliance,
+                    adminId: inputId,
+                    adminPassword: hashed,
+                    status: 'pending',
+                    requestedAt: Date.now()
+                });
+
+                showCustomAlert('신청 완료', '시스템관리자의 승인 후 접속이 가능합니다.', 'success');
+                setIsRegisterMode(false); // Switch back to login mode
+            } catch (error: any) {
+                showCustomAlert('오류', '신청 중 문제가 발생했습니다: ' + error.message, 'error');
+            }
+        } else {
+            // Normal Entry / Auth
+            if (inputId && inputPw) {
+                try {
+                    const hashed = await hashPassword(inputPw);
+                    const lowerId = inputId.toLowerCase();
+
+                    // 1. Master Admin Check (Bypass Server/Alliance check)
+                    const master = MASTER_CREDENTIALS.find(m => m.id.toLowerCase() === lowerId);
+                    if (master) {
+                        if (master.pw === hashed || master.pw === inputPw) {
+                            await login(inputId, 'master');
+
+                            // Master bypass: If no server/alliance provided, set defaults to close the gate
+                            const finalServer = forceServer || serverId || '#000';
+                            const finalAlliance = forceAlliance || allianceId || 'MASTER_SYSTEM';
+
+                            setAllianceInfo(finalServer, finalAlliance);
+
+                            await saveToHistory('server', finalServer);
+                            await saveToHistory('alliance', finalAlliance);
+                            await saveToHistory('userid', inputId);
+
+                            setIsGateOpen(false);
+                            return;
+                        } else {
+                            showCustomAlert('인증 오류', '전체 관리자 비밀번호가 일치하지 않습니다.', 'error');
+                            return;
+                        }
+                    }
+
+                    // For non-master users, Server/Alliance are required
+                    if (!forceServer || !forceAlliance) {
+                        showCustomAlert('입력 오류', '서버 번호와 연맹 이름을 모두 입력해주세요.', 'error');
+                        return;
+                    }
+
+                    // 2. Alliance Admin / Operation Admin Check
+                    const adminRef = doc(db, "servers", forceServer, "alliances", forceAlliance, "admins", inputId);
+                    const adminSnap = await getDoc(adminRef);
+                    if (adminSnap.exists()) {
+                        const data = adminSnap.data();
+                        if (data.password === hashed || data.password === inputPw) {
+                            setAllianceInfo(forceServer, forceAlliance);
+
+                            await saveToHistory('server', forceServer);
+                            await saveToHistory('alliance', forceAlliance);
+                            await saveToHistory('userid', inputId);
+
+                            await login(inputId, data.role || 'admin');
+                            setIsGateOpen(false);
+                            return;
+                        }
+                    }
+
+                    // 3. General Member Check
+                    const memberRef = doc(db, "servers", forceServer, "alliances", forceAlliance, "members", inputId);
+                    const memberSnap = await getDoc(memberRef);
+                    if (memberSnap.exists()) {
+                        const data = memberSnap.data();
+                        if (data.password?.toString() === inputPw || data.password?.toString() === hashed) {
+                            setAllianceInfo(forceServer, forceAlliance);
+
+                            await saveToHistory('server', forceServer);
+                            await saveToHistory('alliance', forceAlliance);
+                            await saveToHistory('userid', inputId);
+
+                            await login(inputId, 'user');
+                            setIsGateOpen(false);
+                            return;
+                        }
+                    }
+
+                    showCustomAlert('인증 실패', '아이디 또는 비밀번호가 올바르지 않거나 해당 연맹의 멤버가 아닙니다.', 'error');
+                } catch (e) {
+                    console.error('Auth error:', e);
+                    showCustomAlert('오류', '인증 처리 중 문제가 발생했습니다.', 'error');
+                }
+            } else {
+                // No ID/PW provided - requires server/alliance for anonymous entry
+                if (!forceServer || !forceAlliance) {
+                    showCustomAlert('입력 오류', '볼 수 있는 연맹 정보를 입력하거나 로그인해주세요.', 'error');
+                    return;
+                }
+                setAllianceInfo(forceServer, forceAlliance);
+
+                await saveToHistory('server', forceServer);
+                await saveToHistory('alliance', forceAlliance);
+
+                setIsGateOpen(false);
+            }
+        }
     };
 
     const [now, setNow] = useState(new Date());
@@ -322,6 +579,8 @@ export default function Home() {
         } catch (e) { return false; }
     };
 
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
     const getUTCTimeString = (kstStr: string, includePrefix = true) => {
         const match = kstStr.match(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
         if (!match || !match[2]) return '';
@@ -347,7 +606,7 @@ export default function Home() {
             utcDayIdx = (dayIdx - 1 + 7) % 7;
         }
 
-        const formatted = `${days[utcDayIdx]} (${utcH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
+        const formatted = `${days[utcDayIdx]} (${pad(utcH)}:${pad(m)})`;
         return includePrefix ? `UTC: ${formatted} ` : formatted;
     };
 
@@ -356,24 +615,51 @@ export default function Home() {
         const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
         if (!match) return null;
         const [_, y, m, d, h, min] = match;
+        // String represents KST (UTC+9)
         const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
         if (isNaN(date.getTime())) return null;
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        return `${date.getUTCFullYear()}.${pad(date.getUTCMonth() + 1)}.${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} `;
+
+        const utcDate = new Date(date.getTime() - (9 * 60 * 60 * 1000));
+        return `${pad(utcDate.getMonth() + 1)}/${pad(utcDate.getDate())} ${pad(utcDate.getHours())}:${pad(utcDate.getMinutes())}`;
     };
 
     const splitSchedulePart = (str: string) => {
         if (!str) return { date: '', time: '' };
-        // Handle date range type (2024.01.01 10:00 or similar)
-        const dateMatch = str.match(/(\d{4}\.\d{2}\.\d{2})/);
-        const timeMatch = str.match(/(\d{1,2}:\d{2})/);
 
-        if (dateMatch && timeMatch) {
-            return { date: dateMatch[1], time: timeMatch[1] };
+        // 1. Handle full date range type (2024.01.01 10:00)
+        const fullDateMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+        if (fullDateMatch) {
+            const [_, y, m, d, h, min] = fullDateMatch;
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+            const dateStr = `${m}월 ${d}일 (${days[dateObj.getDay()]})`;
+            return { date: dateStr, time: `${h}:${min}` };
         }
 
-        // Handle weekly type (월(10:00) or similar)
-        const weeklyMatch = str.match(/([일월화수목금토매일]+)\(?(\d{1,2}:\d{2})\)?/);
+        // 2. Handle date only (2024.01.01)
+        const justDateMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
+        if (justDateMatch) {
+            const [_, y, m, d] = justDateMatch;
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+            const dateStr = `${m}월 ${d}일 (${days[dateObj.getDay()]})`;
+            return { date: dateStr, time: '' };
+        }
+
+        // 3. Handle UTC format MM/DD HH:mm
+        const utcMatch = str.match(/(\d{2})\/(\d{2})\s+(\d{2}:\d{2})/);
+        if (utcMatch) {
+            return { date: `${utcMatch[1]}/${utcMatch[2]}`, time: utcMatch[3] };
+        }
+
+        // 4. Handle UTC format MM/DD
+        const utcDateMatch = str.match(/(\d{2})\/(\d{2})/);
+        if (utcDateMatch && str.trim().length <= 5) {
+            return { date: `${utcDateMatch[1]}/${utcDateMatch[2]}`, time: '' };
+        }
+
+        // 5. Handle weekly type (월(10:00) or similar)
+        const weeklyMatch = str.match(/([일월화수목금토매일]+)\(?(\d{2}:\d{2})\)?/);
         if (weeklyMatch) {
             return { date: weeklyMatch[1].replace(/[()]/g, ''), time: weeklyMatch[2] };
         }
@@ -384,7 +670,7 @@ export default function Home() {
     const [noticeModalVisible, setNoticeModalVisible] = useState(false);
     const [editNoticeContent, setEditNoticeContent] = useState('');
     const [editNoticeVisible, setEditNoticeVisible] = useState(true);
-    const [adminMenuVisible, setAdminMenuVisible] = useState(false);
+    const [superAdminDashboardVisible, setSuperAdminDashboardVisible] = useState(false);
     const [installModalVisible, setInstallModalVisible] = useState(false);
 
     // Enable LayoutAnimation for Android
@@ -454,61 +740,33 @@ export default function Home() {
         const pw = (passwordInput || '').trim();
         setLoginError('');
 
-        console.log('Login attempt:', { id: input, pw_len: pw.length });
+        if (!input || !pw) return;
 
-        if (!input || !pw) {
-            console.log('Login failed: Empty input');
+        const hashed = await hashPassword(pw);
+        const lowerId = input.toLowerCase();
+
+        // 1. Master Admin Check
+        const master = MASTER_CREDENTIALS.find(m => m.id.toLowerCase() === lowerId);
+        if (master && (master.pw === hashed || master.pw === pw)) {
+            await performLogin(input, 'master');
             return;
         }
 
-        // 해시 생성 (소문자로 통일)
-        const currentHash = (await hashPassword(pw)).toLowerCase().trim();
-        const normalizedInput = input.normalize('NFC').toLowerCase().trim();
-
-        // 마스터 비밀번호 후보들 (wos1234, Wos1234 등)
-        const MASTER_HASH_VARIANTS = [
-            'ed9f02f10e07faa4b8c450098c23ad7d2e96a2396523897c0beec0ecdf327', // wos1234
-            '4da72ed92a6a6773ef5b7b89b787968c12a7999d9f8d0b43a9dcb54875d12e63', // Wos1234
-            '94c348f56641680d226f31623190df627e85741f0a2e269f88c96ae229dd5bcd'  // legacy
-        ];
-
-        // 1. 마스터 계정 체크 (관리자, master)
-        const isMasterId = ['관리자', 'master'].some(id =>
-            id.normalize('NFC').toLowerCase().trim() === normalizedInput
-        );
-
-        // 비밀번호 체크 (해시값 목록 대조 또는 평문 대소문자 무시 체크)
-        const isMasterPw = MASTER_HASH_VARIANTS.includes(currentHash) ||
-            pw.toLowerCase() === 'wos1234';
-
-        console.log('Master check result:', { isMasterId, isMasterPw, currentHash });
-
-        if (isMasterId && isMasterPw) {
-            const finalId = normalizedInput.includes('관리자') ? '관리자' : 'master';
-            await performLogin(finalId);
-            return;
-        }
-
-        // 2. 일반 운영진 계정 체크
-        console.log('Checking dynamic admins:', dynamicAdmins.length);
+        // 2. Dynamic Admin Check
         const dynamic = dynamicAdmins.find(a => {
-            const aNameNormal = a.name.normalize('NFC').toLowerCase().trim();
-            const aPw = (a.password || '').toLowerCase().trim();
-            const isIdMatch = aNameNormal === normalizedInput;
-            const isPwMatch = aPw === currentHash || aPw.toLowerCase() === pw.toLowerCase() || !aPw;
-            return isIdMatch && isPwMatch;
+            const aNameLower = a.name.toLowerCase();
+            const aPw = (a.password || '').toLowerCase();
+            return aNameLower === lowerId && (aPw === hashed || aPw === pw.toLowerCase());
         });
 
         if (dynamic) {
-            console.log('Dynamic admin matched:', dynamic.name);
-            await performLogin(dynamic.name);
+            await performLogin(dynamic.name, dynamic.role || 'admin');
         } else {
-            console.log('Auth failed: No match found');
             setLoginError('아이디 또는 비밀번호가 올바르지 않습니다.');
         }
     };
 
-    const performLogin = async (id: string) => {
+    const performLogin = async (id: string, role: AdminStatus['role'] = 'admin') => {
         try {
             const { signInAnonymously } = require('firebase/auth');
             const { auth: firebaseAuth } = require('../firebaseConfig');
@@ -516,10 +774,10 @@ export default function Home() {
         } catch (e) { }
 
         await AsyncStorage.setItem('lastAdminId', id);
-        await login(id);
+        await login(id, role);
         setLoginModalVisible(false);
         setPasswordInput('');
-        showCustomAlert('인증 성공', '관리자 권한을 획득하였습니다.', 'success');
+        showCustomAlert('인증 성공', `${id}님, 환영합니다! (${role === 'master' ? '시스템관리자' : role === 'alliance_admin' ? '연맹관리자' : role === 'admin' ? '운영관리자' : '일반영주'})`, 'success');
     };
 
     const handleSettingsPress = () => auth.isLoggedIn ? setAdminMenuVisible(true) : setLoginModalVisible(true);
@@ -720,7 +978,7 @@ export default function Home() {
                     </View>
 
                     <View className="flex-col gap-3">
-                        {!!event.day && !event.isBearSplit && (
+                        {!!event.day && !event.isBearSplit && !event.time && (
                             <View className={`rounded-3xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
                                 <View className="p-6 gap-3">
                                     {(() => {
@@ -756,19 +1014,19 @@ export default function Home() {
                                             return parts.map((p, pIdx) => {
                                                 const split = splitSchedulePart(p);
                                                 return (
-                                                    <View key={pIdx} className="flex-row items-center py-1">
+                                                    <View key={pIdx} className="flex-row items-center py-2">
                                                         <View className="w-8 items-center mr-1">
                                                             {pIdx > 0 && <Text className={`opacity-40 text-lg font-black ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>~</Text>}
                                                         </View>
                                                         <View className="flex-row items-center flex-1">
-                                                            <View className="flex-row items-center" style={{ width: 155 }}>
+                                                            <View className="flex-row items-center" style={{ width: 165 }}>
                                                                 <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
-                                                                <Text className={`text-[16px] font-black tracking-tight ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
+                                                                <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
                                                             </View>
                                                             {!!split.time && (
                                                                 <View className="flex-row items-center">
                                                                     <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
-                                                                    <Text className={`text-[16px] font-black tracking-tight ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
+                                                                    <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
                                                                 </View>
                                                             )}
                                                         </View>
@@ -801,13 +1059,15 @@ export default function Home() {
                                                 const cleanDisplayTime = displayTime.replace(/[일월화수목금토매일]+\s*/, '').replace(/[()]/g, '');
 
                                                 return (
-                                                    <View key={iIdx} className={`flex-row items-center px-10 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-200/50'} last:border-0`}>
+                                                    <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
                                                         <View className="flex-row items-center flex-1">
-                                                            <View className="flex-row items-center mr-8">
-                                                                <Text className={`font-black text-xl ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-200' : 'text-slate-900')} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
+                                                            <View className="flex-row items-center" style={{ width: 165 }}>
+                                                                <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
+                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
                                                             </View>
                                                             <View className="flex-row items-center">
-                                                                <Text className={`font-black text-xl ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-400' : 'text-slate-700')} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
+                                                                <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
+                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
                                                             </View>
                                                         </View>
                                                         {isLive && (
@@ -846,7 +1106,7 @@ export default function Home() {
                                                             const split = splitSchedulePart(displayFull);
 
                                                             return (
-                                                                <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
                                                                     <View className="flex-row items-center flex-1">
                                                                         <View className="flex-row items-center" style={{ width: 165 }}>
                                                                             <Ionicons name="calendar-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 8 }} />
@@ -879,15 +1139,300 @@ export default function Home() {
         );
     };
 
+    const renderHistorySuggestions = (type: 'server' | 'alliance' | 'userid') => {
+        if (activeInput !== type) return null;
+        const list = type === 'server' ? recentServers : type === 'alliance' ? recentAlliances : recentUserIds;
+        if (list.length === 0) return null;
+
+        return (
+            <View className={`absolute top-full left-0 right-0 mt-2 z-[100] rounded-2xl border overflow-hidden shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+                {list.map((item, index) => (
+                    <TouchableOpacity
+                        key={index}
+                        onPress={() => {
+                            if (type === 'server') setInputServer(item);
+                            if (type === 'alliance') setInputAlliance(item);
+                            if (type === 'userid') setInputUserId(item);
+                            setActiveInput(null);
+                        }}
+                        className={`p-4 flex-row items-center border-b ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700' : 'bg-white border-slate-100 active:bg-slate-50'} last:border-0`}
+                    >
+                        <Ionicons name="time-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 10 }} />
+                        <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{item}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+        );
+    };
+
+    if (isLoading) {
+        return (
+            <View className="flex-1 bg-[#020617] items-center justify-center">
+                <ImageBackground
+                    source={require('../assets/images/selection_gate_bg.png')}
+                    style={{ position: 'absolute', width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                />
+                <View className="absolute inset-0 bg-slate-950/60" />
+                <Animated.View style={{ opacity: flickerAnim, transform: [{ scale: scaleAnim }] }} className="items-center">
+                    <View className="w-24 h-24 rounded-[40px] bg-sky-500/20 items-center justify-center mb-8 border border-sky-400/30">
+                        <Ionicons name="snow" size={54} color="#38bdf8" />
+                    </View>
+                    <Text className="text-white font-black text-2xl tracking-[0.3em]">INITIALIZING</Text>
+                    <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 24 }} />
+                </Animated.View>
+            </View>
+        );
+    }
+
+    if (isGateOpen || !serverId || !allianceId) {
+        return (
+            <View className="flex-1 w-full h-screen bg-[#0f172a]">
+                <ImageBackground
+                    source={require('../assets/images/selection_gate_bg.png')}
+                    style={{ position: 'absolute', width: '100%', height: '100%' }}
+                    resizeMode="cover"
+                />
+                <View className="flex-1 w-full h-full justify-center items-center p-8">
+                    <BlurView intensity={20} className="absolute inset-0" />
+
+                    <View className="w-full max-w-md p-8 rounded-[40px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden">
+                        <BlurView intensity={80} className="absolute inset-0" />
+
+                        <View className="items-center mb-6">
+                            <View className={`w-14 h-14 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
+                                <Ionicons name="snow" size={28} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                            </View>
+                            <Text className="text-2xl font-black text-white text-center tracking-tighter">WOS COMMANDER</Text>
+                            <Text className={`${isRegisterMode ? 'text-amber-400/80' : 'text-sky-400/80'} font-bold mt-0.5 tracking-[0.2em] uppercase text-[9px]`}>Arctic Strategic Intelligence</Text>
+                        </View>
+
+                        {/* Top Navigation Tabs */}
+                        <View className="flex-row bg-slate-950/40 p-1.5 rounded-2xl mb-8 border border-white/5">
+                            <TouchableOpacity
+                                onPress={() => setIsRegisterMode(false)}
+                                className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${!isRegisterMode ? 'bg-sky-500/20 border border-sky-500/30' : 'opacity-40'}`}
+                            >
+                                <Text className={`font-black text-xs ${!isRegisterMode ? 'text-sky-400' : 'text-white'}`}>대시보드 입장</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setIsRegisterMode(true)}
+                                className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${isRegisterMode ? 'bg-amber-500/20 border border-amber-500/30' : 'opacity-40'}`}
+                            >
+                                <Text className={`font-black text-xs ${isRegisterMode ? 'text-amber-400' : 'text-white'}`}>연맹 관리자 신청</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="space-y-4">
+                            <View>
+                                <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">서버 번호</Text>
+                                <View className="relative z-[50]">
+                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                        <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                    </View>
+                                    <TextInput
+                                        placeholder="#000"
+                                        placeholderTextColor="#475569"
+                                        value={inputServer}
+                                        onChangeText={setInputServer}
+                                        onFocus={() => setActiveInput('server')}
+                                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                        keyboardType="number-pad"
+                                    />
+                                    {renderHistorySuggestions('server')}
+                                </View>
+                            </View>
+
+                            <View className="mt-2">
+                                <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">연맹 이름</Text>
+                                <View className="relative z-[40]">
+                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                        <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                    </View>
+                                    <TextInput
+                                        placeholder="연맹 이름 입력"
+                                        placeholderTextColor="#475569"
+                                        value={inputAlliance}
+                                        onChangeText={setInputAlliance}
+                                        onFocus={() => setActiveInput('alliance')}
+                                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                        autoCapitalize="characters"
+                                    />
+                                    {renderHistorySuggestions('alliance')}
+                                </View>
+                            </View>
+
+                            <View className="mt-2">
+                                <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">영주 이름 (닉네임)</Text>
+                                <View className="relative z-[30]">
+                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                        <Ionicons name="person-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                    </View>
+                                    <TextInput
+                                        placeholder="영주 이름 또는 ID"
+                                        placeholderTextColor="#475569"
+                                        value={inputUserId}
+                                        onChangeText={setInputUserId}
+                                        onFocus={() => setActiveInput('userid')}
+                                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                    />
+                                    {renderHistorySuggestions('userid')}
+                                </View>
+                            </View>
+
+                            <View className="mt-2">
+                                <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
+                                    <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest text-left ">비밀번호</Text>
+                                    {isRegisterMode && (
+                                        <Text className="text-amber-500/80 text-[9px] font-bold text-right ">* 추후 로그인 시 사용</Text>
+                                    )}
+                                </View>
+                                <View className="relative">
+                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                        <Ionicons name="lock-closed-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                    </View>
+                                    <TextInput
+                                        placeholder="••••••••"
+                                        placeholderTextColor="#475569"
+                                        value={inputPassword}
+                                        onChangeText={setInputPassword}
+                                        secureTextEntry={true}
+                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                    />
+                                </View>
+                            </View>
+
+                            <View className="flex-row items-center mt-6">
+                                <Pressable
+                                    onPress={handleEnterAlliance}
+                                    style={({ pressed, hovered }) => [
+                                        {
+                                            flex: 1,
+                                            paddingVertical: 20,
+                                            borderRadius: 16,
+                                            alignItems: 'center',
+                                            overflow: 'hidden',
+                                            transform: [{ scale: pressed ? 0.95 : hovered ? 1.02 : 1 }],
+                                            // @ts-ignore - Web-specific CSS property
+                                            boxShadow: isRegisterMode
+                                                ? '0 10px 30px rgba(245, 158, 11, 0.3)'
+                                                : '0 10px 30px rgba(56, 189, 248, 0.3)',
+                                            transition: 'all 0.3s ease',
+                                        }
+                                    ]}
+                                >
+                                    <LinearGradient
+                                        colors={isRegisterMode ? ['#f59e0b', '#d97706'] : ['#38bdf8', '#0ea5e9']}
+                                        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    />
+                                    <Text className="text-white font-black text-lg tracking-tight relative z-10">
+                                        {isRegisterMode ? '관리자 계정 생성 및 신청' : '연맹 대시보드 진입하기'}
+                                    </Text>
+                                </Pressable>
+
+                                <TouchableOpacity
+                                    onPress={handleResetSettings}
+                                    className="ml-3 w-[60px] h-[60px] bg-slate-950/40 rounded-2xl border border-white/5 items-center justify-center active:scale-95 transition-all"
+                                >
+                                    <Ionicons name="refresh-outline" size={24} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                </TouchableOpacity>
+                            </View>
+
+
+                            {!!serverId && !!allianceId && (
+                                <Pressable
+                                    onPress={() => setIsGateOpen(false)}
+                                    style={({ pressed, hovered }) => [
+                                        {
+                                            marginTop: 24,
+                                            alignSelf: 'center',
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 28,
+                                            borderRadius: 9999,
+                                            backgroundColor: hovered ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.05)',
+                                            borderWidth: 1,
+                                            borderColor: hovered ? '#38bdf8' : 'rgba(255,255,255,0.1)',
+                                            transform: [{ scale: pressed ? 0.95 : hovered ? 1.05 : 1 }],
+                                            // @ts-ignore - Web-specific CSS property
+                                            boxShadow: hovered
+                                                ? '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #0ea5e9, 0 0 80px #0ea5e9'
+                                                : 'none',
+                                            // @ts-ignore - Web-specific CSS property
+                                            textShadow: hovered ? '0 0 10px #38bdf8, 0 0 20px #38bdf8' : 'none',
+                                            transition: 'all 0.3s ease',
+                                        }
+                                    ]}
+                                >
+                                    {({ hovered }) => (
+                                        <Text
+                                            className={`font-bold text-[12px] tracking-tight ${hovered ? 'text-white' : 'text-slate-400'}`}
+                                            style={hovered ? {
+                                                // @ts-ignore - Web-specific CSS property
+                                                textShadow: '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8'
+                                            } : undefined}
+                                        >
+                                            ← 기존 대시보드로 돌아가기
+                                        </Text>
+                                    )}
+                                </Pressable>
+                            )}
+                        </View>
+                    </View>
+
+                </View>
+
+                {/* Custom Alert Modal (Shared with Gate) */}
+                <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                        <BlurView intensity={40} className="absolute inset-0" />
+                        <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                            <View className={`w-24 h-24 rounded-full items-center justify-center mb-8 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}>
+                                <View className={`w-16 h-16 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500' : 'bg-amber-500'}`}>
+                                    <Ionicons
+                                        name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'close' : 'warning'}
+                                        size={36}
+                                        color={isDark ? "black" : "white"}
+                                    />
+                                </View>
+                            </View>
+                            <Text className={`text-3xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                            <Text className={`text-center mb-10 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                            <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`w-full py-5 rounded-3xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>확인</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+            </View >
+        );
+    }
+
     return (
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: isDark ? '#020617' : '#f8fafc' }} className="w-full h-screen">
             <Stack.Screen options={{ headerShown: false }} />
 
+            <ImageBackground
+                source={require('../assets/images/bg-main.png')}
+                style={{ position: 'absolute', width: '100%', height: '100%', opacity: isDark ? 0.3 : 0.05 }}
+                resizeMode="cover"
+            />
+
             <ScrollView
+                ref={mainScrollRef}
                 className="flex-1"
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ flexGrow: 1 }}
                 stickyHeaderIndices={[1]}
+                scrollEventThrottle={16}
+                onScroll={(e) => {
+                    const y = e.nativeEvent.contentOffset.y;
+                    if (y > 0) setDashboardScrollY(y);
+                }}
             >
                 {/* Section 1: Intro & Features */}
                 <View className="w-full items-center">
@@ -901,7 +1446,11 @@ export default function Home() {
 
                                 {!!serverId && !!allianceId && (
                                     <TouchableOpacity
-                                        onPress={() => setIsGateOpen(true)}
+                                        onPress={() => {
+                                            setInputServer(serverId);
+                                            setInputAlliance(allianceId);
+                                            setIsGateOpen(true);
+                                        }}
                                         className={`mt-6 self-start flex-row items-center px-5 py-2.5 rounded-[20px] border active:scale-95 transition-all ${isDark ? 'bg-sky-500/10 border-sky-500/30' : 'bg-sky-50 border-sky-100'}`}
                                     >
                                         <View className="mr-2.5 w-6 h-6 rounded-full bg-sky-500/20 items-center justify-center">
@@ -1184,85 +1733,6 @@ export default function Home() {
                 </View>
             </ScrollView>
 
-            {/* Selection Gate Modal */}
-            <Modal visible={isGateOpen} transparent animationType="fade">
-                <View className="flex-1 bg-[#0f172a]">
-                    <ImageBackground
-                        source={require('../assets/images/selection_gate_bg.png')}
-                        className="flex-1"
-                        resizeMode="cover"
-                    >
-                        <View className="flex-1 bg-slate-950/40 justify-center items-center p-8">
-                            <BlurView intensity={20} className="absolute inset-0" />
-
-                            <View className="w-full max-w-md p-10 rounded-[48px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden">
-                                <BlurView intensity={80} className="absolute inset-0" />
-
-                                <View className="items-center mb-10">
-                                    <View className="w-20 h-20 rounded-3xl bg-sky-500/20 items-center justify-center mb-6 border border-sky-400/30">
-                                        <Ionicons name="snow" size={42} color="#38bdf8" />
-                                    </View>
-                                    <Text className="text-4xl font-black text-white text-center tracking-tighter">WOS COMMANDER</Text>
-                                    <Text className="text-sky-400/80 font-bold mt-2 tracking-widest uppercase text-xs">Arctic Strategic Intelligence</Text>
-                                </View>
-
-                                <View className="space-y-6">
-                                    <View>
-                                        <Text className="text-white/60 text-xs font-black ml-4 mb-2 uppercase tracking-widest">Server Number</Text>
-                                        <View className="relative">
-                                            <View className="absolute left-6 top-1/2 -mt-2.5 z-10">
-                                                <Ionicons name="server-outline" size={20} color="#38bdf8" />
-                                            </View>
-                                            <TextInput
-                                                placeholder="#000"
-                                                placeholderTextColor="#475569"
-                                                value={inputServer}
-                                                onChangeText={setInputServer}
-                                                className="bg-slate-950/50 p-6 pl-16 rounded-3xl text-white font-black text-xl border-2 border-slate-800 focus:border-sky-500/50"
-                                                keyboardType="number-pad"
-                                            />
-                                        </View>
-                                    </View>
-
-                                    <View className="mt-4">
-                                        <Text className="text-white/60 text-xs font-black ml-4 mb-2 uppercase tracking-widest">Alliance Name</Text>
-                                        <View className="relative">
-                                            <View className="absolute left-6 top-1/2 -mt-2.5 z-10">
-                                                <Ionicons name="shield-outline" size={20} color="#38bdf8" />
-                                            </View>
-                                            <TextInput
-                                                placeholder="Alliance ID"
-                                                placeholderTextColor="#475569"
-                                                value={inputAlliance}
-                                                onChangeText={setInputAlliance}
-                                                className="bg-slate-950/50 p-6 pl-16 rounded-3xl text-white font-black text-xl border-2 border-slate-800 focus:border-sky-500/50"
-                                                autoCapitalize="characters"
-                                            />
-                                        </View>
-                                    </View>
-
-                                    <TouchableOpacity
-                                        onPress={handleEnterAlliance}
-                                        className="mt-10 bg-sky-500 py-6 rounded-3xl shadow-xl shadow-sky-500/40 items-center overflow-hidden"
-                                    >
-                                        <LinearGradient
-                                            colors={['#38bdf8', '#0ea5e9']}
-                                            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 1 }}
-                                        />
-                                        <Text className="text-white font-black text-xl tracking-tight relative z-10">ENTER COMMANDER</Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                <Text className="text-slate-500 text-[10px] text-center mt-10 font-bold uppercase tracking-widest opacity-50">
-                                    © 2026 WOS Studio · Strategic Grid v2.1
-                                </Text>
-                            </View>
-                        </View>
-                    </ImageBackground>
-                </View>
-            </Modal>
 
             {/* Modals */}
             <Modal visible={loginModalVisible} transparent animationType="fade" onRequestClose={() => setLoginModalVisible(false)}>
@@ -1334,53 +1804,82 @@ export default function Home() {
                 </View>
             </Modal>
 
-            <Modal visible={adminMenuVisible} transparent animationType="fade" onRequestClose={() => setAdminMenuVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <View className={`w-full max-w-sm p-6 rounded-[32px] border shadow-2xl max-h-[90%] overflow-hidden ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
-                        <Text className={`text-2xl font-bold mb-6 text-center pt-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 메뉴</Text>
+            <Modal visible={adminMenuVisible} transparent animationType="slide" onRequestClose={() => setAdminMenuVisible(false)}>
+                <View className="flex-1 bg-black/70 items-center justify-center p-6">
+                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <View className="flex-row items-center justify-center mb-8 pt-2">
+                            <Ionicons name="shield-checkmark" size={28} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 10 }} />
+                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {isSuperAdmin ? '시스템 관리' : '연맹 관리'}
+                            </Text>
+                        </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-                            <TouchableOpacity onPress={async () => { await logout(); setAdminMenuVisible(false); }} className={`p-5 rounded-2xl mb-4 flex-row items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                <Ionicons name="log-out-outline" size={24} color="#ef4444" style={{ marginRight: 8 }} />
-                                <Text className={`font-bold text-xl ${isDark ? 'text-white' : 'text-slate-800'}`}>로그아웃</Text>
+                        <ScrollView showsVerticalScrollIndicator={false} className="flex-none">
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    await logout();
+                                    setAdminMenuVisible(false);
+                                    setAllianceInfo(null, null);
+                                    setIsGateOpen(true);
+                                }}
+                                // @ts-ignore
+                                onMouseEnter={() => setAdminMenuHover('logout')}
+                                onMouseLeave={() => setAdminMenuHover(null)}
+                                className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'logout' ? 'bg-red-500/10 scale-[1.05] border-red-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                            >
+                                <Ionicons name="log-out-outline" size={22} color={adminMenuHover === 'logout' ? '#ef4444' : '#ef4444'} style={{ marginRight: 10 }} />
+                                <Text className={`font-black text-xl ${adminMenuHover === 'logout' ? (isDark ? 'text-red-400' : 'text-red-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>로그아웃</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={() => { setAdminMenuVisible(false); router.push('/admin'); }} className={`p-5 rounded-2xl mb-4 flex-row items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                <Ionicons name="people-outline" size={24} color="#38bdf8" style={{ marginRight: 8 }} />
-                                <Text className={`font-bold text-xl ${isDark ? 'text-white' : 'text-slate-800'}`}>연맹원 관리</Text>
+                            <TouchableOpacity
+                                onPress={() => setAdminDashboardVisible(true)}
+                                // @ts-ignore
+                                onMouseEnter={() => setAdminMenuHover('members')}
+                                onMouseLeave={() => setAdminMenuHover(null)}
+                                className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'members' ? 'bg-sky-500/10 scale-[1.05] border-sky-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                            >
+                                <Ionicons name="people-outline" size={22} color={adminMenuHover === 'members' ? '#0ea5e9' : '#38bdf8'} style={{ marginRight: 10 }} />
+                                <Text className={`font-black text-xl ${adminMenuHover === 'members' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹원 관리</Text>
                             </TouchableOpacity>
 
                             {!!isSuperAdmin && (
                                 <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                    <Text className={`font-semibold mb-3 text-center text-xs ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>슈퍼 관리자 메뉴</Text>
-                                    <TouchableOpacity onPress={() => setShowAdminList(!showAdminList)} className={`p-4 rounded-xl border mb-3 flex-row justify-center items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                        <Ionicons name="people-outline" size={18} color="#38bdf8" style={{ marginRight: 8 }} />
-                                        <Text className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>운영진 관리</Text>
+                                    <Text className={`font-bold mb-4 text-center text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>System Administration</Text>
+
+                                    <TouchableOpacity
+                                        onPress={() => setShowAdminList(!showAdminList)}
+                                        // @ts-ignore
+                                        onMouseEnter={() => setAdminMenuHover('staff')}
+                                        onMouseLeave={() => setAdminMenuHover(null)}
+                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'staff' ? 'bg-indigo-600/10 scale-[1.05] border-indigo-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                    >
+                                        <Ionicons name="people-outline" size={18} color={adminMenuHover === 'staff' ? '#818cf8' : '#818cf8'} style={{ marginRight: 8 }} />
+                                        <Text className={`font-bold text-sm ${adminMenuHover === 'staff' ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>운영진 관리</Text>
                                     </TouchableOpacity>
 
                                     {!!showAdminList && (
-                                        <View className={`p-3 rounded-xl mb-3 border ${isDark ? 'bg-black/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                        <View className={`p-4 rounded-[20px] mb-3 border ${isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                                             <View className="mb-3 space-y-2">
                                                 <TextInput className={`w-full p-3 rounded-xl border text-xs font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="운영진 이름" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminName} onChangeText={setNewAdminName} />
                                                 <TextInput className={`w-full p-3 rounded-xl border text-xs font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="비밀번호 설정" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminPassword} onChangeText={setNewAdminPassword} secureTextEntry={true} />
                                                 <View className="flex-row gap-2 pt-1">
-                                                    <TouchableOpacity onPress={() => setNewAdminRole(newAdminRole === 'admin' ? 'super_admin' : 'admin')} className={`flex-[2.5] py-3 px-4 justify-center items-center rounded-xl border ${newAdminRole === 'super_admin' ? (isDark ? 'bg-amber-600/20 border-amber-500' : 'bg-amber-50 border-amber-200') : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}><View className="flex-row items-center"><Ionicons name={newAdminRole === 'super_admin' ? 'shield-checkmark' : 'person'} size={14} color={newAdminRole === 'super_admin' ? '#fbbf24' : '#94a3b8'} style={{ marginRight: 6 }} /><Text className={`${newAdminRole === 'super_admin' ? 'text-amber-500' : 'text-slate-400'} text-xs font-bold`}>{newAdminRole === 'super_admin' ? '슈퍼 관리자' : '일반 운영진'}</Text></View></TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        onPress={() => setNewAdminRole(newAdminRole === 'admin' ? 'alliance_admin' : 'admin')}
+                                                        className={`flex-[2.5] py-3 px-4 justify-center items-center rounded-xl border ${newAdminRole === 'alliance_admin' ? (isDark ? 'bg-sky-600/20 border-sky-500' : 'bg-sky-50 border-sky-200') : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}
+                                                    >
+                                                        <Text className={`${newAdminRole === 'alliance_admin' ? 'text-sky-500' : 'text-slate-400'} text-xs font-black`}>
+                                                            {newAdminRole === 'alliance_admin' ? '연맹 관리자' : '운영 관리자'}
+                                                        </Text>
+                                                    </TouchableOpacity>
                                                     <TouchableOpacity onPress={async () => { const hashed = newAdminPassword ? await hashPassword(newAdminPassword) : ''; if (await addAdmin(newAdminName, auth.adminName || '', newAdminRole, hashed)) { setNewAdminName(''); setNewAdminPassword(''); showCustomAlert('성공', '운영진이 추가되었습니다.', 'success'); } }} className="flex-1 bg-blue-600 py-3 justify-center items-center rounded-xl shadow-lg shadow-blue-500/30"><Ionicons name="add" size={20} color="white" /></TouchableOpacity>
                                                 </View>
                                             </View>
-                                            <View className="max-h-60 rounded-lg overflow-hidden border border-slate-800/20">
+                                            <View className="max-h-40 rounded-xl overflow-hidden">
                                                 <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true} style={{ flexGrow: 0 }}>
                                                     {dynamicAdmins.map(a => (
                                                         <View key={a.name} className={`flex-row justify-between items-center py-2.5 px-3 border-b ${isDark ? 'border-white/5' : 'border-slate-100'}`}>
-                                                            <View className="flex-row items-center">
-                                                                <Text className={`text-xs mr-2 font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{a.name}</Text>
-                                                                <View className={`px-1.5 py-0.5 rounded ${a.role === 'super_admin' ? (isDark ? 'bg-amber-500/20' : 'bg-amber-100') : (isDark ? 'bg-slate-700/50' : 'bg-slate-100')}`}>
-                                                                    <Text className={`${a.role === 'super_admin' ? 'text-amber-500' : (isDark ? 'text-slate-500' : 'text-slate-400')} text-[8px] font-black`}>{a.role === 'super_admin' ? 'SUPER' : 'ADMIN'}</Text>
-                                                                </View>
-                                                            </View>
-                                                            <TouchableOpacity onPress={() => removeAdmin(a.name)} hitSlop={10}>
-                                                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                                                            </TouchableOpacity>
+                                                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{a.name}</Text>
+                                                            <TouchableOpacity onPress={() => removeAdmin(a.name)} hitSlop={10}><Ionicons name="trash-outline" size={14} color="#ef4444" /></TouchableOpacity>
                                                         </View>
                                                     ))}
                                                 </ScrollView>
@@ -1388,20 +1887,28 @@ export default function Home() {
                                         </View>
                                     )}
 
-                                    <TouchableOpacity onPress={() => { showCustomAlert('전체 데이터 초기화', '🚨 모든 이벤트 일정이 영구적으로 삭제됩니다.\n정말 진행하시겠습니까?', 'confirm', async () => { await clearAllSchedules(); showCustomAlert('초기화 완료', '모든 일정이 성공적으로 삭제되었습니다.', 'success'); }); }} className={`p-4 rounded-xl border flex-row justify-center items-center ${isDark ? 'bg-red-500/10 border-red-500/40' : 'bg-red-50 border-red-100'}`}>
-                                        <Ionicons name="trash-bin-outline" size={18} color="#ef4444" style={{ marginRight: 8 }} />
-                                        <Text className="text-red-400 font-semibold text-sm">전체 일정 초기화</Text>
+                                    <TouchableOpacity
+                                        onPress={() => { setIsSuperAdminDashboardVisible(true); }}
+                                        // @ts-ignore
+                                        onMouseEnter={() => setAdminMenuHover('super')}
+                                        onMouseLeave={() => setAdminMenuHover(null)}
+                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 scale-[1.05] border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                    >
+                                        <Ionicons name="shield-checkmark-outline" size={18} color={adminMenuHover === 'super' ? '#38bdf8' : '#38bdf8'} style={{ marginRight: 8 }} />
+                                        <Text className={`font-bold text-sm ${adminMenuHover === 'super' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>시스템 관리</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
-                            <TouchableOpacity onPress={toggleTheme} className={`p-5 rounded-2xl mb-4 mt-4 flex-row items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={24} color={isDark ? "#fbbf24" : "#1e293b"} style={{ marginRight: 8 }} />
-                                <Text className={`font-bold text-xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{isDark ? "라이트 모드" : "다크 모드"}</Text>
-                            </TouchableOpacity>
                         </ScrollView>
 
-                        <TouchableOpacity onPress={() => setAdminMenuVisible(false)} className={`py-4 mt-4 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-100 border-slate-200'}`}>
-                            <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>닫기</Text>
+                        <TouchableOpacity
+                            onPress={() => setAdminMenuVisible(false)}
+                            // @ts-ignore
+                            onMouseEnter={() => setAdminMenuHover('close')}
+                            onMouseLeave={() => setAdminMenuHover(null)}
+                            className={`py-5 mt-6 rounded-[24px] items-center border transition-all duration-300 ${adminMenuHover === 'close' ? 'scale-[1.05] border-slate-400/50' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200')}`}
+                        >
+                            <Text className={`font-black text-sm tracking-widest uppercase ${adminMenuHover === 'close' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>닫기</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -1470,6 +1977,126 @@ export default function Home() {
                         <View className="flex-row gap-3"><TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-100'}`}><Text className={isDark ? "text-slate-400 text-center" : "text-slate-500 text-center"}>취소</Text></TouchableOpacity><TouchableOpacity onPress={handleSaveNotice} className="flex-1 bg-[#38bdf8] py-4 rounded-2xl"><Text className="text-[#0f172a] text-center font-bold">저장</Text></TouchableOpacity></View>
                     </View>
                 </View>
+            </Modal>
+            {/* --- Super Admin Dashboard Modal --- */}
+            <Modal
+                visible={isSuperAdminDashboardVisible}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setIsSuperAdminDashboardVisible(false)}
+            >
+                <View style={{ flex: 1, backgroundColor: isDark ? '#020617' : '#f8fafc' }}>
+                    {/* Global Fixed Background Layer */}
+                    <View style={{
+                        position: 'absolute',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        zIndex: -1,
+                    }}>
+                        <Image
+                            source={require('../assets/images/bg-main.png')}
+                            style={{ width: '100%', height: '100%', opacity: isDark ? 0.3 : 0.1 }}
+                            resizeMode="cover"
+                        />
+                    </View>
+
+                    <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingTop: 80, paddingBottom: 40 }}>
+                        {/* Header */}
+                        <View className="mb-10 px-4">
+                            <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
+                            <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>시스템관리자 대시보드</Text>
+                            <View className="w-12 h-1 bg-sky-500 rounded-full mt-4" />
+                        </View>
+
+                        {/* Stats */}
+                        <View className="flex-row gap-4 mb-8">
+                            <View className={`flex-1 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                <Text className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>승인 대기</Text>
+                                <Text className={`text-4xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                                    {allRequests.filter(r => r.status === 'pending').length}
+                                </Text>
+                            </View>
+                            <View className={`flex-1 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                <Text className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>활성 연맹 수</Text>
+                                <Text className={`text-4xl font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                                    {allRequests.filter(r => r.status === 'approved').length}
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Tabs */}
+                        <View className={`flex-row p-1.5 rounded-2xl mb-8 ${isDark ? 'bg-slate-900' : 'bg-slate-200/50'}`}>
+                            <TouchableOpacity
+                                onPress={() => setSuperAdminTab('pending')}
+                                className={`flex-1 py-4 rounded-xl items-center ${superAdminTab === 'pending' ? (isDark ? 'bg-slate-800' : 'bg-white shadow-sm') : ''}`}
+                            >
+                                <Text className={`font-black text-xs ${superAdminTab === 'pending' ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>승인 대기열</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setSuperAdminTab('alliances')}
+                                className={`flex-1 py-4 rounded-xl items-center ${superAdminTab === 'alliances' ? (isDark ? 'bg-slate-800' : 'bg-white shadow-sm') : ''}`}
+                            >
+                                <Text className={`font-black text-xs ${superAdminTab === 'alliances' ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>등록된 연맹</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {isSuperAdminLoading ? (
+                            <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 40 }} />
+                        ) : (
+                            <View>
+                                {allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').length === 0 ? (
+                                    <View className="items-center justify-center py-20">
+                                        <Ionicons name="documents-outline" size={64} color={isDark ? '#334155' : '#cbd5e1'} />
+                                        <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>데이터가 없습니다.</Text>
+                                    </View>
+                                ) : (
+                                    allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').map((req) => (
+                                        <View key={req.id} className={`p-6 rounded-[32px] border mb-4 shadow-xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                            <View className="flex-row justify-between mb-4">
+                                                <View>
+                                                    <View className="flex-row items-center mb-1">
+                                                        <Text className="text-xs font-black px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2">{req.serverId}</Text>
+                                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.allianceId}</Text>
+                                                    </View>
+                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{req.allianceName}</Text>
+                                                </View>
+                                                <View className="items-end">
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
+                                                </View>
+                                            </View>
+                                            <View className={`p-4 rounded-2xl mb-6 ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
+                                                <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.adminId}</Text></Text>
+                                                <Text className={`text-xs font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.contact || '-'}</Text></Text>
+                                            </View>
+                                            {req.status === 'pending' && (
+                                                <View className="flex-row gap-3">
+                                                    <TouchableOpacity onPress={() => handleRejectRequest(req)} className="flex-1 py-4 rounded-2xl border border-red-500/30 bg-red-500/5"><Text className="text-center font-bold text-red-500">거절</Text></TouchableOpacity>
+                                                    <TouchableOpacity onPress={() => handleApproveRequest(req)} className="flex-[2] bg-sky-500 py-4 rounded-2xl"><Text className="text-center font-black text-white">승인 및 계정 생성</Text></TouchableOpacity>
+                                                </View>
+                                            )}
+                                        </View>
+                                    ))
+                                )}
+                            </View>
+                        )}
+                    </ScrollView>
+
+                    {/* Floating Close Button */}
+                    <TouchableOpacity
+                        onPress={() => setIsSuperAdminDashboardVisible(false)}
+                        className="absolute top-6 right-6 w-14 h-14 rounded-full bg-sky-500 items-center justify-center shadow-2xl border-2 border-white/20"
+                        style={{ zIndex: 100 }}
+                    >
+                        <Ionicons name="close" size={32} color="white" />
+                    </TouchableOpacity>
+                </View>
+            </Modal>
+
+            <Modal visible={adminDashboardVisible} animationType="slide" onRequestClose={() => setAdminDashboardVisible(false)}>
+                <AdminManagement
+                    serverId={serverId}
+                    allianceId={allianceId}
+                    onBack={() => setAdminDashboardVisible(false)}
+                />
             </Modal>
         </View >
     );

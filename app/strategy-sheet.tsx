@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 // @ts-ignore
 import { WebView } from 'react-native-webview';
 import { BlurView } from 'expo-blur';
-import { useAuth, useTheme } from './_layout';
+import { useAuth, useTheme } from './context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirestoreStrategySheet } from '../hooks/useFirestoreStrategySheet';
 
@@ -325,6 +325,7 @@ export default function StrategySheet() {
                     </View>
                 </View>
             </Modal>
+
 
         </View>
     );

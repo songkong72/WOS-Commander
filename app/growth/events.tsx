@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable, Animated } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
-import { useAuth, useTheme } from '../_layout';
+import { useAuth, useTheme } from '../context';
 import { getGuideContent } from '../../data/event-guides';
 import { Attendee } from '../../data/mock-attendees';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -160,6 +160,7 @@ export default function EventTracker() {
     const isDesktop = width > 768; // Simple breakdown for Desktop layout
 
     const [selectedCategory, setSelectedCategory] = useState<EventCategory>('전체');
+    const [timezone, setTimezone] = useState<'KST' | 'UTC'>('KST');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
     const { auth } = useAuth();
     const { theme, toggleTheme } = useTheme();
@@ -251,6 +252,7 @@ export default function EventTracker() {
     // Modal States
     const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
     const [hoveredClockId, setHoveredClockId] = useState<string | null>(null);
+    const [hoveredScheduleId, setHoveredScheduleId] = useState<string | null>(null);
     const [editingEvent, setEditingEvent] = useState<WikiEvent | null>(null);
 
     // Permission request for notifications
@@ -339,6 +341,8 @@ export default function EventTracker() {
 
     const flickerAnim = useRef(new Animated.Value(1)).current;
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const glowAnim = useRef(new Animated.Value(0.4)).current;
 
     useEffect(() => {
         const createFlicker = () => {
@@ -362,40 +366,93 @@ export default function EventTracker() {
             ]);
         };
 
+        const createPulse = () => {
+            return Animated.parallel([
+                Animated.sequence([
+                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 800, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+                ]),
+                Animated.sequence([
+                    Animated.timing(glowAnim, { toValue: 0.8, duration: 800, useNativeDriver: true }),
+                    Animated.timing(glowAnim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+                ])
+            ]);
+        };
+
         Animated.loop(
             Animated.parallel([
                 createFlicker(),
-                createScale()
+                createScale(),
+                createPulse()
             ])
         ).start();
     }, []);
 
     const pad = (n: number) => n.toString().padStart(2, '0');
 
-    const formatDisplayDate = (str: string) => {
+    const formatDisplayDate = (str: string, mode: 'KST' | 'UTC' = 'KST') => {
         if (!str) return '';
-        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/);
+
+        if (mode === 'UTC' && match) {
+            const utc = getUTCString(str);
+            return utc || str;
+        }
+
         if (!match) {
-            // Check for weekly format like "월 10:00"
-            const weeklyMatch = str.match(/([일월화수목금토])\s*\(?(\d{2}:\d{2})\)?/);
-            if (weeklyMatch) return `${weeklyMatch[1]}(${weeklyMatch[2]})`;
+            const weeklyMatch = str.match(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+            if (weeklyMatch) {
+                if (mode === 'UTC') {
+                    const utcWeekly = getUTCTimeString(str, false);
+                    return utcWeekly || str;
+                }
+                return `${weeklyMatch[1]}(${weeklyMatch[2]})`;
+            }
             return str;
         }
-        const [_, y, m, d, h, min] = match;
+        const [_, y, m, d, timePart] = match;
+        const [h, min] = timePart.split(':');
         const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         const dayName = days[date.getDay()];
-        return `${parseInt(m)}월 ${parseInt(d)}일(${dayName}) ${h}:${min}`;
+        const year2 = y.slice(-2);
+        return `${year2}년 ${pad(parseInt(m))}월 ${pad(parseInt(d))}일(${dayName}) ${pad(parseInt(h))}:${pad(parseInt(min))}`;
     };
 
     const getUTCString = (str: string) => {
         if (!str) return null;
-        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/);
         if (!match) return null;
-        const [_, y, m, d, h, min] = match;
+        const [_, y, m, d, timePart] = match;
+        const [h, min] = timePart.split(':');
         const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
         if (isNaN(date.getTime())) return null;
-        return `${pad(date.getUTCMonth() + 1)}/${pad(date.getUTCDate())} ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayName = days[date.getUTCDay()];
+        const year2 = date.getUTCFullYear().toString().slice(-2);
+        return `${year2}년 ${pad(date.getUTCMonth() + 1)}월 ${pad(date.getUTCDate())}일(${dayName}) ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+    };
+
+    const getUTCTimeString = (kstStr: string, includePrefix = true) => {
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayMatch = kstStr.match(/([일월화수목금토])/);
+        const timeMatch = kstStr.match(/(\d{1,2}:\d{2})/);
+
+        if (!dayMatch || !timeMatch) return kstStr;
+
+        const dayIdx = days.indexOf(dayMatch[1]);
+        const [h, m] = timeMatch[1].split(':').map(Number);
+
+        let utcH = h - 9;
+        let utcDayIdx = dayIdx;
+        if (utcH < 0) {
+            utcH += 24;
+            utcDayIdx = (dayIdx - 1 + 7) % 7;
+        }
+
+        const formatted = `${days[utcDayIdx]}(${pad(utcH)}:${pad(m)})`;
+        return includePrefix ? `UTC: ${formatted}` : formatted;
     };
 
     // Guide Modal
@@ -566,34 +623,6 @@ export default function EventTracker() {
         } else {
             showCustomAlert('알림', '위키 링크가 존재하지 않습니다.', 'warning');
         }
-    };
-
-    const getUTCTimeString = (kstStr: string, includePrefix = true) => {
-        const match = kstStr.match(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
-        if (!match || !match[2]) return '';
-
-        const dayStr = match[1];
-        const timeStr = match[2];
-        const [h, m] = timeStr.split(':').map(Number);
-
-        const days = ['일', '월', '화', '수', '목', '금', '토'];
-        let dayIdx = days.indexOf(dayStr);
-
-        if (dayIdx === -1) { // '매일' or unknown
-            let utcShift = h - 9;
-            if (utcShift < 0) utcShift += 24;
-            return `UTC: ${dayStr}(${utcShift.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
-        }
-
-        let utcH = h - 9;
-        let utcDayIdx = dayIdx;
-        if (utcH < 0) {
-            utcH += 24;
-            utcDayIdx = (dayIdx - 1 + 7) % 7;
-        }
-
-        const formattedTime = `${days[utcDayIdx]}(${utcH.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
-        return includePrefix ? `UTC: ${formattedTime}` : formattedTime;
     };
 
     const addTimeSlot = () => {
@@ -1073,14 +1102,33 @@ export default function EventTracker() {
                 <View className="flex-1 flex-col">
                     {/* Header */}
                     <View className={`pt-12 pb-2 px-6 border-b ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className="flex-row items-center justify-between mb-4">
-                            <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>이벤트 스케줄</Text>
+                        <View className="flex-row items-center mb-4">
                             <TouchableOpacity
                                 onPress={() => router.replace('/')}
-                                className={`p-2 rounded-full ${isDark ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}
+                                className={`mr-4 w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
                             >
-                                <Ionicons name="close" size={24} color={isDark ? "white" : "#1e293b"} />
+                                <Ionicons name="arrow-back-outline" size={20} color={isDark ? "white" : "#1e293b"} />
                             </TouchableOpacity>
+                            <View className="flex-1">
+                                <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>이벤트 스케줄</Text>
+                                <Text className={`text-xs font-medium mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>서버 및 연맹 이벤트를 한눈에 확인하세요</Text>
+                            </View>
+
+                            {/* Timezone Toggle */}
+                            <View className={`flex-row p-1 rounded-2xl ${isDark ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
+                                <TouchableOpacity
+                                    onPress={() => setTimezone('KST')}
+                                    className={`px-4 py-2 rounded-xl flex-row items-center ${timezone === 'KST' ? (isDark ? 'bg-blue-600' : 'bg-white shadow-sm') : ''}`}
+                                >
+                                    <Text className={`text-[11px] font-black ${timezone === 'KST' ? (isDark ? 'text-white' : 'text-blue-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>KST</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => setTimezone('UTC')}
+                                    className={`px-4 py-2 rounded-xl flex-row items-center ${timezone === 'UTC' ? (isDark ? 'bg-blue-600' : 'bg-white shadow-sm') : ''}`}
+                                >
+                                    <Text className={`text-[11px] font-black ${timezone === 'UTC' ? (isDark ? 'text-white' : 'text-blue-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
                         {/* Mobile Category Filter (Hidden on Desktop) */}
@@ -1172,9 +1220,27 @@ export default function EventTracker() {
                                                                     <Text className={`text-[9px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{event.category}</Text>
                                                                 </View>
                                                                 {isOngoing ? (
-                                                                    <View className="bg-blue-600 px-3 py-1 rounded-lg flex-row items-center">
-                                                                        <Ionicons name="flash" size={10} color="white" style={{ marginRight: 4 }} />
-                                                                        <Text className="text-white text-[9px] font-black uppercase">진행 중</Text>
+                                                                    <View className="relative">
+                                                                        {/* Glow Layer */}
+                                                                        <Animated.View
+                                                                            style={{
+                                                                                transform: [{ scale: Animated.multiply(pulseAnim, 1.3) }],
+                                                                                opacity: glowAnim,
+                                                                                position: 'absolute',
+                                                                                top: 0, left: 0, right: 0, bottom: 0,
+                                                                                backgroundColor: '#3b82f6',
+                                                                                borderRadius: 12,
+                                                                                // @ts-ignore
+                                                                                filter: Platform.OS === 'web' ? 'blur(10px)' : undefined,
+                                                                            }}
+                                                                        />
+                                                                        <Animated.View
+                                                                            style={{ transform: [{ scale: pulseAnim }] }}
+                                                                            className="bg-blue-600 px-3 py-1 rounded-lg flex-row items-center shadow-lg shadow-blue-500/50"
+                                                                        >
+                                                                            <Ionicons name="flash" size={10} color="white" style={{ marginRight: 4 }} />
+                                                                            <Text className="text-white text-[9px] font-black uppercase">진행 중</Text>
+                                                                        </Animated.View>
                                                                     </View>
                                                                 ) : isExpired ? (
                                                                     <View className="bg-slate-500 px-3 py-1 rounded-lg flex-row items-center">
@@ -1194,12 +1260,32 @@ export default function EventTracker() {
 
                                                     {/* Admin Tools */}
                                                     {auth.isLoggedIn && (
-                                                        <TouchableOpacity
-                                                            onPress={() => openScheduleModal(event)}
-                                                            className={`w-9 h-9 rounded-xl items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
-                                                        >
-                                                            <Ionicons name="settings-outline" size={18} color="#6366f1" />
-                                                        </TouchableOpacity>
+                                                        <View className="relative w-9 h-9">
+                                                            <Pressable
+                                                                onPress={() => openScheduleModal(event)}
+                                                                onHoverIn={() => setHoveredScheduleId(event.id)}
+                                                                onHoverOut={() => setHoveredScheduleId(null)}
+                                                                className={`w-9 h-9 rounded-xl items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                                                            >
+                                                                <Ionicons name="calendar-outline" size={18} color="#6366f1" />
+                                                            </Pressable>
+                                                            {hoveredScheduleId === event.id && (
+                                                                <View
+                                                                    pointerEvents="none"
+                                                                    style={{ position: 'absolute', right: 42, top: 0, bottom: 0, justifyContent: 'center', width: 200, alignItems: 'flex-end', zIndex: 100 }}
+                                                                >
+                                                                    <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border px-3 py-2 rounded-lg shadow-xl flex-row items-center`}>
+                                                                        <Text
+                                                                            style={{ flexShrink: 0 }}
+                                                                            className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-bold whitespace-nowrap`}
+                                                                        >
+                                                                            일정 등록
+                                                                        </Text>
+                                                                        <View className={`absolute top-1/2 -mt-1.5 -right-1.5 w-3 h-3 rotate-45 border-t border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`} />
+                                                                    </View>
+                                                                </View>
+                                                            )}
+                                                        </View>
                                                     )}
                                                 </View>
 
@@ -1213,10 +1299,10 @@ export default function EventTracker() {
                                                             ) : (
                                                                 event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
                                                                     <View className={`w-full rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                                        {/* Schedule Table Header */}
-                                                                        <View className={`flex-row px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                                                            <Text className={`flex-[1.5] text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>로컬 시간 (KST)</Text>
-                                                                            <Text className={`flex-1 text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Universal (UTC)</Text>
+                                                                        <View className={`px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                                            <Text className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                                {timezone === 'KST' ? '이벤트 일정 (로컬 시간 KST)' : 'EVENT SCHEDULE (UNIVERSAL UTC)'}
+                                                                            </Text>
                                                                         </View>
                                                                         <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
                                                                             {event.day.split('/').map((d, dIdx) => {
@@ -1255,13 +1341,12 @@ export default function EventTracker() {
                                                                                 };
 
                                                                                 return (
-                                                                                    <View key={dIdx} className={`flex-row items-center px-4 py-4 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                                                        <View className="flex-[1.5]">
-                                                                                            {renderResponsivePeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} text-[13px] ${isExpired ? 'line-through' : ''}`)}
-                                                                                        </View>
-                                                                                        <View className="flex-1 opacity-70">
-                                                                                            {!!utcText && renderResponsivePeriod(utcText, "text-slate-500 text-[11px] font-medium", true)}
-                                                                                        </View>
+                                                                                    <View key={dIdx} className={`px-4 py-4 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                                                        {timezone === 'KST' ? (
+                                                                                            renderResponsivePeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} text-[14px] ${isExpired ? 'line-through' : ''}`)
+                                                                                        ) : (
+                                                                                            !!utcText ? renderResponsivePeriod(utcText, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} text-[14px] ${isExpired ? 'line-through' : ''}`, true) : null
+                                                                                        )}
                                                                                     </View>
                                                                                 );
                                                                             })}
@@ -1293,22 +1378,19 @@ export default function EventTracker() {
                                                                                     <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{label}</Text>
                                                                                 </View>
                                                                             )}
-                                                                            {/* Table Header */}
-                                                                            <View className={`flex-row px-5 py-2 border-b border-slate-800/10`}>
-                                                                                <Text className={`flex-[1.5] text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Local KST</Text>
-                                                                                <Text className={`flex-1 text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Universal UTC</Text>
+                                                                            <View className={`px-5 py-2 border-b border-slate-800/10`}>
+                                                                                <Text className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                                    {timezone === 'KST' ? '로컬 시간 (KST)' : 'UNIVERSAL (UTC)'}
+                                                                                </Text>
                                                                             </View>
                                                                             <View className="flex-col">
                                                                                 {content.split(/[,|]/).map((item, iIdx) => {
                                                                                     const formatted = item.trim().replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                                                     const utcStr = getUTCTimeString(item.trim(), false);
                                                                                     return (
-                                                                                        <View key={iIdx} className={`flex-row items-center px-4 py-4 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
-                                                                                            <View className="flex-[1.5]">
-                                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-[13px] ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted)}</Text>
-                                                                                            </View>
-                                                                                            <View className="flex-1 opacity-70">
-                                                                                                <Text className="text-slate-500 text-[11px] font-medium">{utcStr || '-'}</Text>
+                                                                                        <View key={iIdx} className={`px-4 py-4 border-b ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                                            <View className="flex-1">
+                                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-[14px] ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted, timezone)}</Text>
                                                                                             </View>
                                                                                         </View>
                                                                                     );
@@ -1333,15 +1415,35 @@ export default function EventTracker() {
                                                             <Ionicons name="arrow-forward-outline" size={16} color="white" />
                                                         </TouchableOpacity>
 
-                                                        {(event.category === '연맹' || event.category === '서버') && (auth.isLoggedIn || eventsWithAttendees.has(event.id)) && (
-                                                            <TouchableOpacity
-                                                                onPress={() => openAttendeeModal(event)}
-                                                                className={`flex-1 rounded-2xl items-center justify-center flex-row border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700 shadow-black/20' : 'bg-white border-slate-200 active:bg-slate-50 shadow-slate-100'}`}
-                                                            >
-                                                                <Ionicons name="people-outline" size={18} color={isDark ? "white" : "#475569"} className="mr-2" />
-                                                                <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>참석 관리</Text>
-                                                            </TouchableOpacity>
-                                                        )}
+                                                        {(() => {
+                                                            const excludedIDs = [
+                                                                'alliance_mobilization', 'a_mobilization',
+                                                                'alliance_operation', 'a_operation',
+                                                                'server_immigrate', 'a_immigrate',
+                                                                'server_merge', 'a_merge',
+                                                                'alliance_mercenary', 'a_mercenary',
+                                                                'alliance_joe', 'a_joe',
+                                                                'alliance_champion', 'a_champ',
+                                                                'a_fortress', 'alliance_fortress',
+                                                                'alliance_trade', 'a_trade'
+                                                            ];
+                                                            const title = event.title || '';
+                                                            const isExcludedTitle = title.includes('연맹총동원') || title.includes('연맹 총동원') ||
+                                                                title.includes('연맹대작전') || title.includes('왕국이민') ||
+                                                                title.includes('왕국합병') || title.includes('용병명예') ||
+                                                                title.includes('미치광이') || title.includes('챔피언') ||
+                                                                title.includes('요새쟁탈전') || title.includes('설원 장삿길');
+                                                            const isExcluded = excludedIDs.includes(event.id) || isExcludedTitle;
+                                                            return (event.category === '연맹' || event.category === '서버') && !isExcluded && (auth.isLoggedIn || eventsWithAttendees.has(event.id));
+                                                        })() && (
+                                                                <TouchableOpacity
+                                                                    onPress={() => openAttendeeModal(event)}
+                                                                    className={`flex-1 rounded-2xl items-center justify-center flex-row border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700 shadow-black/20' : 'bg-white border-slate-200 active:bg-slate-50 shadow-slate-100'}`}
+                                                                >
+                                                                    <Ionicons name="people-outline" size={18} color={isDark ? "white" : "#475569"} className="mr-2" />
+                                                                    <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>참석 관리</Text>
+                                                                </TouchableOpacity>
+                                                            )}
                                                     </View>
                                                 </View>
                                             </View>
@@ -1526,9 +1628,9 @@ export default function EventTracker() {
                                 setActiveDateDropdown(null);
                                 setActiveFortressDropdown(null);
                             }}
-                            className={`p-0 rounded-t-[40px] border-t max-h-[90%] overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}
+                            className={`p-0 rounded-t-[40px] border-t max-h-[90%] ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}
                         >
-                            <View className="px-6 pt-8 pb-4 flex-row justify-between items-start">
+                            <View className="px-6 pt-8 pb-4 flex-row justify-between items-start" style={{ zIndex: (!!activeDateDropdown || hourDropdownVisible || minuteDropdownVisible || !!activeFortressDropdown) ? 1 : 100 }}>
                                 <View className="flex-1 mr-4">
                                     <View className="flex-row items-center mb-1">
                                         <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
@@ -1537,7 +1639,7 @@ export default function EventTracker() {
                                         </Text>
                                     </View>
                                     <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                        {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
                                     </Text>
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
@@ -1547,18 +1649,19 @@ export default function EventTracker() {
 
                             <ScrollView
                                 className="px-6"
-                                style={{ overflow: 'visible', zIndex: 10 }}
-                                contentContainerStyle={
-                                    editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_center'
+                                style={{ overflow: 'visible', zIndex: (!!activeDateDropdown || hourDropdownVisible || minuteDropdownVisible || !!activeFortressDropdown) ? 9999 : 10 }}
+                                contentContainerStyle={[
+                                    editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_center' || editingEvent?.category === '개인'
                                         ? { paddingBottom: 20 }
                                         : (editingEvent?.id === 'a_fortress')
                                             ? { paddingBottom: 200 }
-                                            : (editingEvent?.category === '개인' || editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'a_champ')
-                                                ? { paddingBottom: 300 }
+                                            : (editingEvent?.id === 'a_mobilization' || editingEvent?.id === 'alliance_mobilization' || editingEvent?.id === 'a_castle' || editingEvent?.id === 'a_svs' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation')
+                                                ? { paddingBottom: 20 }
                                                 : (editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon')
                                                     ? { paddingBottom: 20 }
-                                                    : { paddingBottom: 20 }
-                                }
+                                                    : { paddingBottom: 20 },
+                                    { overflow: 'visible' }
+                                ]}
                                 scrollEnabled={editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'a_center'}
                             >
                                 {editingEvent?.id === 'a_fortress' ? (
@@ -1612,7 +1715,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'fortress' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {FORTRESS_OPTIONS.map((opt) => (
@@ -1645,7 +1748,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'd' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {['월', '화', '수', '목', '금', '토', '일'].map((d) => (
@@ -1681,7 +1784,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'h' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map((h) => (
@@ -1714,7 +1817,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'm' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {['00', '10', '20', '30', '40', '50'].map((m) => (
@@ -1786,7 +1889,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'citadel' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {CITADEL_OPTIONS.map((opt) => (
@@ -1819,7 +1922,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'd' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {['월', '화', '수', '목', '금', '토', '일'].map((d) => (
@@ -1852,7 +1955,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'h' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')).map((h) => (
@@ -1885,7 +1988,7 @@ export default function EventTracker() {
                                                                             {activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'm' && (
                                                                                 <View
                                                                                     style={{ zIndex: 100, elevation: 10, backgroundColor: '#0f172a' }}
-                                                                                    className="absolute bottom-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
+                                                                                    className="absolute top-12 left-0 right-0 border-2 border-slate-600 rounded-xl max-h-48 overflow-hidden shadow-2xl"
                                                                                 >
                                                                                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
                                                                                         {['00', '10', '20', '30', '40', '50'].map((m) => (
@@ -1969,7 +2072,7 @@ export default function EventTracker() {
                                                     const ITEM_HEIGHT = 44;
 
                                                     return (
-                                                        <View className="relative mr-2 mb-2">
+                                                        <View className="relative mr-2 mb-2" style={{ zIndex: isOpen ? 100 : 1 }}>
                                                             <TouchableOpacity
                                                                 onPress={() => setActiveDateDropdown(isOpen ? null : { type, field })}
                                                                 className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} px-3.5 py-3.5 rounded-2xl border flex-row items-center justify-between min-w-[70px] active:scale-[0.98] transition-all`}
@@ -1981,8 +2084,8 @@ export default function EventTracker() {
                                                             </TouchableOpacity>
                                                             {isOpen && (
                                                                 <View
-                                                                    className={`absolute left-0 min-w-[90px] ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-2xl'} border-2 rounded-2xl overflow-hidden bottom-[60px]`}
-                                                                    style={{ height: 260, zIndex: 1000, elevation: 10 }}
+                                                                    className={`absolute left-0 min-w-[90px] ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-2xl'} border-2 rounded-2xl overflow-hidden ${type === 'start' ? 'top-[60px]' : 'bottom-[60px]'}`}
+                                                                    style={{ height: 260, zIndex: 9999, elevation: 99, position: 'absolute' }}
                                                                 >
                                                                     <FlatList
                                                                         data={options}
@@ -2006,7 +2109,7 @@ export default function EventTracker() {
                                                 };
 
                                                 return (
-                                                    <View className="mb-8" style={{ zIndex: activeDateDropdown?.type === type ? 5000 : 1 }}>
+                                                    <View className="mb-8" style={{ zIndex: activeDateDropdown?.type === type ? 5000 : 1, overflow: 'visible' }}>
                                                         <View className="flex-row items-center mb-3">
                                                             <Ionicons name={label.includes('날짜') || label.includes('일시') ? "calendar" : "time"} size={14} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 6 }} />
                                                             <Text className={`${isDark ? 'text-sky-400' : 'text-blue-600'} text-xs font-black uppercase tracking-tight`}>{label}</Text>
@@ -2151,7 +2254,7 @@ export default function EventTracker() {
                                                             <View className="space-y-4">
                                                                 <View className="flex-row items-center gap-3">
                                                                     {/* Hour Picker */}
-                                                                    <View className="flex-1 relative">
+                                                                    <View className="flex-1 relative" style={{ zIndex: hourDropdownVisible ? 1000 : 1 }}>
                                                                         <TouchableOpacity
                                                                             onPress={() => setHourDropdownVisible(!hourDropdownVisible)}
                                                                             className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} p-3.5 rounded-2xl border flex-row justify-between items-center`}
@@ -2191,7 +2294,7 @@ export default function EventTracker() {
                                                                     </View>
 
                                                                     {/* Minute Picker */}
-                                                                    <View className="flex-1 relative">
+                                                                    <View className="flex-1 relative" style={{ zIndex: minuteDropdownVisible ? 1000 : 1 }}>
                                                                         <TouchableOpacity
                                                                             onPress={() => setMinuteDropdownVisible(!minuteDropdownVisible)}
                                                                             className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'} p-3.5 rounded-2xl border flex-row justify-between items-center`}

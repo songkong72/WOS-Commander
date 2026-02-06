@@ -1,54 +1,83 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Slot } from 'expo-router';
 import { NativeWindStyleSheet } from "nativewind";
 import { AdminStatus } from '../data/admin-config';
-import { View, Text, Platform, ImageBackground, StyleSheet } from 'react-native';
+import { View, Platform, ImageBackground, StyleSheet, Image } from 'react-native';
 import Head from 'expo-router/head';
+import { AuthContext, ThemeContext } from './context';
+import "../global.css";
 
 NativeWindStyleSheet.setOutput({
     default: "native",
 });
 
-import "../global.css";
-
-// Auth Context
-const AuthContext = createContext<{
-    auth: AdminStatus;
-    login: (name: string) => void;
-    logout: () => void;
-} | undefined>(undefined);
-
-// Theme Context
-type Theme = 'dark' | 'light';
-const ThemeContext = createContext<{
-    theme: Theme;
-    toggleTheme: () => void;
-} | undefined>(undefined);
-
-export function useAuth() {
-    const context = useContext(AuthContext);
-    if (!context) throw new Error('useAuth must be used within an AuthProvider');
-    return context;
-}
-
-export function useTheme() {
-    const context = useContext(ThemeContext);
-    if (!context) throw new Error('useTheme must be used within a ThemeProvider');
-    return context;
-}
-
 export default function Layout() {
-    const [auth, setAuth] = useState<AdminStatus>({ isLoggedIn: false, adminName: null });
-    const [theme, setTheme] = useState<Theme>('dark');
+    const [auth, setAuth] = useState<AdminStatus>({ isLoggedIn: false, adminName: null, role: null });
+    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+    const [serverId, setServerId] = useState<string | null>(null);
+    const [allianceId, setAllianceId] = useState<string | null>(null);
+    const [dashboardScrollY, setDashboardScrollY] = useState(0);
+    const [isLayoutReady, setIsLayoutReady] = useState(false);
 
-    const login = (name: string) => setAuth({ isLoggedIn: true, adminName: name });
-    const logout = () => setAuth({ isLoggedIn: false, adminName: null });
-    const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    useEffect(() => {
+        const restoreSession = async () => {
+            try {
+                const savedAdminId = await AsyncStorage.getItem('lastAdminId');
+                const savedRole = await AsyncStorage.getItem('lastAdminRole');
+                const savedTheme = await AsyncStorage.getItem('theme');
+                const savedServer = await AsyncStorage.getItem('serverId');
+                const savedAlliance = await AsyncStorage.getItem('allianceId');
+
+                if (savedAdminId) {
+                    setAuth({ isLoggedIn: true, adminName: savedAdminId, role: savedRole as any });
+                }
+                if (savedTheme) {
+                    setTheme(savedTheme as 'dark' | 'light');
+                }
+                if (savedServer) setServerId(savedServer);
+                if (savedAlliance) setAllianceId(savedAlliance);
+
+            } catch (e) {
+                console.error('Session restoration failed:', e);
+            } finally {
+                setIsLayoutReady(true);
+            }
+        };
+        restoreSession();
+    }, []);
+
+    const login = (name: string, role?: AdminStatus['role']) => {
+        setAuth({ isLoggedIn: true, adminName: name, role: role || null });
+        AsyncStorage.setItem('lastAdminId', name);
+        if (role) AsyncStorage.setItem('lastAdminRole', role);
+    };
+
+    const logout = () => {
+        setAuth({ isLoggedIn: false, adminName: null, role: null });
+        AsyncStorage.removeItem('lastAdminId');
+        AsyncStorage.removeItem('lastAdminRole');
+    };
+
+    const setAllianceInfo = (s: string | null, a: string | null) => {
+        setServerId(s);
+        setAllianceId(a);
+        if (s) AsyncStorage.setItem('serverId', s); else AsyncStorage.removeItem('serverId');
+        if (a) AsyncStorage.setItem('allianceId', a); else AsyncStorage.removeItem('allianceId');
+    };
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        AsyncStorage.setItem('theme', newTheme);
+    };
 
     const isDark = theme === 'dark';
 
+    if (!isLayoutReady) return null;
+
     return (
-        <AuthContext.Provider value={{ auth, login, logout }}>
+        <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY }}>
             <ThemeContext.Provider value={{ theme, toggleTheme }}>
                 {Platform.OS === 'web' && (
                     <Head>
@@ -56,20 +85,21 @@ export default function Layout() {
                         <meta name="apple-mobile-web-app-status-bar-style" content={isDark ? "black-translucent" : "default"} />
                         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
                         <link rel="manifest" href="/manifest.json" />
+                        <style>{`
+                            html, body, #root, [data-expo-router-root] {
+                                width: 100% !important;
+                                height: 100% !important;
+                                margin: 0 !important;
+                                padding: 0 !important;
+                                overflow-x: hidden;
+                                background-color: ${isDark ? '#020617' : '#fafaf9'};
+                            }
+                        `}</style>
                     </Head>
                 )}
 
                 <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9' }]}>
-                    {/* Global Background Image */}
-                    <ImageBackground
-                        source={require('../assets/images/bg-main.png')}
-                        style={styles.background}
-                        imageStyle={[styles.backgroundImage, { opacity: isDark ? 1 : 0.85 }]}
-                    >
-                        <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(250, 250, 249, 0.75)' }]}>
-                            <Slot />
-                        </View>
-                    </ImageBackground>
+                    <Slot />
                 </View>
             </ThemeContext.Provider>
         </AuthContext.Provider>
@@ -80,6 +110,9 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#020617',
+        width: '100%',
+        height: '100%',
+        alignItems: 'stretch',
     },
     background: {
         flex: 1,

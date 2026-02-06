@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ImageBackground, StyleSheet, 
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth, useTheme } from '../../_layout';
+import { useAuth, useTheme } from '../../context';
 
 const INITIAL_ATTENDEES = [
     { id: '1', name: '영광의사령관', power: '245.8M', furnace: 'Lv.30 (심화 5)', role: '맹주', heroCombo: '플린트/바히티/몰리' },

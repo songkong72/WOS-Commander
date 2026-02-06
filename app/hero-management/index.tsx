@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Dimensions, Platform } from 'react-native';
 import { Stack, Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { useAuth, useTheme } from '../context';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
-import { useTheme } from '../_layout';
 
 import { heroImages } from '../../assets/images/heroes';
 
@@ -115,19 +115,18 @@ export default function HeroManagement() {
                 {/* Main Content Area */}
                 <View className={`flex-1 ${isDark ? 'bg-brand-dark/40' : 'bg-white'}`}>
                     <View className="p-4 md:p-6">
-                        <View className="mb-6 flex-row justify-between items-end">
+                        <View className="mb-6 flex-row items-center">
+                            <TouchableOpacity
+                                onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
+                                className={`mr-4 p-3 rounded-full active:bg-slate-700 ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200 shadow-sm'}`}
+                            >
+                                <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#1e293b"} />
+                            </TouchableOpacity>
                             <View className="flex-1">
                                 <Text className={`font-bold text-[10px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Hero Archive</Text>
                                 <Text className={`text-3xl md:text-4xl font-bold mb-1.5 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{selectedCategory} 영웅 목록</Text>
                                 <View className={`h-1 w-12 rounded-full ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
                             </View>
-                            <TouchableOpacity
-                                onPress={() => router.replace('/')}
-                                className={`flex-row items-center px-3 py-1.5 rounded-xl border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-100 border-slate-200'}`}
-                            >
-                                <Ionicons name="home-outline" size={16} color={isDark ? "#FFD700" : "#d97706"} className="mr-1.5" />
-                                <Text className={`font-bold text-[11px] ${isDark ? 'text-white' : 'text-slate-800'}`}>뒤로가기</Text>
-                            </TouchableOpacity>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false}>
@@ -181,6 +180,8 @@ export default function HeroManagement() {
                     </View>
                 </View>
             </View>
+
+
         </View>
     );
 }

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, query, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, writeBatch, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 export interface Member {
     id: string; // Game ID
     nickname: string;
+    password?: string;
     updatedAt: number;
 }
 
@@ -39,7 +40,7 @@ export const useFirestoreMembers = (serverId?: string | null, allianceId?: strin
         return () => unsubscribe();
     }, [serverId, allianceId]);
 
-    const saveMembers = async (newList: { id: string, nickname: string }[]) => {
+    const saveMembers = async (newList: { id: string, nickname: string, password?: string }[]) => {
         if (newList.length === 0) return;
 
         const batch = writeBatch(db);
@@ -49,6 +50,7 @@ export const useFirestoreMembers = (serverId?: string | null, allianceId?: strin
             const docRef = doc(colRef, String(m.id));
             batch.set(docRef, {
                 nickname: m.nickname,
+                password: m.password || '',
                 updatedAt: Date.now(),
                 serverId: serverId || null,
                 allianceId: allianceId || null
@@ -79,5 +81,19 @@ export const useFirestoreMembers = (serverId?: string | null, allianceId?: strin
         }
     };
 
-    return { members, loading, saveMembers, clearAllMembers, deleteMember };
+    const updateMemberPassword = async (memberId: string, newPassword: string) => {
+        try {
+            const colRef = getCollectionRef();
+            const docRef = doc(colRef, memberId);
+            await updateDoc(docRef, {
+                password: newPassword,
+                updatedAt: Date.now()
+            });
+        } catch (error) {
+            console.error("Update password error:", error);
+            throw error;
+        }
+    };
+
+    return { members, loading, saveMembers, clearAllMembers, deleteMember, updateMemberPassword };
 };

@@ -8,7 +8,7 @@ export interface AdminUser {
     password?: string;
     addedAt: number;
     addedBy?: string;
-    role?: 'admin' | 'super_admin';
+    role?: 'admin' | 'super_admin' | 'alliance_admin';
 }
 
 export const useFirestoreAdmins = (serverId?: string | null, allianceId?: string | null) => {
@@ -49,7 +49,7 @@ export const useFirestoreAdmins = (serverId?: string | null, allianceId?: string
         };
     }, [serverId, allianceId]);
 
-    const addAdmin = async (name: string, addedBy: string, role: 'admin' | 'super_admin' = 'admin', password?: string) => {
+    const addAdmin = async (name: string, addedBy: string, role: 'admin' | 'super_admin' | 'alliance_admin' = 'admin', password?: string) => {
         try {
             if (!name.trim()) return false;
             const ref = getCollectionRef();

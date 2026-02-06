@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
 import { heroImages } from '../../assets/images/heroes';
 import { skillIcons } from '../../assets/images/skill-icons';
-import { useTheme } from '../_layout';
+import { useAuth, useTheme } from '../context';
 
 
 const SkillImage = ({ icon, className, style }: { icon: string, className?: string, style?: any }) => {
@@ -146,7 +146,7 @@ export default function HeroDetail() {
                 }}
                 className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'}`}
             >
-                <Ionicons name="chevron-back" size={24} color={isDark ? "white" : "#1e293b"} />
+                <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#1e293b"} />
             </TouchableOpacity>
             <Text className={`font-bold text-xl tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{hero.name}</Text>
             <View className="w-10 h-10" />
