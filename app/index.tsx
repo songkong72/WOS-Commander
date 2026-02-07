@@ -911,6 +911,50 @@ export default function Home() {
                 } else {
                     processedList.push(e);
                 }
+            } else if (e.eventId === 'a_fortress' || e.eventId === 'alliance_fortress') {
+                // Split Fortress Battle into separate 'Fortress' and 'Citadel' events
+                const rawTime = (e.time || '').replace(/\//g, ',');
+                const parts = rawTime.split(',').map(p => p.trim()).filter(p => p);
+
+                const fortressParts: string[] = [];
+                const citadelParts: string[] = [];
+
+                parts.forEach(part => {
+                    if (part.includes('성채')) {
+                        citadelParts.push(part);
+                    } else {
+                        fortressParts.push(part);
+                    }
+                });
+
+                // Add Fortress Event if data exists
+                if (fortressParts.length > 0) {
+                    processedList.push({
+                        ...e,
+                        eventId: `${e.eventId}_fortress`,
+                        originalEventId: e.eventId,
+                        title: '요새 쟁탈전',
+                        time: fortressParts.join(', '),
+                        isFortressSplit: true
+                    });
+                }
+
+                // Add Citadel Event if data exists
+                if (citadelParts.length > 0) {
+                    processedList.push({
+                        ...e,
+                        eventId: `${e.eventId}_citadel`,
+                        originalEventId: e.eventId,
+                        title: '성채 쟁탈전',
+                        time: citadelParts.join(', '),
+                        isFortressSplit: true
+                    });
+                }
+
+                // If neither exists (empty time), push original as fallback (optional, but good for safety)
+                if (fortressParts.length === 0 && citadelParts.length === 0) {
+                    processedList.push(e);
+                }
             } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
                 // Split Weapon Factory into Team 1 and Team 2
                 const parts = (e.time || '').split(' / ');
@@ -1025,9 +1069,14 @@ export default function Home() {
                 key={key}
                 onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } })}
                 className="active:scale-[0.98] transition-all"
-                style={{ flex: 1, minWidth: 300, maxWidth: '100%' }}
+                style={{ flex: 1, minWidth: 260, maxWidth: '100%' }}
             >
-                <View className={`p-3 rounded-2xl border shadow-lg ${isActive ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40')}`}>
+                <View className={`p-3 rounded-2xl border ${isActive
+                    ? (isDark ? 'bg-slate-900/95 border-blue-500/50 shadow-2xl shadow-blue-500/20' : 'bg-white border-blue-200 shadow-xl shadow-blue-500/10')
+                    : isUpcoming
+                        ? (isDark ? 'bg-slate-900/95 border-emerald-500/40 shadow-2xl shadow-emerald-500/10' : 'bg-white border-emerald-200 shadow-xl shadow-emerald-500/5')
+                        : (isDark ? 'bg-slate-900/95 border-slate-700 shadow-2xl shadow-black/40' : 'bg-white border-slate-200 shadow-xl shadow-slate-900/5')
+                    }`}>
                     <View className="flex-row items-center justify-between mb-2">
                         <View className="flex-row items-center flex-1 mr-2">
                             <View className={`w-9 h-9 rounded-lg items-center justify-center mr-2 overflow-hidden ${isDark ? 'bg-slate-800/80' : 'bg-slate-50 border border-slate-100'}`}>
@@ -1066,7 +1115,7 @@ export default function Home() {
 
                     <View className="flex-col gap-3">
                         {!!event.day && !event.isBearSplit && !event.isFoundrySplit && !event.time && (
-                            <View className={`rounded-xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                            <View className={`rounded-xl border overflow-hidden ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/20' : 'bg-emerald-50/30 border-emerald-100') : (isDark ? 'bg-black/40 border-slate-700/50' : 'bg-slate-50 border-slate-200 shadow-sm')}`}>
                                 <View className="p-3 gap-2">
                                     {(() => {
                                         const formattedDay = (event.day || '').replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
@@ -1109,12 +1158,12 @@ export default function Home() {
                                                                 <Text className={`text-[10px] font-black w-7 ${isFirstPart ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-orange-400' : 'text-orange-600')}`}>{label}</Text>
                                                             )}
                                                             <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-bold text-base ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
+                                                            <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-70 text-slate-400' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
                                                         </View>
                                                         {!!split.time && (
                                                             <View className={`flex-row items-center mt-0.5 ${isRange ? 'ml-7' : ''}`}>
                                                                 <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                <Text className={`font-bold text-base ${isExpired ? 'line-through opacity-40 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
+                                                                <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
                                                             </View>
                                                         )}
                                                     </View>
@@ -1130,7 +1179,7 @@ export default function Home() {
                         {!!event.time && (
                             <View className="gap-3">
                                 {(event.isBearSplit || event.isFoundrySplit) ? (
-                                    <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                    <View className={`rounded-2xl border overflow-hidden ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/20' : 'bg-emerald-50/30 border-emerald-100') : (isDark ? 'bg-black/40 border-slate-700/50' : 'bg-slate-50 border-slate-200 shadow-sm')}`}>
                                         <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
                                             {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
                                                 const trimmed = item.trim();
@@ -1149,10 +1198,10 @@ export default function Home() {
                                                     <View key={iIdx} className={`flex-row items-center px-4 py-2 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
                                                         <View className="flex-row items-center flex-1">
                                                             <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-bold text-base ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
+                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{displayDay}</Text>
                                                             <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                             <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-bold text-base ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{cleanDisplayTime}</Text>
+                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{cleanDisplayTime}</Text>
                                                         </View>
                                                         {isLive && (
                                                             <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
@@ -1175,8 +1224,72 @@ export default function Home() {
                                                 label = label.replace('1군', '곰1').replace('2군', '곰2');
                                             }
                                             const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                                            // Handling Fortress/Citadel in single card
+                                            // The event is already split in displayEvents into '요새 쟁탈전' or '성채 쟁탈전'
+                                            // and contains only relevant parts in event.time
+                                            if (event.eventId.includes('_fortress') || event.eventId.includes('_citadel') || event.eventId === 'a_fortress' || event.eventId === 'alliance_fortress') {
+                                                const rawTime = (event.time || '');
+                                                // Split by comma
+                                                const parts = rawTime.split(',').map((p: string) => p.trim()).filter((p: string) => p);
+
+                                                return (
+                                                    <View key={pIdx} className={`rounded-[32px] border overflow-hidden ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/20' : 'bg-emerald-50/30 border-emerald-100') : (isDark ? 'bg-black/40 border-slate-700/50' : 'bg-slate-50 border-slate-200 shadow-sm')}`}>
+                                                        <View className="flex-col">
+                                                            {parts.map((part: string, iIdx: number) => {
+                                                                // Remove prefixes if any remain
+                                                                let cleanPart = part.replace(/^(요새전|성채전)[:\s]*/, '').trim();
+
+                                                                let name = '';
+                                                                let dateStr = '';
+                                                                let timeStr = '';
+
+                                                                const match = cleanPart.match(/^(.*?)\s+([^\s]+)\s+(\d{1,2}:\d{2})$/);
+                                                                if (match) {
+                                                                    name = match[1].trim();
+                                                                    dateStr = match[2].trim();
+                                                                    timeStr = match[3].trim();
+                                                                } else {
+                                                                    const sp = cleanPart.split(' ');
+                                                                    if (sp.length >= 3) {
+                                                                        timeStr = sp.pop() || '';
+                                                                        dateStr = sp.pop() || '';
+                                                                        name = sp.join(' ');
+                                                                    } else {
+                                                                        name = cleanPart;
+                                                                    }
+                                                                }
+
+                                                                const isLive = checkItemActive(`${dateStr} ${timeStr}`);
+
+                                                                return (
+                                                                    <View key={iIdx} className={`flex-row items-center px-4 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                                        <View className="flex-row items-center flex-1 flex-nowrap overflow-hidden">
+                                                                            <View className="flex-row items-center shrink-0 mr-2">
+                                                                                <Ionicons name="business-outline" size={14} color={name.includes('성채') ? (isDark ? "#e879f9" : "#c026d3") : (isDark ? "#fbbf24" : "#4f46e5")} style={{ marginRight: 2 }} />
+                                                                                <Text className={`font-black text-sm ${name.includes('성채') ? (isDark ? 'text-fuchsia-400' : 'text-fuchsia-600') : (isDark ? 'text-amber-400' : 'text-indigo-600')}`}>{name}</Text>
+                                                                            </View>
+                                                                            <View className="flex-row items-center shrink-0 mr-2">
+                                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{dateStr}</Text>
+                                                                            </View>
+                                                                            <View className="flex-row items-center shrink-0">
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{timeStr}</Text>
+                                                                            </View>
+                                                                        </View>
+                                                                        {isLive && (
+                                                                            <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
+                                                                        )}
+                                                                    </View>
+                                                                );
+                                                            })}
+                                                        </View>
+                                                    </View>
+                                                );
+                                            }
                                             return (
-                                                <View key={pIdx} className={`rounded-[32px] border overflow-hidden ${isDark ? 'bg-black/30 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                                <View key={pIdx} className={`rounded-[32px] border overflow-hidden ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/20' : 'bg-emerald-50/30 border-emerald-100') : (isDark ? 'bg-black/40 border-slate-700/50' : 'bg-slate-50 border-slate-200 shadow-sm')}`}>
                                                     {!!label && (
                                                         <View className={`px-8 py-4 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-200 border-slate-300'}`}>
                                                             <Text className={`text-[11px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-700'}`}>{label}</Text>
@@ -1191,15 +1304,21 @@ export default function Home() {
 
                                                             return (
                                                                 <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                                    <View className="flex-row items-center flex-1">
-                                                                        <View className="flex-row items-center" style={{ width: 80 }}>
-                                                                            <Ionicons name="calendar-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 6 }} />
-                                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{split.date}</Text>
+                                                                    <View className="flex-row items-center flex-1 flex-nowrap overflow-hidden">
+                                                                        {event.isFortressSplit && !!event.teamLabel && (
+                                                                            <View className="flex-row items-center shrink-0 mr-3">
+                                                                                <Ionicons name="business-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                <Text className={`font-black text-lg ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{event.teamLabel}</Text>
+                                                                            </View>
+                                                                        )}
+                                                                        <View className="flex-row items-center shrink-0 mr-3">
+                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.date}</Text>
                                                                         </View>
                                                                         {!!split.time && (
-                                                                            <View className="flex-row items-center">
-                                                                                <Ionicons name="time-outline" size={16} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 8 }} />
-                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-700' : 'text-slate-500') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-40' : ''}`}>{split.time}</Text>
+                                                                            <View className="flex-row items-center shrink-0">
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.time}</Text>
                                                                             </View>
                                                                         )}
                                                                     </View>
@@ -1411,112 +1530,113 @@ export default function Home() {
                                         tabIndex={4}
                                     />
                                 </View>
+
+                                <View className="flex-row items-center mt-6">
+                                    <Pressable
+                                        onPress={handleEnterAlliance}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                flex: 1,
+                                                paddingVertical: 20,
+                                                borderRadius: 16,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                overflow: 'hidden',
+                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.02 : 1) }],
+                                                // @ts-ignore - Web-specific CSS property
+                                                boxShadow: isRegisterMode
+                                                    ? '0 10px 30px rgba(245, 158, 11, 0.3)'
+                                                    : '0 10px 30px rgba(56, 189, 248, 0.3)',
+                                                transition: 'all 0.3s ease',
+                                            }
+                                        ]}
+                                    >
+                                        <LinearGradient
+                                            colors={isRegisterMode ? ['#f59e0b', '#d97706'] : ['#38bdf8', '#0ea5e9']}
+                                            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                                            start={{ x: 0, y: 0 }}
+                                            end={{ x: 1, y: 1 }}
+                                        />
+                                        <Text className="text-white font-black text-lg tracking-tight relative z-10">
+                                            {isRegisterMode ? '관리자 계정 생성 및 신청' : '연맹 대시보드 진입하기'}
+                                        </Text>
+                                    </Pressable>
+
+                                    <TouchableOpacity
+                                        onPress={handleResetSettings}
+                                        className="ml-3 w-[60px] h-[60px] bg-slate-950/40 rounded-2xl border border-white/5 items-center justify-center active:scale-95 transition-all"
+                                    >
+                                        <Ionicons name="refresh-outline" size={24} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                    </TouchableOpacity>
+                                </View>
+
+
+                                {!!serverId && !!allianceId && (
+                                    <Pressable
+                                        onPress={() => setIsGateOpen(false)}
+                                        style={({ pressed, hovered }) => [
+                                            {
+                                                marginTop: 24,
+                                                alignSelf: 'center',
+                                                paddingVertical: 12,
+                                                paddingHorizontal: 28,
+                                                borderRadius: 9999,
+                                                backgroundColor: hovered ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.05)',
+                                                borderWidth: 1,
+                                                borderColor: hovered ? '#38bdf8' : 'rgba(255,255,255,0.1)',
+                                                transform: [{ scale: pressed ? 0.95 : hovered ? 1.05 : 1 }],
+                                                // @ts-ignore - Web-specific CSS property
+                                                boxShadow: hovered
+                                                    ? '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #0ea5e9, 0 0 80px #0ea5e9'
+                                                    : 'none',
+                                                // @ts-ignore - Web-specific CSS property
+                                                textShadow: hovered ? '0 0 10px #38bdf8, 0 0 20px #38bdf8' : 'none',
+                                                transition: 'all 0.3s ease',
+                                            }
+                                        ]}
+                                    >
+                                        {({ hovered }) => (
+                                            <Text
+                                                className={`font-bold text-[12px] tracking-tight ${hovered ? 'text-white' : 'text-slate-400'}`}
+                                                style={hovered ? {
+                                                    // @ts-ignore - Web-specific CSS property
+                                                    textShadow: '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8'
+                                                } : undefined}
+                                            >
+                                                ← 기존 대시보드로 돌아가기
+                                            </Text>
+                                        )}
+                                    </Pressable>
+                                )}
                             </View>
+                        </View>
 
-                            <View className="flex-row items-center mt-6">
-                                <Pressable
-                                    onPress={handleEnterAlliance}
-                                    style={({ pressed, hovered }) => [
-                                        {
-                                            flex: 1,
-                                            paddingVertical: 20,
-                                            borderRadius: 16,
-                                            alignItems: 'center',
-                                            overflow: 'hidden',
-                                            transform: [{ scale: pressed ? 0.95 : hovered ? 1.02 : 1 }],
-                                            // @ts-ignore - Web-specific CSS property
-                                            boxShadow: isRegisterMode
-                                                ? '0 10px 30px rgba(245, 158, 11, 0.3)'
-                                                : '0 10px 30px rgba(56, 189, 248, 0.3)',
-                                            transition: 'all 0.3s ease',
-                                        }
-                                    ]}
-                                >
-                                    <LinearGradient
-                                        colors={isRegisterMode ? ['#f59e0b', '#d97706'] : ['#38bdf8', '#0ea5e9']}
-                                        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                    />
-                                    <Text className="text-white font-black text-lg tracking-tight relative z-10">
-                                        {isRegisterMode ? '관리자 계정 생성 및 신청' : '연맹 대시보드 진입하기'}
-                                    </Text>
-                                </Pressable>
+                    </View>
 
-                                <TouchableOpacity
-                                    onPress={handleResetSettings}
-                                    className="ml-3 w-[60px] h-[60px] bg-slate-950/40 rounded-2xl border border-white/5 items-center justify-center active:scale-95 transition-all"
-                                >
-                                    <Ionicons name="refresh-outline" size={24} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                    {/* Custom Alert Modal (Shared with Gate ) */}
+                    <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                        <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                            <BlurView intensity={40} className="absolute inset-0" />
+                            <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                                <View className={`w-24 h-24 rounded-full items-center justify-center mb-8 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}>
+                                    <View className={`w-16 h-16 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500' : 'bg-amber-500'}`}>
+                                        <Ionicons
+                                            name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'close' : 'warning'}
+                                            size={36}
+                                            color={isDark ? "black" : "white"}
+                                        />
+                                    </View>
+                                </View>
+                                <Text className={`text-3xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                                <Text className={`text-center mb-10 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                                <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`w-full py-5 rounded-3xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>확인</Text>
                                 </TouchableOpacity>
                             </View>
-
-
-                            {!!serverId && !!allianceId && (
-                                <Pressable
-                                    onPress={() => setIsGateOpen(false)}
-                                    style={({ pressed, hovered }) => [
-                                        {
-                                            marginTop: 24,
-                                            alignSelf: 'center',
-                                            paddingVertical: 12,
-                                            paddingHorizontal: 28,
-                                            borderRadius: 9999,
-                                            backgroundColor: hovered ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.05)',
-                                            borderWidth: 1,
-                                            borderColor: hovered ? '#38bdf8' : 'rgba(255,255,255,0.1)',
-                                            transform: [{ scale: pressed ? 0.95 : hovered ? 1.05 : 1 }],
-                                            // @ts-ignore - Web-specific CSS property
-                                            boxShadow: hovered
-                                                ? '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #0ea5e9, 0 0 80px #0ea5e9'
-                                                : 'none',
-                                            // @ts-ignore - Web-specific CSS property
-                                            textShadow: hovered ? '0 0 10px #38bdf8, 0 0 20px #38bdf8' : 'none',
-                                            transition: 'all 0.3s ease',
-                                        }
-                                    ]}
-                                >
-                                    {({ hovered }) => (
-                                        <Text
-                                            className={`font-bold text-[12px] tracking-tight ${hovered ? 'text-white' : 'text-slate-400'}`}
-                                            style={hovered ? {
-                                                // @ts-ignore - Web-specific CSS property
-                                                textShadow: '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8'
-                                            } : undefined}
-                                        >
-                                            ← 기존 대시보드로 돌아가기
-                                        </Text>
-                                    )}
-                                </Pressable>
-                            )}
                         </View>
-                    </View>
-
+                    </Modal>
                 </View>
-
-                {/* Custom Alert Modal (Shared with Gate) */}
-                <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                        <BlurView intensity={40} className="absolute inset-0" />
-                        <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                            <View className={`w-24 h-24 rounded-full items-center justify-center mb-8 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}>
-                                <View className={`w-16 h-16 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500' : 'bg-amber-500'}`}>
-                                    <Ionicons
-                                        name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'close' : 'warning'}
-                                        size={36}
-                                        color={isDark ? "black" : "white"}
-                                    />
-                                </View>
-                            </View>
-                            <Text className={`text-3xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                            <Text className={`text-center mb-10 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
-                            <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`w-full py-5 rounded-3xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>확인</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </Modal>
-            </View >
+            </View>
         );
     }
 
@@ -1818,8 +1938,8 @@ export default function Home() {
                                                         className={`flex-1 py-4 items-center justify-center ${activeEventTab === 'active' ? (isDark ? 'bg-blue-600' : 'bg-blue-600') : ''}`}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Ionicons name="flash" size={16} color={activeEventTab === 'active' ? '#fff' : '#38bdf8'} style={{ marginRight: 6 }} />
-                                                            <Text className={`text-sm font-black ${activeEventTab === 'active' ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
+                                                            <Ionicons name="flash" size={20} color={activeEventTab === 'active' ? '#fff' : '#38bdf8'} style={{ marginRight: 8 }} />
+                                                            <Text className={`text-lg font-black ${activeEventTab === 'active' ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
                                                                 진행 {activeEvents.length}
                                                             </Text>
                                                         </View>
@@ -1830,8 +1950,8 @@ export default function Home() {
                                                         className={`flex-1 py-4 items-center justify-center ${activeEventTab === 'upcoming' ? (isDark ? 'bg-emerald-600' : 'bg-emerald-600') : ''}`}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Ionicons name="time" size={16} color={activeEventTab === 'upcoming' ? '#fff' : '#10b981'} style={{ marginRight: 6 }} />
-                                                            <Text className={`text-sm font-black ${activeEventTab === 'upcoming' ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
+                                                            <Ionicons name="time" size={20} color={activeEventTab === 'upcoming' ? '#fff' : '#10b981'} style={{ marginRight: 8 }} />
+                                                            <Text className={`text-lg font-black ${activeEventTab === 'upcoming' ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
                                                                 예정 {upcomingEvents.length}
                                                             </Text>
                                                         </View>
@@ -1842,8 +1962,8 @@ export default function Home() {
                                                         className={`flex-1 py-4 items-center justify-center ${activeEventTab === 'expired' ? (isDark ? 'bg-slate-600' : 'bg-slate-500') : ''}`}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Ionicons name="checkmark-circle" size={16} color={activeEventTab === 'expired' ? '#fff' : '#64748b'} style={{ marginRight: 6 }} />
-                                                            <Text className={`text-sm font-black ${activeEventTab === 'expired' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
+                                                            <Ionicons name="checkmark-circle" size={20} color={activeEventTab === 'expired' ? '#fff' : '#64748b'} style={{ marginRight: 8 }} />
+                                                            <Text className={`text-lg font-black ${activeEventTab === 'expired' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
                                                                 종료 {expiredEvents.length}
                                                             </Text>
                                                         </View>
@@ -2344,4 +2464,5 @@ export default function Home() {
             </Modal>
         </View >
     );
+
 }
