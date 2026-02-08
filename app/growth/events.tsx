@@ -731,32 +731,34 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
     return (
         <View className="mb-4" style={{ zIndex: activeDateDropdown?.type === type ? 10000 : 1, elevation: activeDateDropdown?.type === type ? 50 : 0, overflow: 'visible' }}>
             <Text className="text-brand-accent text-xs font-bold mb-2 ml-1 uppercase">{label}</Text>
-            <View className="flex-row gap-2" style={{ overflow: 'visible', zIndex: activeDateDropdown?.type === type ? 10001 : 1 }}>
-                <View style={{ flex: 1.5 }}>
+            <View className="flex-row" style={{ overflow: 'visible', zIndex: activeDateDropdown?.type === type ? 10001 : 1 }}>
+                <View style={{ flex: 1.7, marginRight: 15 }}>
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(type)}
-                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center`}
+                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}
                     >
-                        <View className="flex-row items-center">
-                            <Ionicons name="calendar-outline" size={16} color="#38bdf8" style={{ marginRight: 8 }} />
-                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                                {datePart ? formatDisplayDate(value).split(') ')[0] + ')' : '날짜 선택'}
+                        <View className="flex-row items-center flex-1">
+                            <Ionicons name="calendar-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} />
+                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'} flex-1`} numberOfLines={1} adjustsFontSizeToFit>
+                                {datePart ? (formatDisplayDate(value).split(') ')[0] + ')').replace(/^20/, '').replace(/년\s*/, '.').replace(/월\s*/, '.').replace(/일/, '') : '날짜 선택'}
                             </Text>
                         </View>
-                        <Ionicons name="chevron-down" size={14} color="#64748b" />
+                        <Ionicons name="chevron-down" size={12} color="#64748b" />
                     </TouchableOpacity>
                 </View>
 
-                <View style={{ flex: 1, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
+
+
+                <View style={{ flex: 0.9, marginRight: 8, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
                     <TouchableOpacity
                         onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? null : { type, field: 'h' })}
-                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center`}
+                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="time-outline" size={16} color="#38bdf8" style={{ marginRight: 8 }} />
-                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
+                            <Ionicons name="time-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} />
+                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
                         </View>
-                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
+                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'h' && (
                         <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
@@ -776,16 +778,16 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     )}
                 </View>
 
-                <View style={{ flex: 1, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
+                <View style={{ flex: 0.9, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
                     <TouchableOpacity
                         onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? null : { type, field: 'min' })}
-                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center`}
+                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="time-outline" size={16} color="#38bdf8" style={{ marginRight: 8 }} />
-                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
+                            <Ionicons name="time-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} />
+                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
                         </View>
-                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
+                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'min' && (
                         <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
@@ -2040,7 +2042,7 @@ export default function EventTracker() {
                                     <>
                                         <View className="flex-row items-center mb-1">
                                             <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
-                                            <Text className={`text-3xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                                            <Text className={`text-2xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
                                                 {editingEvent?.title}
                                             </Text>
                                         </View>
@@ -2056,8 +2058,8 @@ export default function EventTracker() {
 
                             <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: 1 }}>
                                 {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
-                                    <View className="flex-1">
-                                        <View className="flex-row justify-end items-center mt-6 mb-2 px-4">
+                                    <View className="flex-1" style={{ overflow: 'visible', zIndex: activeFortressDropdown ? 200 : 1 }}>
+                                        <View className="flex-row justify-end items-center mt-6 mb-2 px-4" style={{ zIndex: 10 }}>
                                             <TouchableOpacity onPress={() => editingEvent?.id === 'a_fortress'
                                                 ? setFortressList([...fortressList, { id: Date.now().toString(), name: `요새 ${fortressList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '토' }])
                                                 : setCitadelList([...citadelList, { id: Date.now().toString(), name: `성채 ${citadelList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '일' }])
@@ -2066,6 +2068,7 @@ export default function EventTracker() {
                                         <ScrollView
                                             className="flex-1"
                                             contentContainerStyle={{ paddingBottom: 80, paddingTop: 10 }}
+                                            style={{ overflow: 'visible' }}
                                         >
                                             {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length === 0 ? (
                                                 <View className="items-center justify-center py-6 bg-slate-800/20 rounded-[32px] border border-slate-700/30 border-dashed mx-2">
@@ -2123,14 +2126,14 @@ export default function EventTracker() {
                                                                 }} className={`flex-1 h-12 rounded-2xl items-center justify-center border ${item.day === d ? 'bg-sky-500 border-sky-400' : 'bg-slate-900/60 border-slate-700/50'}`}><Text className={`font-black text-xs ${item.day === d ? 'text-slate-950' : 'text-slate-500'}`}>{d}</Text></TouchableOpacity>
                                                             ))}
                                                         </View>
-                                                        <View className="flex-row gap-2 mt-3">
-                                                            <View style={{ flex: 1 }}>
+                                                        <View className="flex-row mt-3">
+                                                            <View style={{ flex: 1, marginRight: 8 }}>
                                                                 <TouchableOpacity
                                                                     onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? null : { id: item.id, type: 'h' })}
-                                                                    className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
+                                                                    className="flex-row items-center bg-slate-900/60 p-2.5 rounded-2xl border border-slate-700/50 shadow-inner justify-between"
                                                                 >
-                                                                    <View className="flex-row items-center"><Ionicons name="time" size={18} color="#38bdf8" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{item.h}시</Text></View>
-                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
+                                                                    <View className="flex-row items-center"><Ionicons name="time" size={14} color="#38bdf8" style={{ marginRight: 6 }} /><Text className="text-white font-black text-xs">{item.h}시</Text></View>
+                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                                                                 </TouchableOpacity>
                                                                 {activeFortressDropdown?.id === item.id && activeFortressDropdown.type === 'h' && (
                                                                     <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
@@ -2159,10 +2162,10 @@ export default function EventTracker() {
                                                             <View style={{ flex: 1, zIndex: (activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm') ? 10001 : 1, overflow: 'visible' }}>
                                                                 <TouchableOpacity
                                                                     onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? null : { id: item.id, type: 'm' })}
-                                                                    className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
+                                                                    className="flex-row items-center bg-slate-900/60 p-2.5 rounded-2xl border border-slate-700/50 shadow-inner justify-between"
                                                                 >
-                                                                    <View className="flex-row items-center"><Ionicons name="time" size={18} color="#38bdf8" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{item.m}분</Text></View>
-                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
+                                                                    <View className="flex-row items-center"><Ionicons name="time" size={14} color="#38bdf8" style={{ marginRight: 6 }} /><Text className="text-white font-black text-xs">{item.m}분</Text></View>
+                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                                                                 </TouchableOpacity>
                                                                 {activeFortressDropdown?.id === item.id && activeFortressDropdown.type === 'm' && (
                                                                     <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
@@ -2202,7 +2205,7 @@ export default function EventTracker() {
                                         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} style={{ overflow: 'visible' }}>
                                             {(() => {
                                                 return (
-                                                    <View>
+                                                    <View className="mt-6">
                                                         <RenderDateSelector
                                                             label="시작 일시"
                                                             value={mStart}
@@ -2229,13 +2232,13 @@ export default function EventTracker() {
                                         </ScrollView>
                                     </View>
                                 ) : (
-                                    <View className="flex-1">
-                                        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
+                                    <View className="flex-1" style={{ overflow: 'visible', zIndex: (hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
+                                        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }} style={{ overflow: 'visible' }}>
                                             {(() => {
                                                 const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_mobilization', 'alliance_mobilization', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'];
                                                 if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                     return (
-                                                        <View className={`flex-row mb-6 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                                        <View className={`flex-row mb-6 mt-6 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                                                             <TouchableOpacity onPress={() => setActiveTab(1)} className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰1 설정' : '1군 설정'}</Text></TouchableOpacity>
                                                             <TouchableOpacity onPress={() => setActiveTab(2)} className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰2 설정' : '2군 설정'}</Text></TouchableOpacity>
                                                         </View>
@@ -2244,7 +2247,7 @@ export default function EventTracker() {
                                                 return null;
                                             })()}
                                             {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
-                                                <View className="flex-1">
+                                                <View className={`flex-1 ${!(editingEvent?.category === '연맹' && !['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_mobilization', 'alliance_mobilization', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'].includes(editingEvent?.id || '')) ? 'mt-6' : ''}`}>
                                                     <View className="mb-4">
                                                         <Text className="text-brand-accent text-xs font-bold mb-2 ml-1 uppercase">진행 요일</Text>
                                                         <View className="flex-row flex-wrap gap-2">
@@ -2258,7 +2261,7 @@ export default function EventTracker() {
                                                     </View>
                                                     {editingEvent?.id !== 'a_center' && (
                                                         <View className="mb-4 mt-2">
-                                                            <View className="flex-row items-center mb-4 gap-3">
+                                                            <View className="flex-row items-center mb-2 gap-3">
                                                                 <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">진행 시간</Text>
                                                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-1">
                                                                     {(activeTab === 1 ? slots1 : slots2).map(slot => (
@@ -2268,19 +2271,19 @@ export default function EventTracker() {
                                                             </View>
                                                             {selectedDayForSlot !== '상시' && (
                                                                 <View className="space-y-4">
-                                                                    <View className="flex-row items-center gap-3">
-                                                                        <View className="flex-1 relative" style={{ zIndex: hourDropdownVisible ? 1000 : 1 }}>
-                                                                            <TouchableOpacity onPress={() => { setHourDropdownVisible(!hourDropdownVisible); setMinuteDropdownVisible(false); }} className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center`}>
-                                                                                <View className="flex-row items-center"><Ionicons name="settings-outline" size={16} color="#38bdf8" style={{ marginRight: 8 }} /><Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-bold`}>{editHour}시</Text></View>
-                                                                                <Ionicons name={hourDropdownVisible ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
+                                                                    <View className="flex-row items-center">
+                                                                        <View className="flex-1 relative" style={{ zIndex: hourDropdownVisible ? 1000 : 1, marginRight: 12 }}>
+                                                                            <TouchableOpacity onPress={() => { setHourDropdownVisible(!hourDropdownVisible); setMinuteDropdownVisible(false); }} className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}>
+                                                                                <View className="flex-row items-center"><Ionicons name="settings-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} /><Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-bold text-xs`}>{editHour}시</Text></View>
+                                                                                <Ionicons name={hourDropdownVisible ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                                                                             </TouchableOpacity>
                                                                             {hourDropdownVisible && <View style={{ zIndex: 1000, elevation: 10, backgroundColor: '#0f172a' }} className="absolute bottom-16 left-0 right-0 border-2 border-slate-700 rounded-xl h-48 overflow-hidden shadow-2xl"><FlatList data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))} keyExtractor={item => item} initialScrollIndex={parseInt(editHour) || 0} getItemLayout={(data, index) => ({ length: 50, offset: 50 * index, index })} renderItem={({ item: h }) => (<TouchableOpacity onPress={() => { setEditHour(h); setHourDropdownVisible(false); }} className={`h-[50px] justify-center px-4 border-b border-slate-800/50 ${editHour === h ? 'bg-brand-accent/10' : ''}`}><Text className={`font-semibold ${editHour === h ? 'text-brand-accent' : 'text-slate-300'}`}>{h}시</Text></TouchableOpacity>)} /></View>}
                                                                         </View>
-                                                                        <View className="w-4 items-center"><Text className="text-slate-500 font-semibold">:</Text></View>
+                                                                        <View className="w-4 items-center" style={{ marginRight: 12 }}><Text className="text-slate-500 font-semibold">:</Text></View>
                                                                         <View className="flex-1 relative" style={{ zIndex: minuteDropdownVisible ? 1000 : 1 }}>
-                                                                            <TouchableOpacity onPress={() => { setMinuteDropdownVisible(!minuteDropdownVisible); setHourDropdownVisible(false); }} className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center`}>
-                                                                                <View className="flex-row items-center"><Ionicons name="settings-outline" size={16} color="#38bdf8" style={{ marginRight: 8 }} /><Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-bold`}>{editMinute}분</Text></View>
-                                                                                <Ionicons name={minuteDropdownVisible ? "chevron-up" : "chevron-down"} size={14} color="#64748b" />
+                                                                            <TouchableOpacity onPress={() => { setMinuteDropdownVisible(!minuteDropdownVisible); setHourDropdownVisible(false); }} className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}>
+                                                                                <View className="flex-row items-center"><Ionicons name="settings-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} /><Text className={`${isDark ? 'text-white' : 'text-slate-800'} font-bold text-xs`}>{editMinute}분</Text></View>
+                                                                                <Ionicons name={minuteDropdownVisible ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                                                                             </TouchableOpacity>
                                                                             {minuteDropdownVisible && <View style={{ zIndex: 1000, elevation: 10, backgroundColor: '#0f172a' }} className="absolute bottom-16 left-0 right-0 border-2 border-slate-700 rounded-xl max-h-48 overflow-hidden shadow-2xl"><FlatList data={['00', '10', '20', '30', '40', '50']} keyExtractor={item => item} renderItem={({ item: m }) => (<TouchableOpacity onPress={() => { setEditMinute(m); setMinuteDropdownVisible(false); }} className={`h-[50px] justify-center px-4 border-b border-slate-800/50 ${editMinute === m ? 'bg-brand-accent/10' : ''}`}><Text className={`font-semibold ${editMinute === m ? 'text-brand-accent' : 'text-slate-300'}`}>{m}분</Text></TouchableOpacity>)} /></View>}
                                                                         </View>
@@ -2307,20 +2310,20 @@ export default function EventTracker() {
                             </View>
 
                             {/* Fixed Action Footer with background */}
-                            <View className={`px-6 pt-6 pb-10 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`} style={{ zIndex: 100 }}>
+                            <View className={`px-6 pt-4 pb-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`} style={{ zIndex: 100 }}>
                                 <View className="flex-row gap-4">
                                     <TouchableOpacity
                                         onPress={handleDeleteSchedule}
-                                        className={`flex-1 ${isDark ? 'bg-slate-800/30' : 'bg-slate-100'} py-5 rounded-[24px] border ${isDark ? 'border-slate-700' : 'border-slate-200'} items-center active:scale-[0.98] transition-all`}
+                                        className={`flex-1 ${isDark ? 'bg-slate-800/30' : 'bg-slate-100'} py-3.5 rounded-2xl border ${isDark ? 'border-slate-700' : 'border-slate-200'} items-center active:scale-[0.98] transition-all`}
                                     >
-                                        <Text className={`${isDark ? 'text-slate-600' : 'text-slate-400'} font-bold text-lg`}>설정 초기화</Text>
+                                        <Text className={`${isDark ? 'text-slate-600' : 'text-slate-400'} font-bold text-sm`}>설정 초기화</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
                                         onPress={saveSchedule}
-                                        className="flex-[2] bg-sky-500 py-5 rounded-[24px] items-center shadow-xl shadow-sky-500/40 active:scale-[0.98] transition-all"
+                                        className="flex-[2] bg-sky-500 py-3.5 rounded-2xl items-center shadow-xl shadow-sky-500/40 active:scale-[0.98] transition-all"
                                     >
-                                        <Text className="text-white font-black text-xl">저장하기</Text>
+                                        <Text className="text-white font-black text-base">저장하기</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
