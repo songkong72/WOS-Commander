@@ -1068,7 +1068,7 @@ export default function Home() {
             <TouchableOpacity
                 key={key}
                 onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } })}
-                className="active:scale-[0.98] transition-all w-full md:w-1/2 p-2"
+                className="active:scale-[0.98] transition-all w-full sm:w-1/2 p-2"
 
             >
                 <View className={`p-3 rounded-2xl border ${isActive

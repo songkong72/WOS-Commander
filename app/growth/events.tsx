@@ -242,7 +242,7 @@ const EventCard = memo(({
 
     return (
         <View
-            className={`w-full md:w-1/2 p-2`}
+            className={`w-full sm:w-1/2 p-2`}
             onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
         >
             <View className={`h-full rounded-3xl border shadow-lg transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}>
