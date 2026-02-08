@@ -49,7 +49,8 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
         wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ea%b3%90-%ec%82%ac%eb%83%a5-%ec%9e%91%ec%a0%84/',
         day: '',
         time: '',
-        description: '연맹 영지에 나타난 곰을 사냥'
+        description: '연맹 영지에 나타난 곰을 사냥',
+        isBearSplit: true
     },
     {
         id: 'alliance_joe',
@@ -73,13 +74,23 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
     },
     {
         id: 'a_fortress',
-        title: '요새쟁탈전',
+        title: '요새 쟁탈전',
         category: '연맹',
         imageUrl: require('../assets/images/fortress.png'),
-        wikiUrl: '',
+        wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%9a%94%ec%83%88-%ec%9f%81%ed%83%88%ec%a0%84/',
         day: '',
         time: '',
         description: '전략적인 요새 점령 전투'
+    },
+    {
+        id: 'a_citadel',
+        title: '성채 쟁탈전',
+        category: '연맹',
+        imageUrl: require('../assets/images/fortress.png'),
+        wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%84%b1%ec%b1%84-%ec%9f%81%ed%83%88%ec%a0%84/',
+        day: '',
+        time: '',
+        description: '최고의 연맹을 가리는 성채 전투'
     },
     {
         id: 'alliance_operation',

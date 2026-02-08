@@ -10,4 +10,6 @@ export interface WikiEvent {
     time: string; // Event Time (e.g., 11:00)
     description: string;
     strategy?: string; // Alliance Strategy content
+    isBearSplit?: boolean;
+    isFoundrySplit?: boolean;
 }

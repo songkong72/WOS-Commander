@@ -242,7 +242,7 @@ const EventCard = memo(({
 
     return (
         <View
-            className={`w-1/2 md:w-1/2 lg:w-1/3 xl:w-1/4 p-2`}
+            className={`w-full md:w-1/2 p-2`}
             onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
         >
             <View className={`h-full rounded-3xl border shadow-lg transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}>
@@ -257,7 +257,7 @@ const EventCard = memo(({
                                 <Ionicons name="calendar-outline" size={18} color={isDark ? '#475569' : '#94a3b8'} />
                             </View>
                         )}
-                        <Text className={`text-base font-bold flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
+                        <Text className={`text-lg font-black flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
                     </View>
                     <View className="flex-row items-center flex-wrap gap-1.5">
                         <View className={`flex-row items-center px-2 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
@@ -364,9 +364,31 @@ const EventCard = memo(({
                                                     const isSlotOngoing = checkItemOngoing(trimmedItem);
                                                     return (
                                                         <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-blue-600/20' : 'bg-blue-50') : ''}`}>
-                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-sm ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted, timezone)}</Text>
+                                                            <View className="flex-row items-center flex-1">
+                                                                {(() => {
+                                                                    const displayStr = formatDisplayDate(formatted, timezone);
+                                                                    // Check for Day(Time) format
+                                                                    const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                                    if (dtMatch) {
+                                                                        const [_, d, t] = dtMatch;
+                                                                        return (
+                                                                            <View className="flex-row items-center">
+                                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{d}</Text>
+                                                                                <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                <Text className={`${isDark ? 'text-blue-400' : 'text-blue-600'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
+                                                                            </View>
+                                                                        );
+                                                                    }
+
+                                                                    // Default Fallback
+                                                                    return <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>;
+                                                                })()}
+                                                            </View>
                                                             {isSlotOngoing && (
-                                                                <View className="bg-blue-600 px-1.5 py-0.5 rounded flex-row items-center">
+                                                                <View className="bg-blue-600 px-1.5 py-0.5 rounded flex-row items-center ml-2">
                                                                     <Ionicons name="flash" size={8} color="white" />
                                                                     <Text className="text-white text-[8px] font-black ml-0.5">진행중</Text>
                                                                 </View>
@@ -403,9 +425,31 @@ const EventCard = memo(({
                                                         const isSlotOngoing = checkItemOngoing(trimmedItem);
                                                         return (
                                                             <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-blue-600/20' : 'bg-blue-50') : ''}`}>
-                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-sm ${isExpired ? 'line-through opacity-40' : ''}`}>{formatDisplayDate(formatted, timezone)}</Text>
+                                                                <View className="flex-row items-center flex-1">
+                                                                    {(() => {
+                                                                        const displayStr = formatDisplayDate(formatted, timezone);
+                                                                        // Check for Day(Time) format
+                                                                        const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                                        if (dtMatch) {
+                                                                            const [_, d, t] = dtMatch;
+                                                                            return (
+                                                                                <View className="flex-row items-center">
+                                                                                    <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{d}</Text>
+                                                                                    <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                    <Text className={`${isDark ? 'text-blue-400' : 'text-blue-600'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
+                                                                                </View>
+                                                                            );
+                                                                        }
+
+                                                                        // Default Fallback
+                                                                        return <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>;
+                                                                    })()}
+                                                                </View>
                                                                 {isSlotOngoing && (
-                                                                    <View className="bg-blue-600 px-1.5 py-0.5 rounded flex-row items-center">
+                                                                    <View className="bg-blue-600 px-1.5 py-0.5 rounded flex-row items-center ml-2">
                                                                         <Ionicons name="flash" size={8} color="white" />
                                                                         <Text className="text-white text-[8px] font-black ml-0.5">진행중</Text>
                                                                     </View>
@@ -424,12 +468,12 @@ const EventCard = memo(({
                     <View className="flex-row gap-2 mt-2">
                         <TouchableOpacity onPress={() => openGuideModal(event)} className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'} transition-all active:scale-95`} style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}>
                             <Ionicons name="book-outline" size={16} color={isDark ? '#e2e8f0' : '#475569'} style={{ marginRight: 6 }} />
-                            <Text className={`font-bold text-xs ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{event.category === '연맹' ? '공략' : 'Guide'}</Text>
+                            <Text className={`font-black text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{event.category === '연맹' ? '공략' : 'Guide'}</Text>
                         </TouchableOpacity>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <TouchableOpacity onPress={() => openAttendeeModal(event)} className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'} transition-all active:scale-95`} style={{ shadowColor: '#10b981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}>
                                 <Ionicons name="people-outline" size={16} color={isDark ? '#34d399' : '#059669'} style={{ marginRight: 6 }} />
-                                <Text className={`font-bold text-xs ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>참석</Text>
+                                <Text className={`font-black text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>참석</Text>
                             </TouchableOpacity>
                         )}
                         {event.wikiUrl && (
@@ -1320,10 +1364,11 @@ export default function EventTracker() {
             setMEnd(e || defaultStr);
         }
 
-        if (event.id === 'a_fortress') {
-            // Fortress logic remains largely similar as it has its own complex list state
+        if (event.id === 'a_fortress' || event.id === 'a_citadel') {
             const fParsed: any[] = [];
             const cParsed: any[] = [];
+
+            // 공통 파싱 로직 (기존 데이터 유지 호환성)
             if (event.time) {
                 if (event.time.includes('요새전:') || event.time.includes('성채전:')) {
                     const sections = event.time.split(' / ');
@@ -1353,6 +1398,7 @@ export default function EventTracker() {
                         }
                     });
                 } else {
+                    // 구형 포맷 처리
                     const parts = event.time.split(' / ');
                     parts.forEach((p, idx) => {
                         const nestedMatch = p.match(/(.+)\((.+)\)/);
@@ -1381,12 +1427,14 @@ export default function EventTracker() {
                     });
                 }
             }
-            if (fParsed.length === 0 && cParsed.length === 0) {
-                fParsed.length = 0;
-                cParsed.length = 0;
+
+            if (event.id === 'a_fortress') {
+                setFortressList(fParsed);
+                setCitadelList([]); // Fortress 모달에서는 Citadel 비움
+            } else {
+                setCitadelList(cParsed);
+                setFortressList([]); // Citadel 모달에서는 Fortress 비움
             }
-            setFortressList(fParsed);
-            setCitadelList(cParsed);
         }
 
         // Parse Standard Schedule
@@ -1510,15 +1558,19 @@ export default function EventTracker() {
         }
 
 
-        if (editingEvent.id === 'a_fortress') {
-            const fStr = fortressList.length > 0 ? `요새전: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
-            const cStr = citadelList.length > 0 ? `성채전: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
+        if (editingEvent.id === 'a_fortress' || editingEvent.id === 'a_citadel') {
+            let timeStr = '';
+            let finalDay = '';
 
-            const timeStr = [fStr, cStr].filter(Boolean).join(' / ');
-            const dayParts = [];
-            if (fortressList.length > 0) dayParts.push('요새전');
-            if (citadelList.length > 0) dayParts.push('성채전');
-            const finalDay = dayParts.length > 0 ? dayParts.join('/') : '요새전';
+            if (editingEvent.id === 'a_fortress') {
+                const fStr = fortressList.length > 0 ? `요새전: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
+                timeStr = fStr;
+                finalDay = fortressList.length > 0 ? '요새전' : '';
+            } else {
+                const cStr = citadelList.length > 0 ? `성채전: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
+                timeStr = cStr;
+                finalDay = citadelList.length > 0 ? '성채전' : '';
+            }
 
             setEvents(events.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: timeStr } : e));
 
@@ -1533,16 +1585,19 @@ export default function EventTracker() {
                 // Cancel old notifications and schedule new ones
                 if (Platform.OS !== 'web') {
                     await Notifications.cancelAllScheduledNotificationsAsync();
-                    for (const f of fortressList) {
-                        await scheduleNotification(editingEvent, f.day || '토', `${f.h}:${f.m}`);
-                    }
-                    for (const c of citadelList) {
-                        await scheduleNotification(editingEvent, c.day || '일', `${c.h}:${c.m}`);
+                    if (editingEvent.id === 'a_fortress') {
+                        for (const f of fortressList) {
+                            await scheduleNotification(editingEvent, f.day || '토', `${f.h}:${f.m}`);
+                        }
+                    } else {
+                        for (const c of citadelList) {
+                            await scheduleNotification(editingEvent, c.day || '일', `${c.h}:${c.m}`);
+                        }
                     }
                 }
 
                 setScheduleModalVisible(false);
-                showCustomAlert('완료', '요새전/성채전 일정이 저장되었습니다.', 'success');
+                showCustomAlert('완료', `${editingEvent.title} 일정이 저장되었습니다.`, 'success');
             } catch (error: any) {
                 showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             }
@@ -1982,30 +2037,17 @@ export default function EventTracker() {
                         >
                             <View className="px-6 pt-5 pb-1 flex-row justify-between items-start" style={{ zIndex: (!!activeDateDropdown || hourDropdownVisible || minuteDropdownVisible || !!activeFortressDropdown || !!activeNamePickerId) ? 1 : 100 }}>
                                 <View className="flex-1 mr-4">
-                                    {editingEvent?.id === "a_fortress" ? (
-                                        <View className={`flex-row p-1 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} style={{ width: 280 }}>
-                                            <TouchableOpacity onPress={() => setActiveFortressTab('fortress')} className={`flex-1 flex-row py-2.5 items-center justify-center rounded-xl ${activeFortressTab === 'fortress' ? (isDark ? 'bg-slate-700 shadow-lg' : 'bg-white shadow-sm') : ''}`}>
-                                                <Ionicons name="shield" size={14} color={activeFortressTab === 'fortress' ? "#38bdf8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                <Text className={`font-black text-xs uppercase ${activeFortressTab === 'fortress' ? (isDark ? 'text-white' : 'text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>요새</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity onPress={() => setActiveFortressTab('citadel')} className={`flex-1 flex-row py-2.5 items-center justify-center rounded-xl ${activeFortressTab === 'citadel' ? (isDark ? 'bg-slate-700 shadow-lg' : 'bg-white shadow-sm') : ''}`}>
-                                                <Ionicons name="business" size={14} color={activeFortressTab === 'citadel' ? "#60a5fa" : "#64748b"} style={{ marginRight: 6 }} />
-                                                <Text className={`font-black text-xs uppercase ${activeFortressTab === 'citadel' ? (isDark ? 'text-white' : 'text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>성채</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    ) : (
-                                        <>
-                                            <View className="flex-row items-center mb-1">
-                                                <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
-                                                <Text className={`text-3xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                                                    {editingEvent?.title}
-                                                </Text>
-                                            </View>
-                                            <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                    <>
+                                        <View className="flex-row items-center mb-1">
+                                            <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
+                                            <Text className={`text-3xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                                                {editingEvent?.title}
                                             </Text>
-                                        </>
-                                    )}
+                                        </View>
+                                        <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                            {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                        </Text>
+                                    </>
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
                                     <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
@@ -2013,217 +2055,144 @@ export default function EventTracker() {
                             </View>
 
                             <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: 1 }}>
-                                {editingEvent?.id === 'a_fortress' ? (
+                                {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
                                     <View className="flex-1">
-                                        {activeFortressTab === 'fortress' ? (
-                                            <View className="flex-1">
-                                                <View className="flex-row justify-between items-center mt-6 mb-2 px-4">
-                                                    <View className="flex-row items-center"><View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" /><View><Text className="text-white text-xl font-black tracking-tighter">{editingEvent?.title}</Text><Text className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Fortress Strategic Hub</Text></View></View>
-                                                    <TouchableOpacity onPress={() => setFortressList([...fortressList, { id: Date.now().toString(), name: `요새 ${fortressList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '토' }])} className="bg-brand-accent px-5 py-3 rounded-2xl shadow-xl shadow-brand-accent/30 active:scale-95 flex-row items-center border border-white/20"><Ionicons name="add" size={20} color="#0f172a" style={{ marginRight: 4 }} /><Text className="text-brand-dark font-black text-sm">추가</Text></TouchableOpacity>
+                                        <View className="flex-row justify-end items-center mt-6 mb-2 px-4">
+                                            <TouchableOpacity onPress={() => editingEvent?.id === 'a_fortress'
+                                                ? setFortressList([...fortressList, { id: Date.now().toString(), name: `요새 ${fortressList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '토' }])
+                                                : setCitadelList([...citadelList, { id: Date.now().toString(), name: `성채 ${citadelList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '일' }])
+                                            } className="bg-brand-accent px-5 py-3 rounded-2xl shadow-xl shadow-brand-accent/30 active:scale-95 flex-row items-center border border-white/20"><Ionicons name="add" size={20} color="#0f172a" style={{ marginRight: 4 }} /><Text className="text-brand-dark font-black text-sm">추가</Text></TouchableOpacity>
+                                        </View>
+                                        <ScrollView
+                                            className="flex-1"
+                                            contentContainerStyle={{ paddingBottom: 80, paddingTop: 10 }}
+                                        >
+                                            {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length === 0 ? (
+                                                <View className="items-center justify-center py-6 bg-slate-800/20 rounded-[32px] border border-slate-700/30 border-dashed mx-2">
+                                                    <View className="w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4"><Ionicons name={editingEvent?.id === 'a_fortress' ? "shield-outline" : "business-outline"} size={32} color="#475569" /></View>
+                                                    <Text className="text-slate-400 font-bold">등록된 일정이 없습니다.</Text>
+                                                    <Text className="text-slate-600 text-xs mt-1">상단의 추가 버튼을 눌러주세요.</Text>
                                                 </View>
-                                                <ScrollView
-                                                    className="flex-1"
-                                                    contentContainerStyle={{ paddingBottom: 80, paddingTop: 10 }}
-                                                >
-                                                    {fortressList.length === 0 ? (
-                                                        <View className="items-center justify-center py-6 bg-slate-800/20 rounded-[32px] border border-slate-700/30 border-dashed mx-2">
-                                                            <View className="w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4"><Ionicons name="shield-outline" size={32} color="#475569" /></View>
-                                                            <Text className="text-slate-400 font-bold">등록된 요새가 없습니다.</Text>
-                                                            <Text className="text-slate-600 text-xs mt-1">상단의 추가 버튼을 눌러주세요.</Text>
-                                                        </View>
-                                                    ) : fortressList.map((f, fIdx) => {
-                                                        const isNamePickerOpen = activeNamePickerId === f.id;
-                                                        const isTimePickerOpen = activeFortressDropdown?.id === f.id;
-                                                        const cardZIndex = (isNamePickerOpen || isTimePickerOpen) ? 10000 : (fortressList.length - fIdx);
+                                            ) : (editingEvent?.id === 'a_fortress' ? fortressList : citadelList).map((item, idx) => {
+                                                const isNamePickerOpen = activeNamePickerId === item.id;
+                                                const isTimePickerOpen = activeFortressDropdown?.id === item.id;
+                                                const listLength = (editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length;
+                                                const cardZIndex = (isNamePickerOpen || isTimePickerOpen) ? 10000 : (listLength - idx);
 
-                                                        return (
-                                                            <View key={f.id} style={{ zIndex: cardZIndex }} className={`bg-slate-800/40 p-5 rounded-[32px] mb-2 border ${isTimePickerOpen ? 'border-sky-500/50 bg-slate-800/60' : 'border-slate-700/30'}`}>
-                                                                <View className="flex-row justify-between items-center mb-4" style={{ zIndex: isNamePickerOpen ? 20 : 1 }}>
-                                                                    <View className="flex-row items-center">
-                                                                        <View className="w-8 h-8 rounded-full bg-sky-500/20 items-center justify-center mr-3"><Text className="text-sky-400 font-black text-xs">{fIdx + 1}</Text></View>
-                                                                        <OptionPicker
-                                                                            value={f.name}
-                                                                            options={FORTRESS_OPTIONS}
-                                                                            onSelect={(v) => { const newList = [...fortressList]; newList[fIdx].name = v; setFortressList(newList); }}
-                                                                            label="요새 선택"
-                                                                            isDark={isDark}
-                                                                            direction={fIdx > 0 ? 'up' : 'down'}
-                                                                            isOpen={isNamePickerOpen}
-                                                                            onToggle={(v) => {
-                                                                                if (v) { setActiveNamePickerId(f.id); setActiveFortressDropdown(null); }
-                                                                                else { setActiveNamePickerId(null); }
-                                                                            }}
+                                                return (
+                                                    <View key={item.id} style={{ zIndex: cardZIndex }} className={`bg-slate-800/40 p-5 rounded-[32px] mb-2 border ${isTimePickerOpen ? 'border-sky-500/50 bg-slate-800/60' : 'border-slate-700/30'}`}>
+                                                        <View className="flex-row justify-between items-center mb-4" style={{ zIndex: isNamePickerOpen ? 20 : 1 }}>
+                                                            <View className="flex-row items-center">
+                                                                <View className="w-8 h-8 rounded-full bg-sky-500/20 items-center justify-center mr-3"><Text className="text-sky-400 font-black text-xs">{idx + 1}</Text></View>
+                                                                <OptionPicker
+                                                                    value={item.name}
+                                                                    options={editingEvent?.id === 'a_fortress' ? FORTRESS_OPTIONS : CITADEL_OPTIONS}
+                                                                    onSelect={(v) => {
+                                                                        if (editingEvent?.id === 'a_fortress') {
+                                                                            const newList = [...fortressList]; newList[idx].name = v; setFortressList(newList);
+                                                                        } else {
+                                                                            const newList = [...citadelList]; newList[idx].name = v; setCitadelList(newList);
+                                                                        }
+                                                                    }}
+                                                                    label={editingEvent?.id === 'a_fortress' ? "요새 선택" : "성채 선택"}
+                                                                    isDark={isDark}
+                                                                    direction={idx > 0 ? 'up' : 'down'}
+                                                                    isOpen={isNamePickerOpen}
+                                                                    onToggle={(v) => {
+                                                                        if (v) { setActiveNamePickerId(item.id); setActiveFortressDropdown(null); }
+                                                                        else { setActiveNamePickerId(null); }
+                                                                    }}
+                                                                />
+                                                            </View>
+                                                            <TouchableOpacity onPress={() => {
+                                                                if (editingEvent?.id === 'a_fortress') {
+                                                                    setFortressList(fortressList.filter(i => i.id !== item.id));
+                                                                } else {
+                                                                    setCitadelList(citadelList.filter(i => i.id !== item.id));
+                                                                }
+                                                            }} className="w-10 h-10 rounded-full bg-red-500/10 items-center justify-center border border-red-500/20"><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
+                                                        </View>
+                                                        <View className="flex-row gap-2">
+                                                            {['월', '화', '수', '목', '금', '토', '일'].map(d => (
+                                                                <TouchableOpacity key={d} onPress={() => {
+                                                                    if (editingEvent?.id === 'a_fortress') {
+                                                                        const newList = [...fortressList]; newList[idx].day = d; setFortressList(newList);
+                                                                    } else {
+                                                                        const newList = [...citadelList]; newList[idx].day = d; setCitadelList(newList);
+                                                                    }
+                                                                }} className={`flex-1 h-12 rounded-2xl items-center justify-center border ${item.day === d ? 'bg-sky-500 border-sky-400' : 'bg-slate-900/60 border-slate-700/50'}`}><Text className={`font-black text-xs ${item.day === d ? 'text-slate-950' : 'text-slate-500'}`}>{d}</Text></TouchableOpacity>
+                                                            ))}
+                                                        </View>
+                                                        <View className="flex-row gap-2 mt-3">
+                                                            <View style={{ flex: 1 }}>
+                                                                <TouchableOpacity
+                                                                    onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? null : { id: item.id, type: 'h' })}
+                                                                    className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
+                                                                >
+                                                                    <View className="flex-row items-center"><Ionicons name="time" size={18} color="#38bdf8" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{item.h}시</Text></View>
+                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
+                                                                </TouchableOpacity>
+                                                                {activeFortressDropdown?.id === item.id && activeFortressDropdown.type === 'h' && (
+                                                                    <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
+                                                                        <FlatList
+                                                                            data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
+                                                                            renderItem={({ item: h }) => (
+                                                                                <TouchableOpacity
+                                                                                    onPress={() => {
+                                                                                        if (editingEvent?.id === 'a_fortress') {
+                                                                                            const newList = [...fortressList]; newList[idx].h = h; setFortressList(newList);
+                                                                                        } else {
+                                                                                            const newList = [...citadelList]; newList[idx].h = h; setCitadelList(newList);
+                                                                                        }
+                                                                                        setActiveFortressDropdown(null);
+                                                                                    }}
+                                                                                    className={`h-12 items-center justify-center border-b border-white/5 ${item.h === h ? 'bg-sky-500/20' : ''}`}
+                                                                                >
+                                                                                    <Text className={`font-bold text-lg ${item.h === h ? 'text-sky-400' : 'text-slate-400'}`}>{h}시</Text>
+                                                                                </TouchableOpacity>
+                                                                            )}
+                                                                            keyExtractor={h => h}
                                                                         />
                                                                     </View>
-                                                                    <TouchableOpacity onPress={() => setFortressList(fortressList.filter(item => item.id !== f.id))} className="w-10 h-10 rounded-full bg-red-500/10 items-center justify-center border border-red-500/20"><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
-                                                                </View>
-                                                                <View className="flex-row gap-2">
-                                                                    {['월', '화', '수', '목', '금', '토', '일'].map(d => (
-                                                                        <TouchableOpacity key={d} onPress={() => { const newList = [...fortressList]; newList[fIdx].day = d; setFortressList(newList); }} className={`flex-1 h-12 rounded-2xl items-center justify-center border ${f.day === d ? 'bg-sky-500 border-sky-400' : 'bg-slate-900/60 border-slate-700/50'}`}><Text className={`font-black text-xs ${f.day === d ? 'text-slate-950' : 'text-slate-500'}`}>{d}</Text></TouchableOpacity>
-                                                                    ))}
-                                                                </View>
-                                                                <View className="flex-row gap-2 mt-3">
-                                                                    <View style={{ flex: 1 }}>
-                                                                        <TouchableOpacity
-                                                                            onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'h' ? null : { id: f.id, type: 'h' })}
-                                                                            className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
-                                                                        >
-                                                                            <View className="flex-row items-center"><Ionicons name="time" size={18} color="#38bdf8" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{f.h}시</Text></View>
-                                                                            <Ionicons name={activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'h' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
-                                                                        </TouchableOpacity>
-                                                                        {activeFortressDropdown?.id === f.id && activeFortressDropdown.type === 'h' && (
-                                                                            <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
-                                                                                <FlatList
-                                                                                    data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
-                                                                                    renderItem={({ item: h }) => (
-                                                                                        <TouchableOpacity
-                                                                                            onPress={() => { const newList = [...fortressList]; newList[fIdx].h = h; setFortressList(newList); setActiveFortressDropdown(null); }}
-                                                                                            className={`h-12 items-center justify-center border-b border-white/5 ${f.h === h ? 'bg-sky-500/20' : ''}`}
-                                                                                        >
-                                                                                            <Text className={`font-bold text-lg ${f.h === h ? 'text-sky-400' : 'text-slate-400'}`}>{h}시</Text>
-                                                                                        </TouchableOpacity>
-                                                                                    )}
-                                                                                    keyExtractor={h => h}
-                                                                                />
-                                                                            </View>
-                                                                        )}
-                                                                    </View>
-                                                                    <View style={{ flex: 1, zIndex: (activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'm') ? 10001 : 1, overflow: 'visible' }}>
-                                                                        <TouchableOpacity
-                                                                            onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'm' ? null : { id: f.id, type: 'm' })}
-                                                                            className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
-                                                                        >
-                                                                            <View className="flex-row items-center"><Ionicons name="time" size={18} color="#38bdf8" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{f.m}분</Text></View>
-                                                                            <Ionicons name={activeFortressDropdown?.id === f.id && activeFortressDropdown?.type === 'm' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
-                                                                        </TouchableOpacity>
-                                                                        {activeFortressDropdown?.id === f.id && activeFortressDropdown.type === 'm' && (
-                                                                            <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
-                                                                                <FlatList
-                                                                                    data={['00', '15', '30', '45']}
-                                                                                    renderItem={({ item: m }) => (
-                                                                                        <TouchableOpacity
-                                                                                            onPress={() => { const newList = [...fortressList]; newList[fIdx].m = m; setFortressList(newList); setActiveFortressDropdown(null); }}
-                                                                                            className={`h-12 items-center justify-center border-b border-white/5 ${f.m === m ? 'bg-sky-500/20' : ''}`}
-                                                                                        >
-                                                                                            <Text className={`font-bold text-lg ${f.m === m ? 'text-sky-400' : 'text-slate-400'}`}>{m}분</Text>
-                                                                                        </TouchableOpacity>
-                                                                                    )}
-                                                                                    keyExtractor={m => m}
-                                                                                />
-                                                                            </View>
-                                                                        )}
-                                                                    </View>
-                                                                </View>
+                                                                )}
                                                             </View>
-                                                        );
-                                                    })}
-                                                </ScrollView>
-                                            </View>
-                                        ) : (
-                                            <View className="flex-1">
-                                                <View className="flex-row justify-between items-center mt-6 mb-2 px-4">
-                                                    <View className="flex-row items-center"><View className="w-1.5 h-6 bg-blue-500 rounded-full mr-3" /><View><Text className="text-white text-xl font-black tracking-tighter">{editingEvent?.title}</Text><Text className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-1">Citadel Strategic Hub</Text></View></View>
-                                                    <TouchableOpacity onPress={() => setCitadelList([...citadelList, { id: Date.now().toString(), name: `성채 ${citadelList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '일' }])} className="bg-blue-600 px-5 py-3 rounded-2xl shadow-xl shadow-blue-500/30 active:scale-95 flex-row items-center border border-white/20"><Ionicons name="add" size={20} color="white" style={{ marginRight: 4 }} /><Text className="text-white font-black text-sm">추가</Text></TouchableOpacity>
-                                                </View>
-                                                <ScrollView
-                                                    className="flex-1"
-                                                    contentContainerStyle={{ paddingBottom: 80, paddingTop: 10 }}
-                                                >
-                                                    {citadelList.length === 0 ? (
-                                                        <View className="items-center justify-center py-6 bg-slate-800/20 rounded-[32px] border border-slate-700/30 border-dashed mx-2">
-                                                            <View className="w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4"><Ionicons name="business-outline" size={32} color="#475569" /></View>
-                                                            <Text className="text-slate-400 font-bold">등록된 성채가 없습니다.</Text>
-                                                            <Text className="text-slate-600 text-xs mt-1">상단의 추가 버튼을 눌러주세요.</Text>
-                                                        </View>
-                                                    ) : citadelList.map((c, cIdx) => {
-                                                        const isNamePickerOpen = activeNamePickerId === c.id;
-                                                        const isTimePickerOpen = activeFortressDropdown?.id === c.id;
-                                                        const cardZIndex = (isNamePickerOpen || isTimePickerOpen) ? 10000 : (citadelList.length - cIdx);
-
-                                                        return (
-                                                            <View key={c.id} style={{ zIndex: cardZIndex }} className={`bg-slate-800/40 p-5 rounded-[32px] mb-2 border ${isTimePickerOpen ? 'border-blue-500/50 bg-slate-800/60' : 'border-slate-700/30'}`}>
-                                                                <View className="flex-row justify-between items-center mb-4" style={{ zIndex: isNamePickerOpen ? 20 : 1 }}>
-                                                                    <View className="flex-row items-center">
-                                                                        <View className="w-8 h-8 rounded-full bg-blue-500/20 items-center justify-center mr-3"><Text className="text-blue-400 font-black text-xs">{cIdx + 1}</Text></View>
-                                                                        <OptionPicker
-                                                                            value={c.name}
-                                                                            options={CITADEL_OPTIONS}
-                                                                            onSelect={(v) => { const newList = [...citadelList]; newList[cIdx].name = v; setCitadelList(newList); }}
-                                                                            label="성채 선택"
-                                                                            isDark={isDark}
-                                                                            direction={cIdx > 0 ? 'up' : 'down'}
-                                                                            isOpen={isNamePickerOpen}
-                                                                            onToggle={(v) => {
-                                                                                if (v) { setActiveNamePickerId(c.id); setActiveFortressDropdown(null); }
-                                                                                else { setActiveNamePickerId(null); }
-                                                                            }}
+                                                            <View style={{ flex: 1, zIndex: (activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm') ? 10001 : 1, overflow: 'visible' }}>
+                                                                <TouchableOpacity
+                                                                    onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? null : { id: item.id, type: 'm' })}
+                                                                    className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
+                                                                >
+                                                                    <View className="flex-row items-center"><Ionicons name="time" size={18} color="#38bdf8" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{item.m}분</Text></View>
+                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
+                                                                </TouchableOpacity>
+                                                                {activeFortressDropdown?.id === item.id && activeFortressDropdown.type === 'm' && (
+                                                                    <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
+                                                                        <FlatList
+                                                                            data={['00', '15', '30', '45']}
+                                                                            renderItem={({ item: m }) => (
+                                                                                <TouchableOpacity
+                                                                                    onPress={() => {
+                                                                                        if (editingEvent?.id === 'a_fortress') {
+                                                                                            const newList = [...fortressList]; newList[idx].m = m; setFortressList(newList);
+                                                                                        } else {
+                                                                                            const newList = [...citadelList]; newList[idx].m = m; setCitadelList(newList);
+                                                                                        }
+                                                                                        setActiveFortressDropdown(null);
+                                                                                    }}
+                                                                                    className={`h-12 items-center justify-center border-b border-white/5 ${item.m === m ? 'bg-sky-500/20' : ''}`}
+                                                                                >
+                                                                                    <Text className={`font-bold text-lg ${item.m === m ? 'text-sky-400' : 'text-slate-400'}`}>{m}분</Text>
+                                                                                </TouchableOpacity>
+                                                                            )}
+                                                                            keyExtractor={m => m}
                                                                         />
                                                                     </View>
-                                                                    <TouchableOpacity onPress={() => setCitadelList(citadelList.filter(item => item.id !== c.id))} className="w-10 h-10 rounded-full bg-red-500/10 items-center justify-center border border-red-500/20"><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
-                                                                </View>
-                                                                <View className="flex-row gap-2">
-                                                                    {['월', '화', '수', '목', '금', '토', '일'].map(d => (
-                                                                        <TouchableOpacity key={d} onPress={() => { const newList = [...citadelList]; newList[cIdx].day = d; setCitadelList(newList); }} className={`flex-1 h-12 rounded-2xl items-center justify-center border ${c.day === d ? 'bg-blue-500 border-blue-400' : 'bg-slate-900/60 border-slate-700/50'}`}><Text className={`font-black text-xs ${c.day === d ? 'text-slate-950' : 'text-slate-500'}`}>{d}</Text></TouchableOpacity>
-                                                                    ))}
-                                                                </View>
-                                                                <View className="flex-row gap-2 mt-3" style={{ zIndex: activeFortressDropdown?.id === c.id ? 10000 : 1, elevation: activeFortressDropdown?.id === c.id ? 50 : 0, overflow: 'visible' }}>
-                                                                    <View style={{ flex: 1, zIndex: (activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'h') ? 10001 : 1, overflow: 'visible' }}>
-                                                                        <TouchableOpacity
-                                                                            onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'h' ? null : { id: c.id, type: 'h' })}
-                                                                            className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
-                                                                        >
-                                                                            <View className="flex-row items-center"><Ionicons name="time" size={18} color="#60a5fa" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{c.h}시</Text></View>
-                                                                            <Ionicons name={activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'h' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
-                                                                        </TouchableOpacity>
-                                                                        {activeFortressDropdown?.id === c.id && activeFortressDropdown.type === 'h' && (
-                                                                            <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
-                                                                                <FlatList
-                                                                                    data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
-                                                                                    renderItem={({ item: h }) => (
-                                                                                        <TouchableOpacity
-                                                                                            onPress={() => { const newList = [...citadelList]; newList[cIdx].h = h; setCitadelList(newList); setActiveFortressDropdown(null); }}
-                                                                                            className={`h-12 items-center justify-center border-b border-white/5 ${c.h === h ? 'bg-blue-500/20' : ''}`}
-                                                                                        >
-                                                                                            <Text className={`font-bold text-lg ${c.h === h ? 'text-blue-400' : 'text-slate-400'}`}>{h}시</Text>
-                                                                                        </TouchableOpacity>
-                                                                                    )}
-                                                                                    keyExtractor={h => h}
-                                                                                />
-                                                                            </View>
-                                                                        )}
-                                                                    </View>
-                                                                    <View style={{ flex: 1, zIndex: (activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'm') ? 10001 : 1, overflow: 'visible' }}>
-                                                                        <TouchableOpacity
-                                                                            onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'm' ? null : { id: c.id, type: 'm' })}
-                                                                            className="flex-row items-center bg-slate-900/60 p-4 rounded-[24px] border border-slate-700/50 shadow-inner justify-between"
-                                                                        >
-                                                                            <View className="flex-row items-center"><Ionicons name="time" size={18} color="#60a5fa" style={{ marginRight: 10 }} /><Text className="text-white font-black text-base">{c.m}분</Text></View>
-                                                                            <Ionicons name={activeFortressDropdown?.id === c.id && activeFortressDropdown?.type === 'm' ? "chevron-up" : "chevron-down"} size={16} color="#64748b" />
-                                                                        </TouchableOpacity>
-                                                                        {activeFortressDropdown?.id === c.id && activeFortressDropdown.type === 'm' && (
-                                                                            <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
-                                                                                <FlatList
-                                                                                    data={['00', '15', '30', '45']}
-                                                                                    renderItem={({ item: m }) => (
-                                                                                        <TouchableOpacity
-                                                                                            onPress={() => { const newList = [...citadelList]; newList[cIdx].m = m; setCitadelList(newList); setActiveFortressDropdown(null); }}
-                                                                                            className={`h-12 items-center justify-center border-b border-white/5 ${c.m === m ? 'bg-blue-500/20' : ''}`}
-                                                                                        >
-                                                                                            <Text className={`font-bold text-lg ${c.m === m ? 'text-blue-400' : 'text-slate-400'}`}>{m}분</Text>
-                                                                                        </TouchableOpacity>
-                                                                                    )}
-                                                                                    keyExtractor={m => m}
-                                                                                />
-                                                                            </View>
-                                                                        )}
-                                                                    </View>
-                                                                </View>
+                                                                )}
                                                             </View>
-                                                        );
-                                                    })}
-                                                </ScrollView>
-                                            </View>
-                                        )}
+                                                        </View>
+                                                    </View>
+                                                );
+                                            })}
+                                        </ScrollView>
                                     </View>
                                 ) : (() => {
                                     const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];

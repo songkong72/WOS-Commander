@@ -1068,8 +1068,8 @@ export default function Home() {
             <TouchableOpacity
                 key={key}
                 onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } })}
-                className="active:scale-[0.98] transition-all"
-                style={{ flex: 1, minWidth: 260, maxWidth: '100%' }}
+                className="active:scale-[0.98] transition-all w-full md:w-1/2 p-2"
+
             >
                 <View className={`p-3 rounded-2xl border ${isActive
                     ? (isDark ? 'bg-slate-900/95 border-blue-500/50 shadow-2xl shadow-blue-500/20' : 'bg-white border-blue-200 shadow-xl shadow-blue-500/10')
@@ -1114,6 +1114,11 @@ export default function Home() {
                     </View>
 
                     <View className="flex-col gap-3">
+                        {(!event.time && (event.eventId === 'a_fortress' || event.eventId === 'a_citadel')) && (
+                            <View className={`rounded-xl border border-dashed p-4 items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다.</Text>
+                            </View>
+                        )}
                         {!!event.day && !event.isBearSplit && !event.isFoundrySplit && !event.time && (
                             <View className={`rounded-xl border overflow-hidden ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/20' : 'bg-emerald-50/30 border-emerald-100') : (isDark ? 'bg-black/40 border-slate-700/50' : 'bg-slate-50 border-slate-200 shadow-sm')}`}>
                                 <View className="p-3 gap-2">
@@ -1184,18 +1189,34 @@ export default function Home() {
                                             {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
                                                 const trimmed = item.trim();
                                                 if (!trimmed) return null;
-                                                const isLive = checkItemActive(trimmed);
 
-                                                const dayMatch = trimmed.match(/[일월화수목금토매일]+/);
-                                                const day = dayMatch ? dayMatch[0] : '-';
-                                                const localTime = trimmed.replace(/[일월화수목금토매일]+\s*/, '').trim();
-                                                const utcStr = getUTCTimeString(trimmed, false);
-                                                const displayTime = timezone === 'KST' ? localTime : utcStr;
-                                                const displayDay = timezone === 'KST' ? day : (utcStr.match(/[일월화수목금토매일]+/)?.[0] || day);
-                                                const cleanDisplayTime = displayTime.replace(/[일월화수목금토매일]+\s*/, '').replace(/[()]/g, '');
+                                                // Updated regex to handle 'Day(Time)' format correctly (e.g., 화(22:00))
+                                                let displayDay = '-';
+                                                let cleanDisplayTime = '';
+
+                                                // Check for Day(Time) pattern first
+                                                const dtMatch = trimmed.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                if (dtMatch) {
+                                                    displayDay = dtMatch[1];
+                                                    cleanDisplayTime = dtMatch[2];
+                                                } else {
+                                                    // Fallback to original logic
+                                                    const dayMatch = trimmed.match(/[일월화수목금토매일]+/);
+                                                    displayDay = dayMatch ? dayMatch[0] : '-';
+
+                                                    const rawTime = trimmed.replace(displayDay, '').trim();
+                                                    const colonIdx = rawTime.indexOf(':');
+                                                    const activeTime = (colonIdx > 0) ? rawTime.substring(colonIdx - 2, colonIdx + 3).trim() : rawTime;
+
+                                                    // If 'cleanDisplayTime' was derived from removing day and parens
+                                                    cleanDisplayTime = activeTime.replace(/[()]/g, '');
+                                                }
+
+                                                const isLive = checkItemActive(`${displayDay} ${cleanDisplayTime}`);
 
                                                 return (
-                                                    <View key={iIdx} className={`flex-row items-center px-4 py-2 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                    <TouchableOpacity key={iIdx} activeOpacity={0.7} className={`flex-row items-center px-4 py-2 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 active:bg-slate-500/10`}>
                                                         <View className="flex-row items-center flex-1">
                                                             <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
                                                             <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{displayDay}</Text>
@@ -1206,7 +1227,7 @@ export default function Home() {
                                                         {isLive && (
                                                             <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                         )}
-                                                    </View>
+                                                    </TouchableOpacity>
                                                 );
                                             })}
                                         </View>
@@ -1263,7 +1284,7 @@ export default function Home() {
                                                                 const isLive = checkItemActive(`${dateStr} ${timeStr}`);
 
                                                                 return (
-                                                                    <View key={iIdx} className={`flex-row items-center px-4 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                                    <TouchableOpacity key={iIdx} activeOpacity={0.7} className={`flex-row items-center px-4 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 active:bg-slate-500/10`}>
                                                                         <View className="flex-row items-center flex-1 flex-nowrap overflow-hidden">
                                                                             <View className="flex-row items-center shrink-0 mr-2">
                                                                                 <Ionicons name="business-outline" size={14} color={name.includes('성채') ? (isDark ? "#e879f9" : "#c026d3") : (isDark ? "#fbbf24" : "#4f46e5")} style={{ marginRight: 2 }} />
@@ -1281,7 +1302,7 @@ export default function Home() {
                                                                         {isLive && (
                                                                             <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                                         )}
-                                                                    </View>
+                                                                    </TouchableOpacity>
                                                                 );
                                                             })}
                                                         </View>
@@ -1303,7 +1324,7 @@ export default function Home() {
                                                             const split = splitSchedulePart(displayFull);
 
                                                             return (
-                                                                <View key={iIdx} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
+                                                                <TouchableOpacity key={iIdx} activeOpacity={0.7} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 active:bg-slate-500/10`}>
                                                                     <View className="flex-row items-center flex-1 flex-nowrap overflow-hidden">
                                                                         {event.isFortressSplit && !!event.teamLabel && (
                                                                             <View className="flex-row items-center shrink-0 mr-3">
@@ -1311,21 +1332,24 @@ export default function Home() {
                                                                                 <Text className={`font-black text-lg ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{event.teamLabel}</Text>
                                                                             </View>
                                                                         )}
-                                                                        <View className="flex-row items-center shrink-0 mr-3">
-                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                        <View className="flex-row items-center shrink-0 mr-2">
+                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
                                                                             <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.date}</Text>
                                                                         </View>
                                                                         {!!split.time && (
-                                                                            <View className="flex-row items-center shrink-0">
-                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.time}</Text>
-                                                                            </View>
+                                                                            <>
+                                                                                <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                                                <View className="flex-row items-center shrink-0">
+                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
+                                                                                    <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.time}</Text>
+                                                                                </View>
+                                                                            </>
                                                                         )}
                                                                     </View>
                                                                     {isLive && (
                                                                         <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                                     )}
-                                                                </View>
+                                                                </TouchableOpacity>
                                                             );
                                                         })}
                                                     </View>
@@ -1396,13 +1420,13 @@ export default function Home() {
                     style={{ position: 'absolute', width: '100%', height: '100%' }}
                     resizeMode="cover"
                 />
-                <View className="flex-1 w-full h-full justify-center items-center p-8">
+                <View className="flex-1 w-full h-full justify-center items-center p-4">
                     <BlurView intensity={20} className="absolute inset-0" />
 
-                    <View className="w-full max-w-md p-8 rounded-[40px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden">
+                    <View className="w-full max-w-md p-6 rounded-[40px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden">
                         <BlurView intensity={80} className="absolute inset-0" />
 
-                        <View className="items-center mb-6 relative">
+                        <View className="items-center mb-4 relative">
                             {/* Help Button */}
                             <Pressable
                                 onPress={() => {
@@ -1415,7 +1439,7 @@ export default function Home() {
                                 <Ionicons name="help-circle-outline" size={20} color="#a78bfa" />
                             </Pressable>
 
-                            <View className={`w-14 h-14 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
+                            <View className={`w-12 h-12 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
                                 <Ionicons name="snow" size={28} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                             </View>
                             <Text className="text-2xl font-black text-white text-center tracking-tighter">WOS COMMANDER</Text>
@@ -1423,10 +1447,10 @@ export default function Home() {
                         </View>
 
                         {/* Top Navigation Tabs */}
-                        <View className="flex-row bg-slate-950/40 p-1.5 rounded-2xl mb-8 border border-white/5">
+                        <View className="flex-row bg-slate-950/40 p-1 rounded-2xl mb-5 border border-white/5">
                             <TouchableOpacity
                                 onPress={() => setIsRegisterMode(false)}
-                                className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${!isRegisterMode ? 'bg-sky-500/20 border border-sky-500/30' : 'opacity-40'}`}
+                                className={`flex-1 py-2.5 rounded-xl items-center justify-center transition-all ${!isRegisterMode ? 'bg-sky-500/20 border border-sky-500/30' : 'opacity-40'}`}
                                 // @ts-ignore - Web-specific property
                                 tabIndex={-1}
                             >
@@ -1434,7 +1458,7 @@ export default function Home() {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setIsRegisterMode(true)}
-                                className={`flex-1 py-3 rounded-xl items-center justify-center transition-all ${isRegisterMode ? 'bg-amber-500/20 border border-amber-500/30' : 'opacity-40'}`}
+                                className={`flex-1 py-2.5 rounded-xl items-center justify-center transition-all ${isRegisterMode ? 'bg-amber-500/20 border border-amber-500/30' : 'opacity-40'}`}
                                 // @ts-ignore - Web-specific property
                                 tabIndex={-1}
                             >
@@ -1442,200 +1466,209 @@ export default function Home() {
                             </TouchableOpacity>
                         </View>
 
-                        <View className="space-y-4">
-                            <View style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
-                                <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">서버 번호</Text>
-                                <View className="relative" style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
-                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                        <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                    </View>
-                                    <TextInput
-                                        placeholder="#000"
-                                        placeholderTextColor="#475569"
-                                        value={inputServer}
-                                        onChangeText={setInputServer}
-                                        onFocus={() => setActiveInput('server')}
-                                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
-                                        keyboardType="number-pad"
-                                        // @ts-ignore - Web-specific property
-                                        tabIndex={1}
-                                    />
-                                    {renderHistorySuggestions('server')}
-                                </View>
-                            </View>
-
-                            <View className="mt-2" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
-                                <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">연맹 이름</Text>
-                                <View className="relative" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
-                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                        <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                    </View>
-                                    <TextInput
-                                        placeholder="연맹 이름 입력"
-                                        placeholderTextColor="#475569"
-                                        value={inputAlliance}
-                                        onChangeText={setInputAlliance}
-                                        onFocus={() => setActiveInput('alliance')}
-                                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
-                                        autoCapitalize="characters"
-                                        // @ts-ignore - Web-specific property
-                                        tabIndex={2}
-                                    />
-                                    {renderHistorySuggestions('alliance')}
-                                </View>
-                            </View>
-
-                            <View className="mt-2" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
-                                <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">영주 이름 (닉네임)</Text>
-                                <View className="relative" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
-                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                        <Ionicons name="person-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                    </View>
-                                    <TextInput
-                                        placeholder="영주 이름 또는 ID"
-                                        placeholderTextColor="#475569"
-                                        value={inputUserId}
-                                        onChangeText={setInputUserId}
-                                        onFocus={() => setActiveInput('userid')}
-                                        onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
-                                        // @ts-ignore - Web-specific property
-                                        tabIndex={3}
-                                    />
-                                    {renderHistorySuggestions('userid')}
-                                </View>
-                            </View>
-
-                            <View className="mt-2" style={{ zIndex: 20 }}>
-                                <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
-                                    <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest text-left ">비밀번호</Text>
-                                    {isRegisterMode && (
-                                        <Text className="text-amber-500/80 text-[9px] font-bold text-right ">* 추후 로그인 시 사용</Text>
-                                    )}
-                                </View>
-                                <View className="relative">
-                                    <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                        <Ionicons name="lock-closed-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                    </View>
-                                    <TextInput
-                                        placeholder="••••••••"
-                                        placeholderTextColor="#475569"
-                                        value={inputPassword}
-                                        onChangeText={setInputPassword}
-                                        secureTextEntry={true}
-                                        className={`bg-slate-950/50 p-4 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
-                                        // @ts-ignore - Web-specific property
-                                        tabIndex={4}
-                                    />
-                                </View>
-
-                                <View className="flex-row items-center mt-6">
-                                    <Pressable
-                                        onPress={handleEnterAlliance}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                flex: 1,
-                                                paddingVertical: 20,
-                                                borderRadius: 16,
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                overflow: 'hidden',
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.02 : 1) }],
-                                                // @ts-ignore - Web-specific CSS property
-                                                boxShadow: isRegisterMode
-                                                    ? '0 10px 30px rgba(245, 158, 11, 0.3)'
-                                                    : '0 10px 30px rgba(56, 189, 248, 0.3)',
-                                                transition: 'all 0.3s ease',
-                                            }
-                                        ]}
-                                    >
-                                        <LinearGradient
-                                            colors={isRegisterMode ? ['#f59e0b', '#d97706'] : ['#38bdf8', '#0ea5e9']}
-                                            style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 1, y: 1 }}
+                        <View className="space-y-2.5">
+                            {/* Row 1: Server and Alliance */}
+                            <View className="flex-row gap-2.5" style={{ zIndex: (activeInput === 'server' || activeInput === 'alliance') ? 100 : 50 }}>
+                                {/* Server Number */}
+                                <View className="flex-1" style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
+                                    <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">서버 번호</Text>
+                                    <View className="relative">
+                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                            <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                        </View>
+                                        <TextInput
+                                            placeholder="#000"
+                                            placeholderTextColor="#475569"
+                                            value={inputServer}
+                                            onChangeText={setInputServer}
+                                            onFocus={() => setActiveInput('server')}
+                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                            keyboardType="number-pad"
+                                            // @ts-ignore - Web-specific property
+                                            tabIndex={1}
                                         />
-                                        <Text className="text-white font-black text-lg tracking-tight relative z-10">
-                                            {isRegisterMode ? '관리자 계정 생성 및 신청' : '연맹 대시보드 진입하기'}
-                                        </Text>
-                                    </Pressable>
-
-                                    <TouchableOpacity
-                                        onPress={handleResetSettings}
-                                        className="ml-3 w-[60px] h-[60px] bg-slate-950/40 rounded-2xl border border-white/5 items-center justify-center active:scale-95 transition-all"
-                                    >
-                                        <Ionicons name="refresh-outline" size={24} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                    </TouchableOpacity>
+                                        {renderHistorySuggestions('server')}
+                                    </View>
                                 </View>
 
+                                {/* Alliance Name */}
+                                <View className="flex-1" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
+                                    <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">연맹 이름</Text>
+                                    <View className="relative">
+                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                            <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                        </View>
+                                        <TextInput
+                                            placeholder="연맹 이름"
+                                            placeholderTextColor="#475569"
+                                            value={inputAlliance}
+                                            onChangeText={setInputAlliance}
+                                            onFocus={() => setActiveInput('alliance')}
+                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                            autoCapitalize="characters"
+                                            // @ts-ignore - Web-specific property
+                                            tabIndex={2}
+                                        />
+                                        {renderHistorySuggestions('alliance')}
+                                    </View>
+                                </View>
+                            </View>
 
-                                {!!serverId && !!allianceId && (
-                                    <Pressable
-                                        onPress={() => setIsGateOpen(false)}
-                                        style={({ pressed, hovered }) => [
-                                            {
-                                                marginTop: 24,
-                                                alignSelf: 'center',
-                                                paddingVertical: 12,
-                                                paddingHorizontal: 28,
-                                                borderRadius: 9999,
-                                                backgroundColor: hovered ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.05)',
-                                                borderWidth: 1,
-                                                borderColor: hovered ? '#38bdf8' : 'rgba(255,255,255,0.1)',
-                                                transform: [{ scale: pressed ? 0.95 : hovered ? 1.05 : 1 }],
-                                                // @ts-ignore - Web-specific CSS property
-                                                boxShadow: hovered
-                                                    ? '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #0ea5e9, 0 0 80px #0ea5e9'
-                                                    : 'none',
-                                                // @ts-ignore - Web-specific CSS property
-                                                textShadow: hovered ? '0 0 10px #38bdf8, 0 0 20px #38bdf8' : 'none',
-                                                transition: 'all 0.3s ease',
-                                            }
-                                        ]}
-                                    >
-                                        {({ hovered }) => (
-                                            <Text
-                                                className={`font-bold text-[12px] tracking-tight ${hovered ? 'text-white' : 'text-slate-400'}`}
-                                                style={hovered ? {
-                                                    // @ts-ignore - Web-specific CSS property
-                                                    textShadow: '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8'
-                                                } : undefined}
-                                            >
-                                                ← 기존 대시보드로 돌아가기
-                                            </Text>
+                            {/* Row 2: Lord Name and Password */}
+                            <View className="flex-row gap-2.5" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
+                                {/* Lord Name */}
+                                <View className="flex-1" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
+                                    <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">영주 이름</Text>
+                                    <View className="relative">
+                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                            <Ionicons name="person-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                        </View>
+                                        <TextInput
+                                            placeholder="ID/닉네임"
+                                            placeholderTextColor="#475569"
+                                            value={inputUserId}
+                                            onChangeText={setInputUserId}
+                                            onFocus={() => setActiveInput('userid')}
+                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                            // @ts-ignore - Web-specific property
+                                            tabIndex={3}
+                                        />
+                                        {renderHistorySuggestions('userid')}
+                                    </View>
+                                </View>
+
+                                {/* Password */}
+                                <View className="flex-1" style={{ zIndex: 20 }}>
+                                    <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
+                                        <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest text-left ">비밀번호</Text>
+                                        {isRegisterMode && (
+                                            <Text className="text-amber-500/80 text-[8px] font-bold text-right ">* 필수</Text>
                                         )}
-                                    </Pressable>
-                                )}
-                            </View>
-                        </View>
-
-                    </View>
-
-                    {/* Custom Alert Modal (Shared with Gate ) */}
-                    <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                        <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                                <View className={`w-24 h-24 rounded-full items-center justify-center mb-8 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}>
-                                    <View className={`w-16 h-16 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500' : 'bg-amber-500'}`}>
-                                        <Ionicons
-                                            name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'close' : 'warning'}
-                                            size={36}
-                                            color={isDark ? "black" : "white"}
+                                    </View>
+                                    <View className="relative">
+                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
+                                            <Ionicons name="lock-closed-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                                        </View>
+                                        <TextInput
+                                            placeholder="••••••"
+                                            placeholderTextColor="#475569"
+                                            value={inputPassword}
+                                            onChangeText={setInputPassword}
+                                            secureTextEntry={true}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 focus:border-opacity-100 ${isRegisterMode ? 'border-slate-800' : 'border-slate-800'} ${isRegisterMode ? 'focus:border-amber-500/50' : 'focus:border-sky-500/50'}`}
+                                            // @ts-ignore - Web-specific property
+                                            tabIndex={4}
                                         />
                                     </View>
                                 </View>
-                                <Text className={`text-3xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                                <Text className={`text-center mb-10 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
-                                <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`w-full py-5 rounded-3xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>확인</Text>
+                            </View>
+                            <View className="flex-row items-center mt-4">
+                                <Pressable
+                                    onPress={handleEnterAlliance}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            flex: 1,
+                                            paddingVertical: 10,
+                                            borderRadius: 16,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            overflow: 'hidden',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.02 : 1) }],
+                                            // @ts-ignore - Web-specific CSS property
+                                            boxShadow: isRegisterMode
+                                                ? '0 10px 30px rgba(245, 158, 11, 0.3)'
+                                                : '0 10px 30px rgba(56, 189, 248, 0.3)',
+                                            transition: 'all 0.3s ease',
+                                        }
+                                    ]}
+                                >
+                                    <LinearGradient
+                                        colors={isRegisterMode ? ['#f59e0b', '#d97706'] : ['#38bdf8', '#0ea5e9']}
+                                        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    />
+                                    <Text className="text-white font-black text-lg tracking-tight relative z-10">
+                                        {isRegisterMode ? '관리자 계정 생성 및 신청' : '입장하기'}
+                                    </Text>
+                                </Pressable>
+
+                                <TouchableOpacity
+                                    onPress={handleResetSettings}
+                                    className="ml-3 w-[60px] h-[60px] bg-slate-950/40 rounded-2xl border border-white/5 items-center justify-center active:scale-95 transition-all"
+                                >
+                                    <Ionicons name="refresh-outline" size={24} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                 </TouchableOpacity>
                             </View>
+
+
+                            {!!serverId && !!allianceId && (
+                                <Pressable
+                                    onPress={() => setIsGateOpen(false)}
+                                    style={({ pressed, hovered }) => [
+                                        {
+                                            marginTop: 24,
+                                            alignSelf: 'center',
+                                            paddingVertical: 12,
+                                            paddingHorizontal: 28,
+                                            borderRadius: 9999,
+                                            backgroundColor: hovered ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255,255,255,0.05)',
+                                            borderWidth: 1,
+                                            borderColor: hovered ? '#38bdf8' : 'rgba(255,255,255,0.1)',
+                                            transform: [{ scale: pressed ? 0.95 : hovered ? 1.05 : 1 }],
+                                            // @ts-ignore - Web-specific CSS property
+                                            boxShadow: hovered
+                                                ? '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #0ea5e9, 0 0 80px #0ea5e9'
+                                                : 'none',
+                                            // @ts-ignore - Web-specific CSS property
+                                            textShadow: hovered ? '0 0 10px #38bdf8, 0 0 20px #38bdf8' : 'none',
+                                            transition: 'all 0.3s ease',
+                                        }
+                                    ]}
+                                >
+                                    {({ hovered }) => (
+                                        <Text
+                                            className={`font-bold text-[12px] tracking-tight ${hovered ? 'text-white' : 'text-slate-400'}`}
+                                            style={hovered ? {
+                                                // @ts-ignore - Web-specific CSS property
+                                                textShadow: '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8'
+                                            } : undefined}
+                                        >
+                                            ← 기존 대시보드로 돌아가기
+                                        </Text>
+                                    )}
+                                </Pressable>
+                            )}
                         </View>
-                    </Modal>
+                    </View>
+
                 </View>
+
+                {/* Custom Alert Modal (Shared with Gate ) */}
+                <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                        <BlurView intensity={40} className="absolute inset-0" />
+                        <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                            <View className={`w-24 h-24 rounded-full items-center justify-center mb-8 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error' || customAlert.type === 'confirm') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-amber-500/10' : 'bg-amber-50')}`}>
+                                <View className={`w-16 h-16 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'bg-red-500' : 'bg-amber-500'}`}>
+                                    <Ionicons
+                                        name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error' || customAlert.type === 'confirm') ? 'close' : 'warning'}
+                                        size={36}
+                                        color={isDark ? "black" : "white"}
+                                    />
+                                </View>
+                            </View>
+                            <Text className={`text-3xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                            <Text className={`text-center mb-10 text-lg leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                            <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`w-full py-5 rounded-3xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>확인</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         );
     }
@@ -1973,7 +2006,7 @@ export default function Home() {
                                                 {/* Tab Content */}
                                                 {activeEventTab === 'active' && (
                                                     activeEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap gap-4">
+                                                        <View className="flex-row flex-wrap">
                                                             {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
                                                         </View>
                                                     ) : (
@@ -1986,7 +2019,7 @@ export default function Home() {
 
                                                 {activeEventTab === 'upcoming' && (
                                                     upcomingEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap gap-4">
+                                                        <View className="flex-row flex-wrap">
                                                             {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
                                                         </View>
                                                     ) : (
@@ -1999,7 +2032,7 @@ export default function Home() {
 
                                                 {activeEventTab === 'expired' && (
                                                     expiredEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap gap-4">
+                                                        <View className="flex-row flex-wrap">
                                                             {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
                                                         </View>
                                                     ) : (
@@ -2400,7 +2433,10 @@ export default function Home() {
                 <AdminManagement
                     serverId={serverId}
                     allianceId={allianceId}
-                    onBack={() => setAdminDashboardVisible(false)}
+                    onBack={() => {
+                        setAdminDashboardVisible(false);
+                        setAdminMenuVisible(false);
+                    }}
                 />
             </Modal>
 
