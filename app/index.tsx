@@ -1044,6 +1044,26 @@ export default function Home() {
         }
     };
 
+    // Blink Animation for Upcoming Soon
+    const blinkAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(blinkAnim, {
+                    toValue: 1,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(blinkAnim, {
+                    toValue: 0.3,
+                    duration: 800,
+                    useNativeDriver: true,
+                }),
+            ])
+        ).start();
+    }, []);
+
     const renderEventCard = (event: any, key: string) => {
         const isActive = isEventActive(event);
         const isExpired = isEventExpired(event);
@@ -1063,6 +1083,52 @@ export default function Home() {
         };
 
         const titleColor = isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900');
+
+        const checkIsSoon = (str: string) => {
+            if (!str) return false;
+            const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+            const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+            const totalWeekMinutes = 7 * 1440;
+
+            // 1. 기간형이나 범위형은 시작 시간만 체크
+            // (기간형) 2024.01.01 10:00 ~ ...
+            const dateRangeMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+            if (dateRangeMatch) {
+                const [_, y, m, d, h, min] = dateRangeMatch;
+                const start = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+                if (!isNaN(start.getTime())) {
+                    const diff = (start.getTime() - now.getTime()) / 60000;
+                    return diff > 0 && diff <= 30;
+                }
+            }
+
+            // 2. 점형 일시 체크 (예: 화 23:50, 매일 10:00)
+            const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+            if (explicitMatches.length > 0) {
+                return explicitMatches.some(m => {
+                    const dayStr = m[1];
+                    const h = parseInt(m[2]);
+                    const min = parseInt(m[3]);
+
+                    const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+
+                    return scheduledDays.some(d => {
+                        const dayOffset = dayMapObj[d];
+                        if (dayOffset === undefined) return false;
+
+                        let startTotal = dayOffset * 1440 + h * 60 + min;
+                        let diff = startTotal - currentTotal;
+
+                        // 날짜 변경선 처리 (토요일 -> 일요일)
+                        if (diff < 0) diff += totalWeekMinutes;
+
+                        // 현재 시각 기준 0 ~ 30분 사이 (이번 주 도래할 시간)
+                        return diff > 0 && diff <= 30;
+                    });
+                });
+            }
+            return false;
+        };
 
         return (
             <TouchableOpacity
@@ -1214,20 +1280,41 @@ export default function Home() {
                                                 }
 
                                                 const isLive = checkItemActive(`${displayDay} ${cleanDisplayTime}`);
+                                                const isSoon = checkIsSoon(item.trim());
+
+                                                const ItemWrapper = isSoon ? Animated.View : TouchableOpacity;
+                                                const itemStyle = isSoon ? {
+                                                    opacity: 1,
+                                                    borderWidth: 1,
+                                                    borderColor: isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(14, 165, 233, 0.5)',
+                                                    backgroundColor: blinkAnim.interpolate({
+                                                        inputRange: [0.3, 1],
+                                                        outputRange: ['transparent', isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(14, 165, 233, 0.1)']
+                                                    })
+                                                } : {};
 
                                                 return (
-                                                    <TouchableOpacity key={iIdx} activeOpacity={0.7} className={`flex-row items-center px-4 py-2 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 active:bg-slate-500/10`}>
+                                                    <ItemWrapper
+                                                        key={iIdx}
+                                                        activeOpacity={0.7}
+                                                        disabled={!isSoon}
+                                                        style={isSoon ? itemStyle : undefined}
+                                                        className={`flex-row items-center px-4 py-2 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 ${isSoon ? 'rounded-xl mx-2 my-1 border-0' : 'active:bg-slate-500/10'}`}
+                                                    >
                                                         <View className="flex-row items-center flex-1">
                                                             <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-900'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{displayDay}</Text>
+                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-100' : 'text-slate-900')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{displayDay}</Text>
                                                             <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                             <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{cleanDisplayTime}</Text>
+                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-blue-400' : 'text-blue-600')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{cleanDisplayTime}</Text>
+                                                            {isSoon && (
+                                                                <Text className={`ml-2 text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>곧 시작</Text>
+                                                            )}
                                                         </View>
                                                         {isLive && (
                                                             <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                         )}
-                                                    </TouchableOpacity>
+                                                    </ItemWrapper>
                                                 );
                                             })}
                                         </View>
@@ -1322,33 +1409,57 @@ export default function Home() {
                                                             const utcStr = getUTCTimeString(item.trim(), false);
                                                             const displayFull = timezone === 'KST' ? item.trim() : utcStr;
                                                             const split = splitSchedulePart(displayFull);
+                                                            const isSoon = isUpcoming && checkIsSoon(item.trim());
+
+                                                            const ItemWrapper = isSoon ? Animated.View : TouchableOpacity;
+                                                            const itemStyle = isSoon ? {
+                                                                opacity: 1,
+                                                                borderWidth: 1,
+                                                                borderColor: isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(14, 165, 233, 0.5)', // Fixed subtle border
+                                                                backgroundColor: blinkAnim.interpolate({
+                                                                    inputRange: [0.3, 1],
+                                                                    outputRange: ['transparent', isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(14, 165, 233, 0.1)']
+                                                                })
+                                                            } : {};
 
                                                             return (
-                                                                <TouchableOpacity key={iIdx} activeOpacity={0.7} className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 active:bg-slate-500/10`}>
-                                                                    <View className="flex-row items-center flex-1 flex-nowrap overflow-hidden">
-                                                                        {event.isFortressSplit && !!event.teamLabel && (
-                                                                            <View className="flex-row items-center shrink-0 mr-3">
-                                                                                <Ionicons name="business-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`font-black text-lg ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{event.teamLabel}</Text>
-                                                                            </View>
-                                                                        )}
-                                                                        <View className="flex-row items-center shrink-0 mr-2">
-                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
-                                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.date}</Text>
-                                                                        </View>
-                                                                        {!!split.time && (
-                                                                            <>
-                                                                                <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
-                                                                                <View className="flex-row items-center shrink-0">
-                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
-                                                                                    <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.time}</Text>
+                                                                <TouchableOpacity
+                                                                    key={iIdx}
+                                                                    activeOpacity={0.7}
+                                                                    disabled={!isSoon}
+                                                                >
+                                                                    <ItemWrapper
+                                                                        style={isSoon ? itemStyle : undefined}
+                                                                        className={`flex-row items-center px-8 py-6 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0 active:bg-slate-500/10 ${isSoon ? 'rounded-xl mx-2 my-1 border-0' : ''}`}
+                                                                    >
+                                                                        <View className="flex-row items-center flex-1 flex-nowrap overflow-hidden">
+                                                                            {event.isFortressSplit && !!event.teamLabel && (
+                                                                                <View className="flex-row items-center shrink-0 mr-3">
+                                                                                    <Ionicons name="business-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                    <Text className={`font-black text-lg ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{event.teamLabel}</Text>
                                                                                 </View>
-                                                                            </>
+                                                                            )}
+                                                                            <View className="flex-row items-center shrink-0 mr-2">
+                                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-100' : 'text-slate-800')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.date}</Text>
+                                                                            </View>
+                                                                            {!!split.time && (
+                                                                                <>
+                                                                                    <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                                                    <View className="flex-row items-center shrink-0">
+                                                                                        <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
+                                                                                        <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-blue-400' : 'text-blue-600')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.time}</Text>
+                                                                                        {isSoon && (
+                                                                                            <Text className={`ml-2 text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>곧 시작</Text>
+                                                                                        )}
+                                                                                    </View>
+                                                                                </>
+                                                                            )}
+                                                                        </View>
+                                                                        {isLive && (
+                                                                            <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
                                                                         )}
-                                                                    </View>
-                                                                    {isLive && (
-                                                                        <View className="w-2 h-2 rounded-full bg-blue-500 shadow-lg shadow-blue-500/50" />
-                                                                    )}
+                                                                    </ItemWrapper>
                                                                 </TouchableOpacity>
                                                             );
                                                         })}
@@ -1956,92 +2067,111 @@ export default function Home() {
                                 </View>
                             ) : displayEvents.length > 0 ? (
                                 <View className="flex-col gap-4">
-                                    {/* Event Tabs */}
+                                    {/* Event Tabs - Folder Style */}
                                     {(() => {
                                         const activeEvents = displayEvents.filter(e => isEventActive(e));
                                         const upcomingEvents = displayEvents.filter(e => !isEventActive(e) && !isEventExpired(e));
                                         const expiredEvents = displayEvents.filter(e => isEventExpired(e));
 
+                                        const getTabColor = (type: string, isActive: boolean) => {
+                                            if (type === 'active') return isActive ? (isDark ? 'bg-blue-600' : 'bg-blue-500') : (isDark ? 'bg-slate-800' : 'bg-slate-200');
+                                            if (type === 'upcoming') return isActive ? (isDark ? 'bg-emerald-600' : 'bg-emerald-500') : (isDark ? 'bg-slate-800' : 'bg-slate-200');
+                                            if (type === 'expired') return isActive ? (isDark ? 'bg-slate-600' : 'bg-slate-500') : (isDark ? 'bg-slate-800' : 'bg-slate-200');
+                                            return 'bg-transparent';
+                                        };
+
+                                        const activeColorClass =
+                                            activeEventTab === 'active' ? (isDark ? 'bg-blue-600' : 'bg-blue-500') :
+                                                activeEventTab === 'upcoming' ? (isDark ? 'bg-emerald-600' : 'bg-emerald-500') :
+                                                    (isDark ? 'bg-slate-600' : 'bg-slate-500');
+
                                         return (
                                             <>
-                                                {/* Tab Navigation - Segment Style */}
-                                                <View className={`flex-row rounded-xl overflow-hidden mb-5 border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-300'}`}>
+                                                {/* Tab Navigation */}
+                                                <View className="flex-row items-end px-2 gap-2">
                                                     <TouchableOpacity
+                                                        activeOpacity={0.9}
                                                         onPress={() => switchEventTab('active')}
-                                                        className={`flex-1 py-4 items-center justify-center ${activeEventTab === 'active' ? (isDark ? 'bg-blue-600' : 'bg-blue-600') : ''}`}
+                                                        className={`flex-1 rounded-t-2xl items-center justify-center transition-all ${getTabColor('active', activeEventTab === 'active')} ${activeEventTab === 'active' ? 'py-4 -mb-1 z-10 shadow-lg' : 'py-3 mb-0 opacity-80'}`}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Ionicons name="flash" size={20} color={activeEventTab === 'active' ? '#fff' : '#38bdf8'} style={{ marginRight: 8 }} />
-                                                            <Text className={`text-lg font-black ${activeEventTab === 'active' ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
+                                                            <Ionicons name="flash" size={activeEventTab === 'active' ? 18 : 16} color={activeEventTab === 'active' ? '#fff' : (isDark ? '#94a3b8' : '#64748b')} style={{ marginRight: 6 }} />
+                                                            <Text className={`font-black ${activeEventTab === 'active' ? 'text-base text-white' : (isDark ? 'text-sm text-slate-400' : 'text-sm text-slate-500')}`}>
                                                                 진행 {activeEvents.length}
                                                             </Text>
                                                         </View>
                                                     </TouchableOpacity>
-                                                    <View className={`w-[1px] ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+
                                                     <TouchableOpacity
+                                                        activeOpacity={0.9}
                                                         onPress={() => switchEventTab('upcoming')}
-                                                        className={`flex-1 py-4 items-center justify-center ${activeEventTab === 'upcoming' ? (isDark ? 'bg-emerald-600' : 'bg-emerald-600') : ''}`}
+                                                        className={`flex-1 rounded-t-2xl items-center justify-center transition-all ${getTabColor('upcoming', activeEventTab === 'upcoming')} ${activeEventTab === 'upcoming' ? 'py-4 -mb-1 z-10 shadow-lg' : 'py-3 mb-0 opacity-80'}`}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Ionicons name="time" size={20} color={activeEventTab === 'upcoming' ? '#fff' : '#10b981'} style={{ marginRight: 8 }} />
-                                                            <Text className={`text-lg font-black ${activeEventTab === 'upcoming' ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>
+                                                            <Ionicons name="time" size={activeEventTab === 'upcoming' ? 18 : 16} color={activeEventTab === 'upcoming' ? '#fff' : (isDark ? '#94a3b8' : '#64748b')} style={{ marginRight: 6 }} />
+                                                            <Text className={`font-black ${activeEventTab === 'upcoming' ? 'text-base text-white' : (isDark ? 'text-sm text-slate-400' : 'text-sm text-slate-500')}`}>
                                                                 예정 {upcomingEvents.length}
                                                             </Text>
                                                         </View>
                                                     </TouchableOpacity>
-                                                    <View className={`w-[1px] ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} />
+
                                                     <TouchableOpacity
+                                                        activeOpacity={0.9}
                                                         onPress={() => switchEventTab('expired')}
-                                                        className={`flex-1 py-4 items-center justify-center ${activeEventTab === 'expired' ? (isDark ? 'bg-slate-600' : 'bg-slate-500') : ''}`}
+                                                        className={`flex-1 rounded-t-2xl items-center justify-center transition-all ${getTabColor('expired', activeEventTab === 'expired')} ${activeEventTab === 'expired' ? 'py-4 -mb-1 z-10 shadow-lg' : 'py-3 mb-0 opacity-80'}`}
                                                     >
                                                         <View className="flex-row items-center">
-                                                            <Ionicons name="checkmark-circle" size={20} color={activeEventTab === 'expired' ? '#fff' : '#64748b'} style={{ marginRight: 8 }} />
-                                                            <Text className={`text-lg font-black ${activeEventTab === 'expired' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
+                                                            <Ionicons name="checkmark-circle" size={activeEventTab === 'expired' ? 18 : 16} color={activeEventTab === 'expired' ? '#fff' : (isDark ? '#94a3b8' : '#64748b')} style={{ marginRight: 6 }} />
+                                                            <Text className={`font-black ${activeEventTab === 'expired' ? 'text-base text-white' : (isDark ? 'text-sm text-slate-400' : 'text-sm text-slate-500')}`}>
                                                                 종료 {expiredEvents.length}
                                                             </Text>
                                                         </View>
                                                     </TouchableOpacity>
                                                 </View>
 
-                                                {/* Tab Content */}
-                                                {activeEventTab === 'active' && (
-                                                    activeEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap">
-                                                            {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
-                                                        </View>
-                                                    ) : (
-                                                        <View className={`p-12 rounded-2xl border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <Ionicons name="flash-off-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                            <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>진행 중인 이벤트가 없습니다</Text>
-                                                        </View>
-                                                    )
-                                                )}
+                                                {/* Connected Content Container */}
+                                                <View className={`w-full p-4 rounded-b-3xl rounded-tr-3xl min-h-[200px] border-t-4 ${isDark ? 'bg-slate-900/40 border-t-transparent' : 'bg-slate-50 border-t-transparent'}`}
+                                                    style={{ borderTopColor: activeEventTab === 'active' ? (isDark ? '#2563eb' : '#3b82f6') : activeEventTab === 'upcoming' ? (isDark ? '#059669' : '#10b981') : (isDark ? '#475569' : '#64748b') }}
+                                                >
+                                                    {activeEventTab === 'active' && (
+                                                        activeEvents.length > 0 ? (
+                                                            <View className="flex-row flex-wrap -mx-2">
+                                                                {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
+                                                            </View>
+                                                        ) : (
+                                                            <View className="py-12 items-center justify-center">
+                                                                <Ionicons name="flash-off-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>진행 중인 이벤트가 없습니다</Text>
+                                                            </View>
+                                                        )
+                                                    )}
 
-                                                {activeEventTab === 'upcoming' && (
-                                                    upcomingEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap">
-                                                            {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
-                                                        </View>
-                                                    ) : (
-                                                        <View className={`p-12 rounded-2xl border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <Ionicons name="calendar-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                            <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>예정된 이벤트가 없습니다</Text>
-                                                        </View>
-                                                    )
-                                                )}
+                                                    {activeEventTab === 'upcoming' && (
+                                                        upcomingEvents.length > 0 ? (
+                                                            <View className="flex-row flex-wrap -mx-2">
+                                                                {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
+                                                            </View>
+                                                        ) : (
+                                                            <View className="py-12 items-center justify-center">
+                                                                <Ionicons name="calendar-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>예정된 이벤트가 없습니다</Text>
+                                                            </View>
+                                                        )
+                                                    )}
 
-                                                {activeEventTab === 'expired' && (
-                                                    expiredEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap">
-                                                            {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
-                                                        </View>
-                                                    ) : (
-                                                        <View className={`p-12 rounded-2xl border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <Ionicons name="checkmark-done-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                            <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>종료된 이벤트가 없습니다</Text>
-                                                        </View>
-                                                    )
-                                                )}
+                                                    {activeEventTab === 'expired' && (
+                                                        expiredEvents.length > 0 ? (
+                                                            <View className="flex-row flex-wrap -mx-2">
+                                                                {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
+                                                            </View>
+                                                        ) : (
+                                                            <View className="py-12 items-center justify-center">
+                                                                <Ionicons name="checkmark-done-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>종료된 이벤트가 없습니다</Text>
+                                                            </View>
+                                                        )
+                                                    )}
+                                                </View>
                                             </>
                                         );
                                     })()}
