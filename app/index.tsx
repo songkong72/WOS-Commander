@@ -40,7 +40,7 @@ export default function Home() {
     const router = useRouter();
     const params = useLocalSearchParams();
     const { auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme, fontSizeScale, changeFontSize } = useTheme();
     const isDark = theme === 'dark';
     const [isGateOpen, setIsGateOpen] = useState(!serverId || !allianceId);
     const [isLoading, setIsLoading] = useState(false);
@@ -1157,7 +1157,7 @@ export default function Home() {
                                 )}
                             </View>
                             <View className="flex-1">
-                                <Text className={`text-base font-bold tracking-tight ${!isExpired ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : titleColor}`} numberOfLines={1}>{event.title}</Text>
+                                <Text className={`text-base font-bold tracking-tight ${!isExpired ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : titleColor}`} numberOfLines={1} style={{ fontSize: 16 * fontSizeScale }}>{event.title}</Text>
                             </View>
                         </View>
                         {isActive && (
@@ -1229,12 +1229,12 @@ export default function Home() {
                                                                 <Text className={`text-[10px] font-black w-7 ${isFirstPart ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-orange-400' : 'text-orange-600')}`}>{label}</Text>
                                                             )}
                                                             <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-70 text-slate-400' : (isDark ? 'text-slate-100' : 'text-slate-900')}`}>{split.date}</Text>
+                                                            <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-70 text-slate-400' : (isDark ? 'text-slate-100' : 'text-slate-900')}`} style={{ fontSize: 18 * fontSizeScale }}>{split.date}</Text>
                                                         </View>
                                                         {!!split.time && (
                                                             <View className={`flex-row items-center mt-0.5 ${isRange ? 'ml-7' : ''}`}>
                                                                 <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{split.time}</Text>
+                                                                <Text className={`font-black text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-blue-400' : 'text-blue-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{split.time}</Text>
                                                             </View>
                                                         )}
                                                     </View>
@@ -1303,10 +1303,10 @@ export default function Home() {
                                                     >
                                                         <View className="flex-row items-center flex-1">
                                                             <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-100' : 'text-slate-900')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{displayDay}</Text>
+                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-100' : 'text-slate-900')))} ${isExpired ? 'line-through opacity-70' : ''}`} style={{ fontSize: 18 * fontSizeScale }}>{displayDay}</Text>
                                                             <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                             <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-blue-400' : 'text-blue-600')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{cleanDisplayTime}</Text>
+                                                            <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-blue-400' : 'text-blue-600')))} ${isExpired ? 'line-through opacity-70' : ''}`} style={{ fontSize: 18 * fontSizeScale }}>{cleanDisplayTime}</Text>
                                                             {isSoon && (
                                                                 <Text className={`ml-2 text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>곧 시작</Text>
                                                             )}
@@ -1379,11 +1379,11 @@ export default function Home() {
                                                                             </View>
                                                                             <View className="flex-row items-center shrink-0 mr-2">
                                                                                 <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
-                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{dateStr}</Text>
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-slate-100' : 'text-slate-800'))} ${isExpired ? 'line-through opacity-70' : ''}`} style={{ fontSize: 18 * fontSizeScale }}>{dateStr}</Text>
                                                                             </View>
                                                                             <View className="flex-row items-center shrink-0">
                                                                                 <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
-                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`}>{timeStr}</Text>
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-blue-400' : 'text-blue-600'))} ${isExpired ? 'line-through opacity-70' : ''}`} style={{ fontSize: 18 * fontSizeScale }}>{timeStr}</Text>
                                                                             </View>
                                                                         </View>
                                                                         {isLive && (
@@ -1441,14 +1441,14 @@ export default function Home() {
                                                                             )}
                                                                             <View className="flex-row items-center shrink-0 mr-2">
                                                                                 <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
-                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-100' : 'text-slate-800')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.date}</Text>
+                                                                                <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-100' : 'text-slate-800')))} ${isExpired ? 'line-through opacity-70' : ''}`} style={{ fontSize: 18 * fontSizeScale }}>{split.date}</Text>
                                                                             </View>
                                                                             {!!split.time && (
                                                                                 <>
                                                                                     <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                                                     <View className="flex-row items-center shrink-0">
                                                                                         <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 2 }} />
-                                                                                        <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-blue-400' : 'text-blue-600')))} ${isExpired ? 'line-through opacity-70' : ''}`}>{split.time}</Text>
+                                                                                        <Text className={`font-black text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isSoon ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-blue-400' : 'text-blue-600')))} ${isExpired ? 'line-through opacity-70' : ''}`} style={{ fontSize: 18 * fontSizeScale }}>{split.time}</Text>
                                                                                         {isSoon && (
                                                                                             <Text className={`ml-2 text-[10px] font-black uppercase tracking-tighter ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>곧 시작</Text>
                                                                                         )}
@@ -1817,25 +1817,46 @@ export default function Home() {
                                 <Text className={`font-semibold text-[11px] md:text-xs mt-3.5 leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>최적의 영웅 조합과 전략으로{"\n"}빙하기의 생존을 지휘하세요</Text>
 
                                 {!!serverId && !!allianceId && (
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setInputServer(serverId);
-                                            setInputAlliance(allianceId);
-                                            setIsGateOpen(true);
-                                        }}
-                                        className={`mt-6 self-start flex-row items-center px-5 py-3 rounded-2xl border-2 active:scale-95 transition-all shadow-lg ${isDark ? 'bg-gradient-to-r from-sky-500/20 to-blue-500/20 border-sky-400/50 shadow-sky-500/20' : 'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-200 shadow-sky-100'}`}
-                                        style={isDark ? { shadowColor: '#38bdf8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 } : {}}
-                                    >
-                                        <View className={`mr-3 w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-sky-500/30' : 'bg-sky-100'}`}>
-                                            <Ionicons name="location" size={16} color={isDark ? "#38bdf8" : "#0284c7"} />
+                                    <View className="flex-row items-center gap-4 mt-6 self-start">
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setInputServer(serverId);
+                                                setInputAlliance(allianceId);
+                                                setIsGateOpen(true);
+                                            }}
+                                            className={`flex-row items-center px-5 py-3 rounded-2xl border-2 active:scale-95 transition-all shadow-lg ${isDark ? 'bg-gradient-to-r from-sky-500/20 to-blue-500/20 border-sky-400/50 shadow-sky-500/20' : 'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-200 shadow-sky-100'}`}
+                                            style={isDark ? { shadowColor: '#38bdf8', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 } : {}}
+                                        >
+                                            <View className={`mr-3 w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-sky-500/30' : 'bg-sky-100'}`}>
+                                                <Ionicons name="location" size={16} color={isDark ? "#38bdf8" : "#0284c7"} />
+                                            </View>
+                                            <Text className={`font-black text-sm tracking-tight ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
+                                                #{serverId} · {allianceId}
+                                            </Text>
+                                            <View className={`ml-3 w-6 h-6 rounded-full items-center justify-center ${isDark ? 'bg-sky-500/20' : 'bg-sky-100'}`}>
+                                                <Ionicons name="chevron-forward" size={14} color={isDark ? "#38bdf8" : "#0284c7"} />
+                                            </View>
+                                        </TouchableOpacity>
+
+                                        {/* Font Size Controls - Moved Here */}
+                                        <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                            <TouchableOpacity
+                                                onPress={() => changeFontSize(Math.max(0.8, fontSizeScale - 0.1))}
+                                                className={`w-10 h-10 rounded-xl items-center justify-center mr-1 ${isDark ? 'bg-slate-700 active:bg-slate-600' : 'bg-slate-50 border border-slate-100 active:bg-slate-100'}`}
+                                            >
+                                                <Ionicons name="text" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginBottom: -2 }} />
+                                                <Ionicons name="remove" size={10} color={isDark ? "white" : "black"} style={{ position: 'absolute', top: 6, right: 6 }} />
+                                            </TouchableOpacity>
+                                            <View className="h-full w-[1px] bg-slate-500/20 mx-1" />
+                                            <TouchableOpacity
+                                                onPress={() => changeFontSize(Math.min(1.5, fontSizeScale + 0.1))}
+                                                className={`w-10 h-10 rounded-xl items-center justify-center ml-1 ${isDark ? 'bg-slate-700 active:bg-slate-600' : 'bg-slate-50 border border-slate-100 active:bg-slate-100'}`}
+                                            >
+                                                <Ionicons name="text" size={18} color={isDark ? "white" : "#0f172a"} style={{ marginBottom: -2 }} />
+                                                <Ionicons name="add" size={10} color={isDark ? "#38bdf8" : "#0284c7"} style={{ position: 'absolute', top: 4, right: 4 }} />
+                                            </TouchableOpacity>
                                         </View>
-                                        <Text className={`font-black text-sm tracking-tight ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
-                                            #{serverId} · {allianceId}
-                                        </Text>
-                                        <View className={`ml-3 w-6 h-6 rounded-full items-center justify-center ${isDark ? 'bg-sky-500/20' : 'bg-sky-100'}`}>
-                                            <Ionicons name="chevron-forward" size={14} color={isDark ? "#38bdf8" : "#0284c7"} />
-                                        </View>
-                                    </TouchableOpacity>
+                                    </View>
                                 )}
                             </View>
                             <View className="flex-row gap-2 mt-1">
@@ -2031,7 +2052,7 @@ export default function Home() {
                 {/* Section 2: Sticky Weekly Header */}
                 <View className={`w-full items-center z-50 py-3 ${isDark ? 'bg-[#060b14]' : 'bg-slate-50'}`}>
                     <View className="w-full max-w-6xl px-4 md:px-8">
-                        <View className={`flex-row items-center justify-between px-6 py-5 rounded-[32px] border ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-lg'}`}>
+                        <View className={`flex-row flex-wrap items-center justify-between gap-y-4 px-6 py-5 rounded-[32px] border ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-lg'}`}>
                             <View className="flex-row items-center">
                                 <View className={`w-1.5 h-6 rounded-full mr-4 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
                                 <View>

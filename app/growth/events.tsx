@@ -25,18 +25,20 @@ if (Platform.OS === 'web') {
     const style = document.createElement('style');
     style.textContent = `
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 10px;
             background: transparent;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
+            background-color: #94a3b8;
+            border-radius: 5px;
+            border: 2px solid transparent;
+            background-clip: content-box;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(255, 255, 255, 0.4);
+            background-color: #cbd5e1;
         }
     `;
     document.head.appendChild(style);
@@ -587,9 +589,9 @@ const HeroPicker = memo(({ value, onSelect, label }: { value: string, onSelect: 
             {showDropdown && filteredHeroes.length > 0 && (
                 <View
                     style={{ zIndex: 9999, elevation: 9999, minHeight: 160 }}
-                    className={`absolute top-16 left-0 right-0 border rounded-xl max-h-56 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                    className={`absolute top-16 left-0 right-0 border rounded-xl max-h-80 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
-                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true} className="flex-1">
                         {filteredHeroes.map((name) => (
                             <TouchableOpacity
                                 key={name}
@@ -632,7 +634,7 @@ const OptionPicker = memo(({ value, options, onSelect, label, isDark, direction 
                     style={{ zIndex: 9999, elevation: 9999, minHeight: 160 }}
                     className={`absolute ${direction === 'up' ? 'bottom-16' : 'top-14'} left-0 right-0 border rounded-[20px] max-h-64 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
-                    <ScrollView nestedScrollEnabled>
+                    <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true} className="flex-1">
                         {options.map(opt => (
                             <TouchableOpacity
                                 key={opt}
@@ -687,9 +689,9 @@ const MemberPicker = memo(({ value, onSelect, members, isAdmin }: { value: strin
             {showDropdown && isAdmin && filteredMembers.length > 0 && (
                 <View
                     style={{ zIndex: 9999, elevation: 9999 }}
-                    className={`absolute top-14 left-0 right-0 border rounded-xl max-h-60 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                    className={`absolute top-14 left-0 right-0 border rounded-xl max-h-80 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
-                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true} className="flex-1">
                         {filteredMembers.map((m) => (
                             <TouchableOpacity
                                 key={m.id}
@@ -761,15 +763,15 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'h' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
+                        <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-40 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
                             <FlatList
                                 data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
                                 renderItem={({ item: hour }) => (
                                     <TouchableOpacity
                                         onPress={() => { onChange(`${datePart} ${hour}:${m}`); setActiveDateDropdown(null); }}
-                                        className={`h-12 items-center justify-center border-b border-white/5 ${h === hour ? 'bg-sky-500/20' : ''}`}
+                                        className={`h-10 items-center justify-center border-b border-white/5 ${h === hour ? 'bg-sky-500/20' : ''}`}
                                     >
-                                        <Text className={`font-bold text-lg ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
+                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -790,15 +792,15 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'min' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
+                        <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-40 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
                             <FlatList
                                 data={['00', '15', '30', '45']}
                                 renderItem={({ item: min }) => (
                                     <TouchableOpacity
                                         onPress={() => { onChange(`${datePart} ${h}:${min}`); setActiveDateDropdown(null); }}
-                                        className={`h-12 items-center justify-center border-b border-white/5 ${m === min ? 'bg-sky-500/20' : ''}`}
+                                        className={`h-10 items-center justify-center border-b border-white/5 ${m === min ? 'bg-sky-500/20' : ''}`}
                                     >
-                                        <Text className={`font-bold text-lg ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
+                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -2056,7 +2058,7 @@ export default function EventTracker() {
                                 </TouchableOpacity>
                             </View>
 
-                            <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: 1 }}>
+                            <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: (activeDateDropdown || activeFortressDropdown || activeNamePickerId || hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
                                 {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: activeFortressDropdown ? 200 : 1 }}>
                                         <View className="flex-row justify-end items-center mt-6 mb-2 px-4" style={{ zIndex: 10 }}>
@@ -2333,7 +2335,7 @@ export default function EventTracker() {
                 {/* Attendee Modal */}
                 <Modal visible={attendeeModalVisible} transparent animationType="slide" >
                     <View className="flex-1 bg-black/90 pt-16">
-                        <View className={`flex-1 rounded-t-[40px] overflow-hidden border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
+                        <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
                             <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                                 <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} 명단 관리</Text>
                                 <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
@@ -2341,57 +2343,63 @@ export default function EventTracker() {
                                 </TouchableOpacity>
                             </View>
 
-                            <ScrollView
-                                className="p-4"
-                                contentContainerStyle={{ paddingBottom: 350 }}
-                                nestedScrollEnabled
-                                style={{ overflow: 'visible' }}
-                            >
-                                {bulkAttendees.length === 0 ? (
+                            <FlatList
+                                data={bulkAttendees}
+                                keyExtractor={(item, index) => item.id || index.toString()}
+                                renderItem={({ item: attendee, index }) => (
+                                    <View
+                                        style={{ zIndex: bulkAttendees.length - index, elevation: bulkAttendees.length - index }}
+                                        className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
+                                    >
+                                        <View className="flex-row items-center mb-3" style={{ zIndex: 50, elevation: 50 }}>
+                                            <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                                <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
+                                            </View>
+                                            <MemberPicker
+                                                value={attendee.name}
+                                                onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
+                                                members={members}
+                                                isAdmin={!!isAdmin}
+                                            />
+                                            {!!isAdmin && (
+                                                <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`ml-2 p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
+                                                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+
+                                        <View className="flex-row space-x-2 pointer-events-auto" style={{ zIndex: 1 }}>
+                                            <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
+                                            <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
+                                            <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
+                                        </View>
+                                    </View>
+                                )}
+                                ListEmptyComponent={
                                     <View className="items-center justify-center py-10 opacity-50">
                                         <Ionicons name="documents-outline" size={48} color="#94a3b8" />
                                         <Text className="text-slate-400 mt-4 font-semibold">등록된 참석 명단이 없습니다.</Text>
                                         <Text className="text-slate-600 text-xs mt-1">관리자가 명단을 추가하면 여기에 표시됩니다.</Text>
                                     </View>
-                                ) : (
-                                    bulkAttendees.map((attendee, index) => (
-                                        <View
-                                            key={attendee.id || index}
-                                            className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
-                                            style={{ zIndex: bulkAttendees.length - index }}
-                                        >
-                                            <View className="flex-row items-center mb-3" style={{ zIndex: 50 }}>
-                                                <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                                    <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
-                                                </View>
-                                                <MemberPicker
-                                                    value={attendee.name}
-                                                    onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
-                                                    members={members}
-                                                    isAdmin={!!isAdmin}
-                                                />
-                                                {!!isAdmin && (
-                                                    <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`ml-2 p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
-                                                        <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-
-                                            <View className="flex-row space-x-2 pointer-events-auto">
-                                                <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
-                                                <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
-                                                <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
-                                            </View>
-                                        </View>
-                                    ))
-                                )}
-
-                                {isAdmin && (
-                                    <TouchableOpacity onPress={addAttendeeRow} className={`p-4 rounded-2xl border border-dashed items-center mb-10 mt-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                        <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>+ 영주 추가하기</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </ScrollView>
+                                }
+                                ListFooterComponent={
+                                    isAdmin ? (
+                                        <TouchableOpacity onPress={addAttendeeRow} className={`p-4 rounded-2xl border border-dashed items-center mb-10 mt-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                            <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>+ 영주 추가하기</Text>
+                                        </TouchableOpacity>
+                                    ) : null
+                                }
+                                contentContainerStyle={{ padding: 16, paddingBottom: 150 }}
+                                style={{ flex: 1 }}
+                                showsVerticalScrollIndicator={true}
+                                persistentScrollbar={true}
+                                indicatorStyle={isDark ? 'white' : 'black'}
+                                removeClippedSubviews={false}
+                                keyboardShouldPersistTaps="handled"
+                                initialNumToRender={50}
+                                maxToRenderPerBatch={50}
+                                windowSize={21}
+                            />
 
                             <View className={`p-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                 {isAdmin ? (

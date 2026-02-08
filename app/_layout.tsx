@@ -18,6 +18,7 @@ export default function Layout() {
     const [serverId, setServerId] = useState<string | null>(null);
     const [allianceId, setAllianceId] = useState<string | null>(null);
     const [dashboardScrollY, setDashboardScrollY] = useState(0);
+    const [fontSizeScale, setFontSizeScale] = useState(1.0);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
 
     useEffect(() => {
@@ -28,6 +29,7 @@ export default function Layout() {
                 const savedTheme = await AsyncStorage.getItem('theme');
                 const savedServer = await AsyncStorage.getItem('serverId');
                 const savedAlliance = await AsyncStorage.getItem('allianceId');
+                const savedFontSize = await AsyncStorage.getItem('fontSizeScale');
 
                 if (savedAdminId) {
                     setAuth({ isLoggedIn: true, adminName: savedAdminId, role: savedRole as any });
@@ -37,6 +39,7 @@ export default function Layout() {
                 }
                 if (savedServer) setServerId(savedServer);
                 if (savedAlliance) setAllianceId(savedAlliance);
+                if (savedFontSize) setFontSizeScale(parseFloat(savedFontSize));
 
             } catch (e) {
                 console.error('Session restoration failed:', e);
@@ -72,13 +75,18 @@ export default function Layout() {
         AsyncStorage.setItem('theme', newTheme);
     };
 
+    const changeFontSize = (scale: number) => {
+        setFontSizeScale(scale);
+        AsyncStorage.setItem('fontSizeScale', scale.toString());
+    };
+
     const isDark = theme === 'dark';
 
     if (!isLayoutReady) return null;
 
     return (
         <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY }}>
-            <ThemeContext.Provider value={{ theme, toggleTheme }}>
+            <ThemeContext.Provider value={{ theme, toggleTheme, fontSizeScale, changeFontSize }}>
                 {Platform.OS === 'web' && (
                     <Head>
                         <meta name="mobile-web-app-capable" content="yes" />
