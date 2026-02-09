@@ -2101,19 +2101,19 @@ export default function Home() {
                                             return 'bg-transparent';
                                         };
 
-                                        const activeColorClass =
-                                            activeEventTab === 'active' ? (isDark ? 'bg-blue-600' : 'bg-blue-500') :
-                                                activeEventTab === 'upcoming' ? (isDark ? 'bg-emerald-600' : 'bg-emerald-500') :
-                                                    (isDark ? 'bg-slate-600' : 'bg-slate-500');
+                                        const activeTabColor =
+                                            activeEventTab === 'active' ? (isDark ? '#3b82f6' : '#2563eb') :
+                                                activeEventTab === 'upcoming' ? (isDark ? '#10b981' : '#059669') :
+                                                    (isDark ? '#64748b' : '#475569');
 
                                         return (
                                             <>
                                                 {/* Tab Navigation */}
-                                                <View className="flex-row items-end px-2 gap-2">
+                                                <View className="flex-row items-end px-0 gap-1.5 ml-1">
                                                     <TouchableOpacity
                                                         activeOpacity={0.9}
                                                         onPress={() => switchEventTab('active')}
-                                                        className={`flex-1 rounded-t-2xl items-center justify-center transition-all ${getTabColor('active', activeEventTab === 'active')} ${activeEventTab === 'active' ? 'py-4 -mb-1 z-10 shadow-lg' : 'py-3 mb-0 opacity-80'}`}
+                                                        className={`flex-1 rounded-t-3xl items-center justify-center transition-all ${getTabColor('active', activeEventTab === 'active')} ${activeEventTab === 'active' ? 'py-5 -mb-[6px] z-10 shadow-xl' : 'py-3 mb-0 opacity-60'}`}
                                                     >
                                                         <View className="flex-row items-center">
                                                             <Ionicons name="flash" size={activeEventTab === 'active' ? 18 : 16} color={activeEventTab === 'active' ? '#fff' : (isDark ? '#94a3b8' : '#64748b')} style={{ marginRight: 6 }} />
@@ -2126,7 +2126,7 @@ export default function Home() {
                                                     <TouchableOpacity
                                                         activeOpacity={0.9}
                                                         onPress={() => switchEventTab('upcoming')}
-                                                        className={`flex-1 rounded-t-2xl items-center justify-center transition-all ${getTabColor('upcoming', activeEventTab === 'upcoming')} ${activeEventTab === 'upcoming' ? 'py-4 -mb-1 z-10 shadow-lg' : 'py-3 mb-0 opacity-80'}`}
+                                                        className={`flex-1 rounded-t-3xl items-center justify-center transition-all ${getTabColor('upcoming', activeEventTab === 'upcoming')} ${activeEventTab === 'upcoming' ? 'py-5 -mb-[6px] z-10 shadow-xl' : 'py-3 mb-0 opacity-60'}`}
                                                     >
                                                         <View className="flex-row items-center">
                                                             <Ionicons name="time" size={activeEventTab === 'upcoming' ? 18 : 16} color={activeEventTab === 'upcoming' ? '#fff' : (isDark ? '#94a3b8' : '#64748b')} style={{ marginRight: 6 }} />
@@ -2139,7 +2139,7 @@ export default function Home() {
                                                     <TouchableOpacity
                                                         activeOpacity={0.9}
                                                         onPress={() => switchEventTab('expired')}
-                                                        className={`flex-1 rounded-t-2xl items-center justify-center transition-all ${getTabColor('expired', activeEventTab === 'expired')} ${activeEventTab === 'expired' ? 'py-4 -mb-1 z-10 shadow-lg' : 'py-3 mb-0 opacity-80'}`}
+                                                        className={`flex-1 rounded-t-3xl items-center justify-center transition-all ${getTabColor('expired', activeEventTab === 'expired')} ${activeEventTab === 'expired' ? 'py-5 -mb-[6px] z-10 shadow-xl' : 'py-3 mb-0 opacity-60'}`}
                                                     >
                                                         <View className="flex-row items-center">
                                                             <Ionicons name="checkmark-circle" size={activeEventTab === 'expired' ? 18 : 16} color={activeEventTab === 'expired' ? '#fff' : (isDark ? '#94a3b8' : '#64748b')} style={{ marginRight: 6 }} />
@@ -2151,8 +2151,15 @@ export default function Home() {
                                                 </View>
 
                                                 {/* Connected Content Container */}
-                                                <View className={`w-full p-4 rounded-b-3xl rounded-tr-3xl min-h-[200px] border-t-4 ${isDark ? 'bg-slate-900/40 border-t-transparent' : 'bg-slate-50 border-t-transparent'}`}
-                                                    style={{ borderTopColor: activeEventTab === 'active' ? (isDark ? '#2563eb' : '#3b82f6') : activeEventTab === 'upcoming' ? (isDark ? '#059669' : '#10b981') : (isDark ? '#475569' : '#64748b') }}
+                                                <View className={`w-full p-4 rounded-b-[40px] rounded-tr-[40px] min-h-[200px] border-t-[6px] ${isDark ? 'bg-slate-900/60' : 'bg-slate-50'}`}
+                                                    style={{
+                                                        borderTopColor: activeTabColor,
+                                                        shadowColor: activeTabColor,
+                                                        shadowOffset: { width: 0, height: 4 },
+                                                        shadowOpacity: isDark ? 0.4 : 0.2,
+                                                        shadowRadius: 20,
+                                                        elevation: 10
+                                                    }}
                                                 >
                                                     {activeEventTab === 'active' && (
                                                         activeEvents.length > 0 ? (
