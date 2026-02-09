@@ -2004,20 +2004,6 @@ export default function Home() {
 
                         {/* Feature Cards Grid */}
                         <View className="flex-row flex-wrap gap-3 mb-8">
-                            <TouchableOpacity onPress={() => router.push('/hero-management')} className={`p-5 rounded-3xl border-2 shadow-xl active:scale-[0.98] transition-all ${isDark ? 'bg-slate-900/80 border-slate-700 shadow-blue-900/30' : 'bg-white border-slate-200 shadow-slate-200/50'}`} style={{ flex: 1, minWidth: 160 }}>
-                                <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-gradient-to-br from-cyan-500/30 to-blue-500/30' : 'bg-gradient-to-br from-cyan-50 to-blue-100'}`}
-                                        style={isDark ? { shadowColor: '#38bdf8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 } : {}}
-                                    >
-                                        <Ionicons name="people" size={24} color={isDark ? "#38bdf8" : "#2563eb"} />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>영웅 정보</Text>
-                                        <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>스탯 및 스킬</Text>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-
                             <TouchableOpacity onPress={() => router.push('/growth/events')} className={`p-5 rounded-3xl border-2 shadow-xl active:scale-[0.98] transition-all ${isDark ? 'bg-slate-900/80 border-slate-700 shadow-blue-900/30' : 'bg-white border-slate-200 shadow-slate-200/50'}`} style={{ flex: 1, minWidth: 160 }}>
                                 <View className="flex-row items-center">
                                     <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-gradient-to-br from-blue-500/30 to-indigo-500/30' : 'bg-gradient-to-br from-sky-50 to-blue-100'}`}
@@ -2042,6 +2028,20 @@ export default function Home() {
                                     <View className="flex-1">
                                         <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>전략 문서</Text>
                                         <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>배치도 및 공지</Text>
+                                    </View>
+                                </View>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity onPress={() => router.push('/hero-management')} className={`p-5 rounded-3xl border-2 shadow-xl active:scale-[0.98] transition-all ${isDark ? 'bg-slate-900/80 border-slate-700 shadow-blue-900/30' : 'bg-white border-slate-200 shadow-slate-200/50'}`} style={{ flex: 1, minWidth: 160 }}>
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-gradient-to-br from-cyan-500/30 to-blue-500/30' : 'bg-gradient-to-br from-cyan-50 to-blue-100'}`}
+                                        style={isDark ? { shadowColor: '#38bdf8', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 4 } : {}}
+                                    >
+                                        <Ionicons name="people" size={24} color={isDark ? "#38bdf8" : "#2563eb"} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1}>영웅 정보</Text>
+                                        <Text className={`font-semibold text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>스탯 및 스킬</Text>
                                     </View>
                                 </View>
                             </TouchableOpacity>
