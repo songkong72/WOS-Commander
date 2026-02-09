@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable, Animated } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable, Animated, Dimensions } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth, useTheme } from '../context';
 import { getGuideContent } from '../../data/event-guides';
@@ -653,11 +653,12 @@ const OptionPicker = memo(({ value, options, onSelect, label, isDark, direction 
 });
 
 // Member Picker for Attendance
-const MemberPicker = memo(({ value, onSelect, members, isAdmin }: { value: string, onSelect: (v: string) => void, members: any[], isAdmin: boolean }) => {
+const MemberPicker = memo(({ value, onSelect, members, isAdmin, setOverlayContent }: { value: string, onSelect: (v: string) => void, members: any[], isAdmin: boolean, setOverlayContent: (node: React.ReactNode | null) => void }) => {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
-    const [showDropdown, setShowDropdown] = useState(false);
     const [search, setSearch] = useState(value);
+    const containerRef = useRef<View>(null);
+    const [isFocused, setIsFocused] = useState(false);
 
     useEffect(() => {
         if (value !== search) {
@@ -670,26 +671,33 @@ const MemberPicker = memo(({ value, onSelect, members, isAdmin }: { value: strin
         m.id.toLowerCase().includes(search.toLowerCase())
     ), [members, search]);
 
-    return (
-        <View className="flex-1 relative" style={{ zIndex: showDropdown ? 60 : 1 }}>
-            <TextInput
-                placeholder="영주 이름 선택/입력"
-                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                value={search}
-                onChangeText={(v) => {
-                    setSearch(v);
-                    onSelect(v);
-                    setShowDropdown(true);
-                }}
-                onFocus={() => setShowDropdown(true)}
-                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                editable={isAdmin}
-                className={`p-3 rounded-xl font-semibold border ${isDark ? 'bg-slate-900 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200 shadow-sm'} ${!isAdmin ? 'opacity-70' : ''}`}
-            />
-            {showDropdown && isAdmin && filteredMembers.length > 0 && (
+    const updateOverlay = useCallback(() => {
+        if (!isAdmin || !isFocused || filteredMembers.length === 0) {
+            setOverlayContent(null);
+            return;
+        }
+
+        containerRef.current?.measure((x, y, width, height, pageX, pageY) => {
+            const dropdownHeight = Math.min(filteredMembers.length * 48, 300); // Max height approx 6 items
+            const screenHeight = Dimensions.get('window').height;
+            const spaceBelow = screenHeight - (pageY + height);
+            const showUp = spaceBelow < dropdownHeight && pageY > dropdownHeight;
+
+            // Adjust position based on showUp
+            const topPos = showUp ? (pageY - dropdownHeight - 4) : (pageY + height + 4);
+
+            setOverlayContent(
                 <View
-                    style={{ zIndex: 9999, elevation: 9999 }}
-                    className={`absolute top-14 left-0 right-0 border rounded-xl max-h-80 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                    style={{
+                        position: 'absolute',
+                        top: topPos,
+                        left: pageX,
+                        width: width,
+                        height: dropdownHeight,
+                        zIndex: 99999,
+                        elevation: 100,
+                    }}
+                    className={`border rounded-xl shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
                     <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={true} className="flex-1">
                         {filteredMembers.map((m) => (
@@ -698,7 +706,8 @@ const MemberPicker = memo(({ value, onSelect, members, isAdmin }: { value: strin
                                 onPress={() => {
                                     onSelect(m.nickname);
                                     setSearch(m.nickname);
-                                    setShowDropdown(false);
+                                    setOverlayContent(null);
+                                    setIsFocused(false);
                                 }}
                                 className={`p-3 border-b flex-row justify-between items-center ${isDark ? 'border-slate-700/50' : 'border-slate-100'}`}
                             >
@@ -711,7 +720,35 @@ const MemberPicker = memo(({ value, onSelect, members, isAdmin }: { value: strin
                         ))}
                     </ScrollView>
                 </View>
-            )}
+            );
+        });
+    }, [isAdmin, isFocused, filteredMembers, isDark, onSelect, setOverlayContent]);
+
+    useEffect(() => {
+        updateOverlay();
+    }, [updateOverlay]);
+
+    return (
+        <View ref={containerRef} className="flex-1 relative" style={{ zIndex: 1 }}>
+            <TextInput
+                placeholder="영주 이름 선택/입력"
+                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                value={search}
+                onChangeText={(v) => {
+                    setSearch(v);
+                    onSelect(v);
+                }}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => {
+                    // Delay to allow item press
+                    setTimeout(() => {
+                        setIsFocused(false);
+                        setOverlayContent(null);
+                    }, 200);
+                }}
+                editable={isAdmin}
+                className={`p-3 rounded-xl font-semibold border ${isDark ? 'bg-slate-900 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200 shadow-sm'} ${!isAdmin ? 'opacity-70' : ''}`}
+            />
         </View>
     );
 });
@@ -825,6 +862,9 @@ export default function EventTracker() {
     const isDark = theme === 'dark';
     const [serverId, setServerId] = useState<string | null>(undefined as any);
     const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
+
+    const [penaltyTarget, setPenaltyTarget] = useState<{ id: string, name: string } | null>(null);
+    const [overlayContent, setOverlayContent] = useState<React.ReactNode | null>(null);
 
     const { dynamicAdmins } = useFirestoreAdmins(serverId, allianceId);
     const { schedules, loading: schedulesLoading, updateSchedule } = useFirestoreEventSchedules(serverId, allianceId);
@@ -1503,6 +1543,34 @@ export default function EventTracker() {
     const updateAttendeeField = useCallback((id: string, field: keyof Attendee, value: string) => {
         setBulkAttendees(prev => prev.map(a => a.id === id ? { ...a, [field]: value } : a));
     }, []);
+
+    const applyPenalty = useCallback((id: string, name: string) => {
+        if (Platform.OS === 'web') {
+            setPenaltyTarget({ id, name });
+            return;
+        }
+
+        Alert.alert(
+            '불참 사유 선택',
+            `${name} 영주의 불참 사유를 선택해주세요.\n(무단 불참 시 페널티가 부여됩니다)`,
+            [
+                { text: '취소', style: 'cancel' },
+                {
+                    text: '상태 초기화',
+                    onPress: () => updateAttendeeField(id, 'penalty', '')
+                },
+                {
+                    text: '사전 통보',
+                    onPress: () => updateAttendeeField(id, 'penalty', 'NOTICE')
+                },
+                {
+                    text: '무단 불참 (페널티)',
+                    style: 'destructive',
+                    onPress: () => updateAttendeeField(id, 'penalty', 'NO_SHOW')
+                }
+            ]
+        );
+    }, [updateAttendeeField]);
 
     const deleteAttendee = useCallback((id: string) => {
         setBulkAttendees(prev => prev.filter(a => a.id !== id));
@@ -2338,43 +2406,78 @@ export default function EventTracker() {
                         <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
                             <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                                 <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} 명단 관리</Text>
-                                <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
-                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
+                                <View className="flex-row items-center">
+                                    {isAdmin && (
+                                        <TouchableOpacity
+                                            onPress={addAttendeeRow}
+                                            className={`mr-3 px-3 py-2 rounded-full border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        >
+                                            <Ionicons name="add" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 4 }} />
+                                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                영주 추가
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                    <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                        <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                    </TouchableOpacity>
+                                </View>
                             </View>
 
                             <FlatList
                                 data={bulkAttendees}
                                 keyExtractor={(item, index) => item.id || index.toString()}
-                                renderItem={({ item: attendee, index }) => (
-                                    <View
-                                        style={{ zIndex: bulkAttendees.length - index, elevation: bulkAttendees.length - index }}
-                                        className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
-                                    >
-                                        <View className="flex-row items-center mb-3" style={{ zIndex: 50, elevation: 50 }}>
-                                            <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                                <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
+                                renderItem={({ item: attendee, index }) => {
+                                    return (
+                                        <View
+                                            style={{ zIndex: bulkAttendees.length - index, elevation: bulkAttendees.length - index }}
+                                            className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
+                                        >
+                                            <View className="flex-row items-center mb-3" style={{ zIndex: 50, elevation: 50 }}>
+                                                <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                                    <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
+                                                </View>
+                                                <View className="flex-1">
+                                                    <MemberPicker
+                                                        value={attendee.name}
+                                                        onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
+                                                        members={members}
+                                                        isAdmin={!!isAdmin}
+                                                        setOverlayContent={setOverlayContent}
+                                                    />
+                                                    {attendee.penalty && (
+                                                        <Text className="text-[10px] text-red-500 mt-1 font-bold ml-1">
+                                                            {attendee.penalty === 'NO_SHOW' ? '⛔ 무단 불참 (페널티)' : '⚠️ 사전 통보'}
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                                {!!isAdmin && (
+                                                    <View className="flex-row items-center ml-2">
+                                                        <TouchableOpacity
+                                                            onPress={() => applyPenalty(attendee.id!, attendee.name)}
+                                                            className={`p-3 rounded-xl border mr-2 ${attendee.penalty === 'NO_SHOW' ? 'bg-red-500/20 border-red-500' : (attendee.penalty === 'NOTICE' ? 'bg-yellow-500/20 border-yellow-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'))}`}
+                                                        >
+                                                            <Ionicons
+                                                                name={attendee.penalty ? "skull" : "skull-outline"}
+                                                                size={16}
+                                                                color={attendee.penalty === 'NO_SHOW' ? '#ef4444' : (attendee.penalty === 'NOTICE' ? '#eab308' : (isDark ? '#94a3b8' : '#64748b'))}
+                                                            />
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
+                                                            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
                                             </View>
-                                            <MemberPicker
-                                                value={attendee.name}
-                                                onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
-                                                members={members}
-                                                isAdmin={!!isAdmin}
-                                            />
-                                            {!!isAdmin && (
-                                                <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`ml-2 p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
-                                                    <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                                                </TouchableOpacity>
-                                            )}
-                                        </View>
 
-                                        <View className="flex-row space-x-2 pointer-events-auto" style={{ zIndex: 1 }}>
-                                            <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
-                                            <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
-                                            <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
+                                            <View className="flex-row space-x-2 pointer-events-auto" style={{ zIndex: 1 }}>
+                                                <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
+                                                <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
+                                                <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
+                                            </View>
                                         </View>
-                                    </View>
-                                )}
+                                    )
+                                }}
                                 ListEmptyComponent={
                                     <View className="items-center justify-center py-10 opacity-50">
                                         <Ionicons name="documents-outline" size={48} color="#94a3b8" />
@@ -2382,13 +2485,7 @@ export default function EventTracker() {
                                         <Text className="text-slate-600 text-xs mt-1">관리자가 명단을 추가하면 여기에 표시됩니다.</Text>
                                     </View>
                                 }
-                                ListFooterComponent={
-                                    isAdmin ? (
-                                        <TouchableOpacity onPress={addAttendeeRow} className={`p-4 rounded-2xl border border-dashed items-center mb-10 mt-4 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                            <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>+ 영주 추가하기</Text>
-                                        </TouchableOpacity>
-                                    ) : null
-                                }
+                                ListFooterComponent={null}
                                 contentContainerStyle={{ padding: 16, paddingBottom: 150 }}
                                 style={{ flex: 1 }}
                                 showsVerticalScrollIndicator={true}
@@ -2414,6 +2511,66 @@ export default function EventTracker() {
                             </View>
                         </View>
                     </View>
+                    {overlayContent}
+                    {penaltyTarget && (
+                        <View className="absolute inset-0 z-50 items-center justify-center bg-black/60">
+                            <View className={`w-80 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ elevation: 100 }}>
+                                <View className="items-center mb-6">
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mb-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Ionicons name="skull" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                    </View>
+                                    <Text className={`text-lg font-bold text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                        {penaltyTarget.name}
+                                    </Text>
+                                    <Text className={`text-sm mt-1 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        불참 사유를 선택해주세요
+                                    </Text>
+                                </View>
+
+                                <View className="space-y-3 w-full">
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            updateAttendeeField(penaltyTarget.id, 'penalty', 'NOTICE');
+                                            setPenaltyTarget(null);
+                                        }}
+                                        className="w-full py-4 bg-yellow-500/10 border border-yellow-500/50 rounded-2xl items-center flex-row justify-center"
+                                    >
+                                        <Ionicons name="warning" size={18} color="#eab308" style={{ marginRight: 8 }} />
+                                        <Text className="text-yellow-500 font-bold">⚠️ 사전 통보 (참작)</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            updateAttendeeField(penaltyTarget.id, 'penalty', 'NO_SHOW');
+                                            setPenaltyTarget(null);
+                                        }}
+                                        className="w-full py-4 bg-red-500/10 border border-red-500/50 rounded-2xl items-center flex-row justify-center"
+                                    >
+                                        <Ionicons name="skull" size={18} color="#ef4444" style={{ marginRight: 8 }} />
+                                        <Text className="text-red-500 font-bold">⛔ 무단 불참 (페널티)</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            updateAttendeeField(penaltyTarget.id, 'penalty', '');
+                                            setPenaltyTarget(null);
+                                        }}
+                                        className={`w-full py-4 border rounded-2xl items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                    >
+                                        <Ionicons name="refresh" size={18} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 8 }} />
+                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>상태 초기화</Text>
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity
+                                        onPress={() => setPenaltyTarget(null)}
+                                        className="w-full py-3 items-center mt-2"
+                                    >
+                                        <Text className={isDark ? 'text-slate-500' : 'text-slate-400'}>취소</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+                    )}
                 </Modal>
 
                 {/* Wiki Browser Modal (Web Only) */}

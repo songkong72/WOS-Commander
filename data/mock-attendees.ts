@@ -7,6 +7,7 @@ export interface Attendee {
     hero1: string;
     hero2: string;
     hero3: string;
+    penalty?: 'NO_SHOW' | 'NOTICE' | null;
 }
 
 export const INITIAL_ATTENDEES: Attendee[] = [

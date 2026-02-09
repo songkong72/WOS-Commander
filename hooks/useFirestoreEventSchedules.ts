@@ -129,11 +129,10 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
         const scheduleDocRef = getDocRef();
         try {
             const nid = normalizeId(scheduleToUpdate.eventId);
-            const updateData: any = {
-                scheduleMap: {
-                    [nid]: { ...scheduleToUpdate, eventId: nid }
-                }
-            };
+            // Use dot notation to update specific nested field without overwriting the whole map
+            const updateData: any = {};
+            updateData[`scheduleMap.${nid}`] = { ...scheduleToUpdate, eventId: nid };
+
             if (serverId && allianceId) {
                 updateData.serverId = serverId;
                 updateData.allianceId = allianceId;
