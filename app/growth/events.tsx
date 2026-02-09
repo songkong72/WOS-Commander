@@ -200,6 +200,17 @@ const formatDisplayDate = (str: string, mode: 'KST' | 'UTC' = 'KST') => {
     return `${year2}년 ${pad(parseInt(m))}월 ${pad(parseInt(d))}일(${dayName}) ${pad(parseInt(h))}:${pad(parseInt(min))}`;
 };
 
+const formatTime12h = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    const h = parseInt(hStr || '0');
+    const m = parseInt(mStr || '0');
+    const isPM = h >= 12;
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    const ampm = isPM ? '오후' : '오전';
+    return `${ampm} ${h12}:${m.toString().padStart(2, '0')}`;
+};
+
 interface EventCardProps {
     event: WikiEvent;
     isDark: boolean;
@@ -2419,14 +2430,14 @@ export default function EventTracker() {
                                                                         return (
                                                                             <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }}>
                                                                                 <Animated.View style={{ backgroundColor, borderColor, borderWidth: 1 }} className={`px-3 py-1.5 rounded-xl flex-row items-center border`}>
-                                                                                    <Text className={`text-amber-400 text-xs font-bold mr-2`}>{slot.day}{slot.time ? `(${slot.time})` : ''}</Text>
+                                                                                    <Text className={`text-amber-400 text-xs font-bold mr-2`}>{slot.day}{slot.time ? `(${formatTime12h(slot.time)})` : ''}</Text>
                                                                                     <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#fbbf24" /></TouchableOpacity>
                                                                                 </Animated.View>
                                                                             </TouchableOpacity>
                                                                         );
                                                                     }
                                                                     return (
-                                                                        <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}><Text className="text-white text-xs font-bold mr-2">{slot.day}{slot.time ? `(${slot.time})` : ''}</Text><TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity></TouchableOpacity>
+                                                                        <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}><Text className="text-white text-xs font-bold mr-2">{slot.day}{slot.time ? `(${formatTime12h(slot.time)})` : ''}</Text><TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity></TouchableOpacity>
                                                                     );
                                                                 })}
                                                                 {(activeTab === 1 ? slots1 : slots2).length === 0 && (
@@ -2476,7 +2487,7 @@ export default function EventTracker() {
                                                                                             }}
                                                                                             className={`px-3 py-1 rounded-lg ${parseInt(editHour) < 12 ? 'bg-sky-500 shadow-sm' : ''}`}
                                                                                         >
-                                                                                            <Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>AM</Text>
+                                                                                            <Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오전</Text>
                                                                                         </TouchableOpacity>
                                                                                         <TouchableOpacity
                                                                                             onPress={() => {
@@ -2485,7 +2496,7 @@ export default function EventTracker() {
                                                                                             }}
                                                                                             className={`px-3 py-1 rounded-lg ${parseInt(editHour) >= 12 ? 'bg-sky-500 shadow-sm' : ''}`}
                                                                                         >
-                                                                                            <Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>PM</Text>
+                                                                                            <Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오후</Text>
                                                                                         </TouchableOpacity>
                                                                                     </View>
                                                                                 </View>
