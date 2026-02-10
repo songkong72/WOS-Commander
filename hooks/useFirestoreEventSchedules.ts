@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, onSnapshot, setDoc, runTransaction, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, runTransaction, getDoc, deleteField } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 export interface EventSchedule {
@@ -22,10 +22,15 @@ const ID_MAP: { [key: string]: string } = {
     'a_foundry': 'alliance_foundry',
     'a_weapon': 'alliance_frost_league',
     'a_castle': 'alliance_castle',
+    'a_dragon': 'alliance_dragon',
     'a_svs': 'server_svs_prep'
 };
 
-const normalizeId = (id: string) => ID_MAP[id] || id;
+const normalizeId = (id: string) => {
+    if (!id) return id;
+    const trimmed = id.trim();
+    return ID_MAP[trimmed] || trimmed;
+};
 
 export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?: string | null) => {
     const [schedules, setSchedules] = useState<EventSchedule[]>([]);
@@ -44,6 +49,9 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
     useEffect(() => {
         if (serverId === undefined || allianceId === undefined) return; // Wait for initial check
 
+        setLoading(true);
+        setSchedules([]);
+
         const scheduleDocRef = getDocRef();
 
         const unsubscribe = onSnapshot(
@@ -51,31 +59,38 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
             (docSnapshot) => {
                 if (docSnapshot.exists()) {
                     const data = docSnapshot.data();
-                    let legacyArray: EventSchedule[] = [];
-                    const rawSchedules = data.schedules;
-
-                    if (Array.isArray(rawSchedules)) {
-                        legacyArray = rawSchedules;
-                    } else if (rawSchedules && typeof rawSchedules === 'object') {
-                        legacyArray = Object.values(rawSchedules) as EventSchedule[];
-                    }
-
+                    const legacyArray = Array.isArray(data.schedules) ? data.schedules : [];
                     const newScheduleMap = data.scheduleMap || {};
                     const mergedMap = new Map();
 
+                    // 1. Legacy Array (Lowest priority)
                     legacyArray.forEach((s) => {
                         if (s && s.eventId) {
                             const nid = normalizeId(s.eventId);
-                            const existing = mergedMap.get(nid);
-                            mergedMap.set(nid, { ...existing, ...s, eventId: nid });
+                            mergedMap.set(nid, s);
                         }
                     });
 
-                    Object.values(newScheduleMap).forEach((s: any) => {
-                        if (s && s.eventId) {
-                            const nid = normalizeId(s.eventId);
+                    // 2. Flat fields recovery (Middle priority)
+                    Object.keys(data).forEach(key => {
+                        if (key.startsWith('scheduleMap.')) {
+                            const eventName = key.split('.')[1];
+                            const s = data[key];
+                            if (s && eventName) {
+                                const nid = normalizeId(s.eventId || eventName);
+                                const existing = mergedMap.get(nid);
+                                mergedMap.set(nid, { ...existing, ...s });
+                            }
+                        }
+                    });
+
+                    // 3. Nested ScheduleMap (Highest priority)
+                    Object.entries(newScheduleMap).forEach(([key, s]: [string, any]) => {
+                        if (s) {
+                            const nid = normalizeId(s.eventId || key);
                             const existing = mergedMap.get(nid);
-                            mergedMap.set(nid, { ...existing, ...s, eventId: nid });
+                            // Modern source overwrites legacy ones
+                            mergedMap.set(nid, { ...existing, ...s });
                         }
                     });
 
@@ -128,16 +143,88 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
     const updateSchedule = async (scheduleToUpdate: EventSchedule) => {
         const scheduleDocRef = getDocRef();
         try {
-            const nid = normalizeId(scheduleToUpdate.eventId);
-            // Use dot notation to update specific nested field without overwriting the whole map
-            const updateData: any = {};
-            updateData[`scheduleMap.${nid}`] = { ...scheduleToUpdate, eventId: nid };
+            const rawId = scheduleToUpdate.eventId.trim();
+            const nid = normalizeId(rawId);
 
-            if (serverId && allianceId) {
-                updateData.serverId = serverId;
-                updateData.allianceId = allianceId;
-            }
-            await setDoc(scheduleDocRef, updateData, { merge: true });
+            // 낙관적 업데이트
+            setSchedules(prev => {
+                const existingIdx = prev.findIndex(s => normalizeId(s.eventId) === nid);
+                if (existingIdx > -1) {
+                    const next = [...prev];
+                    next[existingIdx] = scheduleToUpdate;
+                    return next;
+                }
+                return [...prev, scheduleToUpdate];
+            });
+
+            await runTransaction(db, async (transaction) => {
+                const sfDoc = await transaction.get(scheduleDocRef);
+                let currentData: any = {};
+                if (sfDoc.exists()) {
+                    currentData = sfDoc.data();
+                }
+
+                // 1. Definitively merge existing data into a clean structure
+                const mergedMap = new Map();
+
+                // From Legacy Array
+                if (Array.isArray(currentData.schedules)) {
+                    currentData.schedules.forEach((s: any) => {
+                        if (s && s.eventId) mergedMap.set(normalizeId(s.eventId), s);
+                    });
+                }
+
+                // From Flat fields (recovery)
+                Object.keys(currentData).forEach(key => {
+                    if (key.startsWith('scheduleMap.')) {
+                        const eventName = key.split('.')[1];
+                        const s = currentData[key];
+                        if (s && eventName) mergedMap.set(normalizeId(s.eventId || eventName), s);
+                    }
+                });
+
+                // From Nested Map (highest priority)
+                if (currentData.scheduleMap) {
+                    Object.entries(currentData.scheduleMap).forEach(([k, s]: [string, any]) => {
+                        if (s) mergedMap.set(normalizeId(s.eventId || k), s);
+                    });
+                }
+
+                // 2. Apply the new update to our map
+                mergedMap.set(nid, scheduleToUpdate);
+
+                // 3. Prepare the CLEAN payload (No legacy fields!)
+                const cleanScheduleMap: any = {};
+                mergedMap.forEach((val, key) => {
+                    cleanScheduleMap[key] = val;
+                });
+
+                const payload: any = {
+                    scheduleMap: cleanScheduleMap,
+                    // EXPLICITLY DELETE LEGACY FIELDS to prevent future ghosts
+                    schedules: deleteField(),
+                };
+
+                // Also delete any existing flat fields we found
+                Object.keys(currentData).forEach(key => {
+                    if (key.startsWith('scheduleMap.')) {
+                        payload[key] = deleteField();
+                    }
+                });
+
+                if (serverId && allianceId) {
+                    payload.serverId = serverId;
+                    payload.allianceId = allianceId;
+                }
+
+                if (!sfDoc.exists()) {
+                    transaction.set(scheduleDocRef, { ...payload, schedules: [] });
+                } else {
+                    transaction.update(scheduleDocRef, payload);
+                }
+            });
+
+            console.log(`[Firestore] Successfully migrated and updated schedule for ${nid}`);
         } catch (err: any) {
             console.error("Update failed: ", err);
             throw err;

@@ -552,23 +552,43 @@ export default function Home() {
 
     const [now, setNow] = useState(new Date());
     useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 60000);
+        const timer = setInterval(() => setNow(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
     const getEventEndDate = (event: any) => {
         try {
-            const id = event.id || event.eventId;
-            const schedule = schedules.find(s => s.eventId === id);
+            const id = (event.id || event.eventId || '').trim();
+            const schedule = schedules.find(s => {
+                const sid = (s.eventId || '').trim();
+                return sid === id ||
+                    (id === 'a_joe' && sid === 'alliance_joe') ||
+                    (id === 'alliance_joe' && sid === 'a_joe') ||
+                    (id === 'a_bear' && sid === 'alliance_bear') ||
+                    (id === 'alliance_bear' && sid === 'a_bear') ||
+                    (id === 'a_weapon' && sid === 'alliance_frost_league') ||
+                    (id === 'alliance_frost_league' && sid === 'a_weapon') ||
+                    (id === 'a_operation' && sid === 'alliance_operation') ||
+                    (id === 'alliance_operation' && sid === 'a_operation') ||
+                    (id === 'a_mobilization' && sid === 'alliance_mobilization') ||
+                    (id === 'alliance_mobilization' && sid === 'a_mobilization') ||
+                    (id === 'a_total' && sid === 'alliance_mobilization') ||
+                    (id === 'a_foundry' && sid === 'alliance_foundry') ||
+                    (id === 'alliance_foundry' && sid === 'a_foundry') ||
+                    (id === 'a_fortress' && sid === 'alliance_fortress') ||
+                    (id === 'alliance_fortress' && sid === 'a_fortress');
+            });
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
             const combined = `${dayStr} ${timeStr} `;
 
-            // 1. Date Range Match
-            const rangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+            // 1. Date Range Match (Improved regex for various separators and optional day info)
+            // Expected: YYYY.MM.DD (Day) HH:mm ~ YYYY.MM.DD (Day) HH:mm or YYYY-MM-DD ...
+            const rangeMatch = combined.match(/(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?\s*~\s*(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?/);
             if (rangeMatch) {
-                const eStr = `${rangeMatch[3].replace(/\./g, '-')}T${rangeMatch[4]}:00`;
-                const end = new Date(eStr);
+                const endDatePart = rangeMatch[3].replace(/\./g, '-');
+                const endTimePart = rangeMatch[4] || '23:59';
+                const end = new Date(`${endDatePart}T${endTimePart}:00`);
                 return isNaN(end.getTime()) ? null : end;
             }
 
@@ -588,6 +608,62 @@ export default function Home() {
         return !!end && now > end;
     };
 
+    const getRemainingSeconds = (str: string) => {
+        if (!str || str.includes('상시') || str.includes('상설')) return null;
+        const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+        const currentTotal = now.getDay() * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        const totalWeekSeconds = 7 * 1440 * 60;
+
+        // 점형 일시 체크
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+        if (explicitMatches.length > 0) {
+            let secRemaining: number | null = null;
+            explicitMatches.forEach(m => {
+                const dayStr = m[1];
+                const h = parseInt(m[2]);
+                const min = parseInt(m[3]);
+                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+
+                scheduledDays.forEach(d => {
+                    const dayOffset = dayMapObj[d];
+                    if (dayOffset === undefined) return;
+                    const startTotal = dayOffset * 1440 * 60 + h * 3600 + min * 60;
+                    let endTotal = startTotal + 1800; // 30 mins = 1800s
+
+                    if (currentTotal >= startTotal && currentTotal <= endTotal) {
+                        const rem = endTotal - currentTotal;
+                        if (secRemaining === null || rem < secRemaining) secRemaining = rem;
+                    } else if (endTotal >= totalWeekSeconds && currentTotal <= (endTotal % totalWeekSeconds)) {
+                        const rem = (endTotal % totalWeekSeconds) - currentTotal;
+                        if (secRemaining === null || rem < secRemaining) secRemaining = rem;
+                    }
+                });
+            });
+            return secRemaining;
+        }
+        return null;
+    };
+
+    const getNextResetSeconds = () => {
+        const d = new Date(now);
+        d.setHours(9, 0, 0, 0);
+        if (d <= now) d.setDate(d.getDate() + 1);
+        return Math.floor((d.getTime() - now.getTime()) / 1000);
+    };
+
+    const formatRemainingTime = (seconds: number) => {
+        const d = Math.floor(seconds / (24 * 3600));
+        const h = Math.floor((seconds % (24 * 3600)) / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        const s = seconds % 60;
+
+        let res = "";
+        if (d > 0) res += `${d}일 `;
+        if (h > 0 || d > 0) res += `${String(h).padStart(2, '0')}:`;
+        res += `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        return res;
+    };
+
     // -- 일정 단위가 활성 상태인지 체크하는 헬퍼 함수 --
     const checkItemActive = (str: string) => {
         if (!str) return false;
@@ -598,12 +674,15 @@ export default function Home() {
         if (str.includes('상시') || str.includes('상설')) return true;
 
         // 1. 기간형 체크 (예: 2024.01.01 10:00 ~ 2024.01.03 10:00)
-        const dateRangeMatch = str.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+        // YYYY.MM.DD 또는 YYYY-MM-DD, 요일 정보 포함 여부, 시간 생략 등 대응
+        const dateRangeMatch = str.match(/(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?\s*~\s*(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?/);
         if (dateRangeMatch) {
-            const sStr = `${dateRangeMatch[1].replace(/\./g, '-')}T${dateRangeMatch[2]}:00`;
-            const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
-            const start = new Date(sStr);
-            const end = new Date(eStr);
+            const sDate = dateRangeMatch[1].replace(/\./g, '-');
+            const sTime = dateRangeMatch[2] || '00:00';
+            const eDate = dateRangeMatch[3].replace(/\./g, '-');
+            const eTime = dateRangeMatch[4] || '23:59';
+            const start = new Date(`${sDate}T${sTime}:00`);
+            const end = new Date(`${eDate}T${eTime}:00`);
             if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
                 return now >= start && now <= end;
             }
@@ -625,17 +704,19 @@ export default function Home() {
                 const dayStr = m[1];
                 const h = parseInt(m[2]);
                 const min = parseInt(m[3]);
-
                 const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-
                 return scheduledDays.some(d => {
                     const dayOffset = dayMapObj[d];
                     if (dayOffset === undefined) return false;
                     const startTotal = dayOffset * 1440 + h * 60 + min;
-                    const endTotal = startTotal + 30;
-
-                    if (currentTotal >= startTotal && currentTotal <= endTotal) return true;
-                    if (endTotal >= totalWeekMinutes && currentTotal <= (endTotal % totalWeekMinutes)) return true;
+                    const endTotal = startTotal + 30; // 30분 지속
+                    if (startTotal <= endTotal) {
+                        return currentTotal >= startTotal && currentTotal <= endTotal;
+                    } else { // 자정 근처 주간 순환
+                        if (endTotal >= totalWeekMinutes) {
+                            return currentTotal >= startTotal || currentTotal <= (endTotal % totalWeekMinutes);
+                        }
+                    }
                     return false;
                 });
             });
@@ -654,8 +735,26 @@ export default function Home() {
 
     const isEventActive = (event: any) => {
         try {
-            const id = event.id || event.eventId;
-            const schedule = schedules.find(s => s.eventId === id);
+            const id = (event.id || event.eventId || '').trim();
+            const schedule = schedules.find(s => {
+                const sid = (s.eventId || '').trim();
+                return sid === id ||
+                    (id === 'a_joe' && sid === 'alliance_joe') ||
+                    (id === 'alliance_joe' && sid === 'a_joe') ||
+                    (id === 'a_bear' && sid === 'alliance_bear') ||
+                    (id === 'alliance_bear' && sid === 'a_bear') ||
+                    (id === 'a_weapon' && sid === 'alliance_frost_league') ||
+                    (id === 'alliance_frost_league' && sid === 'a_weapon') ||
+                    (id === 'a_operation' && sid === 'alliance_operation') ||
+                    (id === 'alliance_operation' && sid === 'a_operation') ||
+                    (id === 'a_mobilization' && sid === 'alliance_mobilization') ||
+                    (id === 'alliance_mobilization' && sid === 'a_mobilization') ||
+                    (id === 'a_total' && sid === 'alliance_mobilization') ||
+                    (id === 'a_foundry' && sid === 'alliance_foundry') ||
+                    (id === 'alliance_foundry' && sid === 'a_foundry') ||
+                    (id === 'a_fortress' && sid === 'alliance_fortress') ||
+                    (id === 'alliance_fortress' && sid === 'a_fortress');
+            });
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
 
@@ -900,9 +999,9 @@ export default function Home() {
 
                         const colonIdx = trimmed.indexOf(':');
                         const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `곰${idx + 1} `);
-                        // Simplify Team Label
-                        const cleanLabel = rawLabel ? (rawLabel.includes('곰') ? rawLabel : `곰 ${rawLabel.replace(/팀|군/g, '').trim()} 팀`) : '';
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        // Simplify Team Label (e.g., 곰 1 팀 -> 1군)
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/곰|팀|군/g, '').trim() + '군') : '';
                         const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
 
                         // Simplify individual times (Remove Departure/Return etc)
@@ -979,7 +1078,7 @@ export default function Home() {
                         const colonIdx = trimmed.indexOf(':');
                         const isSingleTeam = parts.length === 1;
                         const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
-                        const cleanLabel = rawLabel || '';
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/무기|공장|팀|군/g, '').trim() + '군') : '';
                         const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
 
                         const simplifiedTime = teamTime.split(/[,|]/).map(t => {
@@ -1095,8 +1194,6 @@ export default function Home() {
             return 'calendar-clear-outline';
         };
 
-        const titleColor = isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900');
-
         const checkIsSoon = (str: string) => {
             if (!str) return false;
             const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
@@ -1151,8 +1248,27 @@ export default function Home() {
                     }
                 ]}
             >
-                {({ hovered }: any) => (
-                    isActive ? (
+                {({ hovered }: any) => {
+                    const currentSchedule = schedules.find(s => {
+                        const sid = (s.eventId || '').trim();
+                        const eid = (event.originalEventId || event.eventId || '').trim();
+                        return sid === eid ||
+                            (eid === 'a_joe' && sid === 'alliance_joe') ||
+                            (eid === 'alliance_joe' && sid === 'a_joe') ||
+                            (eid === 'a_operation' && sid === 'alliance_operation') ||
+                            (eid === 'alliance_operation' && sid === 'a_operation') ||
+                            (eid === 'a_weapon' && sid === 'alliance_frost_league') ||
+                            (eid === 'alliance_frost_league' && sid === 'a_weapon') ||
+                            (eid === 'a_foundry' && sid === 'alliance_foundry') ||
+                            (eid === 'alliance_foundry' && sid === 'a_foundry') ||
+                            (eid === 'a_fortress' && sid === 'alliance_fortress') ||
+                            (eid === 'alliance_fortress' && sid === 'a_fortress');
+                    });
+
+                    const displayDay = currentSchedule?.day || event.day;
+                    const displayTime = (event.isBearSplit || event.isFoundrySplit) ? event.time : (currentSchedule?.time || event.time);
+
+                    return isActive ? (
                         <View className={`w-full rounded-[32px] border ${hovered ? 'border-blue-400' : 'border-blue-500/40'} overflow-hidden bg-slate-950 transition-all`} style={{
                             shadowColor: '#3b82f6',
                             shadowOffset: { width: 0, height: 0 },
@@ -1195,154 +1311,72 @@ export default function Home() {
                                                 : '연맹원들과 힘을 합쳐 최적의 전략으로 승리를 쟁취하세요'}
                                         </Text>
                                     </View>
+
+                                    <View className="items-end justify-center ml-4 pl-4 border-l border-white/5">
+                                        {(() => {
+                                            let remSeconds = getRemainingSeconds(displayDay) || getRemainingSeconds(displayTime);
+                                            if (remSeconds === null) {
+                                                const endDate = getEventEndDate({ ...event, day: displayDay, time: displayTime });
+                                                if (endDate && now < endDate) {
+                                                    remSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
+                                                }
+                                            }
+
+                                            if (remSeconds !== null) {
+                                                return (
+                                                    <View className="items-end">
+                                                        <Text className="text-white font-black tracking-tighter" style={{ fontSize: 32 * fontSizeScale, lineHeight: 32 * fontSizeScale }}>
+                                                            {formatRemainingTime(remSeconds)}
+                                                        </Text>
+                                                        <Text className="text-sky-400/60 text-[10px] font-black tracking-[0.2em] uppercase mt-1">Remaining</Text>
+                                                    </View>
+                                                );
+                                            }
+                                            return (
+                                                <View className="px-4 py-2 rounded-2xl bg-blue-500/20 border border-blue-400/30">
+                                                    <Text className="text-blue-400 text-sm font-black uppercase tracking-widest">Active</Text>
+                                                </View>
+                                            );
+                                        })()}
+                                    </View>
                                 </View>
                             </ImageBackground>
                         </View>
                     ) : (
-                        <View
-                            className={`p-4 rounded-[24px] border-2 h-full transition-all ${isUpcoming
-                                ? (isDark
-                                    ? `bg-slate-900/95 ${hovered ? 'border-emerald-400 shadow-emerald-500/20' : 'border-emerald-500/40 shadow-emerald-500/10'} shadow-2xl`
-                                    : `bg-white ${hovered ? 'border-emerald-400 shadow-emerald-500/15' : 'border-emerald-200 shadow-xl shadow-emerald-500/5'}`)
-                                : (isDark
-                                    ? `bg-slate-900/95 ${hovered ? 'border-slate-500' : 'border-slate-700'} shadow-2xl shadow-black/40`
-                                    : `bg-white ${hovered ? 'border-slate-400' : 'border-slate-200'} shadow-xl shadow-slate-900/5`)
-                                }`}>
-                            <View className="flex-row items-center mb-4">
-                                <View className="flex-row items-center flex-1">
-                                    <View className={`w-12 h-12 rounded-xl items-center justify-center mr-3 overflow-hidden transition-all ${isDark ? (hovered ? 'bg-slate-700' : 'bg-slate-800/80') : (hovered ? 'bg-slate-100' : 'bg-slate-50 border border-slate-100')}`}>
-                                        {eventImageUrl ? (
-                                            <Image
-                                                source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
-                                                className="w-full h-full"
-                                                resizeMode="cover"
-                                            />
-                                        ) : (
-                                            <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={20} color={isExpired ? '#64748b' : (hovered ? '#3b82f6' : '#94a3b8')} />
-                                        )}
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className={`text-base font-bold tracking-tight transition-all ${isDark ? (hovered ? 'text-white' : 'text-slate-200') : (hovered ? 'text-slate-900' : 'text-slate-700')}`} numberOfLines={1} style={{ fontSize: 16 * fontSizeScale }}>{event.title}</Text>
-                                    </View>
+                        <View className={`rounded-[32px] border ${hovered ? 'border-emerald-400 bg-emerald-500/5' : 'border-slate-800 bg-slate-900/40'} p-4 transition-all`} style={{ height: '100%' }}>
+                            <View className="flex-row items-baseline mb-4">
+                                <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+                                </View>
+                                <Text className={`text-lg font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{event.title}</Text>
+                                <View className={`ml-3 px-2 py-0.5 rounded-md border ${isUpcoming ? (isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200') : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}>
+                                    <Text className={`text-[10px] font-black ${isUpcoming ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{isUpcoming ? '예정' : '준비'}</Text>
                                 </View>
                             </View>
 
-                            <View className="flex-col gap-3">
-                                {(!event.time && (event.eventId === 'a_fortress' || event.eventId === 'a_citadel')) && (
-                                    <View className={`rounded-xl border border-dashed p-4 items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                        <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다.</Text>
-                                    </View>
-                                )}
-                                {!!event.day && !event.isBearSplit && !event.isFoundrySplit && !event.time && (
-                                    <View className={`rounded-xl border border-dashed overflow-hidden transition-all ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/40' : 'bg-emerald-50/30 border-emerald-200') : (isDark ? 'bg-black/40 border-slate-600' : 'bg-slate-50 border-slate-300 shadow-sm')}`}>
-                                        <View className="p-3 gap-2">
-                                            {(() => {
-                                                const formattedDay = (event.day || '').replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                const displayText = timezone === 'KST' ? formattedDay : (getUTCString(event.day) || getUTCTimeString(event.day) || formattedDay);
-                                                return formattedDay.includes('~') ?
-                                                    formattedDay.split('~').map((p, pIdx) => (
-                                                        <View key={pIdx} className="py-1.5">
-                                                            <View className="flex-row items-center">
-                                                                <Text className={`text-[10px] font-black w-7 ${pIdx === 0 ? 'text-emerald-500' : 'text-orange-500'}`}>{pIdx === 0 ? '시작' : '종료'}</Text>
-                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{splitSchedulePart(p.trim()).date}</Text>
-                                                            </View>
-                                                            {!!splitSchedulePart(p.trim()).time && (
-                                                                <View className="flex-row items-center mt-0.5 ml-7">
-                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                    <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{splitSchedulePart(p.trim()).time}</Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                    )) : (
-                                                        <View className="py-1.5">
-                                                            <View className="flex-row items-center">
-                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{splitSchedulePart(displayText).date}</Text>
-                                                            </View>
-                                                            {!!splitSchedulePart(displayText).time && (
-                                                                <View className="flex-row items-center mt-0.5">
-                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                    <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{splitSchedulePart(displayText).time}</Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
-                                                    );
-                                            })()}
-                                        </View>
-                                    </View>
-                                )}
-
-                                {!!event.time && (
-                                    <View className="gap-3">
-                                        {(event.isBearSplit || event.isFoundrySplit) ? (
-                                            <View className={`rounded-2xl border overflow-hidden transition-all ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/40' : 'bg-emerald-50/30 border-emerald-200') : (isDark ? 'bg-black/40 border-slate-600' : 'bg-slate-50 border-slate-300 shadow-sm')}`}>
-                                                <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
-                                                    {event.time.split(/[,|]/).map((item: string, iIdx: number) => {
-                                                        const trimmed = item.trim();
-                                                        if (!trimmed) return null;
-                                                        const displayItem = timezone === 'KST' ? trimmed : (getUTCString(trimmed) || getUTCTimeString(trimmed, false) || trimmed);
-                                                        let displayDay = '-';
-                                                        let cleanDisplayTime = '';
-                                                        const dtMatch = displayItem.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
-                                                        if (dtMatch) {
-                                                            displayDay = dtMatch[1];
-                                                            cleanDisplayTime = dtMatch[2];
-                                                        } else {
-                                                            const dayMatch = displayItem.match(/[일월화수목금토매일]+/);
-                                                            displayDay = dayMatch ? dayMatch[0] : '-';
-                                                            const rawTime = displayItem.replace(displayDay, '').trim();
-                                                            cleanDisplayTime = rawTime.replace(/[()]/g, '');
-                                                        }
-                                                        const isLive = checkItemActive(trimmed);
-                                                        const isSoon = checkIsSoon(trimmed);
-                                                        return (
-                                                            <View key={iIdx} className={`flex-row items-center px-4 py-3 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                                <View className="flex-row items-center flex-1">
-                                                                    <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                    <Text className={`font-bold text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-slate-300' : 'text-slate-600'))}`} style={{ fontSize: 18 * fontSizeScale }}>{displayDay}</Text>
-                                                                    <Text className="mx-2 text-slate-300">·</Text>
-                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                    <Text className={`font-bold text-lg ${isLive ? 'text-blue-500' : (isExpired ? (isDark ? 'text-slate-500' : 'text-slate-600') : (isDark ? 'text-slate-300' : 'text-slate-600'))}`} style={{ fontSize: 18 * fontSizeScale }}>{cleanDisplayTime}</Text>
-                                                                    {isSoon && <Text className="ml-2 text-[10px] font-black text-sky-500">곧 시작</Text>}
-                                                                </View>
-                                                                {isLive && <View className="w-2 h-2 rounded-full bg-blue-500" />}
-                                                            </View>
-                                                        );
-                                                    })}
-                                                </View>
+                            <View className="flex-1 justify-center">
+                                {(!displayDay && !displayTime) ? (
+                                    <View className="items-center opacity-30 py-4"><Text className="text-slate-500 text-sm">미지정</Text></View>
+                                ) : (
+                                    <View className="space-y-2">
+                                        {!event.isBearSplit && (
+                                            <View className="flex-row items-center">
+                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
+                                                <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayDay || '-'}</Text>
                                             </View>
-                                        ) : (
-                                            <View className={`rounded-2xl border overflow-hidden transition-all ${isUpcoming ? (isDark ? 'bg-black/40 border-emerald-500/40' : 'bg-emerald-50/30 border-emerald-200') : (isDark ? 'bg-black/40 border-slate-600' : 'bg-slate-50 border-slate-300 shadow-sm')}`}>
-                                                {event.time.split(' / ').map((part: string, pIdx: number) => {
-                                                    const items = part.trim().split(/[,|]/);
-                                                    return items.map((item, iIdx) => {
-                                                        const isLive = checkItemActive(item.trim());
-                                                        const displayItem = timezone === 'KST' ? item.trim() : (getUTCString(item.trim()) || getUTCTimeString(item.trim(), false) || item.trim());
-                                                        const split = splitSchedulePart(displayItem);
-                                                        return (
-                                                            <View key={`${pIdx}-${iIdx}`} className={`flex-row items-center px-4 py-3 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                <Text className={`font-bold text-lg ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{split.date}</Text>
-                                                                {!!split.time && (
-                                                                    <>
-                                                                        <Text className="mx-2 text-slate-300">·</Text>
-                                                                        <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                                        <Text className={`font-bold text-lg ${isLive ? 'text-blue-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{split.time}</Text>
-                                                                    </>
-                                                                )}
-                                                            </View>
-                                                        );
-                                                    });
-                                                })}
+                                        )}
+                                        {!!displayTime && (
+                                            <View className="flex-row items-center mt-0.5">
+                                                <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
+                                                <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayTime}</Text>
                                             </View>
                                         )}
                                     </View>
                                 )}
                             </View>
                         </View>
-                    )
-                )}
+                    );
+                }}
             </Pressable>
         );
     };
@@ -1801,9 +1835,25 @@ export default function Home() {
                     <View className="w-full max-w-6xl px-4 md:px-8">
                         <View className="pt-12 pb-6 flex-row justify-between items-start">
                             <View className="flex-1 mr-4">
+                                <View className="flex-row items-center mb-1 gap-4">
+                                    <View className="flex-row items-center opacity-70">
+                                        <Ionicons name="time-outline" size={10} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 4 }} />
+                                        <Text className={`font-mono text-[10px] font-black tracking-tight ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
+                                            {now.getHours()}:{String(now.getMinutes()).padStart(2, '0')}:{String(now.getSeconds()).padStart(2, '0')}
+                                        </Text>
+                                    </View>
+                                    <View className="flex-row items-center opacity-70">
+                                        <Ionicons name="refresh-circle-outline" size={10} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 4 }} />
+                                        <Text className={`font-mono text-[10px] font-black tracking-tight ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
+                                            초기화까지 {formatRemainingTime(getNextResetSeconds())}
+                                        </Text>
+                                    </View>
+                                </View>
                                 <Text className={`font-bold text-[9px] md:text-xs tracking-[0.4em] mb-1.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Whiteout Survival</Text>
                                 <Text className={`text-3xl md:text-5xl font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>WOS 커맨더</Text>
-                                <View className={`w-10 md:w-14 h-1 rounded-full mt-2.5 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                <View className="mt-4">
+                                    <View className={`w-10 md:w-14 h-1 rounded-full ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                </View>
                                 <Text className={`font-semibold text-[11px] md:text-xs mt-3.5 leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>최적의 영웅 조합과 전략으로{"\n"}빙하기의 생존을 지휘하세요</Text>
 
                                 {!!serverId && !!allianceId && (

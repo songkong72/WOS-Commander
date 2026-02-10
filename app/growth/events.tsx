@@ -898,47 +898,47 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
     const [h, m] = timePart ? timePart.split(':') : ['00', '00'];
 
     return (
-        <View className="mb-4" style={{ zIndex: activeDateDropdown?.type === type ? 10000 : 1, elevation: activeDateDropdown?.type === type ? 50 : 0, overflow: 'visible' }}>
-            <Text className="text-brand-accent text-xs font-bold mb-2 ml-1 uppercase">{label}</Text>
+        <View className="mb-6" style={{ zIndex: activeDateDropdown?.type === type ? 10000 : 1, elevation: activeDateDropdown?.type === type ? 50 : 0, overflow: 'visible' }}>
+            <Text className="text-sky-400 text-[11px] font-black mb-3 ml-1 uppercase tracking-widest">{label}</Text>
             <View className="flex-row" style={{ overflow: 'visible', zIndex: activeDateDropdown?.type === type ? 10001 : 1 }}>
-                <View style={{ flex: 1.7, marginRight: 15 }}>
+                {/* Date Selection */}
+                <View style={{ flex: 1.8, marginRight: 8 }}>
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(type)}
-                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}
+                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
                     >
                         <View className="flex-row items-center flex-1">
-                            <Ionicons name="calendar-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'} flex-1`} numberOfLines={1} adjustsFontSizeToFit>
+                            <Ionicons name="calendar" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
+                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'} flex-1`} numberOfLines={1}>
                                 {datePart ? (formatDisplayDate(value).split(') ')[0] + ')').replace(/^20/, '').replace(/년\s*/, '.').replace(/월\s*/, '.').replace(/일/, '') : '날짜 선택'}
                             </Text>
                         </View>
-                        <Ionicons name="chevron-down" size={12} color="#64748b" />
+                        <Ionicons name="chevron-down" size={14} color="#475569" />
                     </TouchableOpacity>
                 </View>
 
-
-
-                <View style={{ flex: 0.9, marginRight: 8, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
+                {/* Hour Selection */}
+                <View style={{ flex: 1, marginRight: 8, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
                     <TouchableOpacity
                         onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? null : { type, field: 'h' })}
-                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}
+                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="time-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
+                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
+                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
                         </View>
-                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
+                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'h' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-40 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
+                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 bg-slate-900 rounded-3xl border border-slate-700 h-52 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
                             <FlatList
                                 data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
                                 renderItem={({ item: hour }) => (
                                     <TouchableOpacity
                                         onPress={() => { onChange(`${datePart} ${hour}:${m}`); setActiveDateDropdown(null); }}
-                                        className={`h-10 items-center justify-center border-b border-white/5 ${h === hour ? 'bg-sky-500/20' : ''}`}
+                                        className={`h-12 items-center justify-center border-b border-white/5 ${h === hour ? 'bg-sky-500/20' : ''}`}
                                     >
-                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
+                                        <Text className={`font-black text-base ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -947,27 +947,28 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     )}
                 </View>
 
-                <View style={{ flex: 0.9, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
+                {/* Minute Selection */}
+                <View style={{ flex: 1, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
                     <TouchableOpacity
                         onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? null : { type, field: 'min' })}
-                        className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} p-2.5 rounded-2xl border flex-row justify-between items-center`}
+                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="time-outline" size={14} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
+                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
+                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
                         </View>
-                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
+                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'min' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[60px]' : 'top-[60px]'} left-0 right-0 bg-slate-800 rounded-2xl border border-slate-700 h-40 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
+                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 bg-slate-900 rounded-3xl border border-slate-700 h-52 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
                             <FlatList
-                                data={['00', '15', '30', '45']}
+                                data={['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']}
                                 renderItem={({ item: min }) => (
                                     <TouchableOpacity
                                         onPress={() => { onChange(`${datePart} ${h}:${min}`); setActiveDateDropdown(null); }}
-                                        className={`h-10 items-center justify-center border-b border-white/5 ${m === min ? 'bg-sky-500/20' : ''}`}
+                                        className={`h-12 items-center justify-center border-b border-white/5 ${m === min ? 'bg-sky-500/20' : ''}`}
                                     >
-                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
+                                        <Text className={`font-black text-base ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -987,11 +988,9 @@ export default function EventTracker() {
     const [selectedCategory, setSelectedCategory] = useState<EventCategory>('전체');
     const [timezone, setTimezone] = useState<'KST' | 'UTC'>('KST');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
-    const { auth } = useAuth();
+    const { auth, serverId, allianceId } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
-    const [serverId, setServerId] = useState<string | null>(undefined as any);
-    const [allianceId, setAllianceId] = useState<string | null>(undefined as any);
 
     const [penaltyTarget, setPenaltyTarget] = useState<{ id: string, name: string } | null>(null);
     const [overlayContent, setOverlayContent] = useState<React.ReactNode | null>(null);
@@ -1004,15 +1003,7 @@ export default function EventTracker() {
     const router = useRouter();
     const params = useLocalSearchParams();
 
-    useEffect(() => {
-        const loadIds = async () => {
-            const s = await AsyncStorage.getItem('serverId');
-            const a = await AsyncStorage.getItem('allianceId');
-            setServerId(s);
-            setAllianceId(a);
-        };
-        loadIds();
-    }, []);
+    // serverId/allianceId already provided by useAuth
 
     const [now, setNow] = useState(new Date());
     useEffect(() => {
@@ -1034,20 +1025,24 @@ export default function EventTracker() {
 
     // Firebase Event Schedules removed from here (moved up)
 
-    const isSaving = useRef(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     // Merge Firebase schedules with initial events
     useEffect(() => {
-        if (!schedulesLoading && !isSaving.current) {
+        if (!schedulesLoading) {
             const mergedEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(event => {
                 // Handle duplicate ID fallback (a_weapon and alliance_frost_league are the same)
-                const savedSchedule = schedules.find(s =>
-                    s.eventId === event.id ||
-                    (event.id === 'a_weapon' && s.eventId === 'alliance_frost_league') ||
-                    (event.id === 'alliance_frost_league' && s.eventId === 'a_weapon') ||
-                    (event.id === 'a_operation' && s.eventId === 'alliance_operation') ||
-                    (event.id === 'alliance_operation' && s.eventId === 'a_operation')
-                );
+                const savedSchedule = schedules.find(s => {
+                    const sid = (s.eventId || '').trim();
+                    const eid = (event.id || '').trim();
+                    return sid === eid ||
+                        (eid === 'a_weapon' && sid === 'alliance_frost_league') ||
+                        (eid === 'alliance_frost_league' && sid === 'a_weapon') ||
+                        (eid === 'a_operation' && sid === 'alliance_operation') ||
+                        (eid === 'alliance_operation' && sid === 'a_operation') ||
+                        (eid === 'a_joe' && sid === 'alliance_joe') ||
+                        (eid === 'alliance_joe' && sid === 'a_joe');
+                });
                 if (savedSchedule) {
                     // Sanitize stray dots from DB
                     const cleanDay = (savedSchedule.day === '.' || savedSchedule.day?.trim() === '.') ? '' : (savedSchedule.day || '');
@@ -1763,6 +1758,7 @@ export default function EventTracker() {
         ).join('\n');
 
         setAttendeeModalVisible(false);
+        setIsSaving(true);
         showCustomAlert(
             '참석 명단 저장 완료',
             `${managedEvent?.title} 이벤트를 위해 총 ${validAttendees.length}명의 영주가 등록되었습니다.\n\n${summary}`,
@@ -1779,18 +1775,21 @@ export default function EventTracker() {
     const saveSchedule = async () => {
         if (!editingEvent) return;
 
-        isSaving.current = true; // Lock updates
+        setIsSaving(true); // Lock updates
 
-        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
+        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
         if (editingEvent.category === '개인' || dateRangeIDs.includes(editingEvent.id)) {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
-            setEvents(prev => prev.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? { ...e, day: finalDay, time: finalTime } : e));
+            // Optimistic update handled by hook
 
             try {
                 // Consolidate to a single ID for weapon league data
                 const targetId = (editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') ? 'a_weapon' : editingEvent.id;
+
+                console.log(`[Save] DateRange: ${targetId}, day: ${finalDay}, time: ${finalTime}`);
+                setEvents(prev => prev.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? { ...e, day: finalDay, time: finalTime } : e));
 
                 await updateSchedule({
                     eventId: targetId,
@@ -1803,7 +1802,7 @@ export default function EventTracker() {
             } catch (error: any) {
                 showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             } finally {
-                setTimeout(() => { isSaving.current = false; }, 2000);
+                setTimeout(() => { setIsSaving(false); }, 100);
             }
             return;
         }
@@ -1823,9 +1822,12 @@ export default function EventTracker() {
                 finalDay = citadelList.length > 0 ? '성채전' : '';
             }
 
-            setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: timeStr } : e));
+            // Optimistic update handled by hook
 
             try {
+                console.log(`[Save] Fortress/Citadel: ${editingEvent.id}, day: ${finalDay}, time: ${timeStr}`);
+                setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: timeStr } : e));
+
                 await updateSchedule({
                     eventId: editingEvent.id,
                     day: finalDay,
@@ -1853,7 +1855,7 @@ export default function EventTracker() {
             } catch (error: any) {
                 showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
             } finally {
-                setTimeout(() => { isSaving.current = false; }, 2000);
+                setTimeout(() => { setIsSaving(false); }, 100);
             }
             return;
         }
@@ -1902,12 +1904,14 @@ export default function EventTracker() {
         // FORCE ALERT TO DEBUG
         // Alert.alert('Debug Saving', `Event: ${editingEvent?.id}\nSlots2: ${slots2.length}\nFinal: ${finalTime}`);
 
-        // Update local state immediately to prevent flicker
-        setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: finalTime } : e));
+        // Optimistic update handled by hook
 
 
 
         try {
+            console.log(`[Save] General: ${editingEvent.id}, day: ${finalDay}, time: ${finalTime}`);
+            setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: finalDay || '', time: finalTime || '' } : e));
+
             await updateSchedule({
                 eventId: editingEvent.id,
                 day: finalDay || '',
@@ -1933,21 +1937,22 @@ export default function EventTracker() {
         } catch (error: any) {
             showCustomAlert('저장 실패', '서버 통신 중 오류가 발생했습니다.\n' + error.message, 'error');
         } finally {
-            setTimeout(() => { isSaving.current = false; }, 2000);
+            setTimeout(() => { setIsSaving(false); }, 100);
         }
     };
 
     const handleDeleteSchedule = async () => {
         if (!editingEvent) return;
 
+        setIsSaving(true);
         showCustomAlert(
             '일정 초기화',
             '이 이벤트의 요일/시간 설정을 정말로 삭제하시겠습니까?',
             'confirm',
             async () => {
-                isSaving.current = true;
+                setIsSaving(true);
                 try {
-                    setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: '', time: '' } : e));
+                    // Optimistic update handled by hook
 
                     await updateSchedule({
                         eventId: editingEvent.id,
@@ -1965,7 +1970,7 @@ export default function EventTracker() {
                 } catch (error: any) {
                     showCustomAlert('오류', '초기화 실패: ' + error.message, 'error');
                 } finally {
-                    setTimeout(() => { isSaving.current = false; }, 2000);
+                    setTimeout(() => { setIsSaving(false); }, 500);
                 }
             }
         );
@@ -2527,7 +2532,7 @@ export default function EventTracker() {
                                         </ScrollView>
                                     </View>
                                 ) : (() => {
-                                    const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
+                                    const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
                                     return (editingEvent?.category === '개인' || dateRangeIDs.includes(editingEvent?.id || ''));
                                 })() ? (
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: activeDateDropdown ? 10000 : 1 }}>
@@ -2568,7 +2573,7 @@ export default function EventTracker() {
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: (hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
                                         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }} style={{ overflow: 'visible' }}>
                                             {(() => {
-                                                const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_mobilization', 'alliance_mobilization', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'];
+                                                const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'];
                                                 if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                     return (
                                                         <View className={`flex-row mb-6 mt-6 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
