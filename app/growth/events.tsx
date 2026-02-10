@@ -523,17 +523,13 @@ const EventCard = memo(({
                     <View className="flex-row gap-3 mt-6">
                         <Pressable
                             onPress={() => openGuideModal(event)}
-                            className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'}`}
+                            className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-slate-800/40 border-slate-700/50 hover:bg-blue-500 hover:border-blue-400' : 'bg-white border-slate-200 shadow-sm hover:bg-blue-600 hover:border-blue-700'}`}
                             style={({ pressed, hovered }: any) => [
                                 {
-                                    backgroundColor: hovered
-                                        ? (isDark ? '#38bdf8' : '#3b82f6')
-                                        : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
-                                    borderColor: hovered ? (isDark ? '#7dd3fc' : '#2563eb') : (isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 1)'),
                                     transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                     // @ts-ignore
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    shadowColor: hovered ? (isDark ? '#38bdf8' : '#000') : '#000',
+                                    shadowColor: hovered ? (isDark ? '#38bdf8' : '#2563eb') : '#000',
                                     shadowOffset: { width: 0, height: hovered ? 8 : 2 },
                                     shadowOpacity: hovered ? 0.4 : 0.1,
                                     shadowRadius: hovered ? 16 : 4,
@@ -552,13 +548,9 @@ const EventCard = memo(({
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
                                 onPress={() => openAttendeeModal(event)}
-                                className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}
+                                className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500 hover:border-emerald-400' : 'bg-emerald-50 border-emerald-100 shadow-sm hover:bg-emerald-600 hover:border-emerald-700'}`}
                                 style={({ pressed, hovered }: any) => [
                                     {
-                                        backgroundColor: hovered
-                                            ? (isDark ? '#10b981' : '#059669')
-                                            : (isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(240, 253, 244, 1)'),
-                                        borderColor: hovered ? (isDark ? '#34d399' : '#047857') : (isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)'),
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                         // @ts-ignore
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -582,13 +574,9 @@ const EventCard = memo(({
                         {event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
-                                className={`w-12 h-12 rounded-2xl items-center justify-center border transition-all ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'}`}
+                                className={`w-12 h-12 rounded-2xl items-center justify-center border transition-all ${isDark ? 'bg-slate-800/40 border-slate-700/50 hover:bg-slate-700 hover:border-slate-600' : 'bg-white border-slate-200 shadow-sm hover:bg-slate-100 hover:border-slate-300'}`}
                                 style={({ pressed, hovered }: any) => [
                                     {
-                                        backgroundColor: hovered
-                                            ? (isDark ? '#475569' : '#f1f5f9')
-                                            : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
-                                        borderColor: hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? 'rgba(71, 85, 105, 0.5)' : 'rgba(226, 232, 240, 1)'),
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.15 : 1) }],
                                         // @ts-ignore
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
