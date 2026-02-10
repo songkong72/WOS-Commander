@@ -523,13 +523,19 @@ const EventCard = memo(({
                     <View className="flex-row gap-3 mt-6">
                         <Pressable
                             onPress={() => openGuideModal(event)}
-                            className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-blue-500/20 border-blue-500/30 hover:bg-blue-500 hover:border-blue-400' : 'bg-blue-600 border-blue-700 shadow-sm hover:bg-blue-700'}`}
+                            className="flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all"
                             style={({ pressed, hovered }: any) => [
                                 {
+                                    backgroundColor: hovered
+                                        ? (isDark ? '#3b82f6' : '#2563eb')
+                                        : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
+                                    borderColor: hovered
+                                        ? (isDark ? '#60a5fa' : '#3b82f6')
+                                        : (isDark ? 'rgba(51, 65, 85, 0.5)' : '#e2e8f0'),
                                     transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                     // @ts-ignore
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    shadowColor: hovered ? (isDark ? '#38bdf8' : '#2563eb') : '#000',
+                                    shadowColor: hovered ? (isDark ? '#3b82f6' : '#2563eb') : '#000',
                                     shadowOffset: { width: 0, height: hovered ? 8 : 2 },
                                     shadowOpacity: hovered ? 0.4 : 0.1,
                                     shadowRadius: hovered ? 16 : 4,
@@ -538,19 +544,25 @@ const EventCard = memo(({
                                 }
                             ]}
                         >
-                            {({ hovered }: any) => (
+                            {() => (
                                 <>
                                     <Ionicons name="book-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-                                    <Text className="font-black text-sm transition-all text-white">{event.category === '연맹' ? '공략' : 'Guide'}</Text>
+                                    <Text className="font-black text-sm text-white">{event.category === '연맹' ? '공략' : 'Guide'}</Text>
                                 </>
                             )}
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
                                 onPress={() => openAttendeeModal(event)}
-                                className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-emerald-500/20 border-emerald-500/30 hover:bg-emerald-500 hover:border-emerald-400' : 'bg-emerald-600 border-emerald-700 shadow-sm hover:bg-emerald-700'}`}
+                                className="flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all"
                                 style={({ pressed, hovered }: any) => [
                                     {
+                                        backgroundColor: hovered
+                                            ? (isDark ? '#10b981' : '#059669')
+                                            : (isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5'),
+                                        borderColor: hovered
+                                            ? (isDark ? '#34d399' : '#059669')
+                                            : (isDark ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5'),
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                         // @ts-ignore
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -563,10 +575,10 @@ const EventCard = memo(({
                                     }
                                 ]}
                             >
-                                {({ hovered }: any) => (
+                                {() => (
                                     <>
                                         <Ionicons name="people-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-                                        <Text className="font-black text-sm transition-all text-white">참석</Text>
+                                        <Text className="font-black text-sm text-white">참석</Text>
                                     </>
                                 )}
                             </Pressable>
@@ -574,9 +586,15 @@ const EventCard = memo(({
                         {event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
-                                className={`w-12 h-12 rounded-2xl items-center justify-center border transition-all ${isDark ? 'bg-slate-700/40 border-slate-600/50 hover:bg-slate-700 hover:border-slate-500' : 'bg-slate-200 border-slate-300 shadow-sm hover:bg-slate-300'}`}
+                                className="w-12 h-12 rounded-2xl items-center justify-center border transition-all"
                                 style={({ pressed, hovered }: any) => [
                                     {
+                                        backgroundColor: hovered
+                                            ? (isDark ? '#475569' : '#f1f5f9')
+                                            : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
+                                        borderColor: hovered
+                                            ? (isDark ? '#94a3b8' : '#cbd5e1')
+                                            : (isDark ? 'rgba(71, 85, 105, 0.5)' : '#e2e8f0'),
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.15 : 1) }],
                                         // @ts-ignore
                                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -590,8 +608,12 @@ const EventCard = memo(({
                                 ]}
                             >
                                 {({ hovered }: any) => (
-                                    <View style={{ opacity: 1 }}>
-                                        <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3670/3670357.png' }} className="w-5 h-5 brightness-200 invert" />
+                                    <View style={{ opacity: hovered ? 1 : 0.7 }}>
+                                        <Image
+                                            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3670/3670357.png' }}
+                                            className="w-5 h-5 brightness-200 invert"
+                                            style={{ opacity: hovered ? 1 : 0.8 }}
+                                        />
                                     </View>
                                 )}
                             </Pressable>
