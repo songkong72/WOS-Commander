@@ -433,7 +433,7 @@ const EventCard = memo(({
                                                                                 <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{d}</Text>
                                                                                 <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                                                 <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-blue-400' : 'text-blue-600'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
                                                                             </View>
                                                                         );
                                                                     }
@@ -498,7 +498,7 @@ const EventCard = memo(({
                                                                                     <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{d}</Text>
                                                                                     <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                                                     <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                    <Text className={`${isDark ? 'text-blue-400' : 'text-blue-600'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
+                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
                                                                                 </View>
                                                                             );
                                                                         }
