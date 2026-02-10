@@ -270,7 +270,22 @@ const EventCard = memo(({
             className={`w-full sm:w-1/2 p-2`}
             onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
         >
-            <View className={`h-full rounded-3xl border shadow-lg transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/30' : 'bg-white border-blue-100 shadow-blue-200/20') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}>
+            <Pressable
+                style={({ hovered }: any) => [
+                    {
+                        height: '100%',
+                        transform: [{ scale: hovered ? 1.02 : 1 }],
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        zIndex: hovered ? 10 : 1,
+                        shadowColor: '#3b82f6',
+                        shadowOffset: { width: 0, height: hovered ? 12 : 4 },
+                        shadowOpacity: hovered ? 0.3 : 0,
+                        shadowRadius: hovered ? 16 : 4,
+                        elevation: hovered ? 10 : 0
+                    }
+                ]}
+                className={`rounded-3xl border shadow-lg transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/40 shadow-blue-500/10' : 'bg-white border-blue-200 shadow-blue-200/30') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
+            >
                 <View className={`px-4 py-3 flex-col border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <View className="flex-row items-center mb-2">
                         {event.imageUrl ? (
@@ -377,9 +392,19 @@ const EventCard = memo(({
                                     <View className="w-full gap-3">
                                         <View className="flex-row gap-2">
                                             {parts.map((p: string, idx: number) => (
-                                                <TouchableOpacity key={idx} onPress={() => onSetSelectedTeamTab(idx)} className={`flex-1 py-2.5 rounded-xl items-center justify-center ${idx === selectedTab ? 'bg-blue-600' : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
+                                                <Pressable
+                                                    key={idx}
+                                                    onPress={() => onSetSelectedTeamTab(idx)}
+                                                    className={`flex-1 py-2.5 rounded-xl items-center justify-center transition-all ${idx === selectedTab ? 'bg-blue-600' : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}
+                                                    style={({ pressed, hovered }: any) => [
+                                                        {
+                                                            transform: [{ scale: pressed ? 0.98 : (hovered ? 1.02 : 1) }],
+                                                            cursor: 'pointer'
+                                                        }
+                                                    ]}
+                                                >
                                                     <Text className={`text-xs font-bold ${idx === selectedTab ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{getTabLabel(p, idx)}</Text>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             ))}
                                         </View>
                                         <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
@@ -496,24 +521,96 @@ const EventCard = memo(({
                         })()}
                     </View>
                     <View className="flex-row gap-3 mt-6">
-                        <TouchableOpacity onPress={() => openGuideModal(event)} className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'} transition-all active:scale-95`} style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}>
-                            <Ionicons name="book-outline" size={16} color={isDark ? '#e2e8f0' : '#475569'} style={{ marginRight: 6 }} />
-                            <Text className={`font-black text-sm ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{event.category === '연맹' ? '공략' : 'Guide'}</Text>
-                        </TouchableOpacity>
+                        <Pressable
+                            onPress={() => openGuideModal(event)}
+                            className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'}`}
+                            style={({ pressed, hovered }: any) => [
+                                {
+                                    backgroundColor: hovered
+                                        ? (isDark ? '#38bdf8' : '#3b82f6')
+                                        : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
+                                    borderColor: hovered ? (isDark ? '#7dd3fc' : '#2563eb') : (isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 1)'),
+                                    transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                    // @ts-ignore
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    shadowColor: hovered ? (isDark ? '#38bdf8' : '#000') : '#000',
+                                    shadowOffset: { width: 0, height: hovered ? 8 : 2 },
+                                    shadowOpacity: hovered ? 0.4 : 0.1,
+                                    shadowRadius: hovered ? 16 : 4,
+                                    elevation: hovered ? 8 : 2,
+                                    cursor: 'pointer',
+                                }
+                            ]}
+                        >
+                            {({ hovered }: any) => (
+                                <>
+                                    <Ionicons name="book-outline" size={16} color={hovered ? '#fff' : (isDark ? '#e2e8f0' : '#475569')} style={{ marginRight: 6 }} />
+                                    <Text className={`font-black text-sm transition-all ${hovered ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>{event.category === '연맹' ? '공략' : 'Guide'}</Text>
+                                </>
+                            )}
+                        </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
-                            <TouchableOpacity onPress={() => openAttendeeModal(event)} className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'} transition-all active:scale-95`} style={{ shadowColor: '#10b981', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}>
-                                <Ionicons name="people-outline" size={16} color={isDark ? '#34d399' : '#059669'} style={{ marginRight: 6 }} />
-                                <Text className={`font-black text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>참석</Text>
-                            </TouchableOpacity>
+                            <Pressable
+                                onPress={() => openAttendeeModal(event)}
+                                className={`flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-100 shadow-sm'}`}
+                                style={({ pressed, hovered }: any) => [
+                                    {
+                                        backgroundColor: hovered
+                                            ? (isDark ? '#10b981' : '#059669')
+                                            : (isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(240, 253, 244, 1)'),
+                                        borderColor: hovered ? (isDark ? '#34d399' : '#047857') : (isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)'),
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        // @ts-ignore
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        shadowColor: '#10b981',
+                                        shadowOffset: { width: 0, height: hovered ? 8 : 2 },
+                                        shadowOpacity: hovered ? 0.4 : 0.1,
+                                        shadowRadius: hovered ? 16 : 4,
+                                        elevation: hovered ? 8 : 2,
+                                        cursor: 'pointer',
+                                    }
+                                ]}
+                            >
+                                {({ hovered }: any) => (
+                                    <>
+                                        <Ionicons name="people-outline" size={16} color={hovered ? '#fff' : (isDark ? '#34d399' : '#059669')} style={{ marginRight: 6 }} />
+                                        <Text className={`font-black text-sm transition-all ${hovered ? 'text-white' : (isDark ? 'text-emerald-400' : 'text-emerald-700')}`}>참석</Text>
+                                    </>
+                                )}
+                            </Pressable>
                         )}
                         {event.wikiUrl && (
-                            <TouchableOpacity onPress={() => openWikiLink(event.wikiUrl || '')} className={`w-12 h-12 rounded-2xl items-center justify-center border ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'} transition-all active:scale-95`} style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}>
-                                <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3670/3670357.png' }} className="w-5 h-5 grayscale opacity-70" />
-                            </TouchableOpacity>
+                            <Pressable
+                                onPress={() => openWikiLink(event.wikiUrl || '')}
+                                className={`w-12 h-12 rounded-2xl items-center justify-center border transition-all ${isDark ? 'bg-slate-800/40 border-slate-700/50' : 'bg-white border-slate-200 shadow-sm'}`}
+                                style={({ pressed, hovered }: any) => [
+                                    {
+                                        backgroundColor: hovered
+                                            ? (isDark ? '#475569' : '#f1f5f9')
+                                            : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
+                                        borderColor: hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? 'rgba(71, 85, 105, 0.5)' : 'rgba(226, 232, 240, 1)'),
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.15 : 1) }],
+                                        // @ts-ignore
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        shadowColor: '#000',
+                                        shadowOffset: { width: 0, height: hovered ? 6 : 2 },
+                                        shadowOpacity: hovered ? 0.3 : 0.1,
+                                        shadowRadius: hovered ? 12 : 4,
+                                        elevation: hovered ? 6 : 2,
+                                        cursor: 'pointer',
+                                    }
+                                ]}
+                            >
+                                {({ hovered }: any) => (
+                                    <View style={{ opacity: hovered ? 1 : 0.7 }}>
+                                        <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3670/3670357.png' }} className={`w-5 h-5 ${hovered ? '' : 'grayscale'}`} />
+                                    </View>
+                                )}
+                            </Pressable>
                         )}
                     </View>
                 </View>
-            </View>
+            </Pressable>
         </View>
     );
 });
@@ -545,7 +642,20 @@ const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, 
     });
 
     return (
-        <TouchableOpacity onPress={onPress} className="ml-auto">
+        <Pressable onPress={onPress} className="ml-auto"
+            style={({ pressed, hovered }: any) => [
+                {
+                    transform: [{ scale: pressed ? 0.95 : (hovered ? 1.08 : 1) }],
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    cursor: 'pointer',
+                    shadowColor: hovered ? (isDark ? '#818cf8' : '#6366f1') : 'transparent',
+                    shadowOffset: { width: 0, height: hovered ? 4 : 0 },
+                    shadowOpacity: hovered ? 0.6 : 0,
+                    shadowRadius: hovered ? 12 : 0,
+                    elevation: hovered ? 6 : 0,
+                }
+            ]}
+        >
             <Animated.View
                 style={{ opacity: pulseOpacity }}
                 className="relative overflow-hidden px-3 py-1.5 rounded-xl flex-row items-center justify-center shadow-sm"
@@ -579,7 +689,7 @@ const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, 
                     />
                 </Animated.View>
             </Animated.View>
-        </TouchableOpacity>
+        </Pressable>
     );
 });
 
@@ -1894,23 +2004,50 @@ export default function EventTracker() {
                         <Text className={`text-[11px] font-bold uppercase tracking-widest mb-6 px-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Category</Text>
                         <View className="space-y-1">
                             {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
-                                <TouchableOpacity
+                                <Pressable
                                     key={cat}
                                     onPress={() => setSelectedCategory(cat)}
                                     className={`flex-row items-center px-4 py-3 rounded-xl transition-all ${selectedCategory === cat ? (isDark ? 'bg-indigo-500/10' : 'bg-indigo-50') : ''}`}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            backgroundColor: selectedCategory === cat
+                                                ? (isDark ? 'rgba(99, 102, 241, 0.1)' : 'rgba(238, 242, 255, 1)')
+                                                : (hovered ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)') : 'transparent'),
+                                            transform: [{ scale: pressed ? 0.98 : (hovered ? 1.05 : 1) }],
+                                            borderLeftWidth: (selectedCategory === cat || hovered) ? 4 : 0,
+                                            borderLeftColor: selectedCategory === cat ? '#6366f1' : '#94a3b8',
+                                            // @ts-ignore
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer',
+                                        }
+                                    ]}
                                 >
-                                    <Ionicons
-                                        name={cat === '연맹' ? 'flag-outline' : cat === '개인' ? 'person-outline' : cat === '서버' ? 'earth-outline' : cat === '초보자' ? 'star-outline' : 'apps-outline'}
-                                        size={18}
-                                        color={selectedCategory === cat ? '#6366f1' : (isDark ? '#475569' : '#94a3b8')}
-                                    />
-                                    <Text className={`ml-3 font-bold text-sm ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
-                                        {cat}
-                                    </Text>
-                                    {selectedCategory === cat && (
-                                        <View className="ml-auto w-1 h-4 bg-indigo-500 rounded-full" />
+                                    {({ hovered }: any) => (
+                                        <>
+                                            <Ionicons
+                                                name={cat === '연맹' ? 'flag-outline' : cat === '개인' ? 'person-outline' : cat === '서버' ? 'earth-outline' : cat === '초보자' ? 'star-outline' : 'apps-outline'}
+                                                size={18}
+                                                color={selectedCategory === cat ? '#6366f1' : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
+                                            />
+                                            <Text className={`ml-3 font-bold text-sm ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-800') : (isDark ? 'text-slate-400' : 'text-slate-500'))}`}>
+                                                {cat}
+                                            </Text>
+                                            {(selectedCategory === cat || hovered) && (
+                                                <View
+                                                    className={`ml-auto w-1 h-4 rounded-full transition-all`}
+                                                    style={{
+                                                        backgroundColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
+                                                        opacity: selectedCategory === cat ? 1 : 0.8,
+                                                        shadowColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
+                                                        shadowOffset: { width: 0, height: 0 },
+                                                        shadowOpacity: 0.8,
+                                                        shadowRadius: 5
+                                                    }}
+                                                />
+                                            )}
+                                        </>
                                     )}
-                                </TouchableOpacity>
+                                </Pressable>
                             ))}
                         </View>
                     </View>
@@ -1934,18 +2071,46 @@ export default function EventTracker() {
 
                             {/* Timezone Toggle */}
                             <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-600' : 'bg-slate-100 border-slate-300'}`}>
-                                <TouchableOpacity
+                                <Pressable
                                     onPress={() => setTimezone('KST')}
-                                    className={`px-4 py-2 rounded-xl flex-row items-center ${timezone === 'KST' ? (isDark ? 'bg-blue-600' : 'bg-white shadow-sm') : ''}`}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 16,
+                                            paddingVertical: 8,
+                                            borderRadius: 12,
+                                            backgroundColor: timezone === 'KST'
+                                                ? (isDark ? '#2563eb' : '#3b82f6')
+                                                : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
+                                            borderColor: timezone === 'KST' ? 'transparent' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                            borderWidth: 1,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
                                 >
-                                    <Text className={`text-[11px] font-black ${timezone === 'KST' ? (isDark ? 'text-white' : 'text-blue-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>KST</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                    <Text className={`text-[11px] font-black ${timezone === 'KST' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>KST</Text>
+                                </Pressable>
+                                <Pressable
                                     onPress={() => setTimezone('UTC')}
-                                    className={`px-4 py-2 rounded-xl flex-row items-center ${timezone === 'UTC' ? (isDark ? 'bg-blue-600' : 'bg-white shadow-sm') : ''}`}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 16,
+                                            paddingVertical: 8,
+                                            borderRadius: 12,
+                                            backgroundColor: timezone === 'UTC'
+                                                ? (isDark ? '#2563eb' : '#3b82f6')
+                                                : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
+                                            borderColor: timezone === 'UTC' ? 'transparent' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                            borderWidth: 1,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
                                 >
-                                    <Text className={`text-[11px] font-black ${timezone === 'UTC' ? (isDark ? 'text-white' : 'text-blue-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
-                                </TouchableOpacity>
+                                    <Text className={`text-[11px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                </Pressable>
                             </View>
                         </View>
 
@@ -1954,22 +2119,36 @@ export default function EventTracker() {
                             <View>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                                     {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={cat}
                                             onPress={() => setSelectedCategory(cat)}
                                             className="px-4 py-3 mr-2 relative flex-row items-center"
                                         >
-                                            <Ionicons
-                                                name={cat === '연맹' ? 'flag-outline' : cat === '개인' ? 'person-outline' : cat === '서버' ? 'earth-outline' : cat === '초보자' ? 'star-outline' : 'apps-outline'}
-                                                size={16}
-                                                color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8')}
-                                                className="mr-2"
-                                            />
-                                            <Text className={`text-sm font-bold ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{cat}</Text>
-                                            {selectedCategory === cat && (
-                                                <View className="absolute bottom-0 left-4 right-4 h-0.5 bg-indigo-500" />
+                                            {({ hovered }: any) => (
+                                                <>
+                                                    <Ionicons
+                                                        name={cat === '연맹' ? 'flag-outline' : cat === '개인' ? 'person-outline' : cat === '서버' ? 'earth-outline' : cat === '초보자' ? 'star-outline' : 'apps-outline'}
+                                                        size={16}
+                                                        color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
+                                                        className="mr-2"
+                                                    />
+                                                    <Text className={`text-sm font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}>{cat}</Text>
+                                                    {(selectedCategory === cat || hovered) && (
+                                                        <View
+                                                            className="absolute bottom-0 left-4 right-4 h-0.5 rounded-t-full transition-all"
+                                                            style={{
+                                                                backgroundColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
+                                                                opacity: selectedCategory === cat ? 1 : 0.8,
+                                                                shadowColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
+                                                                shadowOffset: { width: 0, height: -2 },
+                                                                shadowOpacity: 0.6,
+                                                                shadowRadius: 4
+                                                            }}
+                                                        />
+                                                    )}
+                                                </>
                                             )}
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </ScrollView>
                             </View>

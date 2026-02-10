@@ -132,7 +132,7 @@ export default function HeroDetail() {
 
     const renderHeader = () => (
         <View className="absolute top-0 left-0 right-0 z-50 flex-row justify-between items-center px-6 pt-12 pb-4">
-            <TouchableOpacity
+            <Pressable
                 onPress={() => {
                     // Determine the category to return to based on hero's gen or rarity
                     const category = hero.gen || hero.rarity;
@@ -144,10 +144,18 @@ export default function HeroDetail() {
                         router.replace(`/hero-management?category=${category}`);
                     }
                 }}
-                className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200'}`}
+                className={`w-10 h-10 rounded-full items-center justify-center border transition-all ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200 shadow-sm'}`}
+                style={({ pressed, hovered }: any) => [
+                    {
+                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                        transition: 'all 0.2s',
+                        cursor: 'pointer',
+                        backgroundColor: hovered ? (isDark ? '#334155' : '#f1f5f9') : (isDark ? '#1e293b' : '#f8fafc'),
+                    }
+                ]}
             >
                 <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#1e293b"} />
-            </TouchableOpacity>
+            </Pressable>
             <Text className={`font-bold text-xl tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{hero.name}</Text>
             <View className="w-10 h-10" />
         </View>
@@ -241,8 +249,12 @@ export default function HeroDetail() {
                                         onPress={() => setActiveTab(tab.id)}
                                         onHoverIn={() => setHoveredTabId(tab.id)}
                                         onHoverOut={() => setHoveredTabId(null)}
-                                        style={({ pressed }) => [
-                                            { transform: [{ scale: pressed ? 0.98 : 1 }] }
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                transform: [{ scale: pressed ? 0.98 : (hovered ? 1.02 : 1) }],
+                                                transition: 'all 0.2s',
+                                                cursor: 'pointer'
+                                            }
                                         ]}
                                         className={`flex-row items-center px-5 py-3 rounded-2xl border transition-all ${activeTab === tab.id
                                             ? (isDark ? 'bg-slate-800 border-white/20 shadow-lg' : 'bg-white border-slate-200 shadow-md')
@@ -339,17 +351,24 @@ export default function HeroDetail() {
                                         }
                                         return (hero.skills as any)?.[t]?.length > 0;
                                     }).map((t) => (
-                                        <TouchableOpacity
+                                        <Pressable
                                             key={t}
                                             onPress={() => setSkillType(t)}
                                             className={`px-5 py-2.5 rounded-full border transition-all ${skillType === t
                                                 ? (isDark ? 'bg-white border-white shadow-lg shadow-white/10' : 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20')
                                                 : (isDark ? 'bg-transparent border-slate-700' : 'bg-slate-50 border-slate-200')}`}
+                                            style={({ pressed, hovered }: any) => [
+                                                {
+                                                    transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                                    transition: 'all 0.2s',
+                                                    cursor: 'pointer'
+                                                }
+                                            ]}
                                         >
                                             <Text className={`text-[11px] font-bold uppercase tracking-widest ${skillType === t ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
                                                 {t === 'exploration' ? '탐험' : t === 'expedition' ? '원정' : '특성'}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </Pressable>
                                     ))}
                                 </View>
 

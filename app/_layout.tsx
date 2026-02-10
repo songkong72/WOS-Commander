@@ -21,6 +21,7 @@ export default function Layout() {
     const [dashboardScrollY, setDashboardScrollY] = useState(0);
     const [fontSizeScale, setFontSizeScale] = useState(1.0);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
+    const [isGateOpen, setIsGateOpen] = useState(true);
     const mainScrollRef = useRef<ScrollView>(null);
     const isDark = theme === 'dark'; // Moved up for context
 
@@ -42,6 +43,7 @@ export default function Layout() {
                 }
                 if (savedServer) setServerId(savedServer);
                 if (savedAlliance) setAllianceId(savedAlliance);
+                if (savedServer && savedAlliance) setIsGateOpen(false);
                 if (savedFontSize) setFontSizeScale(parseFloat(savedFontSize));
 
             } catch (e) {
@@ -89,7 +91,7 @@ export default function Layout() {
     if (!isLayoutReady) return null;
 
     return (
-        <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef }}>
+        <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen }}>
             <ThemeContext.Provider value={{ theme, toggleTheme, fontSizeScale, changeFontSize }}>
                 {Platform.OS === 'web' && (
                     <Head>
@@ -112,7 +114,7 @@ export default function Layout() {
 
                 <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9', paddingLeft: isPC ? 256 : 0 }]}>
                     <Slot />
-                    <GlobalNavigationBar />
+                    {!isGateOpen && <GlobalNavigationBar />}
                 </View>
             </ThemeContext.Provider>
         </AuthContext.Provider>

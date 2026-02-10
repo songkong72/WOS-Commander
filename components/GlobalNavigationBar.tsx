@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, useWindowDimensions, Pressable } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -68,26 +68,48 @@ export default function GlobalNavigationBar() {
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
                         return (
-                            <TouchableOpacity
+                            <Pressable
                                 key={item.id}
                                 onPress={() => handleNavPress(item)}
-                                className={`flex-row items-center px-6 py-4 rounded-2xl mb-2 transition-all ${isActive ? (isDark ? 'bg-emerald-500/10 border border-emerald-500/40' : 'bg-emerald-50 border border-emerald-200 shadow-sm') : ''}`}
+                                style={({ pressed, hovered }: any) => [
+                                    {
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        paddingHorizontal: 24,
+                                        paddingVertical: 16,
+                                        borderRadius: 16,
+                                        marginBottom: 8,
+                                        backgroundColor: isActive
+                                            ? (isDark ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)')
+                                            : (hovered ? (isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)') : 'transparent'),
+                                        borderWidth: 1,
+                                        borderColor: isActive
+                                            ? (isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.2)')
+                                            : (hovered ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent'),
+                                        transform: [{ scale: pressed ? 0.98 : 1 }],
+                                        transition: 'all 0.2s',
+                                    }
+                                ]}
                             >
-                                <Ionicons
-                                    name={isActive ? item.activeIcon : item.icon}
-                                    size={24}
-                                    color={isActive ? "#10b981" : (isDark ? '#475569' : '#94a3b8')}
-                                    style={{ marginRight: 16 }}
-                                />
-                                <Text
-                                    className={`text-base font-black tracking-tight ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}
-                                >
-                                    {item.label}
-                                </Text>
-                                {isActive && (
-                                    <View className="absolute left-0 w-1 h-6 bg-emerald-500 rounded-r-full" />
+                                {({ hovered }: any) => (
+                                    <>
+                                        <Ionicons
+                                            name={isActive ? item.activeIcon : item.icon}
+                                            size={24}
+                                            color={isActive ? "#10b981" : (hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#475569' : '#94a3b8'))}
+                                            style={{ marginRight: 16 }}
+                                        />
+                                        <Text
+                                            className={`text-base font-black tracking-tight ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}
+                                        >
+                                            {item.label}
+                                        </Text>
+                                        {isActive && (
+                                            <View className="absolute left-0 w-1 h-6 bg-emerald-500 rounded-r-full" />
+                                        )}
+                                    </>
                                 )}
-                            </TouchableOpacity>
+                            </Pressable>
                         );
                     })}
                 </View>
@@ -124,24 +146,37 @@ export default function GlobalNavigationBar() {
                     const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
 
                     return (
-                        <TouchableOpacity
+                        <Pressable
                             key={item.id}
                             onPress={() => handleNavPress(item)}
-                            className="flex-1 items-center justify-center p-1"
+                            style={({ pressed, hovered }: any) => [
+                                {
+                                    flex: 1,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 4,
+                                    transform: [{ scale: pressed ? 0.92 : (hovered ? 1.05 : 1) }],
+                                    transition: 'all 0.2s',
+                                }
+                            ]}
                         >
-                            <View className={`w-12 h-12 rounded-2xl items-center justify-center transition-all ${isActive ? (isDark ? 'bg-blue-500/20' : 'bg-blue-50') : ''}`}>
-                                <Ionicons
-                                    name={isActive ? item.activeIcon : item.icon}
-                                    size={24}
-                                    color={isActive ? (isDark ? '#38bdf8' : '#2563eb') : (isDark ? '#64748b' : '#94a3b8')}
-                                />
-                            </View>
-                            <Text
-                                className={`mt-1 text-[9px] font-black tracking-tighter ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-600' : 'text-slate-400')}`}
-                            >
-                                {item.label}
-                            </Text>
-                        </TouchableOpacity>
+                            {({ hovered }: any) => (
+                                <>
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center transition-all ${isActive ? (isDark ? 'bg-blue-500/20' : 'bg-blue-50') : (hovered ? (isDark ? 'bg-slate-800/50' : 'bg-slate-100/50') : '')}`}>
+                                        <Ionicons
+                                            name={isActive ? item.activeIcon : item.icon}
+                                            size={24}
+                                            color={isActive ? (isDark ? '#38bdf8' : '#2563eb') : (hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#64748b' : '#94a3b8'))}
+                                        />
+                                    </View>
+                                    <Text
+                                        className={`mt-1 text-[9px] font-black tracking-tighter ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}
+                                    >
+                                        {item.label}
+                                    </Text>
+                                </>
+                            )}
+                        </Pressable>
                     );
                 })}
             </View>

@@ -12,6 +12,8 @@ interface AuthContextType {
     dashboardScrollY: number;
     setDashboardScrollY: (y: number) => void;
     mainScrollRef: React.RefObject<any>;
+    isGateOpen: boolean;
+    setIsGateOpen: (open: boolean) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

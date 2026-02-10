@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Dimensions, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Dimensions, Platform, Pressable } from 'react-native';
 import { Stack, Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useAuth, useTheme } from '../context';
@@ -98,15 +98,27 @@ export default function HeroManagement() {
                 <View className={`w-16 md:w-24 border-r pt-12 ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                     <ScrollView showsVerticalScrollIndicator={false}>
                         {categories.map((cat) => (
-                            <TouchableOpacity
+                            <Pressable
                                 key={cat.id}
                                 onPress={() => setSelectedCategory(cat.id)}
                                 className={`py-2.5 items-center border-l-4 ${selectedCategory === cat.id ? (isDark ? 'bg-[#38bdf8]/10 border-[#38bdf8]' : 'bg-blue-50 border-blue-600') : 'border-transparent'}`}
+                                style={({ pressed, hovered }: any) => [
+                                    {
+                                        cursor: 'pointer',
+                                        backgroundColor: selectedCategory === cat.id
+                                            ? (isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(239, 246, 255, 1)')
+                                            : (hovered ? (isDark ? 'rgba(56, 189, 248, 0.05)' : 'rgba(59, 130, 246, 0.05)') : 'transparent'),
+                                        transform: [{ scale: pressed ? 0.98 : (hovered ? 1.05 : 1) }],
+                                        borderLeftWidth: (selectedCategory === cat.id || hovered) ? 4 : 0,
+                                        borderLeftColor: selectedCategory === cat.id ? (isDark ? '#38bdf8' : '#2563eb') : '#94a3b8',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    }
+                                ]}
                             >
                                 <Text className={`font-bold text-[10px] md:text-xs ${selectedCategory === cat.id ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
                                     {cat.label}
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                         <View className="h-20" />
                     </ScrollView>
@@ -116,12 +128,20 @@ export default function HeroManagement() {
                 <View className={`flex-1 ${isDark ? 'bg-brand-dark/40' : 'bg-white'}`}>
                     <View className="p-4 md:p-6">
                         <View className="mb-6 flex-row items-center">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
-                                className={`mr-4 p-3 rounded-full active:bg-slate-700 ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200 shadow-sm'}`}
+                                className={`mr-4 p-3 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200 shadow-sm'}`}
+                                style={({ pressed, hovered }: any) => [
+                                    {
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        transition: 'all 0.2s',
+                                        cursor: 'pointer',
+                                        backgroundColor: hovered ? (isDark ? '#334155' : '#f1f5f9') : (isDark ? '#1e293b' : '#f8fafc'),
+                                    }
+                                ]}
                             >
                                 <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#1e293b"} />
-                            </TouchableOpacity>
+                            </Pressable>
                             <View className="flex-1">
                                 <Text className={`font-bold text-[10px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Hero Archive</Text>
                                 <Text className={`text-3xl md:text-4xl font-bold mb-1.5 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{selectedCategory} 영웅 목록</Text>
@@ -139,7 +159,17 @@ export default function HeroManagement() {
                                             className="p-2"
                                         >
                                             <Link href={`/hero-management/${hero.id}`} asChild>
-                                                <TouchableOpacity activeOpacity={0.8} className={`overflow-hidden rounded-xl border shadow-2xl group ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                                <Pressable
+                                                    className={`overflow-hidden rounded-xl border shadow-2xl group ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}
+                                                    style={({ pressed, hovered }: any) => [
+                                                        {
+                                                            transform: [{ scale: pressed ? 0.98 : (hovered ? 1.02 : 1) }],
+                                                            transition: 'all 0.2s',
+                                                            cursor: 'pointer',
+                                                            boxShadow: hovered ? (isDark ? '0 10px 15px -3px rgba(0, 0, 0, 0.5)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)') : 'none',
+                                                        }
+                                                    ]}
+                                                >
                                                     {/* Image Placeholder with Gradients */}
                                                     <View className={`aspect-square relative ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`}>
                                                         <Image
@@ -165,7 +195,7 @@ export default function HeroManagement() {
                                                             {hero.name}
                                                         </Text>
                                                     </View>
-                                                </TouchableOpacity>
+                                                </Pressable>
                                             </Link>
                                         </View>
                                     ))
