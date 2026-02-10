@@ -234,6 +234,10 @@ const EventCard = memo(({
     checkItemOngoing, openScheduleModal, openGuideModal, openAttendeeModal, openWikiLink,
     onSetSelectedTeamTab, onLayout
 }: EventCardProps) => {
+    const [guideHover, setGuideHover] = useState(false);
+    const [attendHover, setAttendHover] = useState(false);
+    const [wikiHover, setWikiHover] = useState(false);
+
     const isUpcoming = !isOngoing && !isExpired;
     const textColor = isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isUpcoming ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-white' : 'text-slate-900'));
 
@@ -523,99 +527,75 @@ const EventCard = memo(({
                     <View className="flex-row gap-3 mt-6">
                         <Pressable
                             onPress={() => openGuideModal(event)}
-                            className="flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all"
-                            style={({ pressed, hovered }: any) => [
+                            onHoverIn={() => setGuideHover(true)}
+                            onHoverOut={() => setGuideHover(false)}
+                            className={`flex-1 py-2 rounded-2xl flex-row items-center justify-center border ${guideHover ? 'bg-blue-500 border-blue-400' : 'bg-blue-400/20 border-slate-700/50'}`}
+                            style={({ pressed }: any) => [
                                 {
-                                    backgroundColor: hovered
-                                        ? (isDark ? '#3b82f6' : '#2563eb')
-                                        : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
-                                    borderColor: hovered
-                                        ? (isDark ? '#60a5fa' : '#3b82f6')
-                                        : (isDark ? 'rgba(51, 65, 85, 0.5)' : '#e2e8f0'),
-                                    transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                    transform: [{ scale: pressed ? 0.95 : (guideHover ? 1.05 : 1) }],
                                     // @ts-ignore
-                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    shadowColor: hovered ? (isDark ? '#3b82f6' : '#2563eb') : '#000',
-                                    shadowOffset: { width: 0, height: hovered ? 8 : 2 },
-                                    shadowOpacity: hovered ? 0.4 : 0.1,
-                                    shadowRadius: hovered ? 16 : 4,
-                                    elevation: hovered ? 8 : 2,
+                                    transition: 'all 0.05s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    shadowColor: guideHover ? '#3b82f6' : 'transparent',
+                                    shadowOffset: { width: 0, height: guideHover ? 8 : 0 },
+                                    shadowOpacity: guideHover ? 0.4 : 0,
+                                    shadowRadius: guideHover ? 16 : 0,
+                                    elevation: guideHover ? 8 : 0,
                                     cursor: 'pointer',
                                 }
                             ]}
                         >
-                            {() => (
-                                <>
-                                    <Ionicons name="book-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-                                    <Text className="font-black text-sm text-white">{event.category === '연맹' ? '공략' : 'Guide'}</Text>
-                                </>
-                            )}
+                            <Ionicons name="book-outline" size={16} color={guideHover ? '#172554' : '#fff'} style={{ marginRight: 6 }} />
+                            <Text className={`font-bold text-sm ${guideHover ? 'text-blue-950' : 'text-white'}`}>{event.category === '연맹' ? '공략' : 'Guide'}</Text>
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
                                 onPress={() => openAttendeeModal(event)}
-                                className="flex-1 py-3.5 rounded-2xl flex-row items-center justify-center border transition-all"
-                                style={({ pressed, hovered }: any) => [
+                                onHoverIn={() => setAttendHover(true)}
+                                onHoverOut={() => setAttendHover(false)}
+                                className={`flex-1 py-2 rounded-2xl flex-row items-center justify-center border ${attendHover ? 'bg-emerald-500 border-emerald-400' : 'bg-emerald-400/20 border-slate-700/50'}`}
+                                style={({ pressed }: any) => [
                                     {
-                                        backgroundColor: hovered
-                                            ? (isDark ? '#10b981' : '#059669')
-                                            : (isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5'),
-                                        borderColor: hovered
-                                            ? (isDark ? '#34d399' : '#059669')
-                                            : (isDark ? 'rgba(16, 185, 129, 0.2)' : '#d1fae5'),
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        transform: [{ scale: pressed ? 0.95 : (attendHover ? 1.05 : 1) }],
                                         // @ts-ignore
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        transition: 'all 0.05s cubic-bezier(0.4, 0, 0.2, 1)',
                                         shadowColor: '#10b981',
-                                        shadowOffset: { width: 0, height: hovered ? 8 : 2 },
-                                        shadowOpacity: hovered ? 0.4 : 0.1,
-                                        shadowRadius: hovered ? 16 : 4,
-                                        elevation: hovered ? 8 : 2,
+                                        shadowOffset: { width: 0, height: attendHover ? 8 : 0 },
+                                        shadowOpacity: attendHover ? 0.4 : 0,
+                                        shadowRadius: attendHover ? 16 : 0,
+                                        elevation: attendHover ? 8 : 0,
                                         cursor: 'pointer',
                                     }
                                 ]}
                             >
-                                {() => (
-                                    <>
-                                        <Ionicons name="people-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
-                                        <Text className="font-black text-sm text-white">참석</Text>
-                                    </>
-                                )}
+                                <Ionicons name="people-outline" size={16} color={attendHover ? '#064e3b' : '#fff'} style={{ marginRight: 6 }} />
+                                <Text className={`font-bold text-sm ${attendHover ? 'text-emerald-950' : 'text-white'}`}>참석</Text>
                             </Pressable>
                         )}
                         {event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
-                                className="w-12 h-12 rounded-2xl items-center justify-center border transition-all"
-                                style={({ pressed, hovered }: any) => [
+                                onHoverIn={() => setWikiHover(true)}
+                                onHoverOut={() => setWikiHover(false)}
+                                className={`w-10 h-10 rounded-2xl items-center justify-center border ${wikiHover ? 'bg-slate-400 border-slate-300' : 'bg-slate-500/20 border-slate-700/50'}`}
+                                style={({ pressed }: any) => [
                                     {
-                                        backgroundColor: hovered
-                                            ? (isDark ? '#475569' : '#f1f5f9')
-                                            : (isDark ? 'rgba(30, 41, 59, 0.4)' : '#ffffff'),
-                                        borderColor: hovered
-                                            ? (isDark ? '#94a3b8' : '#cbd5e1')
-                                            : (isDark ? 'rgba(71, 85, 105, 0.5)' : '#e2e8f0'),
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.15 : 1) }],
+                                        transform: [{ scale: pressed ? 0.95 : (wikiHover ? 1.15 : 1) }],
                                         // @ts-ignore
-                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        transition: 'all 0.05s cubic-bezier(0.4, 0, 0.2, 1)',
                                         shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: hovered ? 6 : 2 },
-                                        shadowOpacity: hovered ? 0.3 : 0.1,
-                                        shadowRadius: hovered ? 12 : 4,
-                                        elevation: hovered ? 6 : 2,
+                                        shadowOffset: { width: 0, height: wikiHover ? 6 : 0 },
+                                        shadowOpacity: wikiHover ? 0.3 : 0,
+                                        shadowRadius: wikiHover ? 12 : 0,
+                                        elevation: wikiHover ? 6 : 0,
                                         cursor: 'pointer',
                                     }
                                 ]}
                             >
-                                {({ hovered }: any) => (
-                                    <View style={{ opacity: hovered ? 1 : 0.7 }}>
-                                        <Image
-                                            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/3670/3670357.png' }}
-                                            className="w-5 h-5 brightness-200 invert"
-                                            style={{ opacity: hovered ? 1 : 0.8 }}
-                                        />
-                                    </View>
-                                )}
+                                <Ionicons
+                                    name="document-text-outline"
+                                    size={20}
+                                    color={wikiHover ? '#1e293b' : '#fff'}
+                                />
                             </Pressable>
                         )}
                     </View>

@@ -127,7 +127,7 @@ export default function GlobalNavigationBar() {
     return (
         <View className="absolute bottom-0 left-0 right-0 z-[9999]">
             <View
-                className={`flex-row items-center px-2 pt-3 pb-8 border-t shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/90 border-slate-900' : 'bg-white/95 border-slate-100'}`}
+                className={`flex-row items-center px-2 py-2 border-t shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/90 border-slate-900' : 'bg-white/95 border-slate-100'}`}
                 style={{
                     width: '100%',
                     borderTopLeftRadius: 32,
