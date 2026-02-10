@@ -548,7 +548,10 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                 className={`px-4 h-14 rounded-[20px] border flex-row items-center justify-center ${isDark ? 'bg-red-500/10 border-red-500/30' : 'bg-red-50 border-red-200 shadow-sm'}`}
                                             >
                                                 <Ionicons name="key" size={16} color="#ef4444" style={{ marginRight: 6 }} />
-                                                <Text className="text-red-500 font-black text-xs">비번초기화</Text>
+                                                <View className="items-center">
+                                                    <Text className="text-red-500 font-black text-[10px] leading-tight">비번초기화</Text>
+                                                    <Text className="text-red-500 font-bold text-[9px] opacity-70">(1234)</Text>
+                                                </View>
                                             </TouchableOpacity>
                                             <TouchableOpacity
                                                 onPress={handleSelectedDelete}

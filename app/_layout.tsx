@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Slot } from 'expo-router';
 import { NativeWindStyleSheet } from "nativewind";
 import { AdminStatus } from '../data/admin-config';
-import { View, Platform, ImageBackground, StyleSheet, Image } from 'react-native';
+import { View, Platform, ImageBackground, StyleSheet, Image, useWindowDimensions, ScrollView } from 'react-native';
 import Head from 'expo-router/head';
 import { AuthContext, ThemeContext } from './context';
 import "../global.css";
+import GlobalNavigationBar from '../components/GlobalNavigationBar';
 
 NativeWindStyleSheet.setOutput({
     default: "native",
@@ -20,6 +21,8 @@ export default function Layout() {
     const [dashboardScrollY, setDashboardScrollY] = useState(0);
     const [fontSizeScale, setFontSizeScale] = useState(1.0);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
+    const mainScrollRef = useRef<ScrollView>(null);
+    const isDark = theme === 'dark'; // Moved up for context
 
     useEffect(() => {
         const restoreSession = async () => {
@@ -80,12 +83,13 @@ export default function Layout() {
         AsyncStorage.setItem('fontSizeScale', scale.toString());
     };
 
-    const isDark = theme === 'dark';
+    const { width } = useWindowDimensions();
+    const isPC = width >= 1024;
 
     if (!isLayoutReady) return null;
 
     return (
-        <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY }}>
+        <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef }}>
             <ThemeContext.Provider value={{ theme, toggleTheme, fontSizeScale, changeFontSize }}>
                 {Platform.OS === 'web' && (
                     <Head>
@@ -106,8 +110,9 @@ export default function Layout() {
                     </Head>
                 )}
 
-                <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9' }]}>
+                <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9', paddingLeft: isPC ? 256 : 0 }]}>
                     <Slot />
+                    <GlobalNavigationBar />
                 </View>
             </ThemeContext.Provider>
         </AuthContext.Provider>

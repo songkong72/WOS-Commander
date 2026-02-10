@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useRef } from 'react';
 import { AdminStatus } from '../data/admin-config';
 
 // --- Auth Context ---
@@ -11,6 +11,7 @@ interface AuthContextType {
     setAllianceInfo: (serverId: string | null, allianceId: string | null) => void;
     dashboardScrollY: number;
     setDashboardScrollY: (y: number) => void;
+    mainScrollRef: React.RefObject<any>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
