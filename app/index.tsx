@@ -424,7 +424,7 @@ export default function Home() {
             onConfirm: async () => {
                 try {
                     const hashed = await hashPassword('1234');
-                    await updateDoc(doc(db, "users", req.id), {
+                    await updateDoc(doc(db, "users", req.adminId), {
                         password: hashed
                     });
                     showCustomAlert('성공', '비밀번호가 1234로 초기화되었습니다.', 'success');
@@ -445,7 +445,7 @@ export default function Home() {
             onConfirm: async () => {
                 try {
                     // 1. Delete user account
-                    await deleteDoc(doc(db, "users", req.id));
+                    await deleteDoc(doc(db, "users", req.adminId));
                     // 2. Delete alliance request (approved record)
                     await deleteDoc(doc(db, "alliance_requests", req.id));
                     showCustomAlert('삭제 완료', '연맹 정보와 관리자 계정이 삭제되었습니다.', 'success');
@@ -2988,7 +2988,7 @@ export default function Home() {
                         <View className="flex-row items-center justify-center mb-8 pt-2">
                             <Ionicons name="shield-checkmark" size={28} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 10 }} />
                             <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                {isSuperAdmin ? '시스템 관리' : '연맹 관리'}
+                                {isSuperAdmin ? '연맹관리자 관리' : '연맹 관리'}
                             </Text>
                         </View>
 
@@ -3025,7 +3025,7 @@ export default function Home() {
 
                             {!!isSuperAdmin && (
                                 <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                    <Text className={`font-bold mb-4 text-center text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>System Administration</Text>
+                                    <Text className={`font-bold mb-4 text-center text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Alliance Admin Management</Text>
 
                                     <TouchableOpacity
                                         onPress={() => setShowAdminList(!showAdminList)}
@@ -3072,7 +3072,7 @@ export default function Home() {
                                         className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                                     >
                                         <Ionicons name="shield-checkmark-outline" size={18} color={adminMenuHover === 'super' ? '#38bdf8' : '#38bdf8'} style={{ marginRight: 8 }} />
-                                        <Text className={`font-bold text-sm ${adminMenuHover === 'super' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>시스템 관리</Text>
+                                        <Text className={`font-bold text-sm ${adminMenuHover === 'super' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹관리자 관리</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
@@ -3116,8 +3116,8 @@ export default function Home() {
                     >
                         {/* Header */}
                         <View className="mb-10 px-10">
-                            <Text className={`text-xs font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
-                            <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>시스템관리자 대시보드</Text>
+                            <Text className={`text-xs font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Alliance Admin Management</Text>
+                            <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>연맹관리자 대시보드</Text>
                             <View className="w-12 h-1 bg-sky-500 rounded-full mt-4" />
                         </View>
 
