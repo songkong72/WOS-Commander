@@ -536,6 +536,10 @@ export default function Home() {
                 }
             } else {
                 // No ID/PW provided - requires server/alliance for anonymous entry
+                if (inputId) {
+                    showCustomAlert('입력 오류', '영주 이름을 입력하셨습니다. 비밀번호를 입력하시거나, 영주 이름을 지우고 입장해주세요.', 'error');
+                    return;
+                }
                 if (!forceServer || !forceAlliance) {
                     showCustomAlert('입력 오류', '볼 수 있는 연맹 정보를 입력하거나 로그인해주세요.', 'error');
                     return;
@@ -2126,7 +2130,7 @@ export default function Home() {
                                                             : auth.role === 'admin'
                                                                 ? "#22d3ee" // Cyan-400 - 운영관리자
                                                                 : (isDark ? "#94a3b8" : "#64748b") // Slate - 일반영주
-                                                    : (isDark ? "white" : "#333333") // 비로그인
+                                                    : (isDark ? "#475569" : "#94a3b8") // 비로그인 (차분한 슬레이트 색상)
                                             }
                                         />
                                     </Pressable>
@@ -2594,6 +2598,10 @@ export default function Home() {
                             <TouchableOpacity
                                 onPress={async () => {
                                     await logout();
+                                    setLoginInput('');
+                                    setPasswordInput('');
+                                    setInputUserId('');
+                                    setInputPassword('');
                                     setAdminMenuVisible(false);
                                     setAllianceInfo(null, null);
                                     setIsGateOpen(true);
