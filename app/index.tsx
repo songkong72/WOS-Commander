@@ -2138,7 +2138,7 @@ export default function Home() {
                                                             : auth.role === 'admin'
                                                                 ? "#22d3ee" // Cyan-400 - 운영관리자
                                                                 : (isDark ? "#94a3b8" : "#64748b") // Slate - 일반영주
-                                                    : (isDark ? "#475569" : "#94a3b8") // 비로그인 (차분한 슬레이트 색상)
+                                                    : (isDark ? "#ffffff" : "#94a3b8") // 비로그인 (흰색 강조)
                                             }
                                         />
                                     </Pressable>
