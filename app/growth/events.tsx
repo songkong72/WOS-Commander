@@ -130,74 +130,74 @@ const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactN
 
 const pad = (n: number | undefined | null) => (n ?? 0).toString().padStart(2, '0');
 
-const getUTCString = (str: string) => {
-    if (!str) return null;
-    const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/);
-    if (!match) return null;
-    const [_, y, m, d, timePart] = match;
-    const [h, min] = timePart.split(':');
-    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
-    if (isNaN(date.getTime())) return null;
-
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const dayName = days[date.getUTCDay()];
-    const year2 = date.getUTCFullYear().toString().slice(-2);
-    return `${year2}년 ${pad(date.getUTCMonth() + 1)}월 ${pad(date.getUTCDate())}일(${dayName}) ${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}`;
+const toLocal = (kstStr: string) => {
+    const userOffset = -new Date().getTimezoneOffset();
+    const kstOffset = 540; // UTC+9
+    return processConversion(kstStr, userOffset - kstOffset);
 };
 
-const getUTCTimeString = (kstStr: string, includePrefix = true) => {
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const fullMatch = kstStr.match(/([일월화수목금토])\s*\(?(\d{1,2}):(\d{2})\)?/);
-
-    if (!fullMatch) return kstStr;
-
-    const [_, dayName, timeStr] = fullMatch;
-    const dayIdx = days.indexOf(dayName);
-    const [h, m] = timeStr.split(':').map(Number);
-
-    const matchIndex = fullMatch.index || 0;
-    const prefix = matchIndex > 0 ? kstStr.substring(0, matchIndex).trim() + ' ' : '';
-
-    let utcH = h - 9;
-    let utcDayIdx = dayIdx;
-    if (utcH < 0) {
-        utcH += 24;
-        utcDayIdx = (dayIdx - 1 + 7) % 7;
-    }
-
-    const formatted = `${days[utcDayIdx]}(${pad(utcH)}:${pad(m)})`;
-    const finalStr = `${prefix}${formatted}`;
-    return includePrefix ? `UTC: ${finalStr}` : finalStr;
+const toUTC = (kstStr: string) => {
+    return processConversion(kstStr, -540);
 };
 
-const formatDisplayDate = (str: string, mode: 'KST' | 'UTC' = 'KST') => {
-    if (!str) return '';
-    const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/);
+const processConversion = (str: string, diffMinutes: number) => {
+    if (!str || diffMinutes === 0) return str;
 
-    if (mode === 'UTC' && match) {
-        const utc = getUTCString(str);
-        return utc || str;
-    }
+    // 1. 기간형 (2024.01.01 10:00)
+    let processed = str.replace(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/g, (match, y, m, d, timePart) => {
+        const [h, min] = timePart.split(':');
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+        if (isNaN(date.getTime())) return match;
+        const converted = new Date(date.getTime() + diffMinutes * 60000);
+        return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
+    });
 
-    if (!match) {
-        const weeklyMatch = str.match(/^(.*?)?\s*([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
-        if (weeklyMatch) {
-            if (mode === 'UTC') {
-                const utcWeekly = getUTCTimeString(str, false);
-                return utcWeekly || str;
-            }
-            const prefix = weeklyMatch[1] ? weeklyMatch[1].trim() + ' ' : '';
-            return `${prefix}${weeklyMatch[2]}(${weeklyMatch[3]})`;
+    // 2. 주간 요일형 (화(22:00), 매일(10:00))
+    processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {
+        const hour = parseInt(h);
+        const min = parseInt(m);
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        let dayIdx = days.indexOf(day);
+
+        if (dayIdx === -1) { // '매일'
+            let totalMin = hour * 60 + min + diffMinutes;
+            while (totalMin < 0) totalMin += 1440;
+            totalMin %= 1440;
+            const newH = Math.floor(totalMin / 60);
+            const newM = totalMin % 60;
+            return `${day}(${pad(newH)}:${pad(newM)})`;
         }
-        return str;
+
+        let totalMin = dayIdx * 1440 + hour * 60 + min + diffMinutes;
+        while (totalMin < 0) totalMin += 10080;
+        totalMin %= 10080;
+
+        const newDayIdx = Math.floor(totalMin / 1440);
+        const remain = totalMin % 1440;
+        const newH = Math.floor(remain / 60);
+        const newM = remain % 60;
+        return `${days[newDayIdx]}(${pad(newH)}:${pad(newM)})`;
+    });
+
+    return processed;
+};
+
+
+const formatDisplayDate = (str: string, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
+    if (!str) return '';
+    const converted = mode === 'LOCAL' ? toLocal(str) : toUTC(str);
+
+    // YYYY.MM.DD HH:mm 형식이면 리포맷팅, 아니면 그대로 반환
+    const match = converted.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/);
+    if (match) {
+        const [_, y, m, d, timePart] = match;
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const dayName = days[date.getDay()];
+        const year2 = y.slice(-2);
+        return `${year2}년 ${pad(parseInt(m))}월 ${pad(parseInt(d))}일(${dayName}) ${timePart}`;
     }
-    const [_, y, m, d, timePart] = match;
-    const [h, min] = timePart.split(':');
-    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const dayName = days[date.getDay()];
-    const year2 = y.slice(-2);
-    return `${year2}년 ${pad(parseInt(m))}월 ${pad(parseInt(d))}일(${dayName}) ${pad(parseInt(h))}:${pad(parseInt(min))}`;
+    return converted;
 };
 
 const formatTime12h = (timeStr: string) => {
@@ -214,7 +214,7 @@ const formatTime12h = (timeStr: string) => {
 interface EventCardProps {
     event: WikiEvent;
     isDark: boolean;
-    timezone: 'KST' | 'UTC';
+    timezone: 'LOCAL' | 'UTC';
     auth: any;
     isAdmin: boolean;
     isOngoing: boolean;
@@ -342,28 +342,9 @@ const EventCard = memo(({
                                         {event.day.split('/').map((d, dIdx) => {
                                             const cleanD = d.trim();
                                             const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                            let utcText = '';
-                                            if (cleanD.includes('~')) {
-                                                const parts = cleanD.split('~').map(x => x.trim());
-                                                const sDateUtc = getUTCString(parts[0]);
-                                                const eDateUtc = getUTCString(parts[1]);
-                                                if (sDateUtc && eDateUtc) utcText = `${sDateUtc}~${eDateUtc}`;
-                                                else {
-                                                    const sWeeklyUtc = getUTCTimeString(parts[0], false);
-                                                    const eWeeklyUtc = getUTCTimeString(parts[1], false);
-                                                    if (sWeeklyUtc && eWeeklyUtc) utcText = `${sWeeklyUtc}~${eWeeklyUtc}`;
-                                                }
-                                            } else {
-                                                const dateUtc = getUTCString(cleanD);
-                                                if (dateUtc) utcText = dateUtc;
-                                                else {
-                                                    const weeklyUtc = getUTCTimeString(cleanD);
-                                                    if (weeklyUtc) utcText = weeklyUtc;
-                                                }
-                                            }
                                             return (
                                                 <View key={dIdx} className={`px-4 py-3 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                    {timezone === 'KST' ? renderStartEndPeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`) : (!!utcText ? renderStartEndPeriod(utcText, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`, true) : null)}
+                                                    {renderStartEndPeriod(formatDisplayDate(formattedDay, timezone), `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`, timezone === 'UTC')}
                                                 </View>
                                             );
                                         })}
@@ -1020,7 +1001,7 @@ export default function EventTracker() {
     const isDesktop = width > 768; // Simple breakdown for Desktop layout
 
     const [selectedCategory, setSelectedCategory] = useState<EventCategory>('전체');
-    const [timezone, setTimezone] = useState<'KST' | 'UTC'>('KST');
+    const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
     const { auth, serverId, allianceId } = useAuth();
     const { theme, toggleTheme } = useTheme();
@@ -2101,16 +2082,16 @@ export default function EventTracker() {
                             {/* Timezone Toggle */}
                             <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-600' : 'bg-slate-100 border-slate-300'}`}>
                                 <Pressable
-                                    onPress={() => setTimezone('KST')}
+                                    onPress={() => setTimezone('LOCAL')}
                                     style={({ pressed, hovered }: any) => [
                                         {
                                             paddingHorizontal: 16,
                                             paddingVertical: 8,
                                             borderRadius: 12,
-                                            backgroundColor: timezone === 'KST'
+                                            backgroundColor: timezone === 'LOCAL'
                                                 ? (isDark ? '#2563eb' : '#3b82f6')
                                                 : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                            borderColor: timezone === 'KST' ? 'transparent' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                            borderColor: timezone === 'LOCAL' ? 'transparent' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
                                             borderWidth: 1,
                                             transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -2118,7 +2099,7 @@ export default function EventTracker() {
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[11px] font-black ${timezone === 'KST' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>KST</Text>
+                                    <Text className={`text-[11px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
                                 </Pressable>
                                 <Pressable
                                     onPress={() => setTimezone('UTC')}

@@ -64,8 +64,8 @@ export default function GlobalNavigationBar() {
                             <Ionicons name="flash" size={28} color="#10b981" />
                         </View>
                         <View className="flex-1">
-                            <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>WOS 커맨더</Text>
-                            <Text className={`text-[10px] font-bold tracking-tight ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                            <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{auth.adminName || 'WOS 커맨더'}</Text>
+                            <Text className={`text-[10px] font-bold tracking-tight ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
                                 {serverId && allianceId ? `#${serverId} - ${allianceId}` : 'Welcome, Commander'}
                             </Text>
                         </View>

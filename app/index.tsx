@@ -108,8 +108,15 @@ export default function Home() {
     const [recentAlliances, setRecentAlliances] = useState<string[]>([]);
     const [recentUserIds, setRecentUserIds] = useState<string[]>([]);
     const [activeInput, setActiveInput] = useState<'server' | 'alliance' | 'userid' | 'password' | null>(null);
+    const [adminMenuHover, setAdminMenuHover] = useState<string | null>(null);
+    const [isUserPassChangeOpen, setIsUserPassChangeOpen] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
     const [showGatePw, setShowGatePw] = useState(false);
     const [showModalPw, setShowModalPw] = useState(false);
+    const [showPass1, setShowPass1] = useState(false);
+    const [showPass2, setShowPass2] = useState(false);
 
     const saveToHistory = async (key: string, value: string) => {
         if (!value || value.trim() === '') return;
@@ -129,7 +136,7 @@ export default function Home() {
     const [noticeDetailVisible, setNoticeDetailVisible] = useState(false);
     const [noticePopupVisible, setNoticePopupVisible] = useState(false);
     const [noticePopupDontShow, setNoticePopupDontShow] = useState(false);
-    const [timezone, setTimezone] = useState<'KST' | 'UTC'>('KST');
+    const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
 
     // Check if notice popup should be shown on load
     useEffect(() => {
@@ -222,7 +229,6 @@ export default function Home() {
     );
 
     const [hoveredHeaderBtn, setHoveredHeaderBtn] = useState<string | null>(null);
-    const [adminMenuHover, setAdminMenuHover] = useState<string | null>(null);
 
 
     const handleMigrateToAlliance = async () => {
@@ -982,53 +988,70 @@ export default function Home() {
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
 
-            return checkItemActive(dayStr) || checkItemActive(timeStr);
+            // 모든 내부 로직은 '현재 유저의 로컬 시간'과 비교하므로, KST 데이터를 로컬로 변환하여 체크합니다.
+            return checkItemActive(toLocal(dayStr)) || checkItemActive(toLocal(timeStr));
         } catch (e) { return false; }
     };
 
     const pad = (n: number) => n.toString().padStart(2, '0');
 
-    const getUTCTimeString = (kstStr: string, includePrefix = true) => {
-        const match = kstStr.match(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?/);
-        if (!match || !match[2]) return '';
-
-        const dayStr = match[1];
-        const timeStr = match[2];
-        const [h, m] = timeStr.split(':').map(Number);
-
-        const days = ['일', '월', '화', '수', '목', '금', '토'];
-        let dayIdx = days.indexOf(dayStr);
-
-        if (dayIdx === -1) { // '매일' or unknown
-            let utcShift = h - 9;
-            if (utcShift < 0) utcShift += 24;
-            const formatted = `${dayStr} (${utcShift.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')})`;
-            return includePrefix ? `UTC: ${formatted} ` : formatted;
-        }
-
-        let utcH = h - 9;
-        let utcDayIdx = dayIdx;
-        if (utcH < 0) {
-            utcH += 24;
-            utcDayIdx = (dayIdx - 1 + 7) % 7;
-        }
-
-        const formatted = `${days[utcDayIdx]} (${pad(utcH)}:${pad(m)})`;
-        return includePrefix ? `UTC: ${formatted} ` : formatted;
+    // --- Timezone Conversion Helpers ---
+    const toLocal = (kstStr: string) => {
+        const userOffset = -new Date().getTimezoneOffset();
+        const kstOffset = 540; // UTC+9
+        return processConversion(kstStr, userOffset - kstOffset);
     };
 
-    const getUTCString = (str: string) => {
-        if (!str) return null;
-        const match = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
-        if (!match) return null;
-        const [_, y, m, d, h, min] = match;
-        // String represents KST (UTC+9)
-        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
-        if (isNaN(date.getTime())) return null;
-
-        const utcDate = new Date(date.getTime() - (9 * 60 * 60 * 1000));
-        return `${pad(utcDate.getMonth() + 1)}/${pad(utcDate.getDate())} ${pad(utcDate.getHours())}:${pad(utcDate.getMinutes())}`;
+    const toUTC = (kstStr: string) => {
+        return processConversion(kstStr, -540);
     };
+
+    const convertTime = (kstStr: string) => {
+        if (!kstStr) return kstStr;
+        return timezone === 'LOCAL' ? toLocal(kstStr) : toUTC(kstStr);
+    };
+
+    const processConversion = (str: string, diffMinutes: number) => {
+        if (!str || diffMinutes === 0) return str;
+
+        // 1. Full Date Range Case (2026.02.13 09:00)
+        let processed = str.replace(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/g, (match, y, m, d, h, min) => {
+            const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+            if (isNaN(date.getTime())) return match;
+            const converted = new Date(date.getTime() + diffMinutes * 60000);
+            return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
+        });
+
+        // 2. Weekly Day Case (화(22:00))
+        processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {
+            const hour = parseInt(h);
+            const min = parseInt(m);
+            const days = ['일', '월', '화', '수', '목', '금', '토'];
+            let dayIdx = days.indexOf(day);
+
+            if (dayIdx === -1) { // '매일'
+                let totalMin = hour * 60 + min + diffMinutes;
+                while (totalMin < 0) totalMin += 1440;
+                totalMin %= 1440;
+                const newH = Math.floor(totalMin / 60);
+                const newM = totalMin % 60;
+                return `${day}(${pad(newH)}:${pad(newM)})`;
+            }
+
+            let totalMin = dayIdx * 1440 + hour * 60 + min + diffMinutes;
+            while (totalMin < 0) totalMin += 10080;
+            totalMin %= 10080;
+
+            const newDayIdx = Math.floor(totalMin / 1440);
+            const remain = totalMin % 1440;
+            const newH = Math.floor(remain / 60);
+            const newM = remain % 60;
+            return `${days[newDayIdx]}(${pad(newH)}:${pad(newM)})`;
+        });
+
+        return processed;
+    };
+    // ------------------------------------
 
     const splitSchedulePart = (str: string) => {
         if (!str) return { date: '', time: '' };
@@ -1692,9 +1715,10 @@ export default function Home() {
 
                                     <View className="items-end justify-center ml-auto pl-4 border-l border-white/5 py-1" style={{ minWidth: 160 }}>
                                         {(() => {
-                                            let remSeconds = getRemainingSeconds(displayDay) || getRemainingSeconds(displayTime);
+                                            // 남은 시간 계산은 항상 '로컬'로 변환된 값과 '현지 now'를 비교합니다.
+                                            let remSeconds = getRemainingSeconds(toLocal(displayDay)) || getRemainingSeconds(toLocal(displayTime));
                                             if (remSeconds === null) {
-                                                const endDate = getEventEndDate({ ...event, day: displayDay, time: displayTime });
+                                                const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
                                                 if (endDate && now < endDate) {
                                                     remSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
                                                 }
@@ -1757,7 +1781,8 @@ export default function Home() {
                                                 <View className="flex-row items-start mt-1 pr-1">
                                                     <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 6, marginTop: 4 }} />
                                                     <View className={`flex-1 ${isExpired ? 'opacity-50' : ''}`}>
-                                                        {formatEventTimeCompact(finalStr, checkIsSoon(finalStr))}
+                                                        {/* UI 표시는 선택된 타임존(convertTime)으로, '곧 시작' 체크는 항상 로컬(toLocal) 기준으로 수행 */}
+                                                        {formatEventTimeCompact(convertTime(finalStr), checkIsSoon(toLocal(finalStr)))}
                                                     </View>
                                                 </View>
                                             );
@@ -2648,16 +2673,16 @@ export default function Home() {
                             </View>
                             <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
                                 <Pressable
-                                    onPress={() => setTimezone('KST')}
+                                    onPress={() => setTimezone('LOCAL')}
                                     style={({ pressed, hovered }: any) => [
                                         {
                                             paddingHorizontal: 24,
                                             paddingVertical: 10,
                                             borderRadius: 12,
-                                            backgroundColor: timezone === 'KST'
+                                            backgroundColor: timezone === 'LOCAL'
                                                 ? '#3b82f6'
                                                 : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                            borderColor: timezone === 'KST' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                            borderColor: timezone === 'LOCAL' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
                                             borderWidth: 1,
                                             transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -2665,7 +2690,7 @@ export default function Home() {
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[12px] font-black ${timezone === 'KST' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>KST</Text>
+                                    <Text className={`text-[12px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
                                 </Pressable>
                                 <Pressable
                                     onPress={() => setTimezone('UTC')}
@@ -2985,11 +3010,18 @@ export default function Home() {
             <Modal visible={adminMenuVisible} transparent animationType="slide" onRequestClose={() => setAdminMenuVisible(false)}>
                 <View className="flex-1 bg-black/70 items-center justify-center p-6">
                     <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200'}`}>
-                        <View className="flex-row items-center justify-center mb-8 pt-2">
-                            <Ionicons name="shield-checkmark" size={28} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 10 }} />
+                        <View className="items-center justify-center mb-8 pt-2">
+                            <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
+                                <Ionicons name="shield-checkmark" size={32} color={isDark ? "#38bdf8" : "#2563eb"} />
+                            </View>
                             <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 {isSuperAdmin ? '연맹관리자 관리' : '연맹 관리'}
                             </Text>
+                            <View className={`mt-2 px-4 py-1.5 rounded-full ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                                <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    ID: <Text className={isDark ? 'text-sky-400' : 'text-sky-600'}>{auth.adminName}</Text> ({auth.role === 'master' ? '시스템관리자' : auth.role === 'alliance_admin' ? '연맹관리자' : auth.role === 'admin' ? '운영관리자' : '일반영주'})
+                                </Text>
+                            </View>
                         </View>
 
                         <ScrollView showsVerticalScrollIndicator={false} className="flex-none">
@@ -3022,6 +3054,19 @@ export default function Home() {
                                 <Ionicons name="people-outline" size={22} color={adminMenuHover === 'members' ? '#0ea5e9' : '#38bdf8'} style={{ marginRight: 10 }} />
                                 <Text className={`font-black text-xl ${adminMenuHover === 'members' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹원 관리</Text>
                             </TouchableOpacity>
+
+                            {auth.isLoggedIn && auth.role !== 'master' && (
+                                <TouchableOpacity
+                                    onPress={() => setIsUserPassChangeOpen(true)}
+                                    // @ts-ignore
+                                    onMouseEnter={() => setAdminMenuHover('password')}
+                                    onMouseLeave={() => setAdminMenuHover(null)}
+                                    className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'password' ? 'bg-amber-500/10 border-amber-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                >
+                                    <Ionicons name="key-outline" size={22} color={adminMenuHover === 'password' ? '#f59e0b' : '#f59e0b'} style={{ marginRight: 10 }} />
+                                    <Text className={`font-black text-xl ${adminMenuHover === 'password' ? (isDark ? 'text-amber-400' : 'text-amber-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>비밀번호 변경</Text>
+                                </TouchableOpacity>
+                            )}
 
                             {!!isSuperAdmin && (
                                 <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
@@ -3385,6 +3430,129 @@ export default function Home() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Password Change Modal */}
+            <Modal visible={isUserPassChangeOpen} transparent animationType="fade">
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                        <View className="items-center mb-8">
+                            <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+                                <Ionicons name="key" size={40} color="#f59e0b" />
+                            </View>
+                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>비밀번호 변경</Text>
+                            <Text className={`mt-2 text-center text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>새로운 비밀번호를 설정해주세요.</Text>
+                        </View>
+
+                        <View className="flex-col gap-4 mb-8">
+                            <View>
+                                <Text className={`text-[10px] font-black mb-2 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>New Password</Text>
+                                <View className="relative">
+                                    <TextInput
+                                        className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
+                                        placeholder="새 비밀번호 입력"
+                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
+                                        value={newPassword}
+                                        onChangeText={setNewPassword}
+                                        secureTextEntry={!showPass1}
+                                    />
+                                    <TouchableOpacity
+                                        onPressIn={() => setShowPass1(true)}
+                                        onPressOut={() => setShowPass1(false)}
+                                        activeOpacity={0.5}
+                                        className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
+                                    >
+                                        <Ionicons name={showPass1 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <View>
+                                <Text className={`text-[10px] font-black mb-2 mt-4 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Confirm Password</Text>
+                                <View className="relative">
+                                    <TextInput
+                                        className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
+                                        placeholder="비밀번호 확인"
+                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                        secureTextEntry={!showPass2}
+                                    />
+                                    <TouchableOpacity
+                                        onPressIn={() => setShowPass2(true)}
+                                        onPressOut={() => setShowPass2(false)}
+                                        activeOpacity={0.5}
+                                        className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
+                                    >
+                                        <Ionicons name={showPass2 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setIsUserPassChangeOpen(false);
+                                    setNewPassword('');
+                                    setConfirmPassword('');
+                                }}
+                                className={`flex-1 h-16 rounded-2xl items-center justify-center border ${isDark ? 'border-slate-800 bg-slate-800/30' : 'border-slate-200 bg-slate-50'}`}
+                            >
+                                <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    if (!auth.adminName) {
+                                        showCustomAlert('오류', '로그인 세션이 만료되었습니다. 다시 로그인해주세요.', 'error');
+                                        return;
+                                    }
+                                    if (!newPassword || !confirmPassword) {
+                                        showCustomAlert('경고', '비밀번호를 입력해주세요.', 'warning');
+                                        return;
+                                    }
+                                    if (newPassword !== confirmPassword) {
+                                        showCustomAlert('경고', '비밀번호가 일치하지 않습니다.', 'warning');
+                                        return;
+                                    }
+                                    if (newPassword.length < 4) {
+                                        showCustomAlert('경고', '비밀번호는 4자 이상이어야 합니다.', 'warning');
+                                        return;
+                                    }
+
+                                    try {
+                                        setIsChangingPassword(true);
+                                        const hashed = await hashPassword(newPassword);
+                                        const userRef = doc(db, 'users', auth.adminName!);
+                                        await updateDoc(userRef, {
+                                            password: hashed,
+                                            updatedAt: Date.now()
+                                        });
+
+                                        showCustomAlert('성공', '비밀번호가 성공적으로 변경되었습니다.', 'success');
+                                        setIsUserPassChangeOpen(false);
+                                        setNewPassword('');
+                                        setConfirmPassword('');
+                                        setAdminMenuVisible(false);
+                                    } catch (err: any) {
+                                        showCustomAlert('오류', '비밀번호 변경 중 오류가 발생했습니다: ' + err.message, 'error');
+                                    } finally {
+                                        setIsChangingPassword(false);
+                                    }
+                                }}
+                                disabled={isChangingPassword}
+                                className="flex-[2] h-16 bg-amber-500 rounded-2xl items-center justify-center shadow-lg shadow-amber-500/30"
+                            >
+                                {isChangingPassword ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text className="text-white font-black text-lg">변경하기</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Custom Alert Modal */}
             <Modal visible={customAlert.visible} transparent animationType="fade">
                 <View className="flex-1 bg-black/60 items-center justify-center p-6">
