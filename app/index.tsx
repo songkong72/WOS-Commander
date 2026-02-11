@@ -1505,24 +1505,14 @@ export default function Home() {
             const endPart = `${m2}.${d2}(${endDay}) ${t2}`;
 
             return (
-                <View>
-                    <Text
-                        adjustsFontSizeToFit
-                        numberOfLines={1}
-                        minimumFontScale={0.8}
-                        style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
-                    >
-                        {renderWithHighlightedDays(startPart, isUpcomingSoon)}{" ~"}
-                    </Text>
-                    <Text
-                        adjustsFontSizeToFit
-                        numberOfLines={1}
-                        minimumFontScale={0.8}
-                        style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
-                    >
-                        {renderWithHighlightedDays(endPart, isUpcomingSoon)}
-                    </Text>
-                </View>
+                <Text
+                    adjustsFontSizeToFit
+                    numberOfLines={2}
+                    minimumFontScale={0.7}
+                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                >
+                    {renderWithHighlightedDays(startPart, isUpcomingSoon)} ~ {renderWithHighlightedDays(endPart, isUpcomingSoon)}
+                </Text>
             );
         }
 
@@ -2690,7 +2680,7 @@ export default function Home() {
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[12px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
+                                    <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
                                 </Pressable>
                                 <Pressable
                                     onPress={() => setTimezone('UTC')}
@@ -2710,7 +2700,7 @@ export default function Home() {
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[12px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                    <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
                                 </Pressable>
                             </View>
                         </View>
