@@ -36,7 +36,7 @@ export default function GlobalNavigationBar() {
             // Check if showCustomAlert exists in context or use windows alert for simple feedback
             // Since this component is outside main context's local state, we'll suggest login via router or alert
             if (Platform.OS === 'web') {
-                alert('운영진 전용 기능입니다. 관리자 로그인이 필요합니다.');
+                alert('연맹원 전용 기능입니다. 연맹원 로그인이 필요합니다.');
             }
             return;
         }

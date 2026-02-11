@@ -153,15 +153,17 @@ export default function Home() {
                     }
                 }
 
-                // Show the popup
-                setTimeout(() => setNoticePopupVisible(true), 500);
+                // Show the popup - ONLY for logged in users
+                if (auth.isLoggedIn) {
+                    setTimeout(() => setNoticePopupVisible(true), 500);
+                }
             } catch (e) {
                 console.error('Notice popup check error:', e);
             }
         };
 
         checkNoticePopup();
-    }, [notice, serverId, allianceId]);
+    }, [notice, serverId, allianceId, auth.isLoggedIn]);
 
     const dismissNoticePopup = async (permanent: boolean = false, today: boolean = false) => {
         setNoticePopupVisible(false);
@@ -1241,7 +1243,7 @@ export default function Home() {
                 key={key}
                 onPress={() => {
                     if (!auth.isLoggedIn) {
-                        showCustomAlert('운영진 전용', '상세 정보 및 일정 관리는 관리자 로그인이 필요합니다.', 'error');
+                        showCustomAlert('연맹원 전용', '이 기능은 연맹원 로그인이 필요합니다.', 'error');
                         return;
                     }
                     router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } });
@@ -1421,7 +1423,7 @@ export default function Home() {
                         </View>
                     );
                 }}
-            </Pressable>
+            </Pressable >
         );
     };
 
@@ -2152,7 +2154,7 @@ export default function Home() {
                                                                 : auth.role === 'admin'
                                                                     ? '🟢 운영관리자'
                                                                     : '⚪ 일반영주'
-                                                        : '관리자 로그인'}
+                                                        : '연맹원 로그인'}
                                                 </Text>
                                             </View>
                                         </View>
@@ -2164,7 +2166,13 @@ export default function Home() {
                         {/* Notice Section */}
                         {!!notice && (!!notice.visible || !!auth.isLoggedIn) && (
                             <Pressable
-                                onPress={() => setNoticeDetailVisible(true)}
+                                onPress={() => {
+                                    if (!auth.isLoggedIn) {
+                                        showCustomAlert('연맹원 전용', '이 기능은 연맹원 로그인이 필요합니다.', 'error');
+                                        return;
+                                    }
+                                    setNoticeDetailVisible(true);
+                                }}
                                 style={({ pressed, hovered }: any) => [
                                     {
                                         marginBottom: 24,
@@ -2210,7 +2218,7 @@ export default function Home() {
                                     key={card.id}
                                     onPress={() => {
                                         if (!auth.isLoggedIn) {
-                                            showCustomAlert('운영진 전용', '이 기능은 관리자 로그인이 필요합니다.', 'error');
+                                            showCustomAlert('연맹원 전용', '이 기능은 연맹원 로그인이 필요합니다.', 'error');
                                             return;
                                         }
                                         router.push(card.path as any);
