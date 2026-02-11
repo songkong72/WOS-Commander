@@ -46,6 +46,7 @@
             font-weight: 900;
             background: linear-gradient(135deg, #38bdf8, #60a5fa);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
@@ -117,6 +118,11 @@
         .section-icon.cyan {
             background: rgba(6, 182, 212, 0.2);
             border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .section-icon.slate {
+            background: rgba(148, 163, 184, 0.2);
+            border: 1px solid rgba(148, 163, 184, 0.3);
         }
 
         .section h2 {
@@ -568,6 +574,115 @@
                 <li>이벤트 일정 등록</li>
                 <li>전략 문서 URL 설정</li>
             </ul>
+        </div>
+
+        <!-- 방문자(익명) 접속 가이드 -->
+        <div class="section" id="anonymous">
+            <div class="section-header">
+                <div class="section-icon slate">👻</div>
+                <h2>방문자(익명) 접속 가이드</h2>
+            </div>
+            <p>로그인 계정이 없더라도 서버와 연맹 정보를 입력하여 대시보드에 진입할 수 있습니다.</p>
+
+            <h3>👀 가능한 활동</h3>
+            <ul>
+                <li><strong>공지사항 확인:</strong> 연맹 관리자가 공개로 설정한 공지사항 열람</li>
+                <li><strong>이벤트 일정 확인:</strong> 전체 이벤트 목록 및 남은 시간 확인</li>
+            </ul>
+
+            <div class="important-box">
+                <strong>🚫 제한되는 활동:</strong> 익명 사용자는 참여 인원 확인, 상세 전략 시트 열람, 본인 영웅 관리 등 <strong>개인화된 기능 및 보안이 필요한
+                    정보</strong>에 접근할 수 없습니다.
+            </div>
+        </div>
+
+        <!-- 편리한 도구 및 기능 -->
+        <div class="section" id="tools">
+            <div class="section-header">
+                <div class="section-icon blue">🛠️</div>
+                <h2>편리한 도구 및 기능</h2>
+            </div>
+
+            <h3>⚡ 자동 완성 및 기록 저장</h3>
+            <p>WOS 커맨더는 사용자의 편의를 위해 이전에 입력했던 정보를 안전하게 저장합니다.</p>
+            <ul>
+                <li>로그인 및 게이트 입장 시 입력란을 클릭하면 <strong>최근 입력한 서버, 연맹, 영주 이름</strong>이 드롭다운으로 표시됩니다.</li>
+                <li>비밀번호를 제외한 정보가 자동으로 제안되어 매번 입력할 번거로움을 덜어줍니다.</li>
+            </ul>
+
+            <h3>📢 효율적인 공지 관리</h3>
+            <p>중요한 정보를 확인한 후에는 팝업 설정을 통해 화면을 관리할 수 있습니다.</p>
+            <ul>
+                <li><strong>오늘 하루 안 보기:</strong> 확인한 공지를 당일 동안만 숨깁니다.</li>
+                <li><strong>다시 보지 않기:</strong> 해당 공지 내용이 업데이트 되기 전까지 팝업을 표시하지 않습니다.</li>
+            </ul>
+        </div>
+
+        <!-- 개인화 및 설정 -->
+        <div class="section" id="settings">
+            <div class="section-header">
+                <div class="section-icon indigo">🎨</div>
+                <h2>개인화 및 설정</h2>
+            </div>
+            <p>사용자 개인의 취향과 환경에 맞춰 대시보드를 최적화할 수 있습니다.</p>
+
+            <h3>🌓 다크 / 라이트 모드</h3>
+            <ul>
+                <li>상단 네비게이션 바의 <strong>해/달 아이콘</strong>을 클릭하여 즉시 테마를 변경할 수 있습니다.</li>
+                <li>눈의 피로도를 낮추거나 환경에 맞는 가시성을 확보하세요.</li>
+            </ul>
+
+            <h3>AA 글자 크기 조절</h3>
+            <ul>
+                <li>설정 메뉴에서 <strong>글자 크기(Font Scale)</strong>를 조절할 수 있습니다.</li>
+                <li>작은 화면에서도 정보가 한눈에 들어오도록 하거나, 더 큰 글씨로 명확하게 정보를 확인하세요.</li>
+            </ul>
+        </div>
+
+        <!-- 참전 페널티 기준 -->
+        <div class="section" id="penalty">
+            <div class="section-header">
+                <div class="section-icon rose">⚖️</div>
+                <h2>참전 페널티 기준</h2>
+            </div>
+            <p>연맹 이벤트의 원활한 운영을 위해 참전 신청 후 불참 시 다음과 같은 패널티 기준이 적용될 수 있습니다.</p>
+
+            <div class="role-card admin">
+                <h4>⚠️ 사전 통보 (NOTICE)</h4>
+                <p>개인 사정으로 인해 참전이 불가능해진 경우, <strong>이벤트 시작 전까지</strong> 관리자에게 미리 알린 경우입니다. 페널티 점수가 낮게 책정되거나 참작될 수 있습니다.
+                </p>
+            </div>
+
+            <div class="role-card master">
+                <h4>⛔ 무단 불참 (NO_SHOW)</h4>
+                <p>사전 연락 없이 이벤트에 참여하지 않은 경우입니다. 가장 높은 단계의 페널티가 부여되며, <strong>차후 이벤트 참여 제한</strong> 등의 불이익이 발생할 수 있습니다.
+                </p>
+            </div>
+
+            <div class="tip-box">
+                <strong>💡 운영 팁:</strong> 각 연맹의 운영 방침에 따라 세부적인 페널티 규정은 다를 수 있습니다. 정확한 기준은 소속 연맹의 공지사항이나 연맹 관리자에게 문의하세요.
+            </div>
+        </div>
+
+        <!-- 앱 설치 및 홈 화면 추가 -->
+        <div class="section" id="pwa">
+            <div class="section-header">
+                <div class="section-icon emerald">📲</div>
+                <h2>홈 화면에 추가 (앱처럼 사용)</h2>
+            </div>
+            <p>WOS 커맨더를 매번 브라우저에서 열지 않고, 스마트폰이나 PC의 홈 화면에 추가하여 전용 앱처럼 사용할 수 있습니다.</p>
+
+            <h3>💻 설치 방법</h3>
+            <ul>
+                <li><strong>PC (Chrome/Edge):</strong> 주소창 우측의 <strong>설치 아이콘(📥)</strong>을 클릭하거나 메뉴에서 'WOS 커맨더 설치'를
+                    선택하세요.</li>
+                <li><strong>모바일 (iOS):</strong> 사파리 브라우저 하단의 <strong>공유 버튼(↑)</strong>을 누른 뒤 '홈 화면에 추가'를 선택하세요.</li>
+                <li><strong>모바일 (Android):</strong> 브라우저 메뉴(⋮)에서 '홈 화면에 추가' 또는 '앱 설치'를 선택하세요.</li>
+            </ul>
+
+            <div class="tip-box">
+                <strong>💡 팁:</strong> 홈 화면에 추가하면 브라우저 주소창 없이 더 넓게 대시보드를 이용할 수 있으며, 바탕화면에서 즉시 실행이 가능합니다.
+            </div>
         </div>
 
         <!-- 기존 대시보드로 돌아가기 -->

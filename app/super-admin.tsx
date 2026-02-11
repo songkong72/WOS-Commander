@@ -12,7 +12,7 @@ import {
     Modal
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, orderBy, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, orderBy, Timestamp, getDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { useAuth, useTheme } from './context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +40,8 @@ export default function SuperAdminDashboard() {
     const [activeTab, setActiveTab] = useState<'pending' | 'alliances'>('pending');
     const [requests, setRequests] = useState<AllianceRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedReqIds, setSelectedReqIds] = useState<Set<string>>(new Set());
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Custom Alert State
     const [customAlert, setCustomAlert] = useState<{
@@ -92,6 +94,84 @@ export default function SuperAdminDashboard() {
         return () => unsubscribe();
     }, [isSuperAdmin]);
 
+    const toggleSelect = (id: string) => {
+        setSelectedReqIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const handleBulkApprove = async () => {
+        if (selectedReqIds.size === 0 || isSubmitting) return;
+        showCustomAlert(
+            '일괄 승인',
+            `선택한 ${selectedReqIds.size}개의 연맹을 일괄 승인하고 계정을 생성하시겠습니까?`,
+            'confirm',
+            async () => {
+                try {
+                    setIsSubmitting(true);
+                    const batch = writeBatch(db);
+                    const selectedReqs = requests.filter(r => selectedReqIds.has(r.id));
+
+                    for (const req of selectedReqs) {
+                        const userRef = doc(db, 'users', req.adminId);
+                        batch.set(userRef, {
+                            uid: `admin_${req.serverId.replace('#', '')}_${req.allianceId}`,
+                            username: req.adminId,
+                            password: req.adminPassword,
+                            nickname: `${req.allianceId} 관리자`,
+                            role: 'alliance_admin',
+                            status: 'active',
+                            serverId: req.serverId,
+                            allianceId: req.allianceId,
+                            contact: req.contact || '',
+                            createdAt: Date.now()
+                        });
+
+                        const reqRef = doc(db, 'alliance_requests', req.id);
+                        batch.update(reqRef, { status: 'approved' });
+                    }
+
+                    await batch.commit();
+                    setSelectedReqIds(new Set());
+                    showCustomAlert('성공', '선택한 연맹들의 승인 및 계정 생성이 완료되었습니다.', 'success');
+                } catch (error: any) {
+                    showCustomAlert('오류', '일괄 승인 중 오류가 발생했습니다: ' + error.message, 'error');
+                } finally {
+                    setIsSubmitting(false);
+                }
+            }
+        );
+    };
+
+    const handleBulkReject = async () => {
+        if (selectedReqIds.size === 0 || isSubmitting) return;
+        showCustomAlert(
+            '일괄 거절',
+            `선택한 ${selectedReqIds.size}개의 가입 신청을 일괄 거절하시겠습니까?`,
+            'confirm',
+            async () => {
+                try {
+                    setIsSubmitting(true);
+                    const batch = writeBatch(db);
+                    selectedReqIds.forEach(id => {
+                        const reqRef = doc(db, 'alliance_requests', id);
+                        batch.update(reqRef, { status: 'rejected' });
+                    });
+                    await batch.commit();
+                    setSelectedReqIds(new Set());
+                    showCustomAlert('성공', '선택한 신청들이 모두 거절되었습니다.', 'success');
+                } catch (error: any) {
+                    showCustomAlert('오류', '일괄 거절 중 오류가 발생했습니다: ' + error.message, 'error');
+                } finally {
+                    setIsSubmitting(false);
+                }
+            }
+        );
+    };
+
     const handleApprove = async (req: AllianceRequest) => {
         showCustomAlert(
             '연맹 승인',
@@ -99,10 +179,8 @@ export default function SuperAdminDashboard() {
             'confirm',
             async () => {
                 try {
-                    // 1. 유저 계정 생성 (Alliance Admin)
+                    setIsSubmitting(true);
                     const userRef = doc(db, 'users', req.adminId);
-
-                    // 이미 존재하는 ID인지 확인
                     const userSnap = await getDoc(userRef);
                     if (userSnap.exists()) {
                         showCustomAlert('오류', '이미 존재하는 관리자 ID입니다. 신청자에게 확인 요청하세요.', 'error');
@@ -112,23 +190,24 @@ export default function SuperAdminDashboard() {
                     await setDoc(userRef, {
                         uid: `admin_${req.serverId.replace('#', '')}_${req.allianceId}`,
                         username: req.adminId,
-                        password: req.adminPassword, // 이미 해싱된 상태여야 함
+                        password: req.adminPassword,
                         nickname: `${req.allianceId} 관리자`,
                         role: 'alliance_admin',
                         status: 'active',
                         serverId: req.serverId,
                         allianceId: req.allianceId,
-                        contact: req.contact,
+                        contact: req.contact || '',
                         createdAt: Date.now()
                     });
 
-                    // 2. 신청 상태 변경
                     const reqRef = doc(db, 'alliance_requests', req.id);
                     await updateDoc(reqRef, { status: 'approved' });
 
                     showCustomAlert('성공', '연맹 승인 및 관리자 계정 생성이 완료되었습니다.', 'success');
                 } catch (error: any) {
                     showCustomAlert('오류', error.message, 'error');
+                } finally {
+                    setIsSubmitting(false);
                 }
             }
         );
@@ -141,11 +220,14 @@ export default function SuperAdminDashboard() {
             'confirm',
             async () => {
                 try {
+                    setIsSubmitting(true);
                     const reqRef = doc(db, 'alliance_requests', req.id);
                     await updateDoc(reqRef, { status: 'rejected' });
-                    showCustomAlert('완료', '신청이 거절되었습니다.', 'success');
+                    showCustomAlert('성공', '신청이 거절되었습니다.', 'success');
                 } catch (error: any) {
                     showCustomAlert('오류', error.message, 'error');
+                } finally {
+                    setIsSubmitting(false);
                 }
             }
         );
@@ -186,106 +268,177 @@ export default function SuperAdminDashboard() {
                 }} />
             </View>
 
-            <ScrollView className={`flex-1 px-4`} contentContainerStyle={{ paddingTop: 80 }}>
-                {/* Custom Page Title */}
-                <View style={{ marginBottom: 40, paddingHorizontal: 16 }}>
-                    <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
+            <ScrollView className={`flex-1`} contentContainerStyle={{ paddingTop: 80 }}>
+                <View style={{ marginBottom: 40, paddingHorizontal: 40 }}>
+                    <Text className={`text-xs font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
                     <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>시스템관리자 대시보드</Text>
                     <View className="w-12 h-1 bg-sky-500 rounded-full mt-4" />
                 </View>
 
-                {/* Statistics Header */}
-                <View className="flex-row gap-4 mb-8">
-                    <View className={`flex-1 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <Text className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>승인 대기</Text>
-                        <Text className={`text-4xl font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                            {requests.filter(r => r.status === 'pending').length}
-                        </Text>
-                    </View>
-                    <View className={`flex-1 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <Text className={`text-[10px] font-black uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>활성 연맹 수</Text>
-                        <Text className={`text-4xl font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                            {requests.filter(r => r.status === 'approved').length}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* Tabs */}
-                <View className={`flex-row p-1.5 rounded-2xl mb-8 ${isDark ? 'bg-slate-900' : 'bg-slate-200/50'}`}>
+                {/* Stats / Interactive Tabs */}
+                <View className="flex-row gap-4 mb-8 px-10">
                     <TouchableOpacity
                         onPress={() => setActiveTab('pending')}
-                        className={`flex-1 py-4 rounded-xl items-center ${activeTab === 'pending' ? (isDark ? 'bg-slate-800' : 'bg-white shadow-sm') : ''}`}
+                        activeOpacity={0.7}
+                        className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${activeTab === 'pending' ? 'border-sky-500 bg-sky-500/10 shadow-lg shadow-sky-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
                     >
-                        <Text className={`font-black text-xs ${activeTab === 'pending' ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>승인 대기열</Text>
+                        <Text className={`text-sm font-black uppercase tracking-widest mb-2 ${activeTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인 대기</Text>
+                        <Text className={`text-4xl font-black ${activeTab === 'pending' ? (isDark ? 'text-sky-400' : 'text-sky-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
+                            {requests.filter(r => r.status === 'pending').length}
+                        </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setActiveTab('alliances')}
-                        className={`flex-1 py-4 rounded-xl items-center ${activeTab === 'alliances' ? (isDark ? 'bg-slate-800' : 'bg-white shadow-sm') : ''}`}
+                        activeOpacity={0.7}
+                        className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${activeTab === 'alliances' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
                     >
-                        <Text className={`font-black text-xs ${activeTab === 'alliances' ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>등록된 연맹</Text>
+                        <Text className={`text-sm font-black uppercase tracking-widest mb-2 ${activeTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>활성 연맹 수</Text>
+                        <Text className={`text-4xl font-black ${activeTab === 'alliances' ? (isDark ? 'text-emerald-400' : 'text-emerald-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
+                            {requests.filter(r => r.status === 'approved').length}
+                        </Text>
                     </TouchableOpacity>
                 </View>
+
+                <View className="flex-row items-center justify-between mb-8 px-10">
+                    <View>
+                        <View className="flex-row items-center gap-3 mb-1">
+                            <View className="w-1.5 h-6 bg-sky-500 rounded-full" />
+                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                {activeTab === 'pending' ? '신청 대기열' : '등록된 연맹'}
+                            </Text>
+                        </View>
+                        <Text className={`text-xs font-bold pl-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                            {activeTab === 'pending' ? '새로운 연맹 가입 신청 내역입니다.' : '현재 시스템에 등록된 활성 연맹 목록입니다.'}
+                        </Text>
+                    </View>
+
+                    {activeTab === 'pending' && requests.filter(r => r.status === 'pending').length > 0 && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                const pendingReqs = requests.filter(r => r.status === 'pending');
+                                if (selectedReqIds.size === pendingReqs.length) {
+                                    setSelectedReqIds(new Set());
+                                } else {
+                                    setSelectedReqIds(new Set(pendingReqs.map(r => r.id)));
+                                }
+                            }}
+                            activeOpacity={0.7}
+                            className={`flex-row items-center px-4 py-3 rounded-2xl border transition-all ${selectedReqIds.size > 0 ? 'border-sky-500 bg-sky-500/10' : (isDark ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white shadow-sm')}`}
+                        >
+                            <Ionicons
+                                name={selectedReqIds.size === requests.filter(r => r.status === 'pending').length ? "checkbox" : "square-outline"}
+                                size={20}
+                                color={selectedReqIds.size > 0 ? "#38bdf8" : (isDark ? "#475569" : "#94a3b8")}
+                            />
+                            <Text className={`ml-2 font-black text-xs ${selectedReqIds.size > 0 ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>
+                                전체 선택
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Bulk Actions Menu */}
+                {selectedReqIds.size > 0 && (
+                    <View className={`flex-row gap-3 mb-8 mx-10 p-4 rounded-[24px] border shadow-xl transition-all ${isDark ? 'bg-slate-900/95 border-sky-500/20' : 'bg-white border-sky-100 shadow-sky-200/40'}`}>
+                        <View className="flex-1 flex-row items-center bg-sky-500/10 px-4 py-2 rounded-xl">
+                            <Ionicons name="checkbox" size={18} color="#38bdf8" />
+                            <Text className={`ml-2 font-black text-base ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                                {selectedReqIds.size}개 <Text className="text-xs font-bold opacity-60">선택</Text>
+                            </Text>
+                        </View>
+                        <View className="flex-row gap-2">
+                            <TouchableOpacity
+                                onPress={handleBulkReject}
+                                activeOpacity={0.7}
+                                className={`px-4 py-3 rounded-xl border ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
+                            >
+                                <Text className="text-xs font-bold text-red-500">선택 거절</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleBulkApprove}
+                                activeOpacity={0.7}
+                                className="px-6 py-3 bg-sky-500 rounded-xl shadow-lg shadow-sky-500/20 flex-row items-center"
+                            >
+                                <Ionicons name="checkmark-circle" size={16} color="white" style={{ marginRight: 6 }} />
+                                <Text className="font-black text-white text-sm">선택 승인</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 {loading ? (
                     <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 40 }} />
                 ) : (
-                    <View className="pb-20">
-                        {filteredRequests.length === 0 ? (
+                    <View className="px-10 pb-20">
+                        {requests.filter(r => activeTab === 'pending' ? r.status === 'pending' : r.status === 'approved').length === 0 ? (
                             <View className="items-center justify-center py-20">
                                 <Ionicons name="documents-outline" size={64} color={isDark ? '#334155' : '#cbd5e1'} />
-                                <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>데이터가 없습니다.</Text>
+                                <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    {activeTab === 'pending' ? '대기 중인 신청이 없습니다.' : '등록된 연맹이 없습니다.'}
+                                </Text>
                             </View>
                         ) : (
-                            filteredRequests.map((req) => (
+                            requests.filter(r => activeTab === 'pending' ? r.status === 'pending' : r.status === 'approved').map((req) => (
                                 <View
                                     key={req.id}
-                                    className={`p-6 rounded-[32px] border mb-4 shadow-xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/50'}`}
+                                    className={`p-4 rounded-[24px] border mb-3 shadow-md ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200/50'}`}
                                 >
-                                    <View className="flex-row justify-between mb-4">
-                                        <View>
-                                            <View className="flex-row items-center mb-1">
-                                                <Text className={`text-xs font-black px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2`}>{req.serverId}</Text>
-                                                <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.allianceId}</Text>
+                                    <View className="flex-row">
+                                        {activeTab === 'pending' && (
+                                            <TouchableOpacity
+                                                onPress={() => toggleSelect(req.id)}
+                                                className="mr-6 justify-center"
+                                            >
+                                                <View className={`w-10 h-10 rounded-2xl items-center justify-center border-2 ${selectedReqIds.has(req.id) ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200')}`}>
+                                                    {selectedReqIds.has(req.id) && <Ionicons name="checkmark" size={24} color="white" />}
+                                                </View>
+                                            </TouchableOpacity>
+                                        )}
+                                        <View style={{ flex: 1 }}>
+                                            <View className="flex-row justify-between mb-4">
+                                                <View style={{ flex: 1 }}>
+                                                    <View className="flex-row items-center mb-1">
+                                                        <Text className={`text-xs font-black px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2`}>{req.serverId}</Text>
+                                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.allianceId}</Text>
+                                                    </View>
+                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{req.allianceName}</Text>
+                                                </View>
+
+                                                {activeTab === 'pending' && (
+                                                    <View className="flex-row gap-2">
+                                                        <TouchableOpacity
+                                                            onPress={() => handleReject(req)}
+                                                            activeOpacity={0.7}
+                                                            className={`px-3 py-2 rounded-xl border flex-row items-center ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
+                                                        >
+                                                            <Ionicons name="close-circle-outline" size={16} color="#ef4444" />
+                                                            <Text className="text-xs font-bold text-red-500 ml-1">거절</Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            onPress={() => handleApprove(req)}
+                                                            activeOpacity={0.7}
+                                                            className="px-4 py-2 bg-sky-500 rounded-xl shadow-sm flex-row items-center"
+                                                        >
+                                                            <Ionicons name="checkmark-circle" size={16} color="white" />
+                                                            <Text className="text-xs font-black text-white ml-1">승인</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
                                             </View>
-                                            <Text className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{req.allianceName}</Text>
-                                        </View>
-                                        <View className="items-end">
-                                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                                {new Date(req.requestedAt).toLocaleDateString()}
-                                            </Text>
-                                            <View className={`mt-2 px-3 py-1 rounded-full ${req.status === 'pending' ? 'bg-amber-500/10' : 'bg-emerald-500/10'}`}>
-                                                <Text className={`text-[10px] font-black uppercase ${req.status === 'pending' ? 'text-amber-500' : 'text-emerald-500'}`}>{req.status}</Text>
+
+                                            <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
+                                                <View>
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.adminId}</Text></Text>
+                                                    <Text className={`text-[10px] font-bold mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.contact || '-'}</Text></Text>
+                                                </View>
+                                                <View className="items-end">
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                        {new Date(req.requestedAt).toLocaleDateString()}
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
                                     </View>
-
-                                    <View className={`p-4 rounded-2xl mb-6 ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
-                                        <View className="flex-row justify-between mb-2">
-                                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID</Text>
-                                            <Text className={`text-xs font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{req.adminId}</Text>
-                                        </View>
-                                        <View className="flex-row justify-between">
-                                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact</Text>
-                                            <Text className={`text-xs font-black ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{req.contact || '-'}</Text>
-                                        </View>
-                                    </View>
-
-                                    {req.status === 'pending' && (
-                                        <View className="flex-row gap-3">
-                                            <TouchableOpacity
-                                                onPress={() => handleReject(req)}
-                                                className={`flex-1 py-4 rounded-2xl border ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
-                                            >
-                                                <Text className="text-center font-bold text-red-500">거절</Text>
-                                            </TouchableOpacity>
-                                            <TouchableOpacity
-                                                onPress={() => handleApprove(req)}
-                                                className="flex-[2] bg-sky-500 py-4 rounded-2xl shadow-lg shadow-sky-500/30"
-                                            >
-                                                <Text className="text-center font-black text-white px-2">승인 및 계정 생성</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    )}
                                 </View>
                             ))
                         )}
