@@ -1239,16 +1239,22 @@ export default function Home() {
         return (
             <Pressable
                 key={key}
-                onPress={() => router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } })}
+                onPress={() => {
+                    if (!auth.isLoggedIn) {
+                        showCustomAlert('운영진 전용', '상세 정보 및 일정 관리는 관리자 로그인이 필요합니다.', 'error');
+                        return;
+                    }
+                    router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } });
+                }}
                 style={({ pressed, hovered }: any) => [
                     {
                         padding: 8,
                         width: isActive ? '100%' : (windowWidth >= 640 ? '50%' : '100%'),
-                        transform: [{ scale: pressed ? 0.98 : (hovered ? 1.02 : 1) }],
+                        transform: [{ scale: pressed && auth.isLoggedIn ? 0.98 : (hovered && auth.isLoggedIn ? 1.02 : 1) }],
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         // @ts-ignore - Web property
                         cursor: 'pointer',
-                        zIndex: hovered ? 10 : 1
+                        zIndex: hovered && auth.isLoggedIn ? 10 : 1
                     }
                 ]}
             >
@@ -2202,7 +2208,13 @@ export default function Home() {
                             ].map((card) => (
                                 <Pressable
                                     key={card.id}
-                                    onPress={() => router.push(card.path as any)}
+                                    onPress={() => {
+                                        if (!auth.isLoggedIn) {
+                                            showCustomAlert('운영진 전용', '이 기능은 관리자 로그인이 필요합니다.', 'error');
+                                            return;
+                                        }
+                                        router.push(card.path as any);
+                                    }}
                                     style={({ pressed, hovered }: any) => [
                                         {
                                             flex: 1,
@@ -2210,17 +2222,18 @@ export default function Home() {
                                             padding: 24,
                                             borderRadius: 28,
                                             borderWidth: 2,
-                                            backgroundColor: hovered
+                                            opacity: !auth.isLoggedIn ? 0.7 : 1,
+                                            backgroundColor: hovered && auth.isLoggedIn
                                                 ? (isDark ? 'rgba(30, 41, 59, 1)' : 'rgba(241, 245, 249, 1)')
                                                 : (isDark ? 'rgba(15, 23, 42, 0.8)' : '#ffffff'),
-                                            borderColor: hovered ? (isDark ? card.color : card.lightColor) : (isDark ? 'rgba(51, 65, 85, 1)' : 'rgba(226, 232, 240, 1)'),
-                                            transform: [{ scale: pressed ? 0.96 : (hovered ? 1.05 : 1) }],
+                                            borderColor: hovered && auth.isLoggedIn ? (isDark ? card.color : card.lightColor) : (isDark ? 'rgba(51, 65, 85, 1)' : 'rgba(226, 232, 240, 1)'),
+                                            transform: [{ scale: pressed && auth.isLoggedIn ? 0.96 : (hovered && auth.isLoggedIn ? 1.05 : 1) }],
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                             shadowColor: isDark ? card.color : card.lightColor,
-                                            shadowOffset: { width: 0, height: hovered ? 12 : 10 },
-                                            shadowOpacity: hovered ? 0.5 : 0.1,
-                                            shadowRadius: hovered ? 24 : 20,
-                                            elevation: hovered ? 15 : 10,
+                                            shadowOffset: { width: 0, height: hovered && auth.isLoggedIn ? 12 : 10 },
+                                            shadowOpacity: hovered && auth.isLoggedIn ? 0.5 : 0.1,
+                                            shadowRadius: hovered && auth.isLoggedIn ? 24 : 20,
+                                            elevation: hovered && auth.isLoggedIn ? 15 : 10,
                                             // @ts-ignore - Web property
                                             cursor: 'pointer'
                                         }
@@ -2228,10 +2241,10 @@ export default function Home() {
                                 >
                                     {({ hovered }: any) => (
                                         <View className="flex-row items-center justify-center">
-                                            <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 bg-gradient-to-br ${card.iconBg}`}
-                                                style={isDark && hovered ? { shadowColor: card.color, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10 } : {}}
+                                            <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 bg-gradient-to-br ${!auth.isLoggedIn ? (isDark ? 'from-slate-800 to-slate-900' : 'from-slate-100 to-slate-200') : card.iconBg}`}
+                                                style={isDark && hovered && auth.isLoggedIn ? { shadowColor: card.color, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 10 } : {}}
                                             >
-                                                <Ionicons name={card.icon as any} size={28} color={isDark ? (hovered ? '#fff' : card.color) : (hovered ? card.lightColor : card.lightColor)} />
+                                                <Ionicons name={!auth.isLoggedIn ? 'lock-closed' : card.icon as any} size={28} color={!auth.isLoggedIn ? (isDark ? '#475569' : '#94a3b8') : (isDark ? (hovered ? '#fff' : card.color) : (hovered ? card.lightColor : card.lightColor))} />
                                             </View>
                                             <View>
                                                 <Text className={`text-xl font-black ${isDark ? (hovered ? 'text-white' : 'text-slate-200') : (hovered ? 'text-slate-900' : 'text-slate-800')}`} numberOfLines={1}>{card.label}</Text>

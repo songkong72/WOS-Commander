@@ -27,10 +27,20 @@ export default function GlobalNavigationBar() {
     const router = useRouter();
     const pathname = usePathname();
     const { theme } = useTheme();
-    const { serverId, allianceId, mainScrollRef } = useAuth();
+    const { auth, serverId, allianceId, mainScrollRef } = useAuth();
     const isDark = theme === 'dark';
 
     const handleNavPress = (item: NavItemProps) => {
+        // Only allow Home or Settings for non-logged-in users
+        if (!auth.isLoggedIn && item.id !== 'home' && item.id !== 'settings') {
+            // Check if showCustomAlert exists in context or use windows alert for simple feedback
+            // Since this component is outside main context's local state, we'll suggest login via router or alert
+            if (Platform.OS === 'web') {
+                alert('운영진 전용 기능입니다. 관리자 로그인이 필요합니다.');
+            }
+            return;
+        }
+
         if (item.id === 'settings') {
             router.push('/?showAdminMenu=true');
         } else if (item.path === '/' && pathname === '/') {
