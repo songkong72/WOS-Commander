@@ -1359,18 +1359,52 @@ export default function Home() {
                                     <View className="items-center opacity-30 py-4"><Text className="text-slate-500 text-sm">미지정</Text></View>
                                 ) : (
                                     <View className="space-y-2">
-                                        {!event.isBearSplit && (
-                                            <View className="flex-row items-center">
-                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayDay || '-'}</Text>
-                                            </View>
-                                        )}
-                                        {!!displayTime && (
-                                            <View className="flex-row items-center mt-0.5">
-                                                <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayTime}</Text>
-                                            </View>
-                                        )}
+                                        {(() => {
+                                            const isTargetEvent = (event.isFoundrySplit || event.title.includes('조이') || event.title.includes('무기공장'));
+
+                                            if (isTargetEvent) {
+                                                let finalStr = displayTime || displayDay || '-';
+
+                                                // If we have both and time doesn't already have the day
+                                                if (displayDay && displayTime) {
+                                                    if (!displayTime.includes(displayDay)) {
+                                                        finalStr = `${displayDay}(${displayTime})`;
+                                                    } else {
+                                                        // Already has day, just ensure parenthesis if it's "Day Time"
+                                                        finalStr = displayTime;
+                                                    }
+                                                }
+
+                                                // Clean up: replace "요일 00:00" or "요일 (00:00)" with "요일(00:00)"
+                                                finalStr = finalStr.replace(/([일월화수목금토])\s*\(?(\d{1,2}:\d{2})\)?/g, '$1($2)');
+
+                                                return (
+                                                    <View className="flex-row items-center mt-0.5">
+                                                        <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
+                                                        <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>
+                                                            {finalStr}
+                                                        </Text>
+                                                    </View>
+                                                );
+                                            }
+
+                                            return (
+                                                <>
+                                                    {!event.isBearSplit && (
+                                                        <View className="flex-row items-center">
+                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
+                                                            <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayDay || '-'}</Text>
+                                                        </View>
+                                                    )}
+                                                    {!!displayTime && (
+                                                        <View className="flex-row items-center mt-0.5">
+                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
+                                                            <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayTime}</Text>
+                                                        </View>
+                                                    )}
+                                                </>
+                                            );
+                                        })()}
                                     </View>
                                 )}
                             </View>

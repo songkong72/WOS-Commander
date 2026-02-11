@@ -422,8 +422,20 @@ const EventCard = memo(({
                                                             <View className="flex-row items-center flex-1">
                                                                 {(() => {
                                                                     const displayStr = formatDisplayDate(formatted, timezone);
+                                                                    const isSpecialTarget = event.title.includes('조이') || event.title.includes('무기공장');
+
                                                                     // Check for Day(Time) format
                                                                     const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                                    if (dtMatch && isSpecialTarget) {
+                                                                        const [_, d, t] = dtMatch;
+                                                                        return (
+                                                                            <View className="flex-row items-center">
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{`${d}(${t})`}</Text>
+                                                                            </View>
+                                                                        );
+                                                                    }
 
                                                                     if (dtMatch) {
                                                                         const [_, d, t] = dtMatch;
@@ -439,7 +451,12 @@ const EventCard = memo(({
                                                                     }
 
                                                                     // Default Fallback
-                                                                    return <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>;
+                                                                    return (
+                                                                        <View className="flex-row items-center">
+                                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>
+                                                                        </View>
+                                                                    );
                                                                 })()}
                                                             </View>
                                                             {isSlotOngoing && (
@@ -487,8 +504,20 @@ const EventCard = memo(({
                                                                 <View className="flex-row items-center flex-1">
                                                                     {(() => {
                                                                         const displayStr = formatDisplayDate(formatted, timezone);
+                                                                        const isSpecialTarget = event.title.includes('조이') || event.title.includes('무기공장');
+
                                                                         // Check for Day(Time) format
                                                                         const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                                        if (dtMatch && isSpecialTarget) {
+                                                                            const [_, d, t] = dtMatch;
+                                                                            return (
+                                                                                <View className="flex-row items-center">
+                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{`${d}(${t})`}</Text>
+                                                                                </View>
+                                                                            );
+                                                                        }
 
                                                                         if (dtMatch) {
                                                                             const [_, d, t] = dtMatch;
@@ -504,7 +533,12 @@ const EventCard = memo(({
                                                                         }
 
                                                                         // Default Fallback
-                                                                        return <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>;
+                                                                        return (
+                                                                            <View className="flex-row items-center">
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>
+                                                                            </View>
+                                                                        );
                                                                     })()}
                                                                 </View>
                                                                 {isSlotOngoing && (
