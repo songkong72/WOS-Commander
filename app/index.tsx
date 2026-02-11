@@ -650,7 +650,6 @@ export default function Home() {
                     if (globalUserData) {
                         const userData = globalUserData;
                         const storedPw = userData.password?.toString();
-                        console.log(`[Gate Login] User Found: ${globalUserId}, Role: ${userData.role}, StoredPW: ${storedPw?.substring(0, 5)}...`);
 
                         if (storedPw === hashed || storedPw === inputPw) {
                             const finalServer = (userData.role === 'master' || userData.role === 'super_admin')
@@ -1190,7 +1189,6 @@ export default function Home() {
         if (globalUserData) {
             const userData = globalUserData;
             const storedPw = userData.password?.toString();
-            console.log(`[Modal Login] User Found: ${globalUserId}, Role: ${userData.role}, StoredPW: ${storedPw?.substring(0, 5)}...`);
 
             if (storedPw === hashed || storedPw === pw) {
                 console.log(`[Modal Login] Auth Success. Switching to Server: ${userData.serverId}, Alliance: ${userData.allianceId}`);
@@ -1201,7 +1199,6 @@ export default function Home() {
                 await performLogin(globalUserId, userData.role || 'user');
                 return;
             } else {
-                console.log(`[Modal Login] PW Mismatch. Input: ${pw}, Hashed: ${hashed}`);
                 setLoginError('비밀번호가 일치하지 않습니다.');
                 return;
             }
