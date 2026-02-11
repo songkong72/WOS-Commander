@@ -1182,6 +1182,111 @@ export default function Home() {
         ).start();
     }, []);
 
+    // Event Time Formatting Helpers
+    const getKoreanDayOfWeek = (date: Date) => {
+        return ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+    };
+
+    const renderWithHighlightedDays = (str: string, isUpcomingSoon: boolean) => {
+        const parts = str.split(/([일월화수목금토]|\((?:일|월|화|수|목|금|토)\))/g);
+        return parts.map((part, i) => {
+            const isDay = /([일월화수목금토]|\((?:일|월|화|수|목|금|토)\))/.test(part);
+            if (isDay) {
+                return (
+                    <Text key={i} style={{
+                        fontWeight: '900',
+                        color: isUpcomingSoon ? (isDark ? '#34d399' : '#059669') : (isDark ? '#38bdf8' : '#2563eb')
+                    }}>
+                        {part}
+                    </Text>
+                );
+            }
+            return <Text key={i}>{part}</Text>;
+        });
+    };
+
+    const formatEventTimeCompact = (timeStr: string, isUpcomingSoon: boolean) => {
+        if (!timeStr) return null;
+
+        // 1. Date Range Case: "2026.02.13 09:00 ~ 2026.02.15 09:00"
+        const rangeMatch = timeStr.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}:\d{2})\s*~\s*(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}:\d{2})/);
+        if (rangeMatch) {
+            const [_, y1, m1, d1, t1, y2, m2, d2, t2] = rangeMatch;
+            const start = new Date(parseInt(y1), parseInt(m1) - 1, parseInt(d1));
+            const end = new Date(parseInt(y2), parseInt(m2) - 1, parseInt(d2));
+            const startDay = getKoreanDayOfWeek(start);
+            const endDay = getKoreanDayOfWeek(end);
+
+            const startPart = `${m1}.${d1}(${startDay}) ${t1}`;
+            const endPart = `${m2}.${d2}(${endDay}) ${t2}`;
+
+            return (
+                <View>
+                    <Text
+                        adjustsFontSizeToFit
+                        numberOfLines={1}
+                        minimumFontScale={0.8}
+                        style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                    >
+                        {renderWithHighlightedDays(startPart, isUpcomingSoon)}{" ~"}
+                    </Text>
+                    <Text
+                        adjustsFontSizeToFit
+                        numberOfLines={1}
+                        minimumFontScale={0.8}
+                        style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                    >
+                        {renderWithHighlightedDays(endPart, isUpcomingSoon)}
+                    </Text>
+                </View>
+            );
+        }
+
+        // 2. Grouped Day Case: "화(22:00), 목(23:00), 토(22:00)" or similar
+        const dayTimeMatches = Array.from(timeStr.matchAll(/([일월화수목금토])\((\d{2}:\d{2})\)/g));
+        if (dayTimeMatches.length > 0) {
+            const groups: { [time: string]: string[] } = {};
+            dayTimeMatches.forEach(m => {
+                const day = m[1];
+                const time = m[2];
+                if (!groups[time]) groups[time] = [];
+                groups[time].push(day);
+            });
+
+            const resultParts = Object.entries(groups).map(([time, days]) => {
+                return { days: days.join('·'), time };
+            });
+
+            return (
+                <Text
+                    adjustsFontSizeToFit
+                    numberOfLines={2}
+                    minimumFontScale={0.7}
+                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                >
+                    {resultParts.map((part, i) => (
+                        <React.Fragment key={i}>
+                            {i > 0 && " / "}
+                            {renderWithHighlightedDays(part.days, isUpcomingSoon)} {part.time}
+                        </React.Fragment>
+                    ))}
+                </Text>
+            );
+        }
+
+        // 3. Simple String (Mixed or unformatted)
+        return (
+            <Text
+                adjustsFontSizeToFit
+                numberOfLines={2}
+                minimumFontScale={0.7}
+                style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+            >
+                {renderWithHighlightedDays(timeStr, isUpcomingSoon)}
+            </Text>
+        );
+    };
+
     const renderEventCard = (event: any, key: string) => {
         const isActive = isEventActive(event);
         const isExpired = isEventExpired(event);
@@ -1300,7 +1405,7 @@ export default function Home() {
                                         shadowOpacity: hovered ? 0.7 : 0.5,
                                         shadowRadius: hovered ? 20 : 15,
                                     }}
-                                    className={`bg-slate-900/90 border-2 rounded-[24px] p-5 flex-row items-center w-full transition-all ${hovered ? 'border-blue-400' : 'border-blue-500'}`}
+                                    className={`bg-slate-900/90 border-2 rounded-[24px] p-5 flex-row flex-wrap items-center w-full transition-all ${hovered ? 'border-blue-400' : 'border-blue-500'}`}
                                 >
                                     <View className={`w-16 h-16 rounded-2xl items-center justify-center mr-5 border-2 transition-all ${hovered ? 'bg-blue-500/20 border-blue-400' : 'bg-blue-500/10 border-blue-500/20'}`}>
                                         {eventImageUrl ? (
@@ -1313,7 +1418,7 @@ export default function Home() {
                                             <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={32} color="#3b82f6" />
                                         )}
                                     </View>
-                                    <View className="flex-1">
+                                    <View className="flex-1 min-w-[240px]">
                                         <Text className="text-white text-xl font-black tracking-tighter" style={{ fontSize: 20 * fontSizeScale }}>
                                             {event.title}
                                         </Text>
@@ -1324,7 +1429,7 @@ export default function Home() {
                                         </Text>
                                     </View>
 
-                                    <View className="items-end justify-center ml-4 pl-4 border-l border-white/5">
+                                    <View className="items-end justify-center ml-auto pl-4 border-l border-white/5 py-1" style={{ minWidth: 160 }}>
                                         {(() => {
                                             let remSeconds = getRemainingSeconds(displayDay) || getRemainingSeconds(displayTime);
                                             if (remSeconds === null) {
@@ -1336,8 +1441,14 @@ export default function Home() {
 
                                             if (remSeconds !== null) {
                                                 return (
-                                                    <View className="items-end">
-                                                        <Text className="text-white font-black tracking-tighter" style={{ fontSize: 32 * fontSizeScale, lineHeight: 32 * fontSizeScale }}>
+                                                    <View className="items-end w-full">
+                                                        <Text
+                                                            adjustsFontSizeToFit
+                                                            numberOfLines={1}
+                                                            minimumFontScale={0.6}
+                                                            className="text-white font-black tracking-tighter text-right w-full"
+                                                            style={{ fontSize: 32 * fontSizeScale, lineHeight: 32 * fontSizeScale }}
+                                                        >
                                                             {formatRemainingTime(remSeconds)}
                                                         </Text>
                                                         <Text className="text-sky-400/60 text-[10px] font-black tracking-[0.2em] uppercase mt-1">Remaining</Text>
@@ -1361,9 +1472,6 @@ export default function Home() {
                                     <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={16} color={isDark ? '#94a3b8' : '#64748b'} />
                                 </View>
                                 <Text className={`text-lg font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{event.title}</Text>
-                                <View className={`ml-3 px-2 py-0.5 rounded-md border ${isUpcoming ? (isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200') : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}>
-                                    <Text className={`text-[10px] font-black ${isUpcoming ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{isUpcoming ? '예정' : '준비'}</Text>
-                                </View>
                             </View>
 
                             <View className="flex-1 justify-center">
@@ -1372,49 +1480,25 @@ export default function Home() {
                                 ) : (
                                     <View className="space-y-2">
                                         {(() => {
-                                            const isTargetEvent = (event.isFoundrySplit || event.title.includes('조이') || event.title.includes('무기공장'));
+                                            let finalStr = displayTime || displayDay || '-';
 
-                                            if (isTargetEvent) {
-                                                let finalStr = displayTime || displayDay || '-';
-
-                                                // If we have both and time doesn't already have the day
-                                                if (displayDay && displayTime) {
-                                                    if (!displayTime.includes(displayDay)) {
-                                                        finalStr = `${displayDay}(${displayTime})`;
-                                                    } else {
-                                                        // Already has day, just ensure parenthesis if it's "Day Time"
-                                                        finalStr = displayTime;
-                                                    }
+                                            // Combine day and time if they are separate and shouldn't be
+                                            if (displayDay && displayTime && !displayTime.includes(displayDay)) {
+                                                if (!event.isBearSplit && !event.isFoundrySplit) {
+                                                    finalStr = `${displayDay}(${displayTime})`;
                                                 }
-
-                                                // Clean up: replace "요일 00:00" or "요일 (00:00)" with "요일(00:00)"
-                                                finalStr = finalStr.replace(/([일월화수목금토])\s*\(?(\d{1,2}:\d{2})\)?/g, '$1($2)');
-
-                                                return (
-                                                    <View className="flex-row items-center mt-0.5">
-                                                        <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                        <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>
-                                                            {finalStr}
-                                                        </Text>
-                                                    </View>
-                                                );
                                             }
 
+                                            // Clean up: replace "요일 00:00" or "요일 (00:00)" with "요일(00:00)"
+                                            finalStr = finalStr.replace(/([일월화수목금토])\s*\(?(\d{1,2}:\d{2})\)?/g, '$1($2)');
+
                                             return (
-                                                <>
-                                                    {!event.isBearSplit && (
-                                                        <View className="flex-row items-center">
-                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayDay || '-'}</Text>
-                                                        </View>
-                                                    )}
-                                                    {!!displayTime && (
-                                                        <View className="flex-row items-center mt-0.5">
-                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 4 }} />
-                                                            <Text className={`font-bold text-lg ${isExpired ? 'line-through opacity-70 text-slate-500' : (isDark ? 'text-slate-300' : 'text-slate-600')}`} style={{ fontSize: 18 * fontSizeScale }}>{displayTime}</Text>
-                                                        </View>
-                                                    )}
-                                                </>
+                                                <View className="flex-row items-start mt-1 pr-1">
+                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 6, marginTop: 4 }} />
+                                                    <View className={`flex-1 ${isExpired ? 'opacity-50' : ''}`}>
+                                                        {formatEventTimeCompact(finalStr, checkIsSoon(finalStr))}
+                                                    </View>
+                                                </View>
                                             );
                                         })()}
                                     </View>
