@@ -1748,6 +1748,26 @@ export default function Home() {
         }
     };
 
+    // Pulsing Animation for Return Button
+    const returnPulseAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(returnPulseAnim, {
+                    toValue: 1,
+                    duration: 1500,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(returnPulseAnim, {
+                    toValue: 0,
+                    duration: 1500,
+                    useNativeDriver: false,
+                }),
+            ])
+        ).start();
+    }, []);
+
     // Blink Animation for Upcoming Soon
     const blinkAnim = useRef(new Animated.Value(0)).current;
 
@@ -1803,8 +1823,8 @@ export default function Home() {
             const startDay = getKoreanDayOfWeek(start);
             const endDay = getKoreanDayOfWeek(end);
 
-            const startPart = `${m1}.${d1}(${startDay}) ${t1}`;
-            const endPart = `${m2}.${d2}(${endDay}) ${t2}`;
+            const startPart = `${m1}.${d1}(${startDay})\u00A0${t1}`;
+            const endPart = `${m2}.${d2}(${endDay})\u00A0${t2}`;
 
             return (
                 <Text
@@ -1813,7 +1833,7 @@ export default function Home() {
                     minimumFontScale={0.7}
                     style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
                 >
-                    {renderWithHighlightedDays(startPart, isUpcomingSoon)} ~ {renderWithHighlightedDays(endPart, isUpcomingSoon)}
+                    {renderWithHighlightedDays(startPart, isUpcomingSoon)} ~{"\u00A0"}{renderWithHighlightedDays(endPart, isUpcomingSoon)}
                 </Text>
             );
         }
@@ -2456,17 +2476,33 @@ export default function Home() {
                                         }
                                     ]}
                                 >
-                                    {({ hovered }: any) => (
-                                        <Text
-                                            className={`font-bold text-[12px] tracking-tight ${hovered ? 'text-white' : 'text-slate-400'}`}
-                                            style={hovered ? {
+                                    <Animated.View
+                                        style={{
+                                            transform: [{
+                                                scale: returnPulseAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: [1, 1.1]
+                                                })
+                                            }]
+                                        }}
+                                    >
+                                        <Animated.Text
+                                            className="font-bold text-[12px] tracking-tight"
+                                            style={{
+                                                color: returnPulseAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ['#94a3b8', '#ffffff']
+                                                }),
                                                 // @ts-ignore - Web-specific CSS property
-                                                textShadow: '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8'
-                                            } : undefined}
+                                                textShadow: returnPulseAnim.interpolate({
+                                                    inputRange: [0, 1],
+                                                    outputRange: ['0 0 0px rgba(56, 189, 248, 0)', '0 0 10px rgba(56, 189, 248, 0.3)']
+                                                })
+                                            }}
                                         >
                                             ← 기존 대시보드로 돌아가기
-                                        </Text>
-                                    )}
+                                        </Animated.Text>
+                                    </Animated.View>
                                 </Pressable>
                             )}
                         </View>
