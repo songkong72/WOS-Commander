@@ -2340,7 +2340,7 @@ export default function Home() {
                                         </View>
                                         <TextInput
                                             placeholder="#1008"
-                                            placeholderTextColor="#475569"
+                                            placeholderTextColor="rgba(30, 41, 59, 0.5)"
                                             value={inputServer}
                                             onChangeText={setInputServer}
                                             onFocus={() => setActiveInput('server')}
@@ -2363,7 +2363,7 @@ export default function Home() {
                                         </View>
                                         <TextInput
                                             placeholder="WBI"
-                                            placeholderTextColor="#475569"
+                                            placeholderTextColor="rgba(30, 41, 59, 0.5)"
                                             value={inputAlliance}
                                             onChangeText={setInputAlliance}
                                             onFocus={() => setActiveInput('alliance')}
@@ -2389,7 +2389,7 @@ export default function Home() {
                                         </View>
                                         <TextInput
                                             placeholder="ID/닉네임"
-                                            placeholderTextColor="#475569"
+                                            placeholderTextColor="rgba(30, 41, 59, 0.5)"
                                             ref={gateUserIdRef}
                                             value={inputUserId}
                                             onChangeText={setInputUserId}
@@ -2420,7 +2420,7 @@ export default function Home() {
                                         <TextInput
                                             ref={gatePasswordRef}
                                             placeholder="••••••"
-                                            placeholderTextColor="#475569"
+                                            placeholderTextColor="rgba(30, 41, 59, 0.5)"
                                             value={inputPassword}
                                             onChangeText={setInputPassword}
                                             secureTextEntry={!showGatePw}
