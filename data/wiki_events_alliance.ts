@@ -2,6 +2,16 @@ import { WikiEvent } from './event-types';
 
 export const ALLIANCE_EVENTS: WikiEvent[] = [
     {
+        id: 'alliance_champion',
+        title: '연맹 챔피언십',
+        category: '연맹',
+        imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21145630/jump_icon_40091.png',
+        wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%97%b0%eb%a7%b9-%ec%b1%94%ed%94%bc%ec%96%b8%ec%8b%ad/',
+        day: '',
+        time: '',
+        description: '연맹 간 토너먼트 대결'
+    },
+    {
         id: 'alliance_canyon',
         title: '협곡 전투',
         category: '연맹',
@@ -61,16 +71,6 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
         day: '',
         time: '',
         description: '연맹 본부를 지키는 방어전'
-    },
-    {
-        id: 'alliance_champion',
-        title: '연맹 챔피언',
-        category: '연맹',
-        imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21145630/jump_icon_40091.png',
-        wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%97%b0%eb%a7%b9-%ec%b1%94%ed%94%bc%ec%96%b8%ec%8b%ad/',
-        day: '',
-        time: '',
-        description: '연맹 간 토너먼트 대결'
     },
     {
         id: 'a_fortress',

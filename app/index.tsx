@@ -1811,7 +1811,7 @@ export default function Home() {
                     adjustsFontSizeToFit
                     numberOfLines={2}
                     minimumFontScale={0.7}
-                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
                 >
                     {renderWithHighlightedDays(startPart, isUpcomingSoon)} ~ {renderWithHighlightedDays(endPart, isUpcomingSoon)}
                 </Text>
@@ -1838,7 +1838,7 @@ export default function Home() {
                     adjustsFontSizeToFit
                     numberOfLines={2}
                     minimumFontScale={0.7}
-                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
                 >
                     {resultParts.map((part, i) => (
                         <React.Fragment key={i}>
@@ -1856,7 +1856,7 @@ export default function Home() {
                 adjustsFontSizeToFit
                 numberOfLines={2}
                 minimumFontScale={0.7}
-                style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '900' }}
+                style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
             >
                 {renderWithHighlightedDays(timeStr, isUpcomingSoon)}
             </Text>
@@ -2043,12 +2043,20 @@ export default function Home() {
                             </ImageBackground>
                         </View>
                     ) : (
-                        <View className={`rounded-[32px] border ${hovered ? 'border-emerald-400 bg-emerald-500/5' : 'border-slate-800 bg-slate-900/40'} p-4 transition-all`} style={{ height: '100%' }}>
-                            <View className="flex-row items-baseline mb-4">
-                                <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+                        <View className={`rounded-[32px] border ${hovered ? 'border-slate-500 bg-slate-500/5' : 'border-slate-700 bg-slate-900/40'} p-4 transition-all`} style={{ height: '100%' }}>
+                            <View className="flex-row items-center mb-4">
+                                <View className={`w-8 h-8 rounded-lg items-center justify-center mr-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`} style={{ overflow: 'hidden' }}>
+                                    {eventImageUrl ? (
+                                        <Image
+                                            source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
+                                            className="w-6 h-6"
+                                            resizeMode="contain"
+                                        />
+                                    ) : (
+                                        <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+                                    )}
                                 </View>
-                                <Text className={`text-lg font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{event.title}</Text>
+                                <Text className={`text-lg font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{event.title}</Text>
                             </View>
 
                             <View className="flex-1 justify-center">
@@ -2561,6 +2569,7 @@ export default function Home() {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ flexGrow: 1 }}
                 stickyHeaderIndices={[1]}
+                scrollEventThrottle={16}
                 onScroll={(e) => {
                     const y = e.nativeEvent.contentOffset.y;
                     if (y > 0) setDashboardScrollY(y);
@@ -2570,9 +2579,9 @@ export default function Home() {
                     const upcomingPos = sectionPositions.current.upcoming ? sectionPositions.current.upcoming + containerY : 0;
                     const expiredPos = sectionPositions.current.expired ? sectionPositions.current.expired + containerY : 0;
 
-                    // Buffer should match the height of the sticky header (Weekly Program + Tabs)
-                    // Visual check suggests approx 260px
-                    const buffer = 260;
+                    // Reduced buffer to 350 to ensure 'Expired' tab only turns on when 
+                    // the expired section is closer to the top (showing last upcoming item).
+                    const buffer = 350;
 
                     if (expiredPos > 0 && y >= expiredPos - buffer) {
                         if (activeEventTab !== 'expired') setActiveEventTab('expired');
@@ -3140,7 +3149,7 @@ export default function Home() {
                                                     <View className="flex-row items-center justify-between mb-6 px-1">
                                                         <View className="flex-row items-center">
                                                             <View className="w-1.5 h-6 bg-emerald-500 rounded-full mr-3" />
-                                                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>진행 중인 이벤트</Text>
+                                                            <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>진행 중인 이벤트</Text>
                                                         </View>
                                                         {activeEvents.length > 0 && <View className="bg-emerald-500/10 px-3 py-1 rounded-full"><Text className="text-emerald-500 font-black text-xs">{activeEvents.length}</Text></View>}
                                                     </View>
@@ -3164,7 +3173,7 @@ export default function Home() {
                                                     <View className="flex-row items-center justify-between mb-6 px-1">
                                                         <View className="flex-row items-center">
                                                             <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
-                                                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>예정된 이벤트</Text>
+                                                            <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>예정된 이벤트</Text>
                                                         </View>
                                                         {upcomingEvents.length > 0 && <View className="bg-sky-500/10 px-3 py-1 rounded-full"><Text className="text-sky-500 font-black text-xs">{upcomingEvents.length}</Text></View>}
                                                     </View>
@@ -3191,7 +3200,7 @@ export default function Home() {
                                                             onPress={() => setIsExpiredExpanded(!isExpiredExpanded)}
                                                         >
                                                             <View className="w-1.5 h-6 bg-slate-500 rounded-full mr-3" />
-                                                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>종료된 이벤트</Text>
+                                                            <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>종료된 이벤트</Text>
                                                             <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                         </TouchableOpacity>
                                                         {expiredEvents.length > 0 && <View className="bg-slate-500/10 px-3 py-1 rounded-full"><Text className="text-slate-500 font-black text-xs">{expiredEvents.length}</Text></View>}

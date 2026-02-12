@@ -50,7 +50,7 @@ import * as Notifications from 'expo-notifications';
 
 const SINGLE_SLOT_IDS = [
     'a_center', 'alliance_center', 'p29_center',
-    'a_champ', 'alliance_champion',
+    'alliance_champion',
     'a_mercenary', 'alliance_mercenary',
     'a_immigrate', 'alliance_immigrate', 'server_immigrate',
     'a_trade', 'alliance_trade',
@@ -187,15 +187,14 @@ const formatDisplayDate = (str: string, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
     if (!str) return '';
     const converted = mode === 'LOCAL' ? toLocal(str) : toUTC(str);
 
-    // YYYY.MM.DD HH:mm 형식이면 리포맷팅, 아니면 그대로 반환
-    const match = converted.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/);
+    // YYYY.MM.DD HH:mm 형식이면 리포맷팅, 아니면 그대로 반환 (단일 날짜만 매칭되도록 앵커링)
+    const match = converted.match(/^(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})$/);
     if (match) {
         const [_, y, m, d, timePart] = match;
         const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         const dayName = days[date.getDay()];
-        const year2 = y.slice(-2);
-        return `${year2}년 ${pad(parseInt(m))}월 ${pad(parseInt(d))}일(${dayName}) ${timePart}`;
+        return `${y}-${pad(parseInt(m))}-${pad(parseInt(d))}(${dayName}) ${timePart}`;
     }
     return converted;
 };
@@ -247,7 +246,7 @@ const EventCard = memo(({
                 <ShimmerIcon isDark={isDark} colors={{ bg: isDark ? '#1e3a5f' : '#dbeafe', shadow: isDark ? '#38bdf8' : '#0284c7', shimmer: isDark ? '#38bdf8' : '#60a5fa' }}>
                     <Ionicons name="calendar" size={20} color={isDark ? '#38bdf8' : '#0284c7'} />
                 </ShimmerIcon>
-                <Text className={`${textClass} text-base font-medium`}>{isUtc ? str : formatDisplayDate(str)}</Text>
+                <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(str, isUtc ? 'UTC' : 'LOCAL')}</Text>
             </View>
         );
         const parts = str.split('~').map(s => s.trim());
@@ -257,13 +256,13 @@ const EventCard = memo(({
                     <View className={`px-2.5 py-1 rounded-lg border mr-3 items-center justify-center ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
                         <Text className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>시작</Text>
                     </View>
-                    <Text className={`${textClass} text-base font-medium`}>{isUtc ? parts[0] : formatDisplayDate(parts[0])}</Text>
+                    <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(parts[0], isUtc ? 'UTC' : 'LOCAL')}</Text>
                 </View>
                 <View className="flex-row items-center">
                     <View className={`px-2.5 py-1 rounded-lg border mr-3 items-center justify-center ${isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
                         <Text className={`text-[11px] font-bold ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>종료</Text>
                     </View>
-                    <Text className={`${textClass} text-base font-medium`}>{isUtc ? parts[1] : formatDisplayDate(parts[1])}</Text>
+                    <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(parts[1], isUtc ? 'UTC' : 'LOCAL')}</Text>
                 </View>
             </View>
         );
@@ -301,7 +300,7 @@ const EventCard = memo(({
                                 <Ionicons name="calendar-outline" size={18} color={isDark ? '#475569' : '#94a3b8'} />
                             </View>
                         )}
-                        <Text className={`text-lg font-black flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
+                        <Text className={`text-lg font-bold flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
                     </View>
                     <View className="flex-row items-center flex-wrap gap-1.5">
                         <View className={`flex-row items-center px-2 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
@@ -344,7 +343,7 @@ const EventCard = memo(({
                                             const formattedDay = cleanD.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                             return (
                                                 <View key={dIdx} className={`px-4 py-3 border-b ${isDark ? 'border-slate-800/60' : 'border-slate-100'} last:border-0`}>
-                                                    {renderStartEndPeriod(formatDisplayDate(formattedDay, timezone), `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`, timezone === 'UTC')}
+                                                    {renderStartEndPeriod(formattedDay, `${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-slate-100' : 'text-slate-800')} ${isExpired ? 'line-through' : ''}`, timezone === 'UTC')}
                                                 </View>
                                             );
                                         })}
@@ -924,8 +923,8 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     >
                         <View className="flex-row items-center flex-1">
                             <Ionicons name="calendar" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
-                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'} flex-1`} numberOfLines={1}>
-                                {datePart ? (formatDisplayDate(value).split(') ')[0] + ')').replace(/^20/, '').replace(/년\s*/, '.').replace(/월\s*/, '.').replace(/일/, '') : '날짜 선택'}
+                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'} flex-1`} numberOfLines={1}>
+                                {datePart ? datePart.replace(/\./g, '-') : '날짜 선택'}
                             </Text>
                         </View>
                         <Ionicons name="chevron-down" size={14} color="#475569" />
@@ -940,7 +939,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     >
                         <View className="flex-row items-center">
                             <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
-                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
+                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
                         </View>
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
@@ -953,7 +952,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                                         onPress={() => { onChange(`${datePart} ${hour}:${m}`); setActiveDateDropdown(null); }}
                                         className={`h-12 items-center justify-center border-b border-white/5 ${h === hour ? 'bg-sky-500/20' : ''}`}
                                     >
-                                        <Text className={`font-black text-base ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
+                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -970,7 +969,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     >
                         <View className="flex-row items-center">
                             <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
-                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
+                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
                         </View>
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
@@ -983,7 +982,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                                         onPress={() => { onChange(`${datePart} ${h}:${min}`); setActiveDateDropdown(null); }}
                                         className={`h-12 items-center justify-center border-b border-white/5 ${m === min ? 'bg-sky-500/20' : ''}`}
                                     >
-                                        <Text className={`font-black text-base ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
+                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -1046,27 +1045,29 @@ export default function EventTracker() {
     useEffect(() => {
         if (!schedulesLoading) {
             const mergedEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(event => {
-                // Handle duplicate ID fallback (a_weapon and alliance_frost_league are the same)
+                const eid = (event.id || '').trim();
                 const savedSchedule = schedules.find(s => {
                     const sid = (s.eventId || '').trim();
-                    const eid = (event.id || '').trim();
-                    return sid === eid ||
-                        (eid === 'a_weapon' && sid === 'alliance_frost_league') ||
-                        (eid === 'alliance_frost_league' && sid === 'a_weapon') ||
-                        (eid === 'a_operation' && sid === 'alliance_operation') ||
-                        (eid === 'alliance_operation' && sid === 'a_operation') ||
-                        (eid === 'a_joe' && sid === 'alliance_joe') ||
-                        (eid === 'alliance_joe' && sid === 'a_joe');
+                    if (sid === eid) return true;
+                    // Mappings for legacy or alternate IDs
+                    const idMap: { [key: string]: string } = {
+                        'a_weapon': 'alliance_frost_league',
+                        'alliance_frost_league': 'a_weapon',
+                        'a_operation': 'alliance_operation',
+                        'alliance_operation': 'a_operation',
+                        'a_joe': 'alliance_joe',
+                        'alliance_joe': 'a_joe',
+                        'a_champ': 'alliance_champion',
+                        'alliance_champion': 'a_champ'
+                    };
+                    return idMap[eid] === sid;
                 });
-                if (savedSchedule) {
-                    // Sanitize stray dots from DB
-                    const cleanDay = (savedSchedule.day === '.' || savedSchedule.day?.trim() === '.') ? '' : (savedSchedule.day || '');
-                    const cleanTime = (savedSchedule.time === '.' || savedSchedule.time?.trim() === '.') ? '' : (savedSchedule.time || '');
 
+                if (savedSchedule) {
                     return {
                         ...event,
-                        day: cleanDay,
-                        time: cleanTime,
+                        day: (savedSchedule.day === '.' ? '' : (savedSchedule.day || '')),
+                        time: (savedSchedule.time === '.' ? '' : (savedSchedule.time || '')),
                         strategy: savedSchedule.strategy || ''
                     };
                 }
@@ -1419,38 +1420,22 @@ export default function EventTracker() {
     const filteredEvents = useMemo(() => {
         let base = selectedCategory === '전체' ? [...events] : events.filter(e => e.category === selectedCategory);
 
-        base = base.filter(e => {
-            const isExp = isExpiredMap[e.id];
-            if (!isExp) return true;
-
-            const dayStr = e.day || '';
-            const timeStr = e.time || '';
-            const combined = dayStr + ' ' + timeStr;
-            const dateRangeMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~\s*(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
-
-            if (dateRangeMatch) {
-                const eStr = `${dateRangeMatch[3].replace(/\./g, '-')}T${dateRangeMatch[4]}:00`;
-                const end = new Date(eStr);
-                if (!isNaN(end.getTime())) {
-                    const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
-                    const threshold = new Date(end.getTime() + twoDaysInMs);
-                    return now <= threshold;
-                }
-            }
-            return true;
-        });
+        // All events remain visible for management as requested by user
 
         base.sort((a, b) => {
-            const activeA = isOngoingMap[a.id];
-            const activeB = isOngoingMap[b.id];
+            if (a.id === b.id) return 0;
+            const ongoingA = isOngoingMap[a.id] ? 1 : 0;
+            const ongoingB = isOngoingMap[b.id] ? 1 : 0;
+            if (ongoingA !== ongoingB) return ongoingB - ongoingA;
 
-            if (activeA && !activeB) return -1;
-            if (!activeA && activeB) return 1;
+            // Prioritize Alliance Championship
+            if (a.id === 'alliance_champion') return -1;
+            if (b.id === 'alliance_champion') return 1;
 
             if (selectedCategory === '전체') {
                 const catOrder: { [key: string]: number } = { '서버': 0, '연맹': 1, '개인': 2, '초보자': 3 };
-                const orderA = catOrder[a.category] !== undefined ? catOrder[a.category] : 99;
-                const orderB = catOrder[b.category] !== undefined ? catOrder[b.category] : 99;
+                const orderA = catOrder[a.category] ?? 99;
+                const orderB = catOrder[b.category] ?? 99;
                 if (orderA !== orderB) return orderA - orderB;
             }
 
@@ -1593,7 +1578,7 @@ export default function EventTracker() {
         setActiveFortressDropdown(null); // Clear any open time pickers
 
 
-        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
+        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
         if (event.category === '개인' || dateRangeIDs.includes(event.id)) {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
@@ -1792,7 +1777,7 @@ export default function EventTracker() {
 
         setIsSaving(true); // Lock updates
 
-        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
+        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
         if (editingEvent.category === '개인' || dateRangeIDs.includes(editingEvent.id)) {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
@@ -2074,9 +2059,9 @@ export default function EventTracker() {
                             >
                                 <Ionicons name="arrow-back-outline" size={20} color={isDark ? "white" : "#1e293b"} />
                             </TouchableOpacity>
-                            <View>
+                            <View className="flex-1">
                                 <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>이벤트 스케줄</Text>
-                                <Text className={`text-xs font-medium mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>서버 및 연맹 이벤트를 한눈에 확인하세요</Text>
+                                <Text className={`text-sm font-semibold mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>서버 및 연맹 이벤트를 한눈에 확인하세요</Text>
                             </View>
 
                             {/* Timezone Toggle */}
@@ -2396,7 +2381,7 @@ export default function EventTracker() {
                                             </Text>
                                         </View>
                                         <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                            {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                            {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'alliance_champion' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
                                         </Text>
                                     </>
                                 </View>
@@ -2547,7 +2532,7 @@ export default function EventTracker() {
                                         </ScrollView>
                                     </View>
                                 ) : (() => {
-                                    const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'a_champ', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
+                                    const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
                                     return (editingEvent?.category === '개인' || dateRangeIDs.includes(editingEvent?.id || ''));
                                 })() ? (
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: activeDateDropdown ? 10000 : 1 }}>
@@ -2588,7 +2573,7 @@ export default function EventTracker() {
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: (hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
                                         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }} style={{ overflow: 'visible' }}>
                                             {(() => {
-                                                const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'];
+                                                const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe', 'alliance_champion'];
                                                 if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                     return (
                                                         <View className={`flex-row mb-6 mt-6 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
@@ -2599,7 +2584,7 @@ export default function EventTracker() {
                                                 }
                                                 return null;
                                             })()}
-                                            {editingEvent?.id !== 'a_champ' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
+                                            {editingEvent?.id !== 'alliance_champion' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
                                                 <View className={`flex-1 ${!(editingEvent?.category === '연맹' && !['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_mobilization', 'alliance_mobilization', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'].includes(editingEvent?.id || '')) ? 'mt-6' : ''}`}>
                                                     {editingEvent?.id !== 'a_center' && (
                                                         <View className="mb-2">
