@@ -282,7 +282,7 @@ export default function SuperAdminDashboard() {
                         activeOpacity={0.7}
                         className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${activeTab === 'pending' ? 'border-sky-500 bg-sky-500/10 shadow-lg shadow-sky-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
                     >
-                        <Text className={`text-sm font-black uppercase tracking-widest mb-2 ${activeTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인 대기</Text>
+                        <Text className={`text-lg font-black uppercase tracking-widest mb-2 ${activeTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인대기중 건수</Text>
                         <Text className={`text-4xl font-black ${activeTab === 'pending' ? (isDark ? 'text-sky-400' : 'text-sky-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
                             {requests.filter(r => r.status === 'pending').length}
                         </Text>
@@ -292,7 +292,7 @@ export default function SuperAdminDashboard() {
                         activeOpacity={0.7}
                         className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${activeTab === 'alliances' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
                     >
-                        <Text className={`text-sm font-black uppercase tracking-widest mb-2 ${activeTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>활성 연맹 수</Text>
+                        <Text className={`text-lg font-black uppercase tracking-widest mb-2 ${activeTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인완료 건수</Text>
                         <Text className={`text-4xl font-black ${activeTab === 'alliances' ? (isDark ? 'text-emerald-400' : 'text-emerald-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
                             {requests.filter(r => r.status === 'approved').length}
                         </Text>
@@ -428,8 +428,8 @@ export default function SuperAdminDashboard() {
 
                                             <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
                                                 <View>
-                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.adminId}</Text></Text>
-                                                    <Text className={`text-[10px] font-bold mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.contact || '-'}</Text></Text>
+                                                    <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={`text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
+                                                    <Text className={`text-xs font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={`text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
                                                 </View>
                                                 <View className="items-end">
                                                     <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>

@@ -2691,7 +2691,7 @@ export default function Home() {
                                                         <Ionicons name="location" size={16} color={isDark ? (hovered ? "#7dd3fc" : "#38bdf8") : "#0284c7"} />
                                                     </View>
                                                     <Text className={`font-black text-sm tracking-tight transition-all ${isDark ? (hovered ? 'text-white' : 'text-sky-300') : (hovered ? 'text-sky-800' : 'text-sky-700')}`}>
-                                                        #{serverId} · {allianceId}
+                                                        {serverId?.toString().startsWith('#') ? serverId : '#' + serverId} · {allianceId}
                                                     </Text>
                                                     <View className={`ml-3 w-6 h-6 rounded-full items-center justify-center transition-all ${isDark ? (hovered ? 'bg-sky-500/30' : 'bg-sky-500/20') : (hovered ? 'bg-sky-200' : 'bg-sky-100')}`}>
                                                         <Ionicons name="chevron-forward" size={14} color={isDark ? (hovered ? "#7dd3fc" : "#38bdf8") : "#0284c7"} />
@@ -3561,7 +3561,7 @@ export default function Home() {
                                 ]}
                                 className={`flex-1 p-6 rounded-[32px] border ${superAdminTab === 'pending' ? 'border-sky-500 bg-sky-500/10 shadow-lg shadow-sky-500/20' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
                             >
-                                <Text className={`text-xs font-black uppercase tracking-widest mb-2 ${superAdminTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인 대기</Text>
+                                <Text className={`text-lg font-black uppercase tracking-widest mb-2 ${superAdminTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인대기중 건수</Text>
                                 <Text className={`text-4xl font-black ${superAdminTab === 'pending' ? (isDark ? 'text-sky-400' : 'text-sky-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
                                     {allRequests.filter(r => r.status === 'pending').length}
                                 </Text>
@@ -3576,7 +3576,7 @@ export default function Home() {
                                 ]}
                                 className={`flex-1 p-6 rounded-[32px] border ${superAdminTab === 'alliances' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
                             >
-                                <Text className={`text-xs font-black uppercase tracking-widest mb-2 ${superAdminTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>활성 연맹 수</Text>
+                                <Text className={`text-lg font-black uppercase tracking-widest mb-2 ${superAdminTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인완료 건수</Text>
                                 <Text className={`text-4xl font-black ${superAdminTab === 'alliances' ? (isDark ? 'text-emerald-400' : 'text-emerald-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
                                     {allRequests.filter(r => r.status === 'approved').length}
                                 </Text>
@@ -3727,8 +3727,8 @@ export default function Home() {
 
                                                         <View className={`flex-row justify-between items-center p-4 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
                                                             <View>
-                                                                <Text className={`text-base font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.adminId}</Text></Text>
-                                                                <Text className={`text-base font-bold mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.contact || '-'}</Text></Text>
+                                                                <Text className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={`text-lg ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
+                                                                <Text className={`text-sm font-bold mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={`text-lg ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
                                                             </View>
                                                             <Text className={`text-base font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
                                                         </View>
