@@ -2309,7 +2309,7 @@ export default function Home() {
                                             <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                         </View>
                                         <TextInput
-                                            placeholder="#000"
+                                            placeholder="#1008"
                                             placeholderTextColor="#475569"
                                             value={inputServer}
                                             onChangeText={setInputServer}
@@ -2332,7 +2332,7 @@ export default function Home() {
                                             <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                         </View>
                                         <TextInput
-                                            placeholder="연맹 이름"
+                                            placeholder="WBI"
                                             placeholderTextColor="#475569"
                                             value={inputAlliance}
                                             onChangeText={setInputAlliance}
