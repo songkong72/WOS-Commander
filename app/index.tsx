@@ -46,8 +46,10 @@ export default function Home() {
     const sectionPositions = useRef<{ [key: string]: number }>({});
     const [activeEventTab, setActiveEventTab] = useState<'active' | 'upcoming' | 'expired'>('active');
     const [containerY, setContainerY] = useState(0);
+    const [isExpiredExpanded, setIsExpiredExpanded] = useState(false);
 
     const scrollToSection = (section: 'active' | 'upcoming' | 'expired') => {
+        if (section === 'expired') setIsExpiredExpanded(true);
         const sectionY = sectionPositions.current[section] || 0;
         const targetY = containerY + sectionY;
         setActiveEventTab(section); // 탭 강조 상태 유지
@@ -137,6 +139,309 @@ export default function Home() {
     const [noticePopupVisible, setNoticePopupVisible] = useState(false);
     const [noticePopupDontShow, setNoticePopupDontShow] = useState(false);
     const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
+    const [isManualVisible, setIsManualVisible] = useState(false);
+    const [isGateManualVisible, setIsGateManualVisible] = useState(false);
+
+    // -- Global Back Button & History Handling for Modals (Web Fix) --
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+
+        const handlePopState = () => {
+            setIsManualVisible(false);
+            setIsGateManualVisible(false);
+            setAdminMenuVisible(false);
+            setNoticeDetailVisible(false);
+            setAdminDashboardVisible(false);
+            setIsSuperAdminDashboardVisible(false);
+            setIsUserPassChangeOpen(false);
+            setNoticePopupVisible(false);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [isManualVisible, isGateManualVisible, adminMenuVisible, noticeDetailVisible, adminDashboardVisible,
+        isSuperAdminDashboardVisible, isUserPassChangeOpen, noticePopupVisible]);
+
+    const openModalWithHistory = (setter: (v: boolean) => void) => {
+        setter(true);
+        if (Platform.OS === 'web') {
+            window.history.pushState({ modal: true }, '');
+        }
+    };
+
+    const renderGateManualContent = () => (
+        <ScrollView className="flex-1 p-10" showsVerticalScrollIndicator={false}>
+            <View className="gap-12 pb-12">
+                {/* 1. Gate 화면 개요 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
+                            <Text className="text-lg">🚪</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Gate 화면 개요</Text>
+                    </View>
+                    <Text className={`text-sm mb-4 leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>WOS 커맨더 첫 접속 시 연맹을 선택하고 로그인하는 화면입니다.</Text>
+                    <View className="flex-row rounded-2xl overflow-hidden border border-sky-500/30 mb-4">
+                        <View className="flex-1 p-3 bg-sky-500/20 items-center"><Text className="text-[10px] font-black text-sky-400">대시보드 입장</Text></View>
+                        <View className="flex-1 p-3 bg-slate-800/50 items-center"><Text className="text-[10px] font-black text-slate-500">연맹 관리자 신청</Text></View>
+                    </View>
+                    <View className="gap-2">
+                        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>• 대시보드 입장: 연맹원, 운영진, 연맹 관리자 공통 로그인</Text>
+                        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>• 연맹 관리자 신청: 새로운 연맹 대시보드 개설 시 사용</Text>
+                    </View>
+                </View>
+
+                {/* 2. 대시보드 입장 (로그인) */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
+                            <Text className="text-lg">🔓</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>대시보드 입장 (로그인)</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-sm font-black mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 입력 필드 가이드</Text>
+                            <View className="gap-4">
+                                <View>
+                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>서버 번호</Text>
+                                    <Text className="text-xs text-slate-500">게임 서버 번호 (예: 1008)</Text>
+                                </View>
+                                <View>
+                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>연맹 이름</Text>
+                                    <Text className="text-xs text-slate-500">연맹 약칭 영문 대문자 (예: WBI)</Text>
+                                </View>
+                                <View>
+                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>영주 이름</Text>
+                                    <Text className="text-xs text-slate-500">게임 닉네임 또는 관리자가 등록한 ID</Text>
+                                </View>
+                                <View>
+                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>비밀번호</Text>
+                                    <Text className="text-xs text-slate-500">연맹 관리자가 부여한 비밀번호</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <View className={`p-5 rounded-2xl ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 자동 완성: 최근 입력한 기록은 드롭다운으로 빠르게 선택할 수 있습니다.</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 3. 역할(권한) 체계 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
+                            <Text className="text-lg">👥</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>역할(권한) 체계</Text>
+                    </View>
+                    <View className="gap-4">
+                        {[
+                            { label: '🔴 시스템 마스터', color: '#fb7185', desc: '전체 관리 및 연맹 신청 승인' },
+                            { label: '🔵 연맹 관리자', color: '#818cf8', desc: '연맹 총괄, 영주/운영진 등록 관리' },
+                            { label: '🟢 운영 관리자', color: '#22d3ee', desc: '이벤트 일정 등록 및 출석체크' },
+                            { label: '⚪ 일반 영주', color: '#94a3b8', desc: '정보 열람 및 본인 출석 요청' }
+                        ].map((role) => (
+                            <View key={role.label} className={`p-4 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text style={{ color: role.color }} className="font-black text-sm mb-1">{role.label}</Text>
+                                <Text className={`text-xs leading-5 font-medium ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{role.desc}</Text>
+                            </View>
+                        ))}
+                    </View>
+                    <View className={`mt-4 p-5 rounded-2xl ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
+                        <Text className={`text-xs leading-5 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ 중요: 운영 및 일반 계정은 연맹 관리자가 먼저 등록해야 로그인이 가능합니다.</Text>
+                    </View>
+                </View>
+
+                {/* 4. 연맹 관리자 신청 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                            <Text className="text-lg">📋</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>연맹 관리자 신청</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View className="flex-row items-center justify-between px-4">
+                            {['탭 선택', '정보입력', '제출', '승인대기'].map((step, idx) => (
+                                <View key={step} className="items-center">
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mb-1 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-100'}`}>
+                                        <Text className="text-[10px] font-black text-indigo-400">{idx + 1}</Text>
+                                    </View>
+                                    <Text className="text-[9px] font-black text-slate-500">{step}</Text>
+                                </View>
+                            ))}
+                        </View>
+                        <View className={`p-5 rounded-2xl ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>⏳ 시스템 관리자(마스터)의 확인 후 승인까지 시간이 소요될 수 있습니다.</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 5. 방문자 접속 및 기타 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-slate-500/20' : 'bg-slate-50'}`}>
+                            <Text className="text-lg">🛠️</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>편리한 도구 및 기타</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                • <Text className="font-bold">익명 접속:</Text> 서버/연맹 정보만으로 일정과 공지 열람 가능 (개인 기능 제한){"\n"}
+                                • <Text className="font-bold">테마/글꼴:</Text> 상단 메뉴에서 다크모드 및 글자 크기 조절 가능{"\n"}
+                                • <Text className="font-bold">페널티:</Text> 무단 불참 시 연맹 규정에 따라 불이익이 발생할 수 있습니다.{"\n"}
+                                • <Text className="font-bold">앱 설치:</Text> 브라우저 메뉴에서 '홈 화면에 추가'하여 앱처럼 사용 가능
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* FAQ */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                            <Text className="text-lg">❓</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>자주 묻는 질문</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View>
+                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Q. 비밀번호를 모르겠어요</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>A. 소속 연맹 관리자에게 초기화를 요청하세요.</Text>
+                        </View>
+                        <View>
+                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Q. '미등록'이라고 나옵니다</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>A. 관리자가 명단에 캐릭터 이름을 먼저 등록해야 합니다.</Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
+        </ScrollView>
+    );
+
+    const renderMainManualContent = () => (
+        <ScrollView className="flex-1 p-10" showsVerticalScrollIndicator={false}>
+            <View className="gap-12 pb-12">
+                {/* 1. 권한 관리 시스템 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
+                            <Text className="text-lg">🔐</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>권한 관리 시스템</Text>
+                    </View>
+                    <View className="gap-4">
+                        {[
+                            { label: '🔴 전체서버관리자', color: '#fb7185', desc: '모든 서버/연맹 관리 및 시스템 설정' },
+                            { label: '🔵 연맹관리자', color: '#818cf8', desc: '연맹 총괄, 운영진 임명 및 멤버 관리' },
+                            { label: '🟢 운영관리자', color: '#22d3ee', desc: '이벤트 일정 등록, 출석 관리, 공지 작성' },
+                            { label: '⚪ 일반영주', color: '#94a3b8', desc: '정보 열람, 본인 출석 등록' }
+                        ].map((role) => (
+                            <View key={role.label} className={`p-4 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text style={{ color: role.color }} className="font-black text-sm mb-1">{role.label}</Text>
+                                <Text className={`text-xs leading-5 font-medium ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{role.desc}</Text>
+                            </View>
+                        ))}
+                    </View>
+                    <View className={`mt-4 p-5 rounded-2xl ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
+                        <Text className={`text-xs leading-5 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 팁: 오른쪽 상단 프로필 아이콘 색상으로 현재 역할을 확인할 수 있습니다.</Text>
+                    </View>
+                </View>
+
+                {/* 2. 헤더 버튼 가이드 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
+                            <Text className="text-lg">🔘</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>헤더 버튼 가이드</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-sm font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>☀️ 테마 전환</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>다크 모드와 라이트 모드를 전환합니다.</Text>
+                        </View>
+                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-sm font-black mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📥 설치 버튼</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>홈 화면에 추가(PWA)하여 앱처럼 사용하는 방법을 안내합니다.</Text>
+                        </View>
+                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-sm font-black mb-2 ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>👤 프로필/관리자</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>관리자 메뉴(로그아웃, 연맹원 관리, 전략 설정 등)를 여는 메뉴입니다.</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 3. 공지 및 일정 관리 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                            <Text className="text-lg">🔔</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>공지 및 일정 관리</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-base font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>공지사항</Text>
+                            <Text className={`text-sm leading-6 mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>대시보드 상단에 중요 정보를 표시합니다. 관리자는 ✏️ 아이콘으로 내용을 수정하고 공개 여부를 설정할 수 있습니다.</Text>
+                        </View>
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-base font-black mb-2 ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>금주의 이벤트</Text>
+                            <Text className={`text-sm leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>현재 진행(노란색), 예정(녹색), 종료(회색)된 이벤트를 한눈에 확인합니다. KST/UTC 시간대 전환이 가능합니다.</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 4. 주요 메뉴 안내 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
+                            <Text className="text-lg">📋</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>주요 메뉴 안내</Text>
+                    </View>
+                    <View className="gap-6">
+                        <View>
+                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>👥 영웅 정보</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>모든 영웅의 스탯, 스킬, 추천 조합 정보를 확인합니다.</Text>
+                        </View>
+                        <View>
+                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>📅 이벤트 대작전</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>연맹 이벤트 일정을 확인하고 참여 요청 및 출석을 체크합니다.</Text>
+                        </View>
+                        <View>
+                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>🗺️ 전략 문서</Text>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>관리자가 등록한 구글 시트 배치도나 전략 문서를 바로 조회합니다.</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 5. 관리자 교육 */}
+                <View>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                            <Text className="text-lg">⚙️</Text>
+                        </View>
+                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 가이드</Text>
+                    </View>
+                    <View className="gap-4">
+                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-xs leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                • <Text className="font-bold">연맹원 관리:</Text> 엑셀 대량 등록, 개별 추가/삭제, 권한 부여{"\n"}
+                                • <Text className="font-bold">전략 설정:</Text> 외부 문서 URL 연동 및 관리{"\n"}
+                                • <Text className="font-bold">일정 등록:</Text> 이벤트 카드의 📅 아이콘을 통해 시간/요일 설정
+                            </Text>
+                        </View>
+                        <View className={`p-5 rounded-2xl ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
+                            <Text className={`text-xs leading-5 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ 주의: 관리 권한은 해당 연맹에만 적용됩니다. 타 연맹 조회 시에는 부여된 권한이 유지되지 않습니다.</Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
+        </ScrollView>
+    );
 
     // Check if notice popup should be shown on load
     useEffect(() => {
@@ -1850,11 +2155,7 @@ export default function Home() {
                         <View className="items-center mb-4 relative">
                             {/* Help Button */}
                             <Pressable
-                                onPress={() => {
-                                    if (Platform.OS === 'web') {
-                                        window.open('/login-guide.html', '_blank');
-                                    }
-                                }}
+                                onPress={() => openModalWithHistory(setIsGateManualVisible)}
                                 style={({ pressed, hovered }: any) => [
                                     {
                                         position: 'absolute',
@@ -2161,6 +2462,37 @@ export default function Home() {
 
                 </View>
 
+                {/* Gate Manual (Login Guide) */}
+                <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
+                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                        <BlurView intensity={40} className="absolute inset-0" />
+                        <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                            <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center">
+                                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                            <Ionicons name="help-circle" size={30} color="#f59e0b" />
+                                        </View>
+                                        <View>
+                                            <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
+                                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>로그인 가이드</Text>
+                                        </View>
+                                    </View>
+                                    <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            {renderGateManualContent()}
+                            <View className="px-10 py-8 border-t border-slate-800">
+                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className="w-full bg-amber-500 py-5 rounded-2xl items-center justify-center">
+                                    <Text className="text-white font-black text-lg">이해했습니다</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
+
                 {/* Custom Alert Modal (Shared with Gate ) */}
                 <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
                     <View className="flex-1 bg-black/80 items-center justify-center p-6">
@@ -2401,11 +2733,7 @@ export default function Home() {
 
                                 <View className="relative">
                                     <Pressable
-                                        onPress={() => {
-                                            if (Platform.OS === 'web') {
-                                                window.open('/manual.html', '_blank');
-                                            }
-                                        }}
+                                        onPress={() => openModalWithHistory(setIsManualVisible)}
                                         onHoverIn={() => setHoveredHeaderBtn('help')}
                                         onHoverOut={() => setHoveredHeaderBtn(null)}
                                         style={({ pressed, hovered }: any) => [
@@ -2648,9 +2976,9 @@ export default function Home() {
 
                 {/* Section 2: Sticky Header (Weekly Program + Tabs) */}
                 <View className={`w-full items-center z-50 py-3 ${isDark ? 'bg-[#060b14]/95' : 'bg-slate-50/95'}`} style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#1e293b' : '#e2e8f0' }}>
-                    <View className="w-full max-w-6xl px-4 md:px-8">
+                    <View className="w-full max-w-6xl">
                         {/* Weekly Program Title & Timezone */}
-                        <View className={`flex-row flex-wrap items-center justify-between gap-y-4 px-6 py-5 rounded-[32px] border mb-4 ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
+                        <View className={`flex-row flex-wrap items-center justify-between gap-y-4 px-6 py-5 border ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
                             <View className="flex-row items-center">
                                 <View className={`w-1.5 h-10 rounded-full mr-5 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
                                 <View>
@@ -2860,24 +3188,26 @@ export default function Home() {
                                                     <View className="flex-row items-center justify-between mb-6 px-1">
                                                         <TouchableOpacity
                                                             className="flex-row items-center"
-                                                            onPress={() => scrollToSection('expired')}
+                                                            onPress={() => setIsExpiredExpanded(!isExpiredExpanded)}
                                                         >
                                                             <View className="w-1.5 h-6 bg-slate-500 rounded-full mr-3" />
                                                             <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>종료된 이벤트</Text>
-                                                            <Ionicons name="chevron-down" size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
+                                                            <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                         </TouchableOpacity>
                                                         {expiredEvents.length > 0 && <View className="bg-slate-500/10 px-3 py-1 rounded-full"><Text className="text-slate-500 font-black text-xs">{expiredEvents.length}</Text></View>}
                                                     </View>
-                                                    {expiredEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap -mx-2 opacity-60">
-                                                            {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
-                                                        </View>
-                                                    ) : (
-                                                        <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <Ionicons name="checkmark-done-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                            <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>종료된 이벤트가 없습니다</Text>
-                                                        </View>
-                                                    )}
+                                                    {isExpiredExpanded ? (
+                                                        expiredEvents.length > 0 ? (
+                                                            <View className="flex-row flex-wrap -mx-2 opacity-60">
+                                                                {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
+                                                            </View>
+                                                        ) : (
+                                                            <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                                                <Ionicons name="checkmark-done-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>종료된 이벤트가 없습니다</Text>
+                                                            </View>
+                                                        )
+                                                    ) : null}
                                                 </View>
                                             </>
                                         );
@@ -3534,6 +3864,228 @@ export default function Home() {
                                 ) : (
                                     <Text className="text-white font-black text-lg">변경하기</Text>
                                 )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Notice Detail Modal */}
+            <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-8 py-6 border-b ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+                                        <Ionicons name="notifications" size={24} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>NOTICE</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>공지사항 상세</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setNoticeDetailVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View className="p-8">
+                            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                                <Text className={`text-base leading-7 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                    {notice?.content || '공지 내용이 없습니다.'}
+                                </Text>
+                            </ScrollView>
+                        </View>
+                        <View className="px-8 pb-8">
+                            <TouchableOpacity
+                                onPress={() => setNoticeDetailVisible(false)}
+                                className={`w-full py-4 rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
+                            >
+                                <Text className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>닫기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Notice Edit Modal */}
+            <Modal visible={noticeModalVisible} transparent animationType="fade" onRequestClose={() => setNoticeModalVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-8 py-6 border-b ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                                        <Ionicons name="create" size={24} color="#3b82f6" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>ADMIN SETTING</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>공지사항 설정</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View className="p-8">
+                            <Text className={`text-xs font-black uppercase tracking-widest mb-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>공지 내용</Text>
+                            <TextInput
+                                multiline
+                                numberOfLines={6}
+                                value={editNoticeContent}
+                                onChangeText={setEditNoticeContent}
+                                className={`w-full p-4 rounded-2xl border font-bold text-sm ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500' : 'bg-slate-50 text-slate-900 border-slate-200 focus:border-blue-500'}`}
+                                placeholder="연맹원들에게 전달할 공지 내용을 입력하세요."
+                                placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
+                                style={{ textAlignVertical: 'top' }}
+                            />
+
+                            <View className="flex-row items-center justify-between mt-6">
+                                <View>
+                                    <Text className={`text-sm font-black ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>대시보드 노출</Text>
+                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>메가폰 및 팝업 공지 활성화</Text>
+                                </View>
+                                <Switch
+                                    value={editNoticeVisible}
+                                    onValueChange={setEditNoticeVisible}
+                                    trackColor={{ false: '#334155', true: '#3b82f6' }}
+                                    thumbColor={isDark ? '#fff' : '#fff'}
+                                />
+                            </View>
+                        </View>
+                        <View className="flex-row gap-3 px-8 pb-8">
+                            <TouchableOpacity
+                                onPress={() => setNoticeModalVisible(false)}
+                                className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                            >
+                                <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleSaveNotice}
+                                className="flex-[2] bg-blue-500 py-4 rounded-2xl shadow-lg shadow-blue-500/30"
+                            >
+                                <Text className="text-center font-black text-white">저장하기</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Install Guide Modal */}
+            <Modal visible={installModalVisible} transparent animationType="fade" onRequestClose={() => setInstallModalVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                                        <Ionicons name="download" size={24} color="#3b82f6" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>앱 설치 가이드</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setInstallModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View className="p-8">
+                            <View className="gap-6">
+                                <View className="flex-row items-center">
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Text className="text-xs font-black text-blue-500">1</Text>
+                                    </View>
+                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>브라우저의 메뉴 버튼을 탭합니다.</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Text className="text-xs font-black text-blue-500">2</Text>
+                                    </View>
+                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>'홈 화면에 추가'를 선택합니다.</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Text className="text-xs font-black text-blue-500">3</Text>
+                                    </View>
+                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>바탕화면에서 앱처럼 편리하게 사용하세요!</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <View className="px-8 pb-8">
+                            <TouchableOpacity
+                                onPress={() => setInstallModalVisible(false)}
+                                className="w-full bg-blue-500 py-5 rounded-2xl items-center justify-center shadow-lg shadow-blue-500/30"
+                            >
+                                <Text className="text-white font-black text-lg">알겠습니다</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Gate Manual (Login Guide) */}
+            <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="help-circle" size={30} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
+                                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>로그인 가이드</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        {renderGateManualContent()}
+                        <View className="px-10 py-8 border-t border-slate-800">
+                            <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className="w-full bg-amber-500 py-5 rounded-2xl items-center justify-center">
+                                <Text className="text-white font-black text-lg">이해했습니다</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Main Manual (Dashboard Guide) */}
+            <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="book" size={30} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
+                                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>사용자 매뉴얼</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        {renderMainManualContent()}
+                        <View className="px-10 py-8 border-t border-slate-800">
+                            <TouchableOpacity onPress={() => setIsManualVisible(false)} className="w-full bg-amber-500 py-5 rounded-2xl items-center justify-center">
+                                <Text className="text-white font-black text-lg">확인</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

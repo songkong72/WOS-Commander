@@ -140,8 +140,8 @@ export default function GlobalNavigationBar() {
                 className={`flex-row items-center px-2 py-2 border-t shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/90 border-slate-900' : 'bg-white/95 border-slate-100'}`}
                 style={{
                     width: '100%',
-                    borderTopLeftRadius: 32,
-                    borderTopRightRadius: 32,
+                    borderTopLeftRadius: 0,
+                    borderTopRightRadius: 0,
                     shadowColor: isDark ? '#000' : '#64748b',
                     shadowOffset: { width: 0, height: -10 },
                     shadowOpacity: 0.1,
