@@ -1681,7 +1681,7 @@ export default function Home() {
                             ...e,
                             eventId: `${e.eventId}_team${idx + 1}`,
                             originalEventId: e.eventId,
-                            title: cleanLabel ? `무기공장 쟁탈전(${cleanLabel})` : '무기공장 쟁탈전',
+                            title: cleanLabel ? `무기공장(${cleanLabel})` : '무기공장',
                             time: simplifiedTime,
                             isFoundrySplit: true,
                             teamLabel: cleanLabel,
@@ -2442,7 +2442,7 @@ export default function Home() {
                                     />
                                     <Text className="text-white font-black text-lg tracking-tight relative z-10">
                                         {isRegisterMode
-                                            ? '관리자 계정 생성 및 신청'
+                                            ? '신청하기'
                                             : (!inputUserId.trim() && !inputPassword.trim())
                                                 ? '익명 사용자 입장하기'
                                                 : '입장하기'}
@@ -2515,7 +2515,7 @@ export default function Home() {
                     <View className="flex-1 bg-black/80 items-center justify-center p-6">
                         <BlurView intensity={40} className="absolute inset-0" />
                         <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                            <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                            <View className={`px-10 py-4 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                                 <View className="flex-row items-center justify-between">
                                     <View className="flex-row items-center">
                                         <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
@@ -2532,9 +2532,9 @@ export default function Home() {
                                 </View>
                             </View>
                             {renderGateManualContent()}
-                            <View className="px-10 py-8 border-t border-slate-800">
-                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className="w-full bg-amber-500 py-5 rounded-2xl items-center justify-center">
-                                    <Text className="text-white font-black text-lg">이해했습니다</Text>
+                            <View className="px-10 py-4 border-t border-slate-800">
+                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className="w-full py-2 items-center justify-center">
+                                    <Text className="text-amber-500 font-black text-lg">이해했습니다</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
