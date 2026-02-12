@@ -1708,6 +1708,13 @@ export default function Home() {
             if (!expiredA && expiredB) return -1;
             if (expiredA && !expiredB) return 1;
 
+            // [Representative's Guidance] Prioritize Team Split events to the top of the list 
+            // to ensure they pair up and minimize layout gaps from single events.
+            const isTeamA = a.isBearSplit || a.isFoundrySplit || a.isFortressSplit;
+            const isTeamB = b.isBearSplit || b.isFoundrySplit || b.isFortressSplit;
+            if (isTeamA && !isTeamB) return -1;
+            if (!isTeamA && isTeamB) return 1;
+
             const dayOrder = ['월', '화', '수', '목', '금', '토', '일', '매일', '상시', '상설'];
             const getDayRank = (d: string) => {
                 const idx = dayOrder.findIndex(key => (d || '').startsWith(key));
@@ -1718,12 +1725,12 @@ export default function Home() {
             if (rankA !== rankB) return rankA - rankB;
 
             // Fix Bear Hunt team order (Team 1 -> Team 2)
-            if (a.isBearSplit && b.isBearSplit && a.eventId.substring(0, 6) === b.eventId.substring(0, 6)) {
+            if (a.isBearSplit && b.isBearSplit && a.originalEventId === b.originalEventId) {
                 return a.eventId.localeCompare(b.eventId);
             }
 
             // Fix Foundry team order (Team 1 -> Team 2)
-            if (a.isFoundrySplit && b.isFoundrySplit && a.eventId.substring(0, 10) === b.eventId.substring(0, 10)) {
+            if (a.isFoundrySplit && b.isFoundrySplit && a.originalEventId === b.originalEventId) {
                 return a.eventId.localeCompare(b.eventId);
             }
 
@@ -3195,29 +3202,7 @@ export default function Home() {
                                                     </View>
                                                     {activeEvents.length > 0 ? (
                                                         <View className="flex-row flex-wrap -mx-2">
-                                                            {(() => {
-                                                                const groups: any[] = [];
-                                                                for (let i = 0; i < activeEvents.length; i++) {
-                                                                    const current = activeEvents[i];
-                                                                    const next = activeEvents[i + 1];
-                                                                    const isTeam = current.isBearSplit || current.isFoundrySplit || current.isFortressSplit;
-                                                                    if (isTeam && next && (next.originalEventId === current.originalEventId)) {
-                                                                        groups.push([current, next]);
-                                                                        i++;
-                                                                    } else {
-                                                                        groups.push([current]);
-                                                                    }
-                                                                }
-                                                                return groups.map((group, groupIdx) => (
-                                                                    <View key={`group-active-${groupIdx}`} className="w-full flex-row flex-wrap">
-                                                                        {group.map((event: any, eventIdx: number) => (
-                                                                            <React.Fragment key={`active-${groupIdx}-${eventIdx}`}>
-                                                                                {renderEventCard(event, `active-${groupIdx}-${eventIdx}`)}
-                                                                            </React.Fragment>
-                                                                        ))}
-                                                                    </View>
-                                                                ));
-                                                            })()}
+                                                            {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
                                                         </View>
                                                     ) : (
                                                         <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
@@ -3241,29 +3226,7 @@ export default function Home() {
                                                     </View>
                                                     {upcomingEvents.length > 0 ? (
                                                         <View className="flex-row flex-wrap -mx-2">
-                                                            {(() => {
-                                                                const groups: any[] = [];
-                                                                for (let i = 0; i < upcomingEvents.length; i++) {
-                                                                    const current = upcomingEvents[i];
-                                                                    const next = upcomingEvents[i + 1];
-                                                                    const isTeam = current.isBearSplit || current.isFoundrySplit || current.isFortressSplit;
-                                                                    if (isTeam && next && (next.originalEventId === current.originalEventId)) {
-                                                                        groups.push([current, next]);
-                                                                        i++;
-                                                                    } else {
-                                                                        groups.push([current]);
-                                                                    }
-                                                                }
-                                                                return groups.map((group, groupIdx) => (
-                                                                    <View key={`group-upcoming-${groupIdx}`} className="w-full flex-row flex-wrap">
-                                                                        {group.map((event: any, eventIdx: number) => (
-                                                                            <React.Fragment key={`upcoming-${groupIdx}-${eventIdx}`}>
-                                                                                {renderEventCard(event, `upcoming-${groupIdx}-${eventIdx}`)}
-                                                                            </React.Fragment>
-                                                                        ))}
-                                                                    </View>
-                                                                ));
-                                                            })()}
+                                                            {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
                                                         </View>
                                                     ) : (
                                                         <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
@@ -3292,29 +3255,7 @@ export default function Home() {
                                                     {isExpiredExpanded ? (
                                                         expiredEvents.length > 0 ? (
                                                             <View className="flex-row flex-wrap -mx-2 opacity-60">
-                                                                {(() => {
-                                                                    const groups: any[] = [];
-                                                                    for (let i = 0; i < expiredEvents.length; i++) {
-                                                                        const current = expiredEvents[i];
-                                                                        const next = expiredEvents[i + 1];
-                                                                        const isTeam = current.isBearSplit || current.isFoundrySplit || current.isFortressSplit;
-                                                                        if (isTeam && next && (next.originalEventId === current.originalEventId)) {
-                                                                            groups.push([current, next]);
-                                                                            i++;
-                                                                        } else {
-                                                                            groups.push([current]);
-                                                                        }
-                                                                    }
-                                                                    return groups.map((group, groupIdx) => (
-                                                                        <View key={`group-expired-${groupIdx}`} className="w-full flex-row flex-wrap">
-                                                                            {group.map((event: any, eventIdx: number) => (
-                                                                                <React.Fragment key={`expired-${groupIdx}-${eventIdx}`}>
-                                                                                    {renderEventCard(event, `expired-${groupIdx}-${eventIdx}`)}
-                                                                                </React.Fragment>
-                                                                            ))}
-                                                                        </View>
-                                                                    ));
-                                                                })()}
+                                                                {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
                                                             </View>
                                                         ) : (
                                                             <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
