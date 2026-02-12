@@ -1833,7 +1833,7 @@ export default function Home() {
                     minimumFontScale={0.7}
                     style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
                 >
-                    {renderWithHighlightedDays(startPart, isUpcomingSoon)} ~{"\u00A0"}{renderWithHighlightedDays(endPart, isUpcomingSoon)}
+                    {renderWithHighlightedDays(startPart, isUpcomingSoon)}{"\u00A0"}~ {renderWithHighlightedDays(endPart, isUpcomingSoon)}
                 </Text>
             );
         }
