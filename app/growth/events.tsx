@@ -62,6 +62,15 @@ const SINGLE_SLOT_IDS = [
     'alliance_frost_league', 'a_weapon'
 ];
 
+const DATE_RANGE_IDS = [
+    'a_castle', 'server_castle', 'a_operation', 'alliance_operation',
+    'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon',
+    'alliance_frost_league', 'server_svs_prep', 'server_svs_battle',
+    'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'
+];
+
+import TimelineView from '../../components/TimelineView';
+
 // Set notification handler
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
@@ -1043,6 +1052,7 @@ export default function EventTracker() {
     // Firebase Event Schedules removed from here (moved up)
 
     const [isSaving, setIsSaving] = useState(false);
+    const [viewMode, setViewMode] = useState<'card' | 'timeline'>('card');
 
     // Merge Firebase schedules with initial events
     useEffect(() => {
@@ -1581,8 +1591,8 @@ export default function EventTracker() {
         setActiveFortressDropdown(null); // Clear any open time pickers
 
 
-        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge'];
-        if (event.category === '개인' || dateRangeIDs.includes(event.id)) {
+
+        if (event.category === '개인' || DATE_RANGE_IDS.includes(event.id)) {
             const rawDay = event.day || '';
             const [s, e] = rawDay.includes('~') ? rawDay.split('~').map(x => x.trim()) : ['', ''];
 
@@ -1780,8 +1790,7 @@ export default function EventTracker() {
 
         setIsSaving(true); // Lock updates
 
-        const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
-        if (editingEvent.category === '개인' || dateRangeIDs.includes(editingEvent.id)) {
+        if (editingEvent.category === '개인' || DATE_RANGE_IDS.includes(editingEvent.id)) {
             const finalDay = `${mStart} ~ ${mEnd}`;
             const finalTime = ''; // No time used for mobilization
 
@@ -2110,6 +2119,42 @@ export default function EventTracker() {
                                     <Text className={`text-[11px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
                                 </Pressable>
                             </View>
+
+                            {/* View Switcher: Card vs Timeline */}
+                            <View className={`flex-row ml-4 p-1 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-600' : 'bg-slate-100 border-slate-300'}`}>
+                                <Pressable
+                                    onPress={() => setViewMode('card')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 8,
+                                            borderRadius: 12,
+                                            backgroundColor: viewMode === 'card' ? '#f97316' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                >
+                                    <Ionicons name="apps" size={14} color={viewMode === 'card' ? 'white' : (isDark ? '#475569' : '#94a3b8')} />
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setViewMode('timeline')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 12,
+                                            paddingVertical: 8,
+                                            borderRadius: 12,
+                                            backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                >
+                                    <Ionicons name="list" size={14} color={viewMode === 'timeline' ? 'white' : (isDark ? '#475569' : '#94a3b8')} />
+                                </Pressable>
+                            </View>
                         </View>
 
                         {/* Mobile Category Filter (Hidden on Desktop) */}
@@ -2153,42 +2198,65 @@ export default function EventTracker() {
                         )}
                     </View>
 
-                    {/* Event Grid */}
-                    <ScrollView ref={scrollViewRef} className="flex-1 p-3.5">
-                        <View className="flex-row flex-wrap -mx-2">
-                            {filteredEvents.length === 0 ? (
-                                <View className="w-full py-24 items-center justify-center">
-                                    <View className={`w-24 h-24 rounded-full items-center justify-center mb-6 shadow-inner ${isDark ? 'bg-slate-800/40 border border-slate-700/50' : 'bg-slate-50 border border-slate-100'}`}>
-                                        <Ionicons name="calendar-outline" size={48} color={isDark ? "#475569" : "#94a3b8"} />
+                    {/* Event Grid / Timeline View Content */}
+                    {viewMode === 'timeline' ? (
+                        <TimelineView
+                            events={events}
+                            isDark={isDark}
+                            timezone={timezone}
+                            onEventPress={(ev) => {
+                                const target = ev._original || ev;
+                                if (isAdmin) {
+                                    if (ev._teamIdx !== undefined) {
+                                        handleSetSelectedTeamTab(target.id, ev._teamIdx);
+                                    }
+                                    openScheduleModal(target);
+                                } else {
+                                    if (ev._teamIdx !== undefined) {
+                                        handleSetSelectedTeamTab(target.id, ev._teamIdx);
+                                    }
+                                    openGuideModal(target);
+                                }
+                            }}
+                            checkIsOngoing={checkIsOngoing}
+                        />
+                    ) : (
+                        <ScrollView ref={scrollViewRef} className="flex-1 p-3.5">
+                            <View className="flex-row flex-wrap -mx-2">
+                                {filteredEvents.length === 0 ? (
+                                    <View className="w-full py-24 items-center justify-center">
+                                        <View className={`w-24 h-24 rounded-full items-center justify-center mb-6 shadow-inner ${isDark ? 'bg-slate-800/40 border border-slate-700/50' : 'bg-slate-50 border border-slate-100'}`}>
+                                            <Ionicons name="calendar-outline" size={48} color={isDark ? "#475569" : "#94a3b8"} />
+                                        </View>
+                                        <Text className={`text-xl font-black mb-2 tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>진행 중인 이벤트가 없습니다</Text>
+                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>다른 카테고리 필터를 선택해 주세요</Text>
                                     </View>
-                                    <Text className={`text-xl font-black mb-2 tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>진행 중인 이벤트가 없습니다</Text>
-                                    <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>다른 카테고리 필터를 선택해 주세요</Text>
-                                </View>
-                            ) : (
-                                filteredEvents.map((event) => (
-                                    <EventCard
-                                        key={event.id}
-                                        event={event}
-                                        isDark={isDark}
-                                        timezone={timezone}
-                                        auth={auth}
-                                        isAdmin={isAdmin}
-                                        isOngoing={isOngoingMap[event.id]}
-                                        isExpired={isExpiredMap[event.id]}
-                                        selectedTeamTab={selectedTeamTabs[event.id] || 0}
-                                        checkItemOngoing={checkItemOngoing}
-                                        openScheduleModal={openScheduleModal}
-                                        openGuideModal={openGuideModal}
-                                        openAttendeeModal={openAttendeeModal}
-                                        openWikiLink={openWikiLink}
-                                        onSetSelectedTeamTab={(idx) => handleSetSelectedTeamTab(event.id, idx)}
-                                        onLayout={(y) => { itemLayouts.current[event.id] = y; }}
-                                    />
-                                ))
-                            )}
-                        </View>
-                        <View className="h-20" />
-                    </ScrollView>
+                                ) : (
+                                    filteredEvents.map((event) => (
+                                        <EventCard
+                                            key={event.id}
+                                            event={event}
+                                            isDark={isDark}
+                                            timezone={timezone}
+                                            auth={auth}
+                                            isAdmin={isAdmin}
+                                            isOngoing={isOngoingMap[event.id]}
+                                            isExpired={isExpiredMap[event.id]}
+                                            selectedTeamTab={selectedTeamTabs[event.id] || 0}
+                                            checkItemOngoing={checkItemOngoing}
+                                            openScheduleModal={openScheduleModal}
+                                            openGuideModal={openGuideModal}
+                                            openAttendeeModal={openAttendeeModal}
+                                            openWikiLink={openWikiLink}
+                                            onSetSelectedTeamTab={(idx) => handleSetSelectedTeamTab(event.id, idx)}
+                                            onLayout={(y) => { itemLayouts.current[event.id] = y; }}
+                                        />
+                                    ))
+                                )}
+                            </View>
+                            <View className="h-20" />
+                        </ScrollView>
+                    )}
                 </View >
 
                 {/* Guide Detail Popup Modal */}
@@ -2534,10 +2602,7 @@ export default function EventTracker() {
                                             })}
                                         </ScrollView>
                                     </View>
-                                ) : (() => {
-                                    const dateRangeIDs = ['a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon', 'alliance_frost_league', 'server_svs_prep', 'server_svs_battle', 'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'];
-                                    return (editingEvent?.category === '개인' || dateRangeIDs.includes(editingEvent?.id || ''));
-                                })() ? (
+                                ) : DATE_RANGE_IDS.includes(editingEvent?.id || '') || editingEvent?.category === '개인' ? (
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: activeDateDropdown ? 10000 : 1 }}>
                                         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} style={{ overflow: 'visible' }}>
                                             {(() => {

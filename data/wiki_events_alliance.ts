@@ -58,7 +58,7 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
         imageUrl: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2025/05/21150133/jump_icon_40088.png',
         wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ea%b3%90-%ec%82%ac%eb%83%a5-%ec%9e%91%ec%a0%84/',
         day: '',
-        time: '',
+        time: '1군: 월(00:00), 수(00:00), 금(00:00) / 2군: 화(00:00), 목(00:00), 토(00:00)',
         description: '연맹 영지에 나타난 곰을 사냥',
         isBearSplit: true
     },

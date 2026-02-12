@@ -35,6 +35,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { doc, setDoc, getDoc, collection, getDocs, query, writeBatch, updateDoc, onSnapshot, orderBy, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import AdminManagement from '../components/AdminManagement';
+import TimelineView from '../components/TimelineView';
 
 export default function Home() {
     const router = useRouter();
@@ -139,6 +140,7 @@ export default function Home() {
     const [noticePopupVisible, setNoticePopupVisible] = useState(false);
     const [noticePopupDontShow, setNoticePopupDontShow] = useState(false);
     const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
+    const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
     const [isManualVisible, setIsManualVisible] = useState(false);
     const [isGateManualVisible, setIsGateManualVisible] = useState(false);
 
@@ -1571,7 +1573,14 @@ export default function Home() {
             const eventInfo = allBaseEvents.find(e => e.id === searchId);
             const cleanDay = (s.day === '.' || s.day?.trim() === '.') ? '' : (s.day || '');
             const cleanTime = (s.time === '.' || s.time?.trim() === '.') ? '' : (s.time || '');
-            return { ...s, day: cleanDay, time: cleanTime, title: eventInfo ? eventInfo.title : '알 수 없는 이벤트' };
+            return {
+                ...s,
+                day: cleanDay,
+                time: cleanTime,
+                title: eventInfo ? eventInfo.title : '알 수 없는 이벤트',
+                imageUrl: eventInfo?.imageUrl,
+                category: eventInfo?.category
+            };
         }).filter(e => {
             if (e.title === '알 수 없는 이벤트') return false;
             if (!(!!e.day || !!e.time)) return false;
@@ -1715,26 +1724,31 @@ export default function Home() {
             if (isTeamA && !isTeamB) return -1;
             if (!isTeamA && isTeamB) return 1;
 
-            const dayOrder = ['월', '화', '수', '목', '금', '토', '일', '매일', '상시', '상설'];
-            const getDayRank = (d: string) => {
-                const idx = dayOrder.findIndex(key => (d || '').startsWith(key));
-                return idx === -1 ? 999 : idx;
+            // Better Sort: Chronological based on the current week's occurrence
+            const getSortTime = (ev: any) => {
+                const dStr = ev.day || '';
+                const tStr = ev.time || '';
+                const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+
+                // 1. Date Range Priority
+                const rangeMatch = (dStr + tStr).match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
+                if (rangeMatch) return new Date(rangeMatch[1] + '-' + rangeMatch[2] + '-' + rangeMatch[3]).getTime();
+
+                // 2. Weekly Recurring
+                const firstDay = (dStr + tStr).match(/[월화수목금토일]/)?.[0];
+                const timeMatch = (dStr + tStr).match(/(\d{2}:\d{2})/)?.[1] || '00:00';
+                if (firstDay) {
+                    const [h, m] = timeMatch.split(':').map(Number);
+                    return dayMap[firstDay] * 86400000 + h * 3600000 + m * 60000;
+                }
+                return 9999999999999;
             };
-            const rankA = getDayRank(a.day);
-            const rankB = getDayRank(b.day);
-            if (rankA !== rankB) return rankA - rankB;
 
-            // Fix Bear Hunt team order (Team 1 -> Team 2)
-            if (a.isBearSplit && b.isBearSplit && a.originalEventId === b.originalEventId) {
-                return a.eventId.localeCompare(b.eventId);
-            }
+            const sortA = getSortTime(a);
+            const sortB = getSortTime(b);
+            if (sortA !== sortB) return sortA - sortB;
 
-            // Fix Foundry team order (Team 1 -> Team 2)
-            if (a.isFoundrySplit && b.isFoundrySplit && a.originalEventId === b.originalEventId) {
-                return a.eventId.localeCompare(b.eventId);
-            }
-
-            return (a.time || '').localeCompare(b.time || '');
+            return (a.title || '').localeCompare(b.title || '');
         });
     }, [schedules, now]);
 
@@ -2021,14 +2035,23 @@ export default function Home() {
                                             <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={32} color="#3b82f6" />
                                         )}
                                     </View>
-                                    <View className="flex-1 min-w-[240px]">
-                                        <Text className="text-white text-xl font-black tracking-tighter" style={{ fontSize: 20 * fontSizeScale }}>
+                                    <View className="flex-1 min-w-[160px] py-1">
+                                        <Text className="text-white text-xl font-black tracking-tighter mb-1" style={{ fontSize: 22 * fontSizeScale }}>
                                             {event.title}
                                         </Text>
-                                        <Text className={`text-sm font-bold leading-5 transition-all ${hovered ? 'text-slate-300' : 'text-slate-400'}`} numberOfLines={2}>
+                                        <View className="mb-2">
+                                            {(() => {
+                                                let activeStr = displayTime || displayDay || '-';
+                                                if (displayDay && displayTime && !displayTime.includes(displayDay)) {
+                                                    if (!event.isBearSplit && !event.isFoundrySplit) activeStr = `${displayDay} ${displayTime}`;
+                                                }
+                                                return formatEventTimeCompact(convertTime(activeStr), checkIsSoon(toLocal(activeStr)));
+                                            })()}
+                                        </View>
+                                        <Text className={`text-[11px] font-bold leading-4 transition-all ${hovered ? 'text-slate-300' : 'text-slate-400'}`} numberOfLines={1}>
                                             {event.eventId.includes('total') || event.eventId.includes('operation')
-                                                ? '최적의 영웅 조합과 전략으로 빙하기의 생존을 지휘하세요'
-                                                : '연맹원들과 힘을 합쳐 최적의 전략으로 승리를 쟁취하세요'}
+                                                ? '최적의 영웅 조합과 전략으로 생존을 지휘하세요'
+                                                : '최적의 전략으로 승리를 쟁취하세요'}
                                         </Text>
                                     </View>
 
@@ -3084,73 +3107,109 @@ export default function Home() {
                                     <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
                                 </Pressable>
                             </View>
+
+                            {/* View Mode Toggle Switch (Orange Point) */}
+                            <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <Pressable
+                                    onPress={() => setViewMode('timeline')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 10,
+                                            borderRadius: 12,
+                                            backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                        }
+                                    ]}
+                                >
+                                    <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#64748b'} />
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setViewMode('list')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 10,
+                                            borderRadius: 12,
+                                            backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                        }
+                                    ]}
+                                >
+                                    <Ionicons name="list" size={20} color={viewMode === 'list' ? 'white' : '#64748b'} />
+                                </Pressable>
+                            </View>
                         </View>
 
                         {/* Navigation Tabs - Connected Folder Style */}
-                        <View className={`flex-row w-full ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-200'}`}>
-                            {[
-                                { id: 'active', label: '진행', icon: 'flash', color: '#10b981', count: displayEvents.filter(e => isEventActive(e)).length },
-                                { id: 'upcoming', label: '예정', icon: 'calendar', color: '#38bdf8', count: displayEvents.filter(e => !isEventActive(e) && !isEventExpired(e)).length },
-                                { id: 'expired', label: '종료', icon: 'checkmark-done', color: isDark ? '#475569' : '#94a3b8', count: displayEvents.filter(e => isEventExpired(e)).length }
-                            ].map((tab) => {
-                                const isActive = activeEventTab === tab.id;
-                                return (
-                                    <Pressable
-                                        key={tab.id}
-                                        onPress={() => scrollToSection(tab.id as any)}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                flex: 1,
-                                                paddingVertical: 14,
-                                                paddingHorizontal: 12,
-                                                borderTopLeftRadius: 16,
-                                                borderTopRightRadius: 16,
-                                                flexDirection: 'row',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                backgroundColor: isActive
-                                                    ? (tab.id === 'active' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#10b981') :
-                                                        tab.id === 'upcoming' ? (isDark ? 'rgba(56, 189, 248, 0.2)' : '#38bdf8') :
-                                                            (isDark ? 'rgba(71, 85, 105, 0.2)' : '#94a3b8'))
-                                                    : (hovered ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)') : 'transparent'),
-                                                borderTopWidth: 1,
-                                                borderLeftWidth: 1,
-                                                borderRightWidth: 1,
-                                                borderColor: isActive
-                                                    ? (isDark ? tab.color : 'rgba(0,0,0,0.1)')
-                                                    : (hovered ? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')),
-                                                borderBottomWidth: isActive ? 4 : 0,
-                                                borderBottomColor: tab.color,
-                                                marginBottom: -1, // Adjust to sit on the border
-                                                transform: [{ translateY: pressed ? 2 : 0 }],
-                                                transition: 'all 0.2s',
-                                                // @ts-ignore - Web property
-                                                cursor: 'pointer'
-                                            }
-                                        ]}
-                                    >
-                                        {({ hovered }: any) => (
-                                            <>
-                                                <Ionicons
-                                                    name={tab.icon as any}
-                                                    size={16}
-                                                    color={isActive
-                                                        ? (isDark ? tab.color : '#fff')
-                                                        : (hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#475569' : '#94a3b8'))
-                                                    }
-                                                    style={{ marginRight: 6 }}
-                                                />
-                                                <Text className={`font-black tracking-tighter text-sm ${isActive
-                                                    ? (isDark ? 'text-white' : 'text-white')
-                                                    : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}>
-                                                    {tab.label} <Text className={`ml-1 ${isActive ? 'text-white/70' : 'opacity-60'} text-[11px]`}>{tab.count}</Text>
-                                                </Text>
-                                            </>
-                                        )}
-                                    </Pressable>
-                                );
-                            })}
-                        </View>
+                        {viewMode === 'list' && (
+                            <View className={`flex-row w-full ${isDark ? 'border-b border-slate-800' : 'border-b border-slate-200'}`}>
+                                {[
+                                    { id: 'active', label: '진행', icon: 'flash', color: '#10b981', count: displayEvents.filter(e => isEventActive(e)).length },
+                                    { id: 'upcoming', label: '예정', icon: 'calendar', color: '#38bdf8', count: displayEvents.filter(e => !isEventActive(e) && !isEventExpired(e)).length },
+                                    { id: 'expired', label: '종료', icon: 'checkmark-done', color: isDark ? '#475569' : '#94a3b8', count: displayEvents.filter(e => isEventExpired(e)).length }
+                                ].map((tab) => {
+                                    const isActive = activeEventTab === tab.id;
+                                    return (
+                                        <Pressable
+                                            key={tab.id}
+                                            onPress={() => scrollToSection(tab.id as any)}
+                                            style={({ pressed, hovered }: any) => [
+                                                {
+                                                    flex: 1,
+                                                    paddingVertical: 14,
+                                                    paddingHorizontal: 12,
+                                                    borderTopLeftRadius: 16,
+                                                    borderTopRightRadius: 16,
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    backgroundColor: isActive
+                                                        ? (tab.id === 'active' ? (isDark ? 'rgba(16, 185, 129, 0.2)' : '#10b981') :
+                                                            tab.id === 'upcoming' ? (isDark ? 'rgba(56, 189, 248, 0.2)' : '#38bdf8') :
+                                                                (isDark ? 'rgba(71, 85, 105, 0.2)' : '#94a3b8'))
+                                                        : (hovered ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)') : 'transparent'),
+                                                    borderTopWidth: 1,
+                                                    borderLeftWidth: 1,
+                                                    borderRightWidth: 1,
+                                                    borderColor: isActive
+                                                        ? (isDark ? tab.color : 'rgba(0,0,0,0.1)')
+                                                        : (hovered ? (isDark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.1)') : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')),
+                                                    borderBottomWidth: isActive ? 4 : 0,
+                                                    borderBottomColor: tab.color,
+                                                    marginBottom: -1, // Adjust to sit on the border
+                                                    transform: [{ translateY: pressed ? 2 : 0 }],
+                                                    transition: 'all 0.2s',
+                                                    // @ts-ignore - Web property
+                                                    cursor: 'pointer'
+                                                }
+                                            ]}
+                                        >
+                                            {({ hovered }: any) => (
+                                                <>
+                                                    <Ionicons
+                                                        name={tab.icon as any}
+                                                        size={16}
+                                                        color={isActive
+                                                            ? (isDark ? tab.color : '#fff')
+                                                            : (hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#475569' : '#94a3b8'))
+                                                        }
+                                                        style={{ marginRight: 6 }}
+                                                    />
+                                                    <Text className={`font-black tracking-tighter text-sm ${isActive
+                                                        ? (isDark ? 'text-white' : 'text-white')
+                                                        : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}>
+                                                        {tab.label} <Text className={`ml-1 ${isActive ? 'text-white/70' : 'opacity-60'} text-[11px]`}>{tab.count}</Text>
+                                                    </Text>
+                                                </>
+                                            )}
+                                        </Pressable>
+                                    );
+                                })}
+                            </View>
+                        )}
                     </View>
                 </View>
 
@@ -3159,8 +3218,8 @@ export default function Home() {
                     onLayout={(e) => setContainerY(e.nativeEvent.layout.y)}
                     className="w-full items-center pb-24"
                 >
-                    <View className="w-full max-w-6xl px-4 md:px-8">
-                        <View className="flex-col gap-3">
+                    <View className={viewMode === 'timeline' ? 'w-full' : 'w-full max-w-6xl px-4 md:px-8'}>
+                        <View className={viewMode === 'timeline' ? 'w-full' : 'flex-col gap-3'}>
                             {loading ? (
                                 <View className={`p-16 rounded-[32px] border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                                     <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>일정을 불러오는 중...</Text>
@@ -3186,87 +3245,105 @@ export default function Home() {
                                                     (isDark ? '#64748b' : '#475569');
 
                                         return (
-                                            <>
-
-                                                {/* Live Section */}
-                                                <View
-                                                    onLayout={(e) => sectionPositions.current.active = e.nativeEvent.layout.y}
-                                                    className="mb-12"
-                                                >
-                                                    <View className="flex-row items-center justify-between mb-6 px-1">
-                                                        <View className="flex-row items-center">
-                                                            <View className="w-1.5 h-6 bg-emerald-500 rounded-full mr-3" />
-                                                            <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>진행 중인 이벤트</Text>
-                                                        </View>
-                                                        {activeEvents.length > 0 && <View className="bg-emerald-500/10 px-3 py-1 rounded-full"><Text className="text-emerald-500 font-black text-xs">{activeEvents.length}</Text></View>}
-                                                    </View>
-                                                    {activeEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap -mx-2">
-                                                            {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
-                                                        </View>
-                                                    ) : (
-                                                        <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <Ionicons name="flash-off-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                            <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>진행 중인 이벤트가 없습니다</Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-
-                                                {/* Upcoming Section */}
-                                                <View
-                                                    onLayout={(e) => sectionPositions.current.upcoming = e.nativeEvent.layout.y}
-                                                    className="mb-12"
-                                                >
-                                                    <View className="flex-row items-center justify-between mb-6 px-1">
-                                                        <View className="flex-row items-center">
-                                                            <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
-                                                            <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>예정된 이벤트</Text>
-                                                        </View>
-                                                        {upcomingEvents.length > 0 && <View className="bg-sky-500/10 px-3 py-1 rounded-full"><Text className="text-sky-500 font-black text-xs">{upcomingEvents.length}</Text></View>}
-                                                    </View>
-                                                    {upcomingEvents.length > 0 ? (
-                                                        <View className="flex-row flex-wrap -mx-2">
-                                                            {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
-                                                        </View>
-                                                    ) : (
-                                                        <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <Ionicons name="calendar-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                            <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>예정된 이벤트가 없습니다</Text>
-                                                        </View>
-                                                    )}
-                                                </View>
-
-                                                {/* Expired Section */}
-                                                <View
-                                                    onLayout={(e) => sectionPositions.current.expired = e.nativeEvent.layout.y}
-                                                    className="mb-12"
-                                                >
-                                                    <View className="flex-row items-center justify-between mb-6 px-1">
-                                                        <TouchableOpacity
-                                                            className="flex-row items-center"
-                                                            onPress={() => setIsExpiredExpanded(!isExpiredExpanded)}
+                                            <View className="w-full">
+                                                {viewMode === 'list' ? (
+                                                    <React.Fragment key="list-view-content">
+                                                        {/* Live Section */}
+                                                        <View
+                                                            onLayout={(e) => sectionPositions.current.active = e.nativeEvent.layout.y}
+                                                            className="mb-12"
                                                         >
-                                                            <View className="w-1.5 h-6 bg-slate-500 rounded-full mr-3" />
-                                                            <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>종료된 이벤트</Text>
-                                                            <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
-                                                        </TouchableOpacity>
-                                                        {expiredEvents.length > 0 && <View className="bg-slate-500/10 px-3 py-1 rounded-full"><Text className="text-slate-500 font-black text-xs">{expiredEvents.length}</Text></View>}
-                                                    </View>
-                                                    {isExpiredExpanded ? (
-                                                        expiredEvents.length > 0 ? (
-                                                            <View className="flex-row flex-wrap -mx-2 opacity-60">
-                                                                {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
+                                                            <View className="flex-row items-center justify-between mb-6 px-1">
+                                                                <View className="flex-row items-center">
+                                                                    <View className="w-1.5 h-6 bg-emerald-500 rounded-full mr-3" />
+                                                                    <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>진행 중인 이벤트</Text>
+                                                                </View>
+                                                                {activeEvents.length > 0 && <View className="bg-emerald-500/10 px-3 py-1 rounded-full"><Text className="text-emerald-500 font-black text-xs">{activeEvents.length}</Text></View>}
                                                             </View>
-                                                        ) : (
-                                                            <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                                                <Ionicons name="checkmark-done-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
-                                                                <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>종료된 이벤트가 없습니다</Text>
-                                                            </View>
-                                                        )
-                                                    ) : null}
-                                                </View>
+                                                            {activeEvents.length > 0 ? (
+                                                                <View className="flex-row flex-wrap -mx-2">
+                                                                    {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
+                                                                </View>
+                                                            ) : (
+                                                                <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                                                    <Ionicons name="flash-off-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                    <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>진행 중인 이벤트가 없습니다</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
 
-                                            </>
+                                                        {/* Upcoming Section */}
+                                                        <View
+                                                            onLayout={(e) => sectionPositions.current.upcoming = e.nativeEvent.layout.y}
+                                                            className="mb-12"
+                                                        >
+                                                            <View className="flex-row items-center justify-between mb-6 px-1">
+                                                                <View className="flex-row items-center">
+                                                                    <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
+                                                                    <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>예정된 이벤트</Text>
+                                                                </View>
+                                                                {upcomingEvents.length > 0 && <View className="bg-sky-500/10 px-3 py-1 rounded-full"><Text className="text-sky-500 font-black text-xs">{upcomingEvents.length}</Text></View>}
+                                                            </View>
+                                                            {upcomingEvents.length > 0 ? (
+                                                                <View className="flex-row flex-wrap -mx-2">
+                                                                    {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
+                                                                </View>
+                                                            ) : (
+                                                                <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                                                    <Ionicons name="calendar-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                    <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>예정된 이벤트가 없습니다</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+
+                                                        {/* Expired Section */}
+                                                        <View
+                                                            onLayout={(e) => sectionPositions.current.expired = e.nativeEvent.layout.y}
+                                                            className="mb-12"
+                                                        >
+                                                            <View className="flex-row items-center justify-between mb-6 px-1">
+                                                                <TouchableOpacity
+                                                                    className="flex-row items-center"
+                                                                    onPress={() => setIsExpiredExpanded(!isExpiredExpanded)}
+                                                                >
+                                                                    <View className="w-1.5 h-6 bg-slate-500 rounded-full mr-3" />
+                                                                    <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>종료된 이벤트</Text>
+                                                                    <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
+                                                                </TouchableOpacity>
+                                                                {expiredEvents.length > 0 && <View className="bg-slate-500/10 px-3 py-1 rounded-full"><Text className="text-slate-500 font-black text-xs">{expiredEvents.length}</Text></View>}
+                                                            </View>
+                                                            {isExpiredExpanded ? (
+                                                                expiredEvents.length > 0 ? (
+                                                                    <View className="flex-row flex-wrap -mx-2 opacity-60">
+                                                                        {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
+                                                                    </View>
+                                                                ) : (
+                                                                    <View className={`py-12 items-center justify-center rounded-[32px] border border-dashed ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                                                        <Ionicons name="checkmark-done-outline" size={32} color={isDark ? '#475569' : '#94a3b8'} style={{ marginBottom: 12 }} />
+                                                                        <Text className={`font-bold text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>종료된 이벤트가 없습니다</Text>
+                                                                    </View>
+                                                                )
+                                                            ) : null}
+                                                        </View>
+                                                    </React.Fragment>
+                                                ) : (
+                                                    <View key="timeline-view-content" className={`w-full ${isDark ? 'bg-[#0a1120]' : 'bg-white'} ${viewMode === 'timeline' ? '' : 'rounded-[40px] border overflow-hidden p-6 shadow-2xl shadow-black'}`}>
+                                                        <TimelineView
+                                                            events={displayEvents}
+                                                            timezone={timezone}
+                                                            isDark={isDark}
+                                                            onEventPress={(ev) => {
+                                                                if (!auth.isLoggedIn) {
+                                                                    showCustomAlert('연맹원 전용', '이 기능은 연맹원 로그인이 필요합니다.', 'error');
+                                                                    return;
+                                                                }
+                                                                router.push({ pathname: '/growth/events', params: { focusId: ev.originalEventId || ev.eventId } });
+                                                            }}
+                                                            checkIsOngoing={isEventActive}
+                                                        />
+                                                    </View>
+                                                )}
+                                            </View>
                                         );
                                     })()}
                                 </View>
