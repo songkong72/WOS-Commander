@@ -170,24 +170,24 @@ export default function Home() {
     };
 
     const renderGateManualContent = () => (
-        <ScrollView className="flex-1 p-10" showsVerticalScrollIndicator={false}>
-            <View className="gap-12 pb-12">
+        <ScrollView className="flex-1 px-10 pt-10" showsVerticalScrollIndicator={false}>
+            <View className="gap-12 pb-4">
                 {/* 1. Gate 화면 개요 */}
                 <View>
                     <View className="flex-row items-center mb-6">
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
                             <Text className="text-lg">🚪</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Gate 화면 개요</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>Gate 화면 개요</Text>
                     </View>
-                    <Text className={`text-sm mb-4 leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>WOS 커맨더 첫 접속 시 연맹을 선택하고 로그인하는 화면입니다.</Text>
+                    <Text className={`text-base mb-4 leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>WOS 커맨더 첫 접속 시 연맹을 선택하고 로그인하는 화면입니다.</Text>
                     <View className="flex-row rounded-2xl overflow-hidden border border-sky-500/30 mb-4">
                         <View className="flex-1 p-3 bg-sky-500/20 items-center"><Text className="text-[10px] font-black text-sky-400">대시보드 입장</Text></View>
                         <View className="flex-1 p-3 bg-slate-800/50 items-center"><Text className="text-[10px] font-black text-slate-500">연맹 관리자 신청</Text></View>
                     </View>
                     <View className="gap-2">
-                        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>• 대시보드 입장: 연맹원, 운영진, 연맹 관리자 공통 로그인</Text>
-                        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>• 연맹 관리자 신청: 새로운 연맹 대시보드 개설 시 사용</Text>
+                        <Text className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>• 대시보드 입장: 연맹원, 운영진, 연맹 관리자 공통 로그인</Text>
+                        <Text className={`text-sm ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>• 연맹 관리자 신청: 새로운 연맹 대시보드 개설 시 사용</Text>
                     </View>
                 </View>
 
@@ -197,32 +197,32 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
                             <Text className="text-lg">🔓</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>대시보드 입장 (로그인)</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>대시보드 입장 (로그인)</Text>
                     </View>
                     <View className="gap-4">
-                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-sm font-black mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 입력 필드 가이드</Text>
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-base font-black mb-4 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 입력 필드 가이드</Text>
                             <View className="gap-4">
                                 <View>
-                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>서버 번호</Text>
-                                    <Text className="text-xs text-slate-500">게임 서버 번호 (예: 1008)</Text>
+                                    <Text className={`text-sm font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>서버 번호</Text>
+                                    <Text className="text-sm text-slate-500">게임 서버 번호 (예: 1008)</Text>
                                 </View>
                                 <View>
-                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>연맹 이름</Text>
-                                    <Text className="text-xs text-slate-500">연맹 약칭 영문 대문자 (예: WBI)</Text>
+                                    <Text className={`text-sm font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>연맹 이름</Text>
+                                    <Text className="text-sm text-slate-500">연맹 약칭 영문 대문자 (예: WBI)</Text>
                                 </View>
                                 <View>
-                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>영주 이름</Text>
-                                    <Text className="text-xs text-slate-500">게임 닉네임 또는 관리자가 등록한 ID</Text>
+                                    <Text className={`text-sm font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>영주 이름</Text>
+                                    <Text className="text-sm text-slate-500">게임 닉네임 또는 관리자가 등록한 ID</Text>
                                 </View>
                                 <View>
-                                    <Text className={`text-xs font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>비밀번호</Text>
-                                    <Text className="text-xs text-slate-500">연맹 관리자가 부여한 비밀번호</Text>
+                                    <Text className={`text-sm font-bold mb-1 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>비밀번호</Text>
+                                    <Text className="text-sm text-slate-500">연맹 관리자가 부여한 비밀번호</Text>
                                 </View>
                             </View>
                         </View>
                         <View className={`p-5 rounded-2xl ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 자동 완성: 최근 입력한 기록은 드롭다운으로 빠르게 선택할 수 있습니다.</Text>
+                            <Text className={`text-sm leading-6 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 자동 완성: 최근 입력한 기록은 드롭다운으로 빠르게 선택할 수 있습니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -233,7 +233,7 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
                             <Text className="text-lg">👥</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>역할(권한) 체계</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>역할(권한) 체계</Text>
                     </View>
                     <View className="gap-4">
                         {[
@@ -242,14 +242,14 @@ export default function Home() {
                             { label: '🟢 운영 관리자', color: '#22d3ee', desc: '이벤트 일정 등록 및 출석체크' },
                             { label: '⚪ 일반 영주', color: '#94a3b8', desc: '정보 열람 및 본인 출석 요청' }
                         ].map((role) => (
-                            <View key={role.label} className={`p-4 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                <Text style={{ color: role.color }} className="font-black text-sm mb-1">{role.label}</Text>
-                                <Text className={`text-xs leading-5 font-medium ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{role.desc}</Text>
+                            <View key={role.label} className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text style={{ color: role.color }} className="font-black text-lg mb-1">{role.label}</Text>
+                                <Text className={`text-base leading-6 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{role.desc}</Text>
                             </View>
                         ))}
                     </View>
                     <View className={`mt-4 p-5 rounded-2xl ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
-                        <Text className={`text-xs leading-5 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ 중요: 운영 및 일반 계정은 연맹 관리자가 먼저 등록해야 로그인이 가능합니다.</Text>
+                        <Text className={`text-sm leading-6 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ 중요: 운영 및 일반 계정은 연맹 관리자가 먼저 등록해야 로그인이 가능합니다.</Text>
                     </View>
                 </View>
 
@@ -259,7 +259,7 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
                             <Text className="text-lg">📋</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>연맹 관리자 신청</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>연맹 관리자 신청</Text>
                     </View>
                     <View className="gap-4">
                         <View className="flex-row items-center justify-between px-4">
@@ -273,7 +273,7 @@ export default function Home() {
                             ))}
                         </View>
                         <View className={`p-5 rounded-2xl ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>⏳ 시스템 관리자(마스터)의 확인 후 승인까지 시간이 소요될 수 있습니다.</Text>
+                            <Text className={`text-sm leading-6 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>⏳ 시스템 관리자(마스터)의 확인 후 승인까지 시간이 소요될 수 있습니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -284,15 +284,15 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-slate-500/20' : 'bg-slate-50'}`}>
                             <Text className="text-lg">🛠️</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>편리한 도구 및 기타</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>편리한 도구 및 기타</Text>
                     </View>
                     <View className="gap-4">
-                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                • <Text className="font-bold">익명 접속:</Text> 서버/연맹 정보만으로 일정과 공지 열람 가능 (개인 기능 제한){"\n"}
-                                • <Text className="font-bold">테마/글꼴:</Text> 상단 메뉴에서 다크모드 및 글자 크기 조절 가능{"\n"}
-                                • <Text className="font-bold">페널티:</Text> 무단 불참 시 연맹 규정에 따라 불이익이 발생할 수 있습니다.{"\n"}
-                                • <Text className="font-bold">앱 설치:</Text> 브라우저 메뉴에서 '홈 화면에 추가'하여 앱처럼 사용 가능
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                • <Text className={`font-black ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>익명 접속:</Text> 로그인 없이 서버/연맹 정보만으로 메인 화면의 이벤트 일정만 열람 가능 (공지/출석/전략 등 이용 불가){"\n"}
+                                • <Text className={`font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>테마/글꼴:</Text> 상단 메뉴에서 다크모드 및 글자 크기 조절 가능{"\n"}
+                                • <Text className={`font-black ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>페널티:</Text> 무단 불참 시 연맹 규정에 따라 불이익이 발생할 수 있습니다.{"\n"}
+                                • <Text className={`font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>앱 설치:</Text> 브라우저 메뉴에서 '홈 화면에 추가'하여 앱처럼 사용 가능
                             </Text>
                         </View>
                     </View>
@@ -304,16 +304,16 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
                             <Text className="text-lg">❓</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>자주 묻는 질문</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>자주 묻는 질문</Text>
                     </View>
-                    <View className="gap-4">
+                    <View className="gap-6">
                         <View>
-                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Q. 비밀번호를 모르겠어요</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>A. 소속 연맹 관리자에게 초기화를 요청하세요.</Text>
+                            <Text className={`text-base font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Q. 비밀번호를 모르겠어요</Text>
+                            <Text className={`text-sm leading-6 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>A. 소속 연맹 관리자에게 초기화를 요청하세요.</Text>
                         </View>
                         <View>
-                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Q. '미등록'이라고 나옵니다</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>A. 관리자가 명단에 캐릭터 이름을 먼저 등록해야 합니다.</Text>
+                            <Text className={`text-base font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Q. '미등록'이라고 나옵니다</Text>
+                            <Text className={`text-sm leading-6 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>A. 관리자가 명단에 캐릭터 이름을 먼저 등록해야 합니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -322,31 +322,31 @@ export default function Home() {
     );
 
     const renderMainManualContent = () => (
-        <ScrollView className="flex-1 p-10" showsVerticalScrollIndicator={false}>
-            <View className="gap-12 pb-12">
+        <ScrollView className="flex-1 px-10 pt-10" showsVerticalScrollIndicator={false}>
+            <View className="gap-12 pb-4">
                 {/* 1. 권한 관리 시스템 */}
                 <View>
                     <View className="flex-row items-center mb-6">
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
                             <Text className="text-lg">🔐</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>권한 관리 시스템</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>권한 관리 시스템</Text>
                     </View>
                     <View className="gap-4">
                         {[
-                            { label: '🔴 전체서버관리자', color: '#fb7185', desc: '모든 서버/연맹 관리 및 시스템 설정' },
-                            { label: '🔵 연맹관리자', color: '#818cf8', desc: '연맹 총괄, 운영진 임명 및 멤버 관리' },
-                            { label: '🟢 운영관리자', color: '#22d3ee', desc: '이벤트 일정 등록, 출석 관리, 공지 작성' },
-                            { label: '⚪ 일반영주', color: '#94a3b8', desc: '정보 열람, 본인 출석 등록' }
+                            { label: '🔴 전체서버관리자', color: '#fb7185', desc: '시스템의 최상위 권한으로 모든 서버와 연맹의 데이터를 제어합니다. 새로운 연맹 생성, 관리자 승인, 시스템 전반의 핵심 설정을 담당하는 마스터 계정입니다.' },
+                            { label: '🔵 연맹관리자', color: '#818cf8', desc: '자신이 속한 연맹의 총책임자입니다. 연맹원들의 가입 승인/거절, 운영진 임명, 연맹명 변경 및 전략 문서 링크 관리 등 연맹 운영 전반을 총괄합니다.' },
+                            { label: '🟢 운영관리자', color: '#22d3ee', desc: '연맹 내 실무 운영진입니다. 주간 이벤트 스케줄의 세부 시간 등록, 연맹원들의 이벤트별 출석 관리 및 로그 확인, 대시보드 공지사항을 실시간으로 관리합니다.' },
+                            { label: '⚪ 일반영주', color: '#94a3b8', desc: '연맹의 모든 정보를 열람하고 자신의 출석을 직접 체크할 수 있습니다. 등록된 전략 문서를 조회하거나 영웅들의 조합 정보를 확인하며 소통에 참여합니다.' }
                         ].map((role) => (
-                            <View key={role.label} className={`p-4 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                <Text style={{ color: role.color }} className="font-black text-sm mb-1">{role.label}</Text>
-                                <Text className={`text-xs leading-5 font-medium ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{role.desc}</Text>
+                            <View key={role.label} className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text style={{ color: role.color }} className="font-black text-lg mb-1">{role.label}</Text>
+                                <Text className={`text-base leading-7 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{role.desc}</Text>
                             </View>
                         ))}
                     </View>
                     <View className={`mt-4 p-5 rounded-2xl ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
-                        <Text className={`text-xs leading-5 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 팁: 오른쪽 상단 프로필 아이콘 색상으로 현재 역할을 확인할 수 있습니다.</Text>
+                        <Text className={`text-sm leading-6 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 팁: 오른쪽 상단 프로필 아이콘 색상으로 현재 역할을 확인할 수 있습니다.</Text>
                     </View>
                 </View>
 
@@ -356,20 +356,20 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
                             <Text className="text-lg">🔘</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>헤더 버튼 가이드</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>헤더 버튼 가이드</Text>
                     </View>
                     <View className="gap-4">
-                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-sm font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>☀️ 테마 전환</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>다크 모드와 라이트 모드를 전환합니다.</Text>
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-lg font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>☀️ 테마 전환</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>다크 모드와 라이트 모드를 전환합니다.</Text>
                         </View>
-                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-sm font-black mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📥 설치 버튼</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>홈 화면에 추가(PWA)하여 앱처럼 사용하는 방법을 안내합니다.</Text>
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-lg font-black mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📥 설치 버튼</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>홈 화면에 추가(PWA)하여 앱처럼 사용하는 방법을 안내합니다.</Text>
                         </View>
-                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-sm font-black mb-2 ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>👤 프로필/관리자</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>관리자 메뉴(로그아웃, 연맹원 관리, 전략 설정 등)를 여는 메뉴입니다.</Text>
+                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                            <Text className={`text-lg font-black mb-2 ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>👤 프로필/관리자</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>관리자 메뉴(로그아웃, 연맹원 관리, 전략 설정 등)를 여는 메뉴입니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -380,16 +380,16 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
                             <Text className="text-lg">🔔</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>공지 및 일정 관리</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>공지 및 일정 관리</Text>
                     </View>
                     <View className="gap-4">
                         <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-base font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>공지사항</Text>
-                            <Text className={`text-sm leading-6 mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>대시보드 상단에 중요 정보를 표시합니다. 관리자는 ✏️ 아이콘으로 내용을 수정하고 공개 여부를 설정할 수 있습니다.</Text>
+                            <Text className={`text-xl font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>공지사항</Text>
+                            <Text className={`text-base leading-7 mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>대시보드 상단에 중요 정보를 표시합니다. 관리자는 ✏️ 아이콘으로 내용을 수정하고 공개 여부를 설정할 수 있습니다.</Text>
                         </View>
                         <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-base font-black mb-2 ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>금주의 이벤트</Text>
-                            <Text className={`text-sm leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>현재 진행(노란색), 예정(녹색), 종료(회색)된 이벤트를 한눈에 확인합니다. KST/UTC 시간대 전환이 가능합니다.</Text>
+                            <Text className={`text-xl font-black mb-2 ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>금주의 이벤트</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>현재 진행(노란색), 예정(녹색), 종료(회색)된 이벤트를 한눈에 확인합니다. KST/UTC 시간대 전환이 가능합니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -400,20 +400,20 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
                             <Text className="text-lg">📋</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>주요 메뉴 안내</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>주요 메뉴 안내</Text>
                     </View>
                     <View className="gap-6">
                         <View>
-                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>👥 영웅 정보</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>모든 영웅의 스탯, 스킬, 추천 조합 정보를 확인합니다.</Text>
+                            <Text className={`text-lg font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>👥 영웅 정보</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>모든 영웅의 스탯, 스킬, 추천 조합 정보를 확인합니다.</Text>
                         </View>
                         <View>
-                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>📅 이벤트 대작전</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>연맹 이벤트 일정을 확인하고 참여 요청 및 출석을 체크합니다.</Text>
+                            <Text className={`text-lg font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>📅 이벤트 대작전</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>연맹 이벤트 일정을 확인하고 참여 요청 및 출석을 체크합니다.</Text>
                         </View>
                         <View>
-                            <Text className={`text-sm font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>🗺️ 전략 문서</Text>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>관리자가 등록한 구글 시트 배치도나 전략 문서를 바로 조회합니다.</Text>
+                            <Text className={`text-lg font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>🗺️ 전략 문서</Text>
+                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>관리자가 등록한 구글 시트 배치도나 전략 문서를 바로 조회합니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -424,18 +424,18 @@ export default function Home() {
                         <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
                             <Text className="text-lg">⚙️</Text>
                         </View>
-                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 가이드</Text>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>관리자 가이드</Text>
                     </View>
                     <View className="gap-4">
                         <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-xs leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                • <Text className="font-bold">연맹원 관리:</Text> 엑셀 대량 등록, 개별 추가/삭제, 권한 부여{"\n"}
-                                • <Text className="font-bold">전략 설정:</Text> 외부 문서 URL 연동 및 관리{"\n"}
-                                • <Text className="font-bold">일정 등록:</Text> 이벤트 카드의 📅 아이콘을 통해 시간/요일 설정
+                            <Text className={`text-base leading-8 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                • <Text className={`font-black ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>연맹원 관리:</Text> 엑셀 대량 등록, 개별 추가/삭제, 권한 부여{"\n"}
+                                • <Text className={`font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>전략 설정:</Text> 외부 문서 URL 연동 및 관리{"\n"}
+                                • <Text className={`font-black ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>일정 등록:</Text> 이벤트 카드의 📅 아이콘을 통해 시간/요일 설정
                             </Text>
                         </View>
                         <View className={`p-5 rounded-2xl ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
-                            <Text className={`text-xs leading-5 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ 주의: 관리 권한은 해당 연맹에만 적용됩니다. 타 연맹 조회 시에는 부여된 권한이 유지되지 않습니다.</Text>
+                            <Text className={`text-sm leading-6 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ 주의: 관리 권한은 해당 연맹에만 적용됩니다. 타 연맹 조회 시에는 부여된 권한이 유지되지 않습니다.</Text>
                         </View>
                     </View>
                 </View>
@@ -2183,7 +2183,7 @@ export default function Home() {
                                 // @ts-ignore - Web-specific property
                                 tabIndex={-1}
                             >
-                                <Ionicons name="help-circle-outline" size={20} color="#a78bfa" />
+                                <Ionicons name="book-outline" size={20} color="#f59e0b" />
                             </Pressable>
 
                             {/* Clear Data (Eraser / Trash) Button */}
@@ -2421,7 +2421,11 @@ export default function Home() {
                                         end={{ x: 1, y: 1 }}
                                     />
                                     <Text className="text-white font-black text-lg tracking-tight relative z-10">
-                                        {isRegisterMode ? '관리자 계정 생성 및 신청' : '입장하기'}
+                                        {isRegisterMode
+                                            ? '관리자 계정 생성 및 신청'
+                                            : (!inputUserId.trim() && !inputPassword.trim())
+                                                ? '익명 사용자 입장하기'
+                                                : '입장하기'}
                                     </Text>
                                 </Pressable>
 
@@ -2762,7 +2766,7 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="help-circle-outline" size={22} color={isDark ? "#a78bfa" : "#7c3aed"} />
+                                        <Ionicons name="book-outline" size={22} color="#f59e0b" />
                                     </Pressable>
                                     {hoveredHeaderBtn === 'help' && (
                                         <View className="absolute top-12 right-0 z-[100] items-end animate-in fade-in slide-in-from-top-1 duration-200" style={{ pointerEvents: 'none' }}>
@@ -3340,11 +3344,11 @@ export default function Home() {
                             <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
                                 <Ionicons name="shield-checkmark" size={32} color={isDark ? "#38bdf8" : "#2563eb"} />
                             </View>
-                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
                                 {isSuperAdmin ? '연맹관리자 관리' : '연맹 관리'}
                             </Text>
-                            <View className={`mt-2 px-4 py-1.5 rounded-full ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
-                                <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <View className={`mt-2 px-4 py-2 rounded-full ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
+                                <Text className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                     ID: <Text className={isDark ? 'text-sky-400' : 'text-sky-600'}>{auth.adminName}</Text> ({auth.role === 'master' ? '시스템관리자' : auth.role === 'alliance_admin' ? '연맹관리자' : auth.role === 'admin' ? '운영관리자' : '일반영주'})
                                 </Text>
                             </View>
@@ -3368,7 +3372,7 @@ export default function Home() {
                                 className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'logout' ? 'bg-red-500/10 border-red-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                             >
                                 <Ionicons name="log-out-outline" size={22} color={adminMenuHover === 'logout' ? '#ef4444' : '#ef4444'} style={{ marginRight: 10 }} />
-                                <Text className={`font-black text-xl ${adminMenuHover === 'logout' ? (isDark ? 'text-red-400' : 'text-red-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>로그아웃</Text>
+                                <Text className={`font-bold text-lg ${adminMenuHover === 'logout' ? (isDark ? 'text-red-400' : 'text-red-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>로그아웃</Text>
                             </TouchableOpacity>
 
                             <TouchableOpacity
@@ -3378,40 +3382,27 @@ export default function Home() {
                                 className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'members' ? 'bg-sky-500/10 border-sky-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                             >
                                 <Ionicons name="people-outline" size={22} color={adminMenuHover === 'members' ? '#0ea5e9' : '#38bdf8'} style={{ marginRight: 10 }} />
-                                <Text className={`font-black text-xl ${adminMenuHover === 'members' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹원 관리</Text>
+                                <Text className={`font-bold text-lg ${adminMenuHover === 'members' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹원 관리</Text>
                             </TouchableOpacity>
 
-                            {auth.isLoggedIn && auth.role !== 'master' && (
-                                <TouchableOpacity
-                                    onPress={() => setIsUserPassChangeOpen(true)}
-                                    // @ts-ignore
-                                    onMouseEnter={() => setAdminMenuHover('password')}
-                                    onMouseLeave={() => setAdminMenuHover(null)}
-                                    className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'password' ? 'bg-amber-500/10 border-amber-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
-                                >
-                                    <Ionicons name="key-outline" size={22} color={adminMenuHover === 'password' ? '#f59e0b' : '#f59e0b'} style={{ marginRight: 10 }} />
-                                    <Text className={`font-black text-xl ${adminMenuHover === 'password' ? (isDark ? 'text-amber-400' : 'text-amber-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>비밀번호 변경</Text>
-                                </TouchableOpacity>
-                            )}
-
                             {!!isSuperAdmin && (
-                                <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                    <Text className={`font-bold mb-4 text-center text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Alliance Admin Management</Text>
-
+                                <View>
                                     <TouchableOpacity
                                         onPress={() => setShowAdminList(!showAdminList)}
-
-                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'staff' ? 'bg-indigo-600/10 border-indigo-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                        // @ts-ignore
+                                        onMouseEnter={() => setAdminMenuHover('staff')}
+                                        onMouseLeave={() => setAdminMenuHover(null)}
+                                        className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'staff' ? 'bg-indigo-600/10 border-indigo-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                                     >
-                                        <Ionicons name="people-outline" size={18} color={adminMenuHover === 'staff' ? '#818cf8' : '#818cf8'} style={{ marginRight: 8 }} />
-                                        <Text className={`font-bold text-sm ${adminMenuHover === 'staff' ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>운영진 관리</Text>
+                                        <Ionicons name="people-outline" size={20} color={adminMenuHover === 'staff' ? '#818cf8' : '#818cf8'} style={{ marginRight: 10 }} />
+                                        <Text className={`font-bold text-lg ${adminMenuHover === 'staff' ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>운영진 관리</Text>
                                     </TouchableOpacity>
 
                                     {!!showAdminList && (
-                                        <View className={`p-4 rounded-[20px] mb-3 border ${isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                                        <View className={`p-4 rounded-[28px] mb-4 border ${isDark ? 'bg-black/20 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                                             <View className="mb-3 space-y-2">
-                                                <TextInput className={`w-full p-3 rounded-xl border text-xs font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="운영진 이름" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminName} onChangeText={setNewAdminName} />
-                                                <TextInput className={`w-full p-3 rounded-xl border text-xs font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="비밀번호 설정" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminPassword} onChangeText={setNewAdminPassword} secureTextEntry={true} />
+                                                <TextInput className={`w-full p-3 rounded-xl border text-sm font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="운영진 이름" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminName} onChangeText={setNewAdminName} />
+                                                <TextInput className={`w-full p-3 rounded-xl border text-sm font-semibold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-slate-800 border-slate-200'}`} placeholder="비밀번호 설정" placeholderTextColor={isDark ? "#475569" : "#94a3b8"} value={newAdminPassword} onChangeText={setNewAdminPassword} secureTextEntry={true} />
                                                 <View className="flex-row gap-2 pt-1">
                                                     <TouchableOpacity
                                                         onPress={() => setNewAdminRole(newAdminRole === 'admin' ? 'alliance_admin' : 'admin')}
@@ -3427,35 +3418,65 @@ export default function Home() {
                                             <View className="max-h-40 rounded-xl overflow-hidden">
                                                 <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true} style={{ flexGrow: 0 }}>
                                                     {dynamicAdmins.map(a => (
-                                                        <View key={a.name} className={`flex-row justify-between items-center py-2.5 px-3 border-b ${isDark ? 'border-white/5' : 'border-slate-100'}`}>
-                                                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{a.name}</Text>
-                                                            <TouchableOpacity onPress={() => removeAdmin(a.name)} hitSlop={10}><Ionicons name="trash-outline" size={14} color="#ef4444" /></TouchableOpacity>
+                                                        <View key={a.name} className={`flex-row justify-between items-center py-3 px-4 border-b ${isDark ? 'border-white/5' : 'border-slate-100'}`}>
+                                                            <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{a.name}</Text>
+                                                            <TouchableOpacity onPress={() => removeAdmin(a.name)} hitSlop={10}><Ionicons name="trash-outline" size={16} color="#ef4444" /></TouchableOpacity>
                                                         </View>
                                                     ))}
                                                 </ScrollView>
                                             </View>
                                         </View>
                                     )}
+                                </View>
+                            )}
+
+                            {auth.isLoggedIn && auth.role !== 'master' && (
+                                <TouchableOpacity
+                                    onPress={() => setIsUserPassChangeOpen(true)}
+                                    // @ts-ignore
+                                    onMouseEnter={() => setAdminMenuHover('password')}
+                                    onMouseLeave={() => setAdminMenuHover(null)}
+                                    className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'password' ? 'bg-amber-500/10 border-amber-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                >
+                                    <Ionicons name="key-outline" size={22} color={adminMenuHover === 'password' ? '#f59e0b' : '#f59e0b'} style={{ marginRight: 10 }} />
+                                    <Text className={`font-bold text-lg ${adminMenuHover === 'password' ? (isDark ? 'text-amber-400' : 'text-amber-500') : (isDark ? 'text-white' : 'text-slate-800')}`}>비밀번호 변경</Text>
+                                </TouchableOpacity>
+                            )}
+
+                            {!!isSuperAdmin && (
+                                <View className={`mt-4 pt-6 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                    <Text className={`font-bold mb-4 text-center text-[10px] uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Alliance Admin Management</Text>
 
                                     <TouchableOpacity
                                         onPress={() => { setIsSuperAdminDashboardVisible(true); }}
-
-                                        className={`p-5 rounded-[20px] border mb-3 flex-row justify-center items-center transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
+                                        // @ts-ignore
+                                        onMouseEnter={() => setAdminMenuHover('super')}
+                                        onMouseLeave={() => setAdminMenuHover(null)}
+                                        className={`p-6 rounded-[24px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
                                     >
-                                        <Ionicons name="shield-checkmark-outline" size={18} color={adminMenuHover === 'super' ? '#38bdf8' : '#38bdf8'} style={{ marginRight: 8 }} />
-                                        <Text className={`font-bold text-sm ${adminMenuHover === 'super' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹관리자 관리</Text>
+                                        <Ionicons name="shield-checkmark-outline" size={22} color={adminMenuHover === 'super' ? '#38bdf8' : '#38bdf8'} style={{ marginRight: 10 }} />
+                                        <Text className={`font-bold text-lg ${adminMenuHover === 'super' ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>연맹관리자 관리</Text>
                                     </TouchableOpacity>
                                 </View>
                             )}
                         </ScrollView>
 
-                        <TouchableOpacity
-                            onPress={() => setAdminMenuVisible(false)}
-
-                            className={`py-5 mt-6 rounded-[24px] items-center border transition-all duration-300 ${adminMenuHover === 'close' ? 'border-slate-400/50' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200')}`}
-                        >
-                            <Text className={`font-black text-sm tracking-widest uppercase ${adminMenuHover === 'close' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>닫기</Text>
-                        </TouchableOpacity>
+                        <View className="items-center justify-center mt-8 pt-4 pb-4">
+                            <Pressable
+                                onPress={() => setAdminMenuVisible(false)}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: 48,
+                                        paddingVertical: 14,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.7 : 1,
+                                        transition: 'all 0.2s',
+                                    }
+                                ]}
+                            >
+                                <Text className={`font-bold text-xl tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>닫기</Text>
+                            </Pressable>
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -3494,26 +3515,36 @@ export default function Home() {
 
                         {/* Stats / Interactive Tabs */}
                         <View className="flex-row gap-4 mb-8 px-10">
-                            <TouchableOpacity
+                            <Pressable
                                 onPress={() => setSuperAdminTab('pending')}
-                                activeOpacity={0.7}
-                                className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${superAdminTab === 'pending' ? 'border-sky-500 bg-sky-500/10 shadow-lg shadow-sky-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        transition: 'all 0.2s'
+                                    }
+                                ]}
+                                className={`flex-1 p-6 rounded-[32px] border ${superAdminTab === 'pending' ? 'border-sky-500 bg-sky-500/10 shadow-lg shadow-sky-500/20' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
                             >
                                 <Text className={`text-xs font-black uppercase tracking-widest mb-2 ${superAdminTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인 대기</Text>
                                 <Text className={`text-4xl font-black ${superAdminTab === 'pending' ? (isDark ? 'text-sky-400' : 'text-sky-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
                                     {allRequests.filter(r => r.status === 'pending').length}
                                 </Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </Pressable>
+                            <Pressable
                                 onPress={() => setSuperAdminTab('alliances')}
-                                activeOpacity={0.7}
-                                className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${superAdminTab === 'alliances' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        transition: 'all 0.2s'
+                                    }
+                                ]}
+                                className={`flex-1 p-6 rounded-[32px] border ${superAdminTab === 'alliances' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
                             >
                                 <Text className={`text-xs font-black uppercase tracking-widest mb-2 ${superAdminTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>활성 연맹 수</Text>
                                 <Text className={`text-4xl font-black ${superAdminTab === 'alliances' ? (isDark ? 'text-emerald-400' : 'text-emerald-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
                                     {allRequests.filter(r => r.status === 'approved').length}
                                 </Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
 
                         <View className="flex-row items-center justify-between mb-8 px-10">
@@ -3615,7 +3646,6 @@ export default function Home() {
                                                                     <Text className="text-xs font-black px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2">{req.serverId}</Text>
                                                                     <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.allianceId}</Text>
                                                                 </View>
-                                                                <Text className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{req.allianceName}</Text>
                                                             </View>
 
                                                             {superAdminTab === 'pending' ? (
@@ -3659,12 +3689,12 @@ export default function Home() {
                                                             )}
                                                         </View>
 
-                                                        <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
+                                                        <View className={`flex-row justify-between items-center p-4 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
                                                             <View>
-                                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.adminId}</Text></Text>
-                                                                <Text className={`text-[10px] font-bold mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.contact || '-'}</Text></Text>
+                                                                <Text className={`text-base font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.adminId}</Text></Text>
+                                                                <Text className={`text-base font-bold mt-1.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={isDark ? 'text-slate-200' : 'text-slate-800'}>{req.contact || '-'}</Text></Text>
                                                             </View>
-                                                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
+                                                            <Text className={`text-base font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
                                                         </View>
                                                     </View>
                                                 </View>
@@ -3989,14 +4019,14 @@ export default function Home() {
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
                     <View className={`w-full max-w-md rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'}`}>
+                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
                                     <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
                                         <Ionicons name="download" size={24} color="#3b82f6" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
+                                        <Text className={`text-[9px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
                                         <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>앱 설치 가이드</Text>
                                     </View>
                                 </View>
@@ -4005,35 +4035,45 @@ export default function Home() {
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <View className="p-8">
+                        <View className="p-8 pb-4">
                             <View className="gap-6">
                                 <View className="flex-row items-center">
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                        <Text className="text-xs font-black text-blue-500">1</Text>
+                                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Text className="text-sm font-black text-blue-500">1</Text>
                                     </View>
-                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>브라우저의 메뉴 버튼을 탭합니다.</Text>
+                                    <Text className={`text-base font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>브라우저의 메뉴 버튼을 탭합니다.</Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                        <Text className="text-xs font-black text-blue-500">2</Text>
+                                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Text className="text-sm font-black text-blue-500">2</Text>
                                     </View>
-                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>'홈 화면에 추가'를 선택합니다.</Text>
+                                    <Text className={`text-base font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>'홈 화면에 추가'를 선택합니다.</Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                        <Text className="text-xs font-black text-blue-500">3</Text>
+                                    <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                        <Text className="text-sm font-black text-blue-500">3</Text>
                                     </View>
-                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>바탕화면에서 앱처럼 편리하게 사용하세요!</Text>
+                                    <Text className={`text-base font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>바탕화면에서 앱처럼 편리하게 사용하세요!</Text>
                                 </View>
                             </View>
                         </View>
-                        <View className="px-8 pb-8">
-                            <TouchableOpacity
+                        <View className="px-10 pb-10 pt-0 items-center justify-center">
+                            <Pressable
                                 onPress={() => setInstallModalVisible(false)}
-                                className="w-full bg-blue-500 py-5 rounded-2xl items-center justify-center shadow-lg shadow-blue-500/30"
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: 48,
+                                        paddingVertical: 5,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        transition: 'all 0.2s',
+                                        // @ts-ignore
+                                        textShadow: hovered ? '0 0 12px rgba(59, 130, 246, 0.4)' : 'none'
+                                    }
+                                ]}
                             >
-                                <Text className="text-white font-black text-lg">알겠습니다</Text>
-                            </TouchableOpacity>
+                                <Text className="text-blue-500 font-black text-xl tracking-widest">확인</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -4043,16 +4083,16 @@ export default function Home() {
             <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                    <View className={`w-full max-w-2xl h-[70%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                        <Ionicons name="help-circle" size={30} color="#f59e0b" />
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="help-circle" size={26} color="#f59e0b" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
-                                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>로그인 가이드</Text>
+                                        <Text className={`text-[9px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>로그인 가이드</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
@@ -4061,10 +4101,23 @@ export default function Home() {
                             </View>
                         </View>
                         {renderGateManualContent()}
-                        <View className="px-10 py-8 border-t border-slate-800">
-                            <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className="w-full bg-amber-500 py-5 rounded-2xl items-center justify-center">
-                                <Text className="text-white font-black text-lg">이해했습니다</Text>
-                            </TouchableOpacity>
+                        <View className="px-10 pb-10 pt-0 items-center justify-center">
+                            <Pressable
+                                onPress={() => setIsGateManualVisible(false)}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: 48,
+                                        paddingVertical: 5,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        transition: 'all 0.2s',
+                                        // @ts-ignore
+                                        textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
+                                    }
+                                ]}
+                            >
+                                <Text className="text-amber-500 font-black text-xl tracking-widest">확인</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
@@ -4074,16 +4127,16 @@ export default function Home() {
             <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-10 py-8 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                    <View className={`w-full max-w-2xl h-[70%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                        <Ionicons name="book" size={30} color="#f59e0b" />
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="book" size={26} color="#f59e0b" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
-                                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>사용자 매뉴얼</Text>
+                                        <Text className={`text-[9px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>사용자 매뉴얼</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
@@ -4092,10 +4145,23 @@ export default function Home() {
                             </View>
                         </View>
                         {renderMainManualContent()}
-                        <View className="px-10 py-8 border-t border-slate-800">
-                            <TouchableOpacity onPress={() => setIsManualVisible(false)} className="w-full bg-amber-500 py-5 rounded-2xl items-center justify-center">
-                                <Text className="text-white font-black text-lg">확인</Text>
-                            </TouchableOpacity>
+                        <View className="px-10 pb-10 pt-0 items-center justify-center">
+                            <Pressable
+                                onPress={() => setIsManualVisible(false)}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: 48,
+                                        paddingVertical: 5,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        transition: 'all 0.2s',
+                                        // @ts-ignore
+                                        textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
+                                    }
+                                ]}
+                            >
+                                <Text className="text-amber-500 font-black text-xl tracking-widest">확인</Text>
+                            </Pressable>
                         </View>
                     </View>
                 </View>
