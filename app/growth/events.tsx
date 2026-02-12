@@ -268,9 +268,12 @@ const EventCard = memo(({
         );
     };
 
+    const { width: windowWidth } = useWindowDimensions();
+    const isTwoColumn = windowWidth >= 480;
+
     return (
         <View
-            className={`w-full sm:w-1/2 p-2`}
+            style={{ width: isTwoColumn ? '50%' : '100%', padding: 8 }}
             onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
         >
             <Pressable

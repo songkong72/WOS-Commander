@@ -1932,7 +1932,7 @@ export default function Home() {
                 style={({ pressed, hovered }: any) => [
                     {
                         padding: 8,
-                        width: isActive ? '100%' : (windowWidth >= 640 ? '50%' : '100%'),
+                        width: isActive ? '100%' : (windowWidth >= 480 ? '50%' : '100%'),
                         transform: [{ scale: pressed && auth.isLoggedIn ? 0.98 : (hovered && auth.isLoggedIn ? 1.02 : 1) }],
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         // @ts-ignore - Web property
