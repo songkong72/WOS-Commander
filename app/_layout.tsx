@@ -108,6 +108,11 @@ export default function Layout() {
                                 overflow-x: hidden;
                                 background-color: ${isDark ? '#020617' : '#fafaf9'};
                             }
+                            /* Hide native password reveal button in Edge/Internet Explorer */
+                            input::-ms-reveal,
+                            input::-ms-clear {
+                                display: none !important;
+                            }
                         `}</style>
                     </Head>
                 )}

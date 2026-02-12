@@ -29,3 +29,9 @@ body,
 * {
     font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+
+/* Hide native password reveal button in Edge/Internet Explorer */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none;
+}
