@@ -2385,7 +2385,7 @@ export default function EventTracker() {
                                 </View>
                             )}
 
-                            <ScrollView className="p-6">
+                            <ScrollView className="p-6" contentContainerStyle={{ paddingBottom: 80 }}>
                                 {/* Wiki Link Section */}
                                 <View className="mb-6 bg-slate-800/50 p-4 rounded-2xl border border-slate-700">
                                     <View className="flex-row items-center justify-between mb-2">
@@ -2553,7 +2553,7 @@ export default function EventTracker() {
                             <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: (activeDateDropdown || activeFortressDropdown || activeNamePickerId || hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
                                 {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
                                     <View className="flex-1 mt-6">
-                                        <ScrollView contentContainerStyle={{ paddingBottom: 80 }} style={{ overflow: 'visible' }} showsVerticalScrollIndicator={false} className="flex-1">
+                                        <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
                                             <View className="mb-2">
                                                 <View className="flex-row items-center mb-2">
                                                     <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">등록된 일정</Text>
@@ -2656,7 +2656,7 @@ export default function EventTracker() {
                                     </View>
                                 ) : DATE_RANGE_IDS.includes(editingEvent?.id || '') || editingEvent?.category === '개인' ? (
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: activeDateDropdown ? 10000 : 1 }}>
-                                        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} style={{ overflow: 'visible' }}>
+                                        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150 }}>
                                             {(() => {
                                                 return (
                                                     <View className={`mt-6 p-4 rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'}`} style={{ zIndex: 50 }}>
@@ -2736,7 +2736,7 @@ export default function EventTracker() {
                                         })()}
 
                                         {editingEvent?.id !== 'alliance_champion' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
-                                            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }} style={{ overflow: 'visible' }} showsVerticalScrollIndicator={false} className="flex-1">
+                                            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
                                                 <View className="flex-1 justify-between pb-4">
                                                     {/* Registered Slots List */}
                                                     {editingEvent?.id !== 'a_center' && (
