@@ -380,8 +380,8 @@ const EventCard = memo(({
                             const hasMultipleParts = parts.length > 1;
                             const selectedTab = selectedTeamTab || 0;
                             if (isBearOrFoundry && hasMultipleParts) {
-                                const getTabLabel = (part: string | undefined, idx: number) => {
-                                    const trimmed = (part || "").trim();
+                                const getTabLabel = (part: string, idx: number) => {
+                                    const trimmed = part.trim();
                                     const cleaned = trimmed.replace(/.*(요새전|성채전)[:\s：]*/, '').trim();
                                     const formatted = cleaned.replace(/(요새|성채)(\d+)/g, '$1 $2').trim();
 
@@ -396,7 +396,6 @@ const EventCard = memo(({
 
                                     return `${idx + 1}군`;
                                 };
-
                                 const selectedContent = ((part: string | undefined) => {
                                     if (!part) return "";
                                     const trimmed = part.trim();
@@ -409,7 +408,7 @@ const EventCard = memo(({
                                         if (!isTimeColon) return formatted.substring(colonIdx + 1).trim();
                                     }
                                     return formatted;
-                                })(parts[selectedTeamTab]);
+                                })(parts[selectedTab]);
                                 return (
                                     <View className="w-full gap-3">
                                         <View className="flex-row gap-2">
@@ -1743,58 +1742,84 @@ export default function EventTracker() {
 
             // 공통 파싱 로직 (기존 데이터 유지 호환성)
             if (event.time) {
-                if (event.time.includes('요새전:') || event.time.includes('성채전:')) {
-                    const sections = event.time.split(' / ');
-                    sections.forEach((s, idx) => {
-                        if (s.startsWith('요새전:')) {
-                            const items = s.replace('요새전:', '').trim().split(', ');
-                            items.forEach((item, iidx) => {
-                                const matchWithDay = item.match(/(.+?)\s+([월화수목금토일])\s*\(?(\d{2}):(\d{2})\)?/);
-                                if (matchWithDay) {
-                                    fParsed.push({ id: `f_${idx}_${iidx}`, name: matchWithDay[1].trim(), day: matchWithDay[2], h: matchWithDay[3], m: matchWithDay[4] });
-                                } else {
-                                    const match = item.match(/(.+?)\s*\(?(\d{2}):(\d{2})\)?/);
-                                    if (match) fParsed.push({ id: `f_${idx}_${iidx}`, name: match[1].trim(), day: '토', h: match[2], m: match[3] });
+                // 1. 접두어 제거 및 기본 정리
+                let cleanTime = event.time;
+                if (cleanTime.includes('요새전:')) {
+                    cleanTime = cleanTime.replace('요새전:', '').trim();
+                    // 성채전이 뒤에 붙어있을 수 있으므로 분리 (구형 데이터 호환)
+                    if (cleanTime.includes('/ 성채전:')) {
+                        const parts = cleanTime.split('/ 성채전:');
+                        const fPart = parts[0].trim();
+                        const cPart = parts[1] ? parts[1].trim() : '';
+
+                        // Fortress Parse
+                        const fItems = fPart.split(',');
+                        fItems.forEach((item, idx) => {
+                            const match = item.trim().match(/(.+?)\s+([월화수목금토일\s]+)\s*\(?(\d{2}):(\d{2})\)?/);
+                            if (match) {
+                                fParsed.push({ id: `f_${idx}`, name: match[1].trim(), day: match[2].trim(), h: match[3], m: match[4] });
+                            } else {
+                                // 형식이 안맞으면 이름과 시간만 추출 시도 (요일 기본값 토)
+                                const simpleMatch = item.trim().match(/(.+?)\s*\(?(\d{2}):(\d{2})\)?/);
+                                if (simpleMatch) {
+                                    fParsed.push({ id: `f_${idx}_s`, name: simpleMatch[1].trim(), day: '토', h: simpleMatch[2], m: simpleMatch[3] });
                                 }
-                            });
-                        } else if (s.startsWith('성채전:')) {
-                            const items = s.replace('성채전:', '').trim().split(', ');
-                            items.forEach((item, iidx) => {
-                                const matchWithDay = item.match(/(.+?)\s+([월화수목금토일])\s*\(?(\d{2}):(\d{2})\)?/);
-                                if (matchWithDay) {
-                                    cParsed.push({ id: `c_${idx}_${iidx}`, name: matchWithDay[1].trim(), day: matchWithDay[2], h: matchWithDay[3], m: matchWithDay[4] });
-                                } else {
-                                    const match = item.match(/(.+?)\s*\(?(\d{2}):(\d{2})\)?/);
-                                    if (match) cParsed.push({ id: `c_${idx}_${iidx}`, name: match[1].trim(), day: '일', h: match[2], m: match[3] });
+                            }
+                        });
+
+                        // Citadel Parse
+                        const cItems = cPart.split(',');
+                        cItems.forEach((item, idx) => {
+                            const match = item.trim().match(/(.+?)\s+([월화수목금토일\s]+)\s*\(?(\d{2}):(\d{2})\)?/);
+                            if (match) {
+                                cParsed.push({ id: `c_${idx}`, name: match[1].trim(), day: match[2].trim(), h: match[3], m: match[4] });
+                            } else {
+                                const simpleMatch = item.trim().match(/(.+?)\s*\(?(\d{2}):(\d{2})\)?/);
+                                if (simpleMatch) {
+                                    cParsed.push({ id: `c_${idx}_s`, name: simpleMatch[1].trim(), day: '일', h: simpleMatch[2], m: simpleMatch[3] });
                                 }
-                            });
+                            }
+                        });
+                    } else {
+                        // 요새전만 있는 경우 (또는 신규 포맷)
+                        // 만약 "요새7 금 23:30, 요새10..." 처럼 쉼표로 연결된 경우문
+                        const items = cleanTime.split(',');
+                        items.forEach((item, idx) => {
+                            const match = item.trim().match(/(.+?)\s+([월화수목금토일\s]+)\s*\(?(\d{2}):(\d{2})\)?/);
+                            if (match) {
+                                fParsed.push({ id: `f_${idx}`, name: match[1].trim(), day: match[2].trim(), h: match[3], m: match[4] });
+                            }
+                        });
+                    }
+                } else if (cleanTime.includes('성채전:')) {
+                    // 성채전만 있는 경우
+                    cleanTime = cleanTime.replace('성채전:', '').trim();
+                    const items = cleanTime.split(',');
+                    items.forEach((item, idx) => {
+                        const match = item.trim().match(/(.+?)\s+([월화수목금토일\s]+)\s*\(?(\d{2}):(\d{2})\)?/);
+                        if (match) {
+                            cParsed.push({ id: `c_${idx}`, name: match[1].trim(), day: match[2].trim(), h: match[3], m: match[4] });
                         }
                     });
                 } else {
-                    // 구형 포맷 처리
-                    const parts = event.time.split(' / ');
+                    // 구형 포맷 또는 기타 (단순 텍스트) 처리
+                    // "요새7(23:30) / 성채(11:00)" 등
+                    const parts = cleanTime.split(/[\/|]/);
                     parts.forEach((p, idx) => {
-                        const nestedMatch = p.match(/(.+)\((.+)\)/);
-                        if (nestedMatch) {
-                            const fName = nestedMatch[1].trim();
-                            const cContent = nestedMatch[2].trim();
-                            const cParts = cContent.split(',');
-                            cParts.forEach((cp, cidx) => {
-                                const cMatch = cp.trim().match(/(.+)\s+(\d{2}):(\d{2})/);
-                                if (cMatch) {
-                                    cParsed.push({ id: `c_${idx}_${cidx}`, name: cMatch[1].trim(), day: '일', h: cMatch[2], m: cMatch[3] });
-                                }
-                            });
-                            fParsed.push({ id: `f_${idx}`, name: fName, day: '토', h: '22', m: '00' });
-                        } else {
-                            const simpleMatch = p.match(/(.+)\s+(\d{2}):(\d{2})/);
-                            if (simpleMatch) {
-                                const name = simpleMatch[1].trim();
-                                if (name.includes('요새')) {
-                                    fParsed.push({ id: `f_${idx}`, name, day: '토', h: simpleMatch[2], m: simpleMatch[3] });
-                                } else {
-                                    cParsed.push({ id: `c_${idx}`, name, day: '일', h: simpleMatch[2], m: simpleMatch[3] });
-                                }
+                        const trimP = p.trim();
+                        // 요새/성채 구분 모호할 수 있음 -> 이름에 포함된 단어로 추측하거나,
+                        // 그냥 Fortress에 넣고 사용자가 수정하게 유도
+                        const match = trimP.match(/(.+?)\s*[\(]?\s*([월화수목금토일]*)?\s*(\d{2}):(\d{2})[\)]?/);
+                        if (match) {
+                            const name = match[1].trim();
+                            const day = match[2] || (name.includes('성채') ? '일' : '토');
+                            const h = match[3];
+                            const m = match[4];
+
+                            if (name.includes('성채')) {
+                                cParsed.push({ id: `c_old_${idx}`, name, day, h, m });
+                            } else {
+                                fParsed.push({ id: `f_old_${idx}`, name, day, h, m });
                             }
                         }
                     });
@@ -1959,13 +1984,13 @@ export default function EventTracker() {
             let finalDay = '';
 
             if (editingEvent.id === 'a_fortress') {
-                const fStr = fortressList.length > 0 ? fortressList.map(f => `${f.name} ${f.day || '토'} ${f.h}:${f.m}`).join(', ') : '';
+                const fStr = fortressList.length > 0 ? `요새전: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
                 timeStr = fStr;
-                finalDay = fortressList.length > 0 ? '요새' : '';
+                finalDay = fortressList.length > 0 ? '요새전' : '';
             } else {
-                const cStr = citadelList.length > 0 ? citadelList.map(c => `${c.name} ${c.day || '일'} ${c.h}:${c.m}`).join(', ') : '';
+                const cStr = citadelList.length > 0 ? `성채전: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
                 timeStr = cStr;
-                finalDay = citadelList.length > 0 ? '성채' : '';
+                finalDay = citadelList.length > 0 ? '성채전' : '';
             }
 
             // Optimistic update handled by hook

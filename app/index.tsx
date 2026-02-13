@@ -1679,7 +1679,6 @@ export default function Home() {
                 const rawTime = (e.time || '').replace(/\s*\/\s*/g, ', ');
                 const parts = rawTime.split(',').map(p => {
                     let cleaned = p.trim().replace(/.*(요새전|성채전)[:\s：]*/, '');
-                    // Remove all spaces for Fortress/Citadel names in the split view to match user screenshot (e.g. "요새7")
                     return cleaned.trim();
                 }).filter(p => p);
 
@@ -1746,7 +1745,7 @@ export default function Home() {
                             ...e,
                             eventId: `${e.eventId}_team${idx + 1}`,
                             originalEventId: e.eventId,
-                            title: cleanLabel ? `협곡 전투(${cleanLabel})` : '협곡 전투',
+                            title: cleanLabel ? `협곡대전(${cleanLabel})` : '협곡대전',
                             time: simplifiedTime,
                             isCanyonSplit: true,
                             teamLabel: cleanLabel,
@@ -1987,68 +1986,104 @@ export default function Home() {
             );
         }
 
-        // 2. Grouped Day Case: "요새7 금(23:00), 요새10 금(23:00)" or "요새7 금 23:00"
-        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，\-\s：\:\(\)\[\]/]+)(.*?)\s+([일월화수목금토])\(?(\d{2}:\d{2})\)?/g));
+        // 2. Grouped Day Case: "요새7 금(23:00), 요새10 금(23:00)" or "요새전: 요새7 금 23:00"
+        // Also handles "월(22:00)" without space
+        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，\-\s：\:\(\)\[\]/]+)(.*?)\s*([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*/g));
         if (dayTimeMatches.length > 0) {
+            const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+            const currentDay = now.getDay();
+            const currentTotalMinToday = now.getHours() * 60 + now.getMinutes();
+
             const groups: { [key: string]: { label: string, time: string, days: string[] } } = {};
             dayTimeMatches.forEach(m => {
-                const rawLabel = m[1].trim();
+                const rawLabel = (m[1] || "").trim();
                 const day = m[2];
                 const time = m[3];
-                // Refine label: remove redundant prefixes and cleaning boundaries
+                const [h, min] = time.split(':').map(Number);
+                const dayIdx = dayMapObj[day];
+
+                // Filter out expired individual slots (30 min duration)
+                const startTotal = dayMapObj[day] * 1440 + h * 60 + min;
+                const endTotal = startTotal + 30; // 30 mins duration
+                let isItemExpired = false;
+
+                // Calculate expiration considering week wrap-around
+                const currentDayIndex = now.getDay();
+                const targetDayIndex = dayMapObj[day];
+
+                // Simple expiration logic: if day passed, or same day and time passed
+                // Note: Sunday is 0 in JS, but 7 in our logic context (if Mon-Sun)
+                // Let's stick to standard JSgetDay: Sun=0, Mon=1...Sat=6.
+                // But dayMapObj: 일=0, 월=1...토=6. matching.
+
+                // If current day > target day, expired.
+                // But what about next week? Usually schedule shows this week.
+                // Let's assume standard weekly view.
+
+                if (currentDayIndex > dayIdx) {
+                    isItemExpired = true;
+                } else if (currentDayIndex === dayIdx) {
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    const targetMinutes = h * 60 + min;
+                    if (currentMinutes >= targetMinutes + 30) isItemExpired = true;
+                }
+
+                // Refine label
                 let label = rawLabel.replace(/.*(요새전|성채전)[:\s：]*/g, '').replace(/^[:，,：\-\s\(\[\{\/]+/, '').replace(/[:，,：\-\s\)\]\}\/]+$/, '').trim();
 
-                // Filter out labels that are just a list of days or separators (to avoid [화, 목] artifacts)
                 const isDayOnly = label && /^[일월화수목금토\s,·\/\(\)\[\]\:\：]+$/.test(label);
                 if (isDayOnly) label = '';
 
-                const key = `${label}|${time}`;
-                if (!groups[key]) groups[key] = { label, time, days: [] };
-                groups[key].days.push(day);
+                const key = `${label}|${time}|${day}|${isItemExpired}`; // Include expired status in key to separate if needed? No, better group by label+time.
+                // Actually, if we group by label+time, we might mix expired and non-expired if they have same label/time but different days?
+                // Wait, days are aggregated: "요새7 금,토 23:30". If Friday expired but Saturday not?
+                // The UI shows "금,토 23:30". Strikethrough effectively strikes the whole line.
+                // User request: "맨위 금 23:30 요새7은 진행중이 아닌 지난거라 취소선 넣어줘."
+                // This implies individual lines per day/time/label tuple if they differ?
+                // Current styling aggregates days: `part.days.join('·')`.
+                // If "금" is expired and "토" is not, how to render "금·토 23:30"?
+                // We should arguably separate them if their expired status differs.
+
+                const groupKey = `${label}|${time}|${isItemExpired}`; // Group by expired status too
+                if (!groups[groupKey]) groups[groupKey] = { label, time, days: [], isExpired: isItemExpired };
+                if (!groups[groupKey].days.includes(day)) groups[groupKey].days.push(day);
             });
 
-            const resultParts = Object.values(groups);
+            // Sort: Expired items last? Or just keep order? User asked for strikethrough.
+            // Let's valid items first, then expired items.
+            const resultParts = Object.values(groups).sort((a, b) => {
+                if (a.isExpired === b.isExpired) return 0;
+                return a.isExpired ? 1 : -1;
+            });
+
+            if (resultParts.length === 0) return null;
 
             return (
-                <View className="flex-col gap-2.5 mt-2">
+                <View className="flex-col gap-1.5 mt-2">
                     {resultParts.map((part, i) => (
-                        <View key={i} className="flex-row items-center">
-                            <Ionicons
-                                name="calendar-outline"
-                                size={16}
-                                color={isDark ? '#38bdf8' : '#2563eb'}
-                                style={{ marginRight: 4 }}
-                            />
-                            <Text style={{
-                                color: isDark ? '#38bdf8' : '#2563eb',
-                                fontSize: 18 * fontSizeScale,
-                                fontWeight: '900'
-                            }}>
-                                {part.days.join('·')}
-                            </Text>
-
-                            <Text style={{ color: isDark ? '#475569' : '#94a3b8', marginHorizontal: 8, fontSize: 18 }}>·</Text>
-
+                        <View key={i} className={`flex-row items-center mb-1 ${part.isExpired ? 'opacity-40' : ''}`}>
                             <Ionicons
                                 name="time-outline"
-                                size={16}
+                                size={14}
                                 color={isDark ? '#cbd5e1' : '#475569'}
-                                style={{ marginRight: 4 }}
+                                style={{ marginRight: 6 }}
                             />
                             <Text style={{
                                 color: isDark ? '#cbd5e1' : '#475569',
                                 fontSize: 18 * fontSizeScale,
-                                fontWeight: '900'
+                                fontWeight: '700',
+                                textDecorationLine: part.isExpired ? 'line-through' : 'none'
                             }}>
-                                {part.time}
+                                {renderWithHighlightedDays(part.days.join('·'), isUpcomingSoon)} {part.time}
                             </Text>
 
                             {part.label ? (
-                                <View className={`ml-4 px-2.5 py-1 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                <View className={`ml-2 px-2 py-0.5 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
                                     <Text style={{
                                         fontSize: 13 * fontSizeScale,
-                                        fontWeight: '900',
-                                        color: isDark ? '#94a3b8' : '#64748b'
+                                        fontWeight: '700',
+                                        color: isDark ? '#94a3b8' : '#64748b',
+                                        textDecorationLine: part.isExpired ? 'line-through' : 'none'
                                     }}>
                                         {part.label.replace(/\s+/g, '')}
                                     </Text>
@@ -2056,11 +2091,51 @@ export default function Home() {
                             ) : null}
                         </View>
                     ))}
+                </View>);
+        }
+
+        // 3. Simple String (Mixed or unformatted) -> Try to parse "Day(Time)" first to unify UI
+        // e.g. "월(11:00)" or "월 11:00"
+        const singleDayTimeMatch = timeStr.match(/^([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*$/);
+        if (singleDayTimeMatch) {
+            const day = singleDayTimeMatch[1];
+            const time = singleDayTimeMatch[2];
+
+            return (
+                <View className="flex-row items-center mt-1">
+                    <Ionicons
+                        name="calendar-outline"
+                        size={14}
+                        color={isDark ? '#38bdf8' : '#2563eb'}
+                        style={{ marginRight: 4 }}
+                    />
+                    <Text style={{
+                        color: isDark ? '#38bdf8' : '#2563eb',
+                        fontSize: 17 * fontSizeScale,
+                        fontWeight: '900'
+                    }}>
+                        {renderWithHighlightedDays(day, isUpcomingSoon)}
+                    </Text>
+
+                    <Text style={{ color: isDark ? '#475569' : '#94a3b8', marginHorizontal: 8, fontSize: 16 }}>·</Text>
+
+                    <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={isDark ? '#cbd5e1' : '#475569'}
+                        style={{ marginRight: 4 }}
+                    />
+                    <Text style={{
+                        color: isDark ? '#cbd5e1' : '#475569',
+                        fontSize: 17 * fontSizeScale,
+                        fontWeight: '900'
+                    }}>
+                        {time}
+                    </Text>
                 </View>
             );
         }
 
-        // 3. Simple String (Mixed or unformatted)
         return (
             <Text
                 adjustsFontSizeToFit
@@ -2165,9 +2240,7 @@ export default function Home() {
                             (eid === 'a_foundry' && sid === 'alliance_foundry') ||
                             (eid === 'alliance_foundry' && sid === 'a_foundry') ||
                             (eid === 'a_fortress' && sid === 'alliance_fortress') ||
-                            (eid === 'alliance_fortress' && sid === 'a_fortress') ||
-                            (eid === 'a_citadel' && sid === 'alliance_fortress') ||
-                            (eid === 'alliance_fortress' && sid === 'a_citadel');
+                            (eid === 'alliance_fortress' && sid === 'a_fortress');
                     });
 
                     const displayDay = currentSchedule?.day || event.day;
