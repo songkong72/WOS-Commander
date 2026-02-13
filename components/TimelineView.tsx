@@ -386,6 +386,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     const weekDaysArr = [];
     for (let i = 0; i < 7; i++) weekDaysArr.push(new Date(winStart + i * dayMs));
 
+    const ongoingCount = useMemo(() => {
+        return events.filter(ev => checkIsOngoing(ev)).length;
+    }, [events, checkIsOngoing, now]);
+
     const indicatorLeft = `${((now.getTime() - winStart) / totalMs * 100).toFixed(4)}%`;
 
     return (
@@ -395,8 +399,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 <Text className="text-white font-black text-[11px] uppercase tracking-widest text-center shadow-lg">
                     {`${timezone} : ${timezone === 'UTC' ? now.toISOString().replace('T', ' ').substring(0, 19).replace(/-/g, '.') : `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`}`}
                 </Text>
-                <View className="bg-white/20 px-2 py-0.5 rounded-full border border-white/30">
-                    <Text className="text-white text-[7px] font-black tracking-tighter">[v23-WEEK-START-MON]</Text>
+                <View className={`${ongoingCount > 0 ? 'bg-emerald-500 border-emerald-400 shadow-emerald-900/40' : 'bg-white/20 border-white/30'} px-3 py-1 rounded-full border flex-row items-center shadow-lg`}>
+                    <Animated.View
+                        style={{
+                            opacity: ongoingCount > 0 ? pulseAnim : 1,
+                            backgroundColor: ongoingCount > 0 ? 'white' : 'white',
+                            width: 6,
+                            height: 6,
+                            borderRadius: 3,
+                            marginRight: 6
+                        }}
+                    />
+                    <Text className="text-white text-[10px] font-black tracking-tight">진행중: {ongoingCount}개</Text>
                 </View>
             </LinearGradient>
 
