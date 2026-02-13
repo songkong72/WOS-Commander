@@ -85,6 +85,15 @@ export default function Home() {
         }
     }, [params.showAdminMenu, auth.isLoggedIn]);
 
+    // -- Handle viewMode from parameters (Back navigation restoration) --
+    useEffect(() => {
+        if (params.viewMode === 'list' || params.viewMode === 'timeline') {
+            setViewMode(params.viewMode);
+            // Clear the param so it doesn't stay in the URL
+            router.setParams({ viewMode: undefined });
+        }
+    }, [params.viewMode]);
+
     // -- Scroll Restoration --
     useEffect(() => {
         if (serverId && allianceId && !isLoading && dashboardScrollY > 0) {
@@ -1592,7 +1601,7 @@ export default function Home() {
         const processedList: any[] = [];
         rawList.forEach(e => {
             if (e.eventId === 'a_bear' || e.eventId === 'alliance_bear') {
-                const parts = (e.time || '').split(' / ');
+                const parts = (e.time || '').split(/\s*\/\s*/);
                 if (parts.length > 0) {
                     parts.forEach((part, idx) => {
                         const trimmed = part.trim();
@@ -1668,9 +1677,41 @@ export default function Home() {
                 if (fortressParts.length === 0 && citadelParts.length === 0) {
                     processedList.push(e);
                 }
+            } else if (e.eventId === 'alliance_canyon') {
+                // Split Canyon Battle into Team 1 and Team 2
+                const parts = (e.time || '').split(/\s*\/\s*/);
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const isSingleTeam = parts.length === 1;
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/협곡|전투|팀|군/g, '').trim() + '군') : '';
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            eventId: `${e.eventId}_team${idx + 1}`,
+                            originalEventId: e.eventId,
+                            title: cleanLabel ? `협곡 전투(${cleanLabel})` : '협곡 전투',
+                            time: simplifiedTime,
+                            isCanyonSplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: '⛰️'
+                        });
+                    });
+                } else {
+                    processedList.push(e);
+                }
             } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
                 // Split Weapon Factory into Team 1 and Team 2
-                const parts = (e.time || '').split(' / ');
+                const parts = (e.time || '').split(/\s*\/\s*/);
                 if (parts.length > 0) {
                     parts.forEach((part, idx) => {
                         const trimmed = part.trim();
@@ -1705,49 +1746,89 @@ export default function Home() {
             }
         });
 
+        // Helper to get a stable group ID for bundling related events (e.g., Fortress/Citadel)
+        const getBundleId = (ev: any) => {
+            const gid = ev.originalEventId || ev.eventId;
+            if (gid === 'a_fortress' || gid === 'a_citadel' || gid === 'alliance_fortress' || gid === 'alliance_citadel') return 'fortress_bundle';
+            return gid;
+        };
+
         // 3. Sort the final processed list
+        // Helper to get chronological sort weight for an event entry
+        const getSortTime = (ev: any) => {
+            const dStr = ev.day || '';
+            const tStr = ev.time || '';
+            const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+
+            // 1. Date Range Priority (Single occurrence events)
+            const rangeMatch = (dStr + tStr).match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
+            if (rangeMatch) return new Date(rangeMatch[1] + '-' + rangeMatch[2] + '-' + rangeMatch[3]).getTime();
+
+            // 2. Weekly Recurring
+            const firstDay = (dStr + tStr).match(/[월화수목금토일]/)?.[0];
+            const timeMatch = (dStr + tStr).match(/(\d{2}:\d{2})/)?.[1] || '00:00';
+            if (firstDay) {
+                const [h, m] = timeMatch.split(':').map(Number);
+                return dayMap[firstDay] * 86400000 + h * 3600000 + m * 60000;
+            }
+            return 9999999999999;
+        };
+
+        // Pre-calculate group-level data: minTime, hasActive, allExpired, count
+        const groupData: { [key: string]: { minTime: number, hasActive: boolean, allExpired: boolean, count: number } } = {};
+        processedList.forEach(e => {
+            const groupId = getBundleId(e);
+            const sTime = getSortTime(e);
+            const active = isEventActive(e);
+            const expired = isEventExpired(e);
+
+            if (!groupData[groupId]) {
+                groupData[groupId] = { minTime: sTime, hasActive: active, allExpired: expired, count: 1 };
+            } else {
+                if (sTime < groupData[groupId].minTime) groupData[groupId].minTime = sTime;
+                if (active) groupData[groupId].hasActive = true;
+                groupData[groupId].allExpired = groupData[groupId].allExpired && expired;
+                groupData[groupId].count += 1;
+            }
+        });
+
         return processedList.sort((a, b) => {
-            const activeA = isEventActive(a);
-            const activeB = isEventActive(b);
-            const expiredA = isEventExpired(a);
-            const expiredB = isEventExpired(b);
+            const groupIdA = getBundleId(a);
+            const groupIdB = getBundleId(b);
+            const gDataA = groupData[groupIdA];
+            const gDataB = groupData[groupIdB];
 
-            if (activeA && !activeB) return -1;
-            if (!activeA && activeB) return 1;
-            if (!expiredA && expiredB) return -1;
-            if (expiredA && !expiredB) return 1;
+            // Priority 1: Group Active Status (If any member is active, move whole group up)
+            if (gDataA.hasActive && !gDataB.hasActive) return -1;
+            if (!gDataA.hasActive && gDataB.hasActive) return 1;
 
-            // [Representative's Guidance] Prioritize Team Split events to the top of the list 
-            // to ensure they pair up and minimize layout gaps from single events.
-            const isTeamA = a.isBearSplit || a.isFoundrySplit || a.isFortressSplit;
-            const isTeamB = b.isBearSplit || b.isFoundrySplit || b.isFortressSplit;
-            if (isTeamA && !isTeamB) return -1;
-            if (!isTeamA && isTeamB) return 1;
+            // Priority 2: Group Expired Status (Only move to bottom if ALL members are expired)
+            if (!gDataA.allExpired && gDataB.allExpired) return -1;
+            if (gDataA.allExpired && !gDataB.allExpired) return 1;
 
-            // Better Sort: Chronological based on the current week's occurrence
-            const getSortTime = (ev: any) => {
-                const dStr = ev.day || '';
-                const tStr = ev.time || '';
-                const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+            // Priority 3: Bundle Priority (Keep bundles together at the top of each section to ensure side-by-side layout)
+            const isBundleA = gDataA.count > 1;
+            const isBundleB = gDataB.count > 1;
+            if (isBundleA && !isBundleB) return -1;
+            if (!isBundleA && isBundleB) return 1;
 
-                // 1. Date Range Priority
-                const rangeMatch = (dStr + tStr).match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
-                if (rangeMatch) return new Date(rangeMatch[1] + '-' + rangeMatch[2] + '-' + rangeMatch[3]).getTime();
+            // Priority 4: Group Sort Time (Keep groups together by earliest member's time)
+            if (gDataA.minTime !== gDataB.minTime) return gDataA.minTime - gDataB.minTime;
 
-                // 2. Weekly Recurring
-                const firstDay = (dStr + tStr).match(/[월화수목금토일]/)?.[0];
-                const timeMatch = (dStr + tStr).match(/(\d{2}:\d{2})/)?.[1] || '00:00';
-                if (firstDay) {
-                    const [h, m] = timeMatch.split(':').map(Number);
-                    return dayMap[firstDay] * 86400000 + h * 3600000 + m * 60000;
-                }
-                return 9999999999999;
-            };
+            // Priority 5: Strict Group ID grouping (for groups with same time)
+            if (groupIdA !== groupIdB) return groupIdA.localeCompare(groupIdB);
 
-            const sortA = getSortTime(a);
-            const sortB = getSortTime(b);
-            if (sortA !== sortB) return sortA - sortB;
+            // Priority 6: Internal Order
+            // Team Order (1군 < 2군)
+            const teamA = a.teamLabel ? (parseInt(a.teamLabel) || (a.teamLabel.includes('1') ? 1 : 2)) : 0;
+            const teamB = b.teamLabel ? (parseInt(b.teamLabel) || (b.teamLabel.includes('1') ? 1 : 2)) : 0;
+            if (teamA !== teamB) return teamA - teamB;
 
+            // Fortress/Citadel Priority (요새 < 성채)
+            if (a.title.includes('요새') && b.title.includes('성채')) return -1;
+            if (a.title.includes('성채') && b.title.includes('요새')) return 1;
+
+            // Priority 7: Title Alphabetical
             return (a.title || '').localeCompare(b.title || '');
         });
     }, [schedules, now]);
@@ -1859,35 +1940,49 @@ export default function Home() {
             );
         }
 
-        // 2. Grouped Day Case: "화(22:00), 목(23:00), 토(22:00)" or similar
-        const dayTimeMatches = Array.from(timeStr.matchAll(/([일월화수목금토])\((\d{2}:\d{2})\)/g));
+        // 2. Grouped Day Case: "요새7 금(23:00), 요새10 금(23:00)" or "요새7 금 23:00"
+        const dayTimeMatches = Array.from(timeStr.matchAll(/(.*?)\s*([일월화수목금토])\(?(\d{2}:\d{2})\)?/g));
         if (dayTimeMatches.length > 0) {
-            const groups: { [time: string]: string[] } = {};
+            const groups: { [key: string]: { label: string, time: string, days: string[] } } = {};
             dayTimeMatches.forEach(m => {
-                const day = m[1];
-                const time = m[2];
-                if (!groups[time]) groups[time] = [];
-                groups[time].push(day);
+                const rawLabel = m[1].trim();
+                const day = m[2];
+                const time = m[3];
+                // Refine label: remove redundant prefixes and cleaning boundaries
+                let label = rawLabel.replace(/.*(요새전|성채전)[:\s：]*/g, '').replace(/^[:，,：\-\s\(\[\{\/]+/, '').replace(/[:，,：\-\s\)\]\}\/]+$/, '').trim();
+
+                // Filter out labels that are just a list of days or separators (to avoid [화, 목] artifacts)
+                const isDayOnly = label && /^[일월화수목금토\s,·\/\(\)\[\]\:\：]+$/.test(label);
+                if (isDayOnly) label = '';
+
+                const key = `${label}|${time}`;
+                if (!groups[key]) groups[key] = { label, time, days: [] };
+                groups[key].days.push(day);
             });
 
-            const resultParts = Object.entries(groups).map(([time, days]) => {
-                return { days: days.join('·'), time };
-            });
+            const resultParts = Object.values(groups);
 
             return (
-                <Text
-                    adjustsFontSizeToFit
-                    numberOfLines={2}
-                    minimumFontScale={0.7}
-                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
-                >
+                <View className="flex-col gap-1.5">
                     {resultParts.map((part, i) => (
-                        <React.Fragment key={i}>
-                            {i > 0 && " / "}
-                            {renderWithHighlightedDays(part.days, isUpcomingSoon)} {part.time}
-                        </React.Fragment>
+                        <View key={i} className="flex-row items-center mb-1 last:mb-0">
+                            <Ionicons
+                                name="time-outline"
+                                size={14}
+                                color={isDark ? '#475569' : '#94a3b8'}
+                                style={{ marginRight: 6 }}
+                            />
+                            <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}>
+                                {renderWithHighlightedDays(part.days.join('·'), isUpcomingSoon)} {part.time}
+                            </Text>
+                            {part.label ? (
+                                <View className={`ml-2 px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                    <Text style={{ fontSize: 12 * fontSizeScale, fontWeight: '700', color: isDark ? '#94a3b8' : '#64748b' }}>{part.label}</Text>
+                                </View>
+                            ) : null}
+                        </View>
                     ))}
-                </Text>
+                </View>
             );
         }
 
@@ -1968,7 +2063,7 @@ export default function Home() {
                         showCustomAlert('연맹원 전용', '이 기능은 연맹원 로그인이 필요합니다.', 'error');
                         return;
                     }
-                    router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId } });
+                    router.push({ pathname: '/growth/events', params: { focusId: event.originalEventId || event.eventId, viewMode: viewMode } });
                 }}
                 style={({ pressed, hovered }: any) => [
                     {
@@ -2043,7 +2138,7 @@ export default function Home() {
                                             {(() => {
                                                 let activeStr = displayTime || displayDay || '-';
                                                 if (displayDay && displayTime && !displayTime.includes(displayDay)) {
-                                                    if (!event.isBearSplit && !event.isFoundrySplit) activeStr = `${displayDay} ${displayTime}`;
+                                                    if (!event.isBearSplit && !event.isFoundrySplit && !event.isCanyonSplit) activeStr = `${displayDay} ${displayTime}`;
                                                 }
                                                 return formatEventTimeCompact(convertTime(activeStr), checkIsSoon(toLocal(activeStr)));
                                             })()}
@@ -2119,7 +2214,7 @@ export default function Home() {
 
                                             // Combine day and time if they are separate and shouldn't be
                                             if (displayDay && displayTime && !displayTime.includes(displayDay)) {
-                                                if (!event.isBearSplit && !event.isFoundrySplit) {
+                                                if (!event.isBearSplit && !event.isFoundrySplit && !event.isCanyonSplit) {
                                                     finalStr = `${displayDay}(${displayTime})`;
                                                 }
                                             }
@@ -2129,7 +2224,6 @@ export default function Home() {
 
                                             return (
                                                 <View className="flex-row items-start mt-1 pr-1">
-                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 6, marginTop: 4 }} />
                                                     <View className={`flex-1 ${isExpired ? 'opacity-50' : ''}`}>
                                                         {/* UI 표시는 선택된 타임존(convertTime)으로, '곧 시작' 체크는 항상 로컬(toLocal) 기준으로 수행 */}
                                                         {formatEventTimeCompact(convertTime(finalStr), checkIsSoon(toLocal(finalStr)))}
@@ -2997,7 +3091,7 @@ export default function Home() {
                         {/* Feature Cards Grid */}
                         <View className="flex-row flex-wrap gap-4 mb-8 w-full justify-center">
                             {[
-                                { id: 'events', label: '이벤트', desc: '연맹전략 및 일정', icon: 'calendar', path: '/growth/events', color: '#38bdf8', lightColor: '#3b82f6', iconBg: isDark ? 'from-blue-500/30 to-indigo-500/30' : 'from-sky-50 to-blue-100' },
+                                { id: 'events', label: '이벤트', desc: '연맹전략 및 일정', icon: 'calendar', path: '/growth/events', params: { viewMode: viewMode }, color: '#38bdf8', lightColor: '#3b82f6', iconBg: isDark ? 'from-blue-500/30 to-indigo-500/30' : 'from-sky-50 to-blue-100' },
                                 { id: 'strategy', label: '전략 문서', desc: '배치도 및 공지', icon: 'map', path: '/strategy-sheet', color: '#10b981', lightColor: '#059669', iconBg: isDark ? 'from-emerald-500/30 to-green-500/30' : 'from-emerald-50 to-green-100' },
                                 { id: 'hero', label: '영웅 정보', desc: '스탯 및 스킬', icon: 'people', path: '/hero-management', color: '#38bdf8', lightColor: '#2563eb', iconBg: isDark ? 'from-cyan-500/30 to-blue-500/30' : 'from-cyan-50 to-blue-100' }
                             ].map((card) => (
@@ -3337,7 +3431,7 @@ export default function Home() {
                                                                     showCustomAlert('연맹원 전용', '이 기능은 연맹원 로그인이 필요합니다.', 'error');
                                                                     return;
                                                                 }
-                                                                router.push({ pathname: '/growth/events', params: { focusId: ev.originalEventId || ev.eventId } });
+                                                                router.push({ pathname: '/growth/events', params: { focusId: ev.originalEventId || ev.eventId, viewMode: viewMode } });
                                                             }}
                                                             checkIsOngoing={isEventActive}
                                                         />

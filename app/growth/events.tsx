@@ -342,12 +342,12 @@ const EventCard = memo(({
                 </View>
                 <View className="p-4 flex-1 justify-between">
                     <View className="mb-4">
-                        {(!event.day && !event.time) ? (
+                        {(!event.day && (!event.time || !event.time.trim())) ? (
                             <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
                                 <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다</Text>
                             </View>
                         ) : (
-                            event.day && !event.time && event.day !== '상설' && event.day !== '상시' ? (
+                            event.day && (!event.time || !event.time.trim() || DATE_RANGE_IDS.includes(event.id)) && event.day !== '상설' && event.day !== '상시' ? (
                                 <View className={`w-full rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                                     <View className={`${isDark ? 'bg-black/20' : 'bg-white'}`}>
                                         {event.day.split('/').map((d, dIdx) => {
@@ -364,7 +364,7 @@ const EventCard = memo(({
                             ) : null
                         )}
                         {event.time && (() => {
-                            const isBearOrFoundry = event.id === 'a_bear' || event.id === 'alliance_bear' || event.id === 'a_foundry' || event.id === 'alliance_foundry';
+                            const isBearOrFoundry = event.id === 'a_bear' || event.id === 'alliance_bear' || event.id === 'a_foundry' || event.id === 'alliance_foundry' || event.id === 'alliance_canyon';
                             const parts = event.time.split(' / ').filter((p: string) => p.trim());
                             const hasMultipleParts = parts.length > 1;
                             const selectedTab = selectedTeamTab || 0;
@@ -414,7 +414,7 @@ const EventCard = memo(({
                                                             <View className="flex-row items-center flex-1">
                                                                 {(() => {
                                                                     const displayStr = formatDisplayDate(formatted, timezone);
-                                                                    const isSpecialTarget = event.title.includes('조이') || event.title.includes('무기공장');
+                                                                    const isSpecialTarget = false;
 
                                                                     // Check for Day(Time) format
                                                                     const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
@@ -489,17 +489,60 @@ const EventCard = memo(({
                                                 <View className="flex-col">
                                                     {content.split(/[,|]/).map((item: string, iIdx: number) => {
                                                         const trimmedItem = item.trim();
-                                                        const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                        // Extract Name if exists (e.g., "Fortress1 Sat(23:00)" or "Fortress1 Sat 23:00")
+                                                        // We assume the standard format from backend is "Name Day(HH:mm)" or "Name Day HH:mm"
+                                                        // Let's try to capture the name before the day.
+                                                        const nameMatch = trimmedItem.match(/^(.*?)\s*([일월화수목금토])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                        let displayName = '';
+                                                        let displayDay = '';
+                                                        let displayTime = '';
+                                                        let fullDisplayStr = '';
+
+                                                        if (nameMatch && nameMatch[1].trim()) {
+                                                            displayName = nameMatch[1].trim();
+                                                            displayDay = nameMatch[2];
+                                                            displayTime = nameMatch[3];
+                                                        } else {
+                                                            const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                            fullDisplayStr = formatDisplayDate(formatted, timezone);
+                                                        }
+
                                                         const isSlotOngoing = checkItemOngoing(trimmedItem);
+
                                                         return (
                                                             <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-blue-600/20' : 'bg-blue-50') : ''}`}>
                                                                 <View className="flex-row items-center flex-1">
                                                                     {(() => {
-                                                                        const displayStr = formatDisplayDate(formatted, timezone);
-                                                                        const isSpecialTarget = event.title.includes('조이') || event.title.includes('무기공장');
+                                                                        if (displayName && displayDay && displayTime) {
+                                                                            return (
+                                                                                <View className="flex-row items-center">
+                                                                                    {/* Render based on Event Type Style */}
+                                                                                    {event.id === 'a_fortress' || event.id === 'a_citadel' ? (
+                                                                                        <>
+                                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
+                                                                                            <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayTime}</Text>
+                                                                                            {/* Badge for Name */}
+                                                                                            <View className={`ml-3 px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                                                                                <Text className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayName}</Text>
+                                                                                            </View>
+                                                                                        </>
+                                                                                    ) : (
+                                                                                        // Fallback for other events if they match this pattern (unlikely but safe)
+                                                                                        <>
+                                                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayName} {displayDay} {displayTime}</Text>
+                                                                                        </>
+                                                                                    )}
+                                                                                </View>
+                                                                            );
+                                                                        }
 
-                                                                        // Check for Day(Time) format
-                                                                        const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
+                                                                        const isSpecialTarget = false;
+                                                                        const dtMatch = fullDisplayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
 
                                                                         if (dtMatch && isSpecialTarget) {
                                                                             const [_, d, t] = dtMatch;
@@ -528,7 +571,7 @@ const EventCard = memo(({
                                                                         return (
                                                                             <View className="flex-row items-center">
                                                                                 <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{fullDisplayStr || trimmedItem}</Text>
                                                                             </View>
                                                                         );
                                                                     })()}
@@ -1048,6 +1091,7 @@ export default function EventTracker() {
     // Track selected team tab for bear/foundry events (eventId -> tab index)
     const [selectedTeamTabs, setSelectedTeamTabs] = useState<{ [eventId: string]: number }>({});
     const [activeNamePickerId, setActiveNamePickerId] = useState<string | null>(null);
+    const [selectedFortressName, setSelectedFortressName] = useState<string>('');
 
     // Firebase Event Schedules removed from here (moved up)
 
@@ -1071,7 +1115,11 @@ export default function EventTracker() {
                         'a_joe': 'alliance_joe',
                         'alliance_joe': 'a_joe',
                         'a_champ': 'alliance_champion',
-                        'alliance_champion': 'a_champ'
+                        'alliance_champion': 'a_champ',
+                        'a_citadel': 'alliance_citadel',
+                        'alliance_citadel': 'a_citadel',
+                        'a_fortress': 'alliance_fortress',
+                        'alliance_fortress': 'a_fortress'
                     };
                     return idMap[eid] === sid;
                 });
@@ -1522,6 +1570,54 @@ export default function EventTracker() {
         setSlots(newS);
     };
 
+    const addFortressSlot = () => {
+        if (!selectedFortressName) {
+            showCustomAlert('알림', (editingEvent?.id === 'a_fortress') ? '요새를 선택해주세요.' : '성채를 선택해주세요.', 'warning');
+            return;
+        }
+
+        const isFortress = editingEvent?.id === 'a_fortress';
+        const list = isFortress ? fortressList : citadelList;
+        const setList = isFortress ? setFortressList : setCitadelList;
+
+        if (editingSlotId) {
+            const newList = list.map(item => item.id === editingSlotId ? { ...item, name: selectedFortressName, day: selectedDayForSlot, h: editHour, m: editMinute } : item);
+            setList(newList);
+            setEditingSlotId(null);
+            setSelectedFortressName('');
+            return;
+        }
+
+        // Check duplicate
+        const isDuplicate = list.some(item => item.name === selectedFortressName && item.day === selectedDayForSlot && item.h === editHour && item.m === editMinute);
+        if (isDuplicate) {
+            showCustomAlert('중복', '이미 동일한 설정이 존재합니다.', 'warning');
+            return;
+        }
+
+        const newItem = {
+            id: Date.now().toString(),
+            name: selectedFortressName,
+            day: selectedDayForSlot,
+            h: editHour,
+            m: editMinute
+        };
+
+        setList([...list, newItem]);
+        // Don't reset name to allow multiple adds for same fortress easily
+    };
+
+    const removeFortressSlot = (id: string) => {
+        const isFortress = editingEvent?.id === 'a_fortress';
+        const list = isFortress ? fortressList : citadelList;
+        const setList = isFortress ? setFortressList : setCitadelList;
+        setList(list.filter(item => item.id !== id));
+        if (editingSlotId === id) {
+            setEditingSlotId(null);
+            setSelectedFortressName('');
+        }
+    };
+
     const saveStrategy = useCallback(async (targetEvent: WikiEvent) => {
         if (targetEvent) {
             const updatedEvents = events.map(e =>
@@ -1589,6 +1685,7 @@ export default function EventTracker() {
         setActiveTab(currentTabIdx === 0 ? 1 : 2);
         setActiveNamePickerId(null); // Clear any open name pickers
         setActiveFortressDropdown(null); // Clear any open time pickers
+        setSelectedFortressName('');
 
 
 
@@ -2066,7 +2163,7 @@ export default function EventTracker() {
                     <View className={`pt-12 pb-2 px-6 border-b ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                         <View className="flex-row items-center mb-4">
                             <TouchableOpacity
-                                onPress={() => router.replace('/')}
+                                onPress={() => router.replace({ pathname: '/', params: { viewMode: params.viewMode } })}
                                 className={`mr-4 w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
                             >
                                 <Ionicons name="arrow-back-outline" size={20} color={isDark ? "white" : "#1e293b"} />
@@ -2440,7 +2537,7 @@ export default function EventTracker() {
                                 setActiveNamePickerId(null);
                             }}
                             className={`p-0 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}
-                            style={{ height: editingEvent?.id === 'a_fortress' ? '70%' : 'auto', maxHeight: '90%' }}
+                            style={{ height: editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? '85%' : 'auto', maxHeight: '90%' }}
                         >
                             <View className="px-6 pt-5 pb-1 flex-row justify-between items-start" style={{ zIndex: (!!activeDateDropdown || hourDropdownVisible || minuteDropdownVisible || !!activeFortressDropdown || !!activeNamePickerId) ? 1 : 100 }}>
                                 <View className="flex-1 mr-4">
@@ -2454,6 +2551,7 @@ export default function EventTracker() {
                                         <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                             {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'alliance_champion' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
                                         </Text>
+
                                     </>
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
@@ -2463,143 +2561,106 @@ export default function EventTracker() {
 
                             <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: (activeDateDropdown || activeFortressDropdown || activeNamePickerId || hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
                                 {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
-                                    <View className="flex-1" style={{ overflow: 'visible', zIndex: activeFortressDropdown ? 200 : 1 }}>
-                                        <View className="flex-row justify-end items-center mt-6 mb-2 px-4" style={{ zIndex: 10 }}>
-                                            <TouchableOpacity onPress={() => editingEvent?.id === 'a_fortress'
-                                                ? setFortressList([...fortressList, { id: Date.now().toString(), name: `요새 ${fortressList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '토' }])
-                                                : setCitadelList([...citadelList, { id: Date.now().toString(), name: `성채 ${citadelList.length + 1}`, h: new Date().getHours().toString().padStart(2, '0'), m: '00', day: '일' }])
-                                            } className="bg-brand-accent px-5 py-3 rounded-2xl shadow-xl shadow-brand-accent/30 active:scale-95 flex-row items-center border border-white/20"><Ionicons name="add" size={20} color="#0f172a" style={{ marginRight: 4 }} /><Text className="text-brand-dark font-black text-sm">추가</Text></TouchableOpacity>
-                                        </View>
-                                        <ScrollView
-                                            className="flex-1"
-                                            contentContainerStyle={{ paddingBottom: 80, paddingTop: 10 }}
-                                            style={{ overflow: 'visible' }}
-                                        >
-                                            {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length === 0 ? (
-                                                <View className="items-center justify-center py-6 bg-slate-800/20 rounded-[32px] border border-slate-700/30 border-dashed mx-2">
-                                                    <View className="w-16 h-16 rounded-full bg-slate-800 items-center justify-center mb-4"><Ionicons name={editingEvent?.id === 'a_fortress' ? "shield-outline" : "business-outline"} size={32} color="#475569" /></View>
-                                                    <Text className="text-slate-400 font-bold">등록된 일정이 없습니다.</Text>
-                                                    <Text className="text-slate-600 text-xs mt-1">상단의 추가 버튼을 눌러주세요.</Text>
+                                    <View className="flex-1 mt-6">
+                                        <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={{ overflow: 'visible' }} showsVerticalScrollIndicator={false} className="flex-1">
+                                            <View className="mb-2">
+                                                <View className="flex-row items-center mb-2">
+                                                    <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">등록된 일정</Text>
                                                 </View>
-                                            ) : (editingEvent?.id === 'a_fortress' ? fortressList : citadelList).map((item, idx) => {
-                                                const isNamePickerOpen = activeNamePickerId === item.id;
-                                                const isTimePickerOpen = activeFortressDropdown?.id === item.id;
-                                                const listLength = (editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length;
-                                                const cardZIndex = (isNamePickerOpen || isTimePickerOpen) ? 10000 : (listLength - idx);
+                                                <View className="flex-row flex-wrap gap-2">
+                                                    {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).map(slot => (
+                                                        <TouchableOpacity key={slot.id} onPress={() => { setSelectedFortressName(slot.name); setSelectedDayForSlot(slot.day || '토'); setEditHour(slot.h); setEditMinute(slot.m); if (editingSlotId === slot.id) { setEditingSlotId(null); setSelectedFortressName(''); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}>
+                                                            <Text className="text-white text-xs font-bold mr-2">{slot.name} {slot.day}({slot.h}:{slot.m})</Text>
+                                                            <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeFortressSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity>
+                                                        </TouchableOpacity>
+                                                    ))}
+                                                    {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length === 0 && (
+                                                        <View className={`w-full h-8 flex-row items-center justify-center border border-dashed rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}>
+                                                            <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
+                                                            <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>일정 없음</Text>
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
 
-                                                return (
-                                                    <View key={item.id} style={{ zIndex: cardZIndex }} className={`bg-slate-800/40 p-5 rounded-[32px] mb-2 border ${isTimePickerOpen ? 'border-sky-500/50 bg-slate-800/60' : 'border-slate-700/30'}`}>
-                                                        <View className="flex-row justify-between items-center mb-4" style={{ zIndex: isNamePickerOpen ? 20 : 1 }}>
-                                                            <View className="flex-row items-center">
-                                                                <View className="w-8 h-8 rounded-full bg-sky-500/20 items-center justify-center mr-3"><Text className="text-sky-400 font-black text-xs">{idx + 1}</Text></View>
-                                                                <OptionPicker
-                                                                    value={item.name}
-                                                                    options={editingEvent?.id === 'a_fortress' ? FORTRESS_OPTIONS : CITADEL_OPTIONS}
-                                                                    onSelect={(v) => {
-                                                                        if (editingEvent?.id === 'a_fortress') {
-                                                                            const newList = [...fortressList]; newList[idx].name = v; setFortressList(newList);
-                                                                        } else {
-                                                                            const newList = [...citadelList]; newList[idx].name = v; setCitadelList(newList);
-                                                                        }
-                                                                    }}
-                                                                    label={editingEvent?.id === 'a_fortress' ? "요새 선택" : "성채 선택"}
-                                                                    isDark={isDark}
-                                                                    direction={idx > 0 ? 'up' : 'down'}
-                                                                    isOpen={isNamePickerOpen}
-                                                                    onToggle={(v) => {
-                                                                        if (v) { setActiveNamePickerId(item.id); setActiveFortressDropdown(null); }
-                                                                        else { setActiveNamePickerId(null); }
-                                                                    }}
-                                                                />
-                                                            </View>
-                                                            <TouchableOpacity onPress={() => {
-                                                                if (editingEvent?.id === 'a_fortress') {
-                                                                    setFortressList(fortressList.filter(i => i.id !== item.id));
-                                                                } else {
-                                                                    setCitadelList(citadelList.filter(i => i.id !== item.id));
-                                                                }
-                                                            }} className="w-10 h-10 rounded-full bg-red-500/10 items-center justify-center border border-red-500/20"><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
-                                                        </View>
-                                                        <View className="flex-row gap-2">
-                                                            {['월', '화', '수', '목', '금', '토', '일'].map(d => (
-                                                                <TouchableOpacity key={d} onPress={() => {
-                                                                    if (editingEvent?.id === 'a_fortress') {
-                                                                        const newList = [...fortressList]; newList[idx].day = d; setFortressList(newList);
-                                                                    } else {
-                                                                        const newList = [...citadelList]; newList[idx].day = d; setCitadelList(newList);
-                                                                    }
-                                                                }} className={`flex-1 h-12 rounded-2xl items-center justify-center border ${item.day === d ? 'bg-sky-500 border-sky-400' : 'bg-slate-900/60 border-slate-700/50'}`}><Text className={`font-black text-xs ${item.day === d ? 'text-slate-950' : 'text-slate-500'}`}>{d}</Text></TouchableOpacity>
-                                                            ))}
-                                                        </View>
-                                                        <View className="flex-row mt-3">
-                                                            <View style={{ flex: 1, marginRight: 8 }}>
+                                            <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
+                                                {/* Name Selector */}
+                                                <View>
+                                                    <View className="flex-row items-center mb-2">
+                                                        <Ionicons name="shield-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{editingEvent?.id === 'a_fortress' ? '요새 선택' : '성채 선택'}</Text>
+                                                    </View>
+                                                    <View className="flex-row flex-wrap gap-2 justify-center">
+                                                        {(editingEvent?.id === 'a_fortress' ? FORTRESS_OPTIONS : CITADEL_OPTIONS).map((name) => {
+                                                            const isSelected = selectedFortressName === name;
+                                                            return (
                                                                 <TouchableOpacity
-                                                                    onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? null : { id: item.id, type: 'h' })}
-                                                                    className="flex-row items-center bg-slate-900/60 p-2.5 rounded-2xl border border-slate-700/50 shadow-inner justify-between"
+                                                                    key={name}
+                                                                    onPress={() => setSelectedFortressName(name)}
+                                                                    className={`px-3 py-1.5 rounded-lg border ${isSelected ? 'bg-brand-accent border-brand-accent' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}`}
                                                                 >
-                                                                    <View className="flex-row items-center"><Ionicons name="time" size={14} color="#38bdf8" style={{ marginRight: 6 }} /><Text className="text-white font-black text-xs">{item.h}시</Text></View>
-                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'h' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
+                                                                    <Text className={`text-[11px] font-bold ${isSelected ? 'text-brand-dark' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{name}</Text>
                                                                 </TouchableOpacity>
-                                                                {activeFortressDropdown?.id === item.id && activeFortressDropdown.type === 'h' && (
-                                                                    <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
-                                                                        <FlatList
-                                                                            data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
-                                                                            renderItem={({ item: h }) => (
-                                                                                <TouchableOpacity
-                                                                                    onPress={() => {
-                                                                                        if (editingEvent?.id === 'a_fortress') {
-                                                                                            const newList = [...fortressList]; newList[idx].h = h; setFortressList(newList);
-                                                                                        } else {
-                                                                                            const newList = [...citadelList]; newList[idx].h = h; setCitadelList(newList);
-                                                                                        }
-                                                                                        setActiveFortressDropdown(null);
-                                                                                    }}
-                                                                                    className={`h-12 items-center justify-center border-b border-white/5 ${item.h === h ? 'bg-sky-500/20' : ''}`}
-                                                                                >
-                                                                                    <Text className={`font-bold text-lg ${item.h === h ? 'text-sky-400' : 'text-slate-400'}`}>{h}시</Text>
-                                                                                </TouchableOpacity>
-                                                                            )}
-                                                                            keyExtractor={h => h}
-                                                                        />
-                                                                    </View>
-                                                                )}
-                                                            </View>
-                                                            <View style={{ flex: 1, zIndex: (activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm') ? 10001 : 1, overflow: 'visible' }}>
-                                                                <TouchableOpacity
-                                                                    onPress={() => setActiveFortressDropdown(activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? null : { id: item.id, type: 'm' })}
-                                                                    className="flex-row items-center bg-slate-900/60 p-2.5 rounded-2xl border border-slate-700/50 shadow-inner justify-between"
-                                                                >
-                                                                    <View className="flex-row items-center"><Ionicons name="time" size={14} color="#38bdf8" style={{ marginRight: 6 }} /><Text className="text-white font-black text-xs">{item.m}분</Text></View>
-                                                                    <Ionicons name={activeFortressDropdown?.id === item.id && activeFortressDropdown?.type === 'm' ? "chevron-up" : "chevron-down"} size={12} color="#64748b" />
-                                                                </TouchableOpacity>
-                                                                {activeFortressDropdown?.id === item.id && activeFortressDropdown.type === 'm' && (
-                                                                    <View className="absolute top-[60px] left-0 right-0 bg-slate-900/80 rounded-2xl border border-slate-700/50 h-48 overflow-hidden shadow-2xl z-[50000] elevation-25">
-                                                                        <FlatList
-                                                                            data={['00', '15', '30', '45']}
-                                                                            renderItem={({ item: m }) => (
-                                                                                <TouchableOpacity
-                                                                                    onPress={() => {
-                                                                                        if (editingEvent?.id === 'a_fortress') {
-                                                                                            const newList = [...fortressList]; newList[idx].m = m; setFortressList(newList);
-                                                                                        } else {
-                                                                                            const newList = [...citadelList]; newList[idx].m = m; setCitadelList(newList);
-                                                                                        }
-                                                                                        setActiveFortressDropdown(null);
-                                                                                    }}
-                                                                                    className={`h-12 items-center justify-center border-b border-white/5 ${item.m === m ? 'bg-sky-500/20' : ''}`}
-                                                                                >
-                                                                                    <Text className={`font-bold text-lg ${item.m === m ? 'text-sky-400' : 'text-slate-400'}`}>{m}분</Text>
-                                                                                </TouchableOpacity>
-                                                                            )}
-                                                                            keyExtractor={m => m}
-                                                                        />
-                                                                    </View>
-                                                                )}
-                                                            </View>
+                                                            );
+                                                        })}
+                                                    </View>
+                                                </View>
+
+                                                {/* Day Selector */}
+                                                <View>
+                                                    <View className="flex-row items-center mb-2">
+                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                        <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일</Text>
+                                                    </View>
+                                                    <View className="flex-row justify-between gap-1">
+                                                        {['월', '화', '수', '목', '금', '토', '일'].map((d) => {
+                                                            const isSelected = selectedDayForSlot === d;
+                                                            return (
+                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`flex-1 h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
+                                                            );
+                                                        })}
+                                                    </View>
+                                                </View>
+
+                                                {/* Time Selector */}
+                                                <View>
+                                                    <View className="flex-row items-center justify-between mb-2">
+                                                        <View className="flex-row items-center">
+                                                            <Ionicons name="alarm-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                            <Text className="text-brand-accent text-xs font-bold uppercase">시간 설정</Text>
+                                                        </View>
+                                                        <View className={`flex-row p-0.5 rounded-lg ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
+                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오전</Text></TouchableOpacity>
+                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오후</Text></TouchableOpacity>
                                                         </View>
                                                     </View>
-                                                );
-                                            })}
+
+                                                    <View className="flex-row flex-wrap justify-between gap-1 mb-2">
+                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h12 => {
+                                                            const curH = parseInt(editHour);
+                                                            const isPM = curH >= 12;
+                                                            const displayH = curH % 12 === 0 ? 12 : curH % 12;
+                                                            const isSelected = displayH === h12;
+                                                            return (
+                                                                <TouchableOpacity key={h12} onPress={() => { let newH = h12; if (isPM) newH = h12 === 12 ? 12 : h12 + 12; else newH = h12 === 12 ? 0 : h12; setEditHour(newH.toString().padStart(2, '0')); }} className={`w-[15%] aspect-square rounded-xl items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-xs font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{h12}</Text></TouchableOpacity>
+                                                            )
+                                                        })}
+                                                    </View>
+                                                    <View className="flex-row justify-between gap-1">
+                                                        {['00', '10', '20', '30', '40', '50'].map(m => {
+                                                            const isSelected = editMinute === m;
+                                                            return (
+                                                                <TouchableOpacity key={m} onPress={() => setEditMinute(m)} className={`flex-1 py-2 rounded-lg items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-[10px] font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{m}</Text></TouchableOpacity>
+                                                            )
+                                                        })}
+                                                    </View>
+                                                </View>
+
+                                                <TouchableOpacity onPress={() => addFortressSlot()} className={`mt-2 w-full ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-3 rounded-xl border items-center flex-row justify-center`}>
+                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 6 }} />
+                                                    <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-bold text-sm`}>{editingSlotId ? '수정 완료' : '이 일정 추가 등록'}</Text>
+                                                </TouchableOpacity>
+                                            </View>
                                         </ScrollView>
                                     </View>
                                 ) : DATE_RANGE_IDS.includes(editingEvent?.id || '') || editingEvent?.category === '개인' ? (
@@ -2639,30 +2700,35 @@ export default function EventTracker() {
                                     </View>
                                 ) : (
                                     <View className="flex-1" style={{ overflow: 'visible', zIndex: (hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
-                                        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }} style={{ overflow: 'visible' }}>
-                                            {(() => {
-                                                const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe', 'alliance_champion'];
-                                                if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
-                                                    return (
-                                                        <View className={`flex-row mb-6 mt-6 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                                            <TouchableOpacity onPress={() => handleTabSwitch(1)} className={`flex-1 py-2 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰1 설정' : '1군 설정'}</Text></TouchableOpacity>
-                                                            <TouchableOpacity onPress={() => handleTabSwitch(2)} className={`flex-1 py-2 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰2 설정' : '2군 설정'}</Text></TouchableOpacity>
-                                                        </View>
-                                                    );
-                                                }
-                                                return null;
-                                            })()}
-                                            {editingEvent?.id !== 'alliance_champion' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
-                                                <View className={`flex-1 ${!(editingEvent?.category === '연맹' && !['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_mobilization', 'alliance_mobilization', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe'].includes(editingEvent?.id || '')) ? 'mt-6' : ''}`}>
+                                        {/* Tabs Section */}
+                                        {(() => {
+                                            const singleSlotIDs = ['a_center', 'alliance_center', 'a_mercenary', 'alliance_mercenary', 'a_immigrate', 'alliance_immigrate', 'a_merge', 'alliance_merge', 'a_svs', 'alliance_svs', 'a_dragon', 'alliance_dragon', 'a_joe', 'alliance_joe', 'alliance_champion'];
+                                            if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
+                                                return (
+                                                    <View className={`flex-row mb-2 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                                        <TouchableOpacity onPress={() => handleTabSwitch(1)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰1 설정' : '1군 설정'}</Text></TouchableOpacity>
+                                                        <TouchableOpacity onPress={() => handleTabSwitch(2)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰2 설정' : '2군 설정'}</Text></TouchableOpacity>
+                                                    </View>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
+
+                                        {editingEvent?.id !== 'alliance_champion' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
+                                            <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={{ overflow: 'visible' }} showsVerticalScrollIndicator={false} className="flex-1">
+                                                <View className="flex-1 justify-between pb-4">
+                                                    {/* Registered Slots List */}
                                                     {editingEvent?.id !== 'a_center' && (
                                                         <View className="mb-2">
-                                                            <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60 mb-2">진행 시간</Text>
+                                                            <View className="flex-row items-center mb-2">
+                                                                <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">등록된 일정</Text>
+                                                            </View>
                                                             <View className="flex-row flex-wrap gap-2">
                                                                 {(activeTab === 1 ? slots1 : slots2).map(slot => {
                                                                     if (slot.isNew) {
                                                                         const backgroundColor = newSlotPulse.interpolate({
                                                                             inputRange: [0, 1],
-                                                                            outputRange: ['rgba(251, 191, 36, 0.1)', 'rgba(251, 191, 36, 0.4)'] // Amber 400/500
+                                                                            outputRange: ['rgba(251, 191, 36, 0.1)', 'rgba(251, 191, 36, 0.4)']
                                                                         });
                                                                         const borderColor = newSlotPulse.interpolate({
                                                                             inputRange: [0, 1],
@@ -2683,111 +2749,68 @@ export default function EventTracker() {
                                                                     );
                                                                 })}
                                                                 {(activeTab === 1 ? slots1 : slots2).length === 0 && (
-                                                                    <View className={`w-full h-[32px] flex-row items-center justify-center border border-dashed rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}>
+                                                                    <View className={`w-full h-8 flex-row items-center justify-center border border-dashed rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}>
                                                                         <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
-                                                                        <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>등록된 일정이 없습니다.</Text>
+                                                                        <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>일정 없음</Text>
                                                                     </View>
                                                                 )}
                                                             </View>
                                                         </View>
                                                     )}
 
-                                                    <View className={`p-4 rounded-2xl mb-4 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'}`}>
-                                                        <View className="flex-row items-center mb-3">
-                                                            <Ionicons name="calendar-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                            <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일 선택</Text>
-                                                        </View>
-                                                        <View className="flex-row flex-wrap gap-2">
-                                                            {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
-                                                                const isSelected = selectedDayForSlot === d;
-                                                                return (
-                                                                    <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-10 h-10 rounded-xl items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
-                                                                );
-                                                            })}
-                                                        </View>
-                                                    </View>
-
+                                                    {/* Input Form */}
                                                     {editingEvent?.id !== 'a_center' && (
-                                                        <View className="mb-4 mt-2">
-                                                            {selectedDayForSlot !== '상시' && (
+                                                        <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
+                                                            {selectedDayForSlot !== '상시' ? (
                                                                 <>
-                                                                    <View className={`p-4 rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'}`}>
-                                                                        <View className="flex-row items-center mb-3">
-                                                                            <Ionicons name="alarm-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                                            <Text className="text-brand-accent text-xs font-bold uppercase">시간 설정</Text>
+                                                                    <View>
+                                                                        <View className="flex-row items-center mb-2">
+                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                            <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일</Text>
                                                                         </View>
-                                                                        <View className="space-y-4">
-                                                                            {/* Hours Section */}
-                                                                            <View>
-                                                                                <View className="flex-row items-center justify-between mb-2">
-                                                                                    <Text className={`text-[11px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>시간 (HOUR)</Text>
-                                                                                    <View className={`flex-row p-0.5 rounded-xl ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
-                                                                                        <TouchableOpacity
-                                                                                            onPress={() => {
-                                                                                                const h = parseInt(editHour);
-                                                                                                if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0'));
-                                                                                            }}
-                                                                                            className={`px-3 py-1 rounded-lg ${parseInt(editHour) < 12 ? 'bg-sky-500 shadow-sm' : ''}`}
-                                                                                        >
-                                                                                            <Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오전</Text>
-                                                                                        </TouchableOpacity>
-                                                                                        <TouchableOpacity
-                                                                                            onPress={() => {
-                                                                                                const h = parseInt(editHour);
-                                                                                                if (h < 12) setEditHour((h + 12).toString().padStart(2, '0'));
-                                                                                            }}
-                                                                                            className={`px-3 py-1 rounded-lg ${parseInt(editHour) >= 12 ? 'bg-sky-500 shadow-sm' : ''}`}
-                                                                                        >
-                                                                                            <Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오후</Text>
-                                                                                        </TouchableOpacity>
-                                                                                    </View>
-                                                                                </View>
-
-                                                                                <View className="flex-row flex-wrap justify-center gap-1.5 px-0.5">
-                                                                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h12 => {
-                                                                                        const curH = parseInt(editHour);
-                                                                                        const isPM = curH >= 12;
-                                                                                        const displayH = curH % 12 === 0 ? 12 : curH % 12;
-                                                                                        const isSelected = displayH === h12;
-
-                                                                                        return (
-                                                                                            <TouchableOpacity
-                                                                                                key={h12}
-                                                                                                onPress={() => {
-                                                                                                    let newH = h12;
-                                                                                                    if (isPM) newH = h12 === 12 ? 12 : h12 + 12;
-                                                                                                    else newH = h12 === 12 ? 0 : h12;
-                                                                                                    setEditHour(newH.toString().padStart(2, '0'));
-                                                                                                }}
-                                                                                                className={`w-[52px] h-[52px] rounded-2xl items-center justify-center border-2 ${isSelected ? 'bg-sky-500 border-sky-400 shadow-sm' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100 shadow-sm')}`}
-                                                                                            >
-                                                                                                <Text className={`text-sm font-black ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{h12.toString().padStart(2, '0')}</Text>
-                                                                                            </TouchableOpacity>
-                                                                                        )
-                                                                                    })}
-                                                                                </View>
-                                                                            </View>
-
-                                                                            {/* Minutes Section */}
-                                                                            <View className="pt-1">
-                                                                                <Text className={`text-[11px] font-black mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>분 (MINUTE)</Text>
-                                                                                <View className="flex-row justify-between gap-1 px-0.5">
-                                                                                    {['00', '10', '20', '30', '40', '50'].map(m => {
-                                                                                        const isSelected = editMinute === m;
-                                                                                        return (
-                                                                                            <TouchableOpacity
-                                                                                                key={m}
-                                                                                                onPress={() => setEditMinute(m)}
-                                                                                                className={`flex-1 py-3 rounded-2xl items-center justify-center border-2 ${isSelected ? 'bg-sky-500 border-sky-400 shadow-sm' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100 shadow-sm')}`}
-                                                                                            >
-                                                                                                <Text className={`text-[10px] font-black ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{m}분</Text>
-                                                                                            </TouchableOpacity>
-                                                                                        )
-                                                                                    })}
-                                                                                </View>
-                                                                            </View>
+                                                                        <View className="flex-row flex-wrap justify-between gap-1">
+                                                                            {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
+                                                                                const isSelected = selectedDayForSlot === d;
+                                                                                return (
+                                                                                    <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
+                                                                                );
+                                                                            })}
                                                                         </View>
                                                                     </View>
+
+                                                                    <View>
+                                                                        <View className="flex-row items-center justify-between mb-2">
+                                                                            <View className="flex-row items-center">
+                                                                                <Ionicons name="alarm-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                                <Text className="text-brand-accent text-xs font-bold uppercase">시간 설정</Text>
+                                                                            </View>
+                                                                            <View className={`flex-row p-0.5 rounded-lg ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
+                                                                                <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오전</Text></TouchableOpacity>
+                                                                                <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오후</Text></TouchableOpacity>
+                                                                            </View>
+                                                                        </View>
+
+                                                                        <View className="flex-row flex-wrap justify-between gap-1 mb-2">
+                                                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h12 => {
+                                                                                const curH = parseInt(editHour);
+                                                                                const isPM = curH >= 12;
+                                                                                const displayH = curH % 12 === 0 ? 12 : curH % 12;
+                                                                                const isSelected = displayH === h12;
+                                                                                return (
+                                                                                    <TouchableOpacity key={h12} onPress={() => { let newH = h12; if (isPM) newH = h12 === 12 ? 12 : h12 + 12; else newH = h12 === 12 ? 0 : h12; setEditHour(newH.toString().padStart(2, '0')); }} className={`w-[15%] aspect-square rounded-xl items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-xs font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{h12}</Text></TouchableOpacity>
+                                                                                )
+                                                                            })}
+                                                                        </View>
+                                                                        <View className="flex-row justify-between gap-1">
+                                                                            {['00', '10', '20', '30', '40', '50'].map(m => {
+                                                                                const isSelected = editMinute === m;
+                                                                                return (
+                                                                                    <TouchableOpacity key={m} onPress={() => setEditMinute(m)} className={`flex-1 py-2 rounded-lg items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-[10px] font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{m}</Text></TouchableOpacity>
+                                                                                )
+                                                                            })}
+                                                                        </View>
+                                                                    </View>
+
                                                                     <View className="flex-row gap-2 mt-2">
                                                                         <TouchableOpacity onPress={() => addTimeSlot()} className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-4 rounded-xl border items-center flex-row justify-center`}>
                                                                             <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 8 }} />
@@ -2803,213 +2826,298 @@ export default function EventTracker() {
                                                                         )}
                                                                     </View>
                                                                 </>
-                                                            )}
-                                                            {selectedDayForSlot === '상시' && (
-                                                                <TouchableOpacity onPress={addTimeSlot} className="bg-brand-accent/20 py-4 rounded-xl border border-brand-accent/40 items-center"><Text className="text-brand-accent font-bold">상시 진행으로 등록</Text></TouchableOpacity>
+                                                            ) : (
+                                                                <View className="flex-1 justify-center">
+                                                                    <View>
+                                                                        <View className="flex-row items-center mb-2">
+                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                            <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일</Text>
+                                                                        </View>
+                                                                        <View className="flex-row flex-wrap justify-between gap-1">
+                                                                            {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
+                                                                                const isSelected = selectedDayForSlot === d;
+                                                                                return (
+                                                                                    <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
+                                                                                );
+                                                                            })}
+                                                                        </View>
+                                                                    </View>
+                                                                    <View className="flex-1 justify-center items-center">
+                                                                        <TouchableOpacity onPress={addTimeSlot} className="bg-brand-accent/20 py-4 px-8 rounded-xl border border-brand-accent/40 items-center"><Text className="text-brand-accent font-bold text-lg">상시 진행으로 등록</Text></TouchableOpacity>
+                                                                    </View>
+                                                                </View>
                                                             )}
                                                         </View>
                                                     )}
                                                 </View>
-                                            )}
-                                        </ScrollView>
+
+                                            </ScrollView>
+                                        )}
                                     </View>
                                 )}
                             </View>
 
-                            {/* Fixed Action Footer with background */}
+                            {/* Schedule Modal Footer */}
                             <View className={`px-6 pt-4 pb-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`} style={{ zIndex: 100 }}>
                                 <View className="flex-row gap-4">
-                                    <TouchableOpacity
-                                        onPress={handleDeleteSchedule}
-                                        className={`flex-1 ${isDark ? 'bg-slate-800/30' : 'bg-slate-100'} py-3.5 rounded-2xl border ${isDark ? 'border-slate-700' : 'border-slate-200'} items-center active:scale-[0.98] transition-all`}
-                                    >
-                                        <Text className={`${isDark ? 'text-slate-600' : 'text-slate-400'} font-bold text-sm`}>설정 초기화</Text>
+                                    <TouchableOpacity onPress={handleDeleteSchedule} className={`flex-1 py-4 rounded-2xl border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>초기화</Text>
                                     </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={saveSchedule}
-                                        className="flex-[2] bg-sky-500 py-3.5 rounded-2xl items-center shadow-xl shadow-sky-500/40 active:scale-[0.98] transition-all"
-                                    >
-                                        <Text className="text-white font-black text-base">저장하기</Text>
+                                    <TouchableOpacity onPress={saveSchedule} className="flex-[2] bg-brand-accent py-4 rounded-2xl items-center justify-center shadow-lg shadow-brand-accent/20">
+                                        <Text className="text-brand-dark font-black text-lg">저장하기</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
+
+                            {/* Global Overlay Picker */}
+                            {(activeNamePickerId || activeFortressDropdown) && (() => {
+                                const isFortress = editingEvent?.id === 'a_fortress';
+                                const list = isFortress ? fortressList : citadelList;
+                                const setList = isFortress ? setFortressList : setCitadelList;
+
+                                let options: string[] = [];
+                                let title = '';
+                                let selectedValue = '';
+                                let onSelect: (v: string) => void = () => { };
+
+                                if (activeNamePickerId) {
+                                    title = isFortress ? '요새 선택' : '성채 선택';
+                                    options = isFortress ? FORTRESS_OPTIONS : CITADEL_OPTIONS;
+                                    const item = list.find(l => l.id === activeNamePickerId);
+                                    selectedValue = item?.name || '';
+                                    onSelect = (v) => {
+                                        const newList = [...list];
+                                        const idx = newList.findIndex(l => l.id === activeNamePickerId);
+                                        if (idx > -1) { newList[idx].name = v; setList(newList); }
+                                        setActiveNamePickerId(null);
+                                    };
+                                } else if (activeFortressDropdown) {
+                                    const { id, type } = activeFortressDropdown;
+                                    const item = list.find(l => l.id === id);
+                                    if (type === 'h') {
+                                        title = '시간 선택';
+                                        options = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
+                                        selectedValue = item?.h || '00';
+                                        onSelect = (v) => {
+                                            const newList = [...list];
+                                            const idx = newList.findIndex(l => l.id === id);
+                                            if (idx > -1) { newList[idx].h = v; setList(newList); }
+                                            setActiveFortressDropdown(null);
+                                        };
+                                    } else {
+                                        title = '분 선택';
+                                        options = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
+                                        selectedValue = item?.m || '00';
+                                        onSelect = (v) => {
+                                            const newList = [...list];
+                                            const idx = newList.findIndex(l => l.id === id);
+                                            if (idx > -1) { newList[idx].m = v; setList(newList); }
+                                            setActiveFortressDropdown(null);
+                                        };
+                                    }
+                                }
+
+                                return (
+                                    <Pressable className="absolute inset-0 bg-black/60 z-[1000] justify-center items-center" onPress={() => { setActiveNamePickerId(null); setActiveFortressDropdown(null); }}>
+                                        <Pressable className={`w-64 max-h-[50%] rounded-2xl overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`} onPress={e => e.stopPropagation()}>
+                                            <View className={`px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
+                                                <Text className={`text-center font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{title}</Text>
+                                            </View>
+                                            <FlatList
+                                                data={options}
+                                                keyExtractor={item => item}
+                                                renderItem={({ item }) => (
+                                                    <TouchableOpacity
+                                                        onPress={() => onSelect(item)}
+                                                        className={`px-4 py-3 border-b items-center justify-center ${isDark ? 'border-slate-700 hover:bg-slate-700' : 'border-slate-100 hover:bg-slate-50'} ${selectedValue === item ? (isDark ? 'bg-sky-500/20' : 'bg-sky-50') : ''}`}
+                                                    >
+                                                        <Text className={`font-semibold ${selectedValue === item ? 'text-sky-500' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>{item}</Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            />
+                                        </Pressable>
+                                    </Pressable>
+                                );
+                            })()}
+
                         </Pressable>
                     </Pressable>
                 </Modal>
-                {/* Attendee Modal */}
-                <Modal visible={attendeeModalVisible} transparent animationType="slide" >
-                    <View className="flex-1 bg-black/90 pt-16">
-                        <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
-                            <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                                <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} 명단 관리</Text>
-                                <View className="flex-row items-center">
-                                    {isAdmin && (
-                                        <TouchableOpacity
-                                            onPress={addAttendeeRow}
-                                            className={`mr-3 px-3 py-2 rounded-full border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        >
-                                            <Ionicons name="add" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 4 }} />
-                                            <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                영주 추가
-                                            </Text>
-                                        </TouchableOpacity>
-                                    )}
-                                    <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
-                                        <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
 
-                            <FlatList
-                                data={bulkAttendees}
-                                keyExtractor={(item, index) => item.id || index.toString()}
-                                renderItem={({ item: attendee, index }) => {
-                                    return (
-                                        <View
-                                            style={{ zIndex: bulkAttendees.length - index, elevation: bulkAttendees.length - index }}
-                                            className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
-                                        >
-                                            <View className="flex-row items-center mb-3" style={{ zIndex: 50, elevation: 50 }}>
-                                                <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                                    <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
-                                                </View>
-                                                <View className="flex-1">
-                                                    <MemberPicker
-                                                        value={attendee.name}
-                                                        onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
-                                                        members={members}
-                                                        isAdmin={!!isAdmin}
-                                                        setOverlayContent={setOverlayContent}
-                                                    />
-                                                    {attendee.penalty && (
-                                                        <Text className="text-[10px] text-red-500 mt-1 font-bold ml-1">
-                                                            {attendee.penalty === 'NO_SHOW' ? '⛔ 무단 불참 (페널티)' : '⚠️ 사전 통보'}
-                                                        </Text>
+                {/* Attendee Management Modal */}
+                <Modal visible={attendeeModalVisible} transparent animationType="slide">
+                    <Pressable className="flex-1 bg-black/80 justify-end" onPress={() => setAttendeeModalVisible(false)}>
+                        <Pressable className="flex-1 justify-end" onPress={() => { }}>
+                            <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
+                                <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                    <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} 명단 관리</Text>
+                                    <View className="flex-row items-center">
+                                        {isAdmin && (
+                                            <TouchableOpacity
+                                                onPress={addAttendeeRow}
+                                                className={`mr-3 px-3 py-2 rounded-full border flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                            >
+                                                <Ionicons name="add" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 4 }} />
+                                                <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                    영주 추가
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )}
+                                        <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                            <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+
+                                <FlatList
+                                    data={bulkAttendees}
+                                    keyExtractor={(item, index) => item.id || index.toString()}
+                                    renderItem={({ item: attendee, index }) => {
+                                        return (
+                                            <View
+                                                style={{ zIndex: bulkAttendees.length - index, elevation: bulkAttendees.length - index }}
+                                                className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
+                                            >
+                                                <View className="flex-row items-center mb-3" style={{ zIndex: 50, elevation: 50 }}>
+                                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
+                                                        <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
+                                                    </View>
+                                                    <View className="flex-1">
+                                                        <MemberPicker
+                                                            value={attendee.name}
+                                                            onSelect={(v) => updateAttendeeField(attendee.id!, 'name', v)}
+                                                            members={members}
+                                                            isAdmin={!!isAdmin}
+                                                            setOverlayContent={setOverlayContent}
+                                                        />
+                                                        {attendee.penalty && (
+                                                            <Text className="text-[10px] text-red-500 mt-1 font-bold ml-1">
+                                                                {attendee.penalty === 'NO_SHOW' ? '⛔ 무단 불참 (페널티)' : '⚠️ 사전 통보'}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                    {!!isAdmin && (
+                                                        <View className="flex-row items-center ml-2">
+                                                            <TouchableOpacity
+                                                                onPress={() => applyPenalty(attendee.id!, attendee.name)}
+                                                                className={`p-3 rounded-xl border mr-2 ${attendee.penalty === 'NO_SHOW' ? 'bg-red-500/20 border-red-500' : (attendee.penalty === 'NOTICE' ? 'bg-yellow-500/20 border-yellow-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'))}`}
+                                                            >
+                                                                <Ionicons
+                                                                    name={attendee.penalty ? "skull" : "skull-outline"}
+                                                                    size={16}
+                                                                    color={attendee.penalty === 'NO_SHOW' ? '#ef4444' : (attendee.penalty === 'NOTICE' ? '#eab308' : (isDark ? '#94a3b8' : '#64748b'))}
+                                                                />
+                                                            </TouchableOpacity>
+                                                            <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
+                                                                <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                                                            </TouchableOpacity>
+                                                        </View>
                                                     )}
                                                 </View>
-                                                {!!isAdmin && (
-                                                    <View className="flex-row items-center ml-2">
-                                                        <TouchableOpacity
-                                                            onPress={() => applyPenalty(attendee.id!, attendee.name)}
-                                                            className={`p-3 rounded-xl border mr-2 ${attendee.penalty === 'NO_SHOW' ? 'bg-red-500/20 border-red-500' : (attendee.penalty === 'NOTICE' ? 'bg-yellow-500/20 border-yellow-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'))}`}
-                                                        >
-                                                            <Ionicons
-                                                                name={attendee.penalty ? "skull" : "skull-outline"}
-                                                                size={16}
-                                                                color={attendee.penalty === 'NO_SHOW' ? '#ef4444' : (attendee.penalty === 'NOTICE' ? '#eab308' : (isDark ? '#94a3b8' : '#64748b'))}
-                                                            />
-                                                        </TouchableOpacity>
-                                                        <TouchableOpacity onPress={() => deleteAttendee(attendee.id!)} className={`p-3 rounded-xl border ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-100'}`}>
-                                                            <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                )}
-                                            </View>
 
-                                            <View className="flex-row space-x-2 pointer-events-auto" style={{ zIndex: 1 }}>
-                                                <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
-                                                <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
-                                                <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
+                                                <View className="flex-row space-x-2 pointer-events-auto" style={{ zIndex: 1 }}>
+                                                    <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
+                                                    <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
+                                                    <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
+                                                </View>
                                             </View>
+                                        )
+                                    }}
+                                    ListEmptyComponent={
+                                        <View className="items-center justify-center py-10 opacity-50">
+                                            <Ionicons name="documents-outline" size={48} color="#94a3b8" />
+                                            <Text className="text-slate-400 mt-4 font-semibold">등록된 참석 명단이 없습니다.</Text>
+                                            <Text className="text-slate-600 text-xs mt-1">관리자가 명단을 추가하면 여기에 표시됩니다.</Text>
                                         </View>
-                                    )
-                                }}
-                                ListEmptyComponent={
-                                    <View className="items-center justify-center py-10 opacity-50">
-                                        <Ionicons name="documents-outline" size={48} color="#94a3b8" />
-                                        <Text className="text-slate-400 mt-4 font-semibold">등록된 참석 명단이 없습니다.</Text>
-                                        <Text className="text-slate-600 text-xs mt-1">관리자가 명단을 추가하면 여기에 표시됩니다.</Text>
-                                    </View>
-                                }
-                                ListFooterComponent={null}
-                                contentContainerStyle={{ padding: 16, paddingBottom: 150 }}
-                                style={{ flex: 1 }}
-                                showsVerticalScrollIndicator={true}
-                                persistentScrollbar={true}
-                                indicatorStyle={isDark ? 'white' : 'black'}
-                                removeClippedSubviews={false}
-                                keyboardShouldPersistTaps="handled"
-                                initialNumToRender={50}
-                                maxToRenderPerBatch={50}
-                                windowSize={21}
-                            />
+                                    }
+                                    ListFooterComponent={null}
+                                    contentContainerStyle={{ padding: 16, paddingBottom: 150 }}
+                                    style={{ flex: 1 }}
+                                    showsVerticalScrollIndicator={true}
+                                    persistentScrollbar={true}
+                                    indicatorStyle={isDark ? 'white' : 'black'}
+                                    removeClippedSubviews={false}
+                                    keyboardShouldPersistTaps="handled"
+                                    initialNumToRender={50}
+                                    maxToRenderPerBatch={50}
+                                    windowSize={21}
+                                />
 
-                            <View className={`p-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                {isAdmin ? (
-                                    <TouchableOpacity onPress={saveAttendees} className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-600/20">
-                                        <Text className="text-white font-bold text-lg">명단 저장 ({bulkAttendees.filter(a => a.name?.trim()).length}명)</Text>
-                                    </TouchableOpacity>
-                                ) : (
-                                    <View className="w-full py-4 items-center">
-                                        <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>관리자만 명단을 수정할 수 있습니다.</Text>
-                                    </View>
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                    {overlayContent}
-                    {penaltyTarget && (
-                        <View className="absolute inset-0 z-50 items-center justify-center bg-black/60">
-                            <View className={`w-80 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ elevation: 100 }}>
-                                <View className="items-center mb-6">
-                                    <View className={`w-12 h-12 rounded-full items-center justify-center mb-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                        <Ionicons name="skull" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
-                                    </View>
-                                    <Text className={`text-lg font-bold text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                                        {penaltyTarget.name}
-                                    </Text>
-                                    <Text className={`text-sm mt-1 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                        불참 사유를 선택해주세요
-                                    </Text>
-                                </View>
-
-                                <View className="space-y-3 w-full">
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            updateAttendeeField(penaltyTarget.id, 'penalty', 'NOTICE');
-                                            setPenaltyTarget(null);
-                                        }}
-                                        className="w-full py-4 bg-yellow-500/10 border border-yellow-500/50 rounded-2xl items-center flex-row justify-center"
-                                    >
-                                        <Ionicons name="warning" size={18} color="#eab308" style={{ marginRight: 8 }} />
-                                        <Text className="text-yellow-500 font-bold">⚠️ 사전 통보 (참작)</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            updateAttendeeField(penaltyTarget.id, 'penalty', 'NO_SHOW');
-                                            setPenaltyTarget(null);
-                                        }}
-                                        className="w-full py-4 bg-red-500/10 border border-red-500/50 rounded-2xl items-center flex-row justify-center"
-                                    >
-                                        <Ionicons name="skull" size={18} color="#ef4444" style={{ marginRight: 8 }} />
-                                        <Text className="text-red-500 font-bold">⛔ 무단 불참 (페널티)</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            updateAttendeeField(penaltyTarget.id, 'penalty', '');
-                                            setPenaltyTarget(null);
-                                        }}
-                                        className={`w-full py-4 border rounded-2xl items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
-                                    >
-                                        <Ionicons name="refresh" size={18} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 8 }} />
-                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>상태 초기화</Text>
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity
-                                        onPress={() => setPenaltyTarget(null)}
-                                        className="w-full py-3 items-center mt-2"
-                                    >
-                                        <Text className={isDark ? 'text-slate-500' : 'text-slate-400'}>취소</Text>
-                                    </TouchableOpacity>
+                                <View className={`p-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                    {isAdmin ? (
+                                        <TouchableOpacity onPress={saveAttendees} className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-600/20">
+                                            <Text className="text-white font-bold text-lg">명단 저장 ({bulkAttendees.filter(a => a.name?.trim()).length}명)</Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        <View className="w-full py-4 items-center">
+                                            <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>관리자만 명단을 수정할 수 있습니다.</Text>
+                                        </View>
+                                    )}
                                 </View>
                             </View>
-                        </View>
-                    )}
+                            {overlayContent}
+                            {penaltyTarget && (
+                                <View className="absolute inset-0 z-50 items-center justify-center bg-black/60">
+                                    <View className={`w-80 p-6 rounded-[32px] border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ elevation: 100 }}>
+                                        <View className="items-center mb-6">
+                                            <View className={`w-12 h-12 rounded-full items-center justify-center mb-3 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                                <Ionicons name="skull" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                            </View>
+                                            <Text className={`text-lg font-bold text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                {penaltyTarget.name}
+                                            </Text>
+                                            <Text className={`text-sm mt-1 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                불참 사유를 선택해주세요
+                                            </Text>
+                                        </View>
+
+                                        <View className="space-y-3 w-full">
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    updateAttendeeField(penaltyTarget.id, 'penalty', 'NOTICE');
+                                                    setPenaltyTarget(null);
+                                                }}
+                                                className="w-full py-4 bg-yellow-500/10 border border-yellow-500/50 rounded-2xl items-center flex-row justify-center"
+                                            >
+                                                <Ionicons name="warning" size={18} color="#eab308" style={{ marginRight: 8 }} />
+                                                <Text className="text-yellow-500 font-bold">⚠️ 사전 통보 (참작)</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    updateAttendeeField(penaltyTarget.id, 'penalty', 'NO_SHOW');
+                                                    setPenaltyTarget(null);
+                                                }}
+                                                className="w-full py-4 bg-red-500/10 border border-red-500/50 rounded-2xl items-center flex-row justify-center"
+                                            >
+                                                <Ionicons name="skull" size={18} color="#ef4444" style={{ marginRight: 8 }} />
+                                                <Text className="text-red-500 font-bold">⛔ 무단 불참 (페널티)</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    updateAttendeeField(penaltyTarget.id, 'penalty', '');
+                                                    setPenaltyTarget(null);
+                                                }}
+                                                className={`w-full py-4 border rounded-2xl items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                            >
+                                                <Ionicons name="refresh" size={18} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 8 }} />
+                                                <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>상태 초기화</Text>
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                onPress={() => setPenaltyTarget(null)}
+                                                className="w-full py-3 items-center mt-2"
+                                            >
+                                                <Text className={isDark ? 'text-slate-500' : 'text-slate-400'}>취소</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            )}
+                        </Pressable>
+                    </Pressable>
                 </Modal>
-
                 {/* Wiki Browser Modal (Web Only) */}
                 <Modal visible={browserVisible && Platform.OS === 'web'
                 } animationType="slide" transparent={false} >

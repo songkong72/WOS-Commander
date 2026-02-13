@@ -68,53 +68,23 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     const KR_DAYS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
     const formatTs = (ts: number) => {
-        // Use an offset-based approach to ensure visibility of the change
         const d = new Date(ts);
         if (timezone === 'UTC') {
-            // Force UTC display by using UTC methods which naturally show the 9-hour difference from KST
             const dw = d.getUTCDay();
             const dy = dayNames[dw];
-            return `${d.getUTCDate()}일(${dy}) ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+            return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${dy}) ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
         }
         const dw = d.getDay();
         const dy = dayNames[dw];
-        return `${d.getDate()}일(${dy}) ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        return `${d.getMonth() + 1}/${d.getDate()}(${dy}) ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
     };
 
     // Core positioning logic used for EVERY bar
     const getPosList = (ev: any) => {
-        const comb = ((ev.day || '') + ' ' + (ev.time || '')).trim();
-        if (!comb || comb === '.') return [];
-        const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean }[] = [];
+        const fullComb = ((ev.day || '') + ' ' + (ev.time || '')).trim();
+        if (!fullComb || fullComb === '.') return [];
 
-        const add = (st: number, et: number, isR: boolean, isWeekly = false) => {
-            const s = Math.max(st, winStart);
-            const e = Math.min(et, winEnd);
-            if (s < e) {
-                const leftPct = (s - winStart) / totalMs * 100;
-                // If it ends beyond the window, force it to fill up to 100%
-                const widthPct = et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
-                res.push({
-                    st, et, isR, isWeekly,
-                    left: `${leftPct.toFixed(4)}%`,
-                    width: `${widthPct.toFixed(4)}%`,
-                    timeText: isR ? `${formatTs(st)} ~ ${formatTs(et)}` : formatTs(st)
-                });
-            }
-        };
-
-        const parseDateVal = (dStr: string, tStr: string) => {
-            const dp = dStr.trim().split(/[\.\-\/]/).map(Number);
-            const tp = tStr.trim().split(':').map(Number);
-            const cy = now.getFullYear();
-            let y, m, d;
-            if (dp.length === 3) { y = dp[0]; m = dp[1]; d = dp[2]; }
-            else if (dp.length === 2) { y = cy; m = dp[0]; d = dp[1]; }
-            else return null;
-            const hh = tp[0], mm = tp[1] || 0;
-            // ALWAYS parse as Local to keep the absolute time fixed, then let formatTs handle the timezone shift
-            return new Date(y, m - 1, d, hh, mm, 0).getTime();
-        };
+        const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean, label?: string }[] = [];
 
         const getLocalStart = () => {
             const d = new Date(now);
@@ -126,77 +96,210 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
         };
         const localStart = getLocalStart();
 
-        // 1. ISO/Fixed Range (e.g., 2026.02.13 09:00 ~ 2026.02.15 09:00)
-        const mIsoRange = comb.match(/(\d{2,4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2})\s*(\d{1,2}:\d{2})\s*~\s*(\d{2,4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2})\s*(\d{1,2}:\d{2})/);
-        if (mIsoRange) {
-            const s = parseDateVal(mIsoRange[1], mIsoRange[2]), e = parseDateVal(mIsoRange[3], mIsoRange[4]);
-            if (s && e) add(s, e, true);
-        }
-        else {
-            const mIsoSingle = comb.match(/(\d{2,4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2})\s*(\d{1,2}:\d{2})/);
-            if (mIsoSingle) {
-                const s = parseDateVal(mIsoSingle[1], mIsoSingle[2]);
-                if (s) add(s, s + 3600000, false); // Default 1 hour for better clickability
-            }
-        }
+        // Split by '/' to handle multiple distinct time slots in one line
+        const parts = fullComb.split(/\s*\/\s*/).filter(p => p.trim());
 
-        // 2. Day-of-Month (fixed day but not ISO)
-        const mDayRange = comb.match(/(\d{1,2})일(?:\s*(\d{1,2}:\d{2}))?\s*~\s*(\d{1,2})일(?:\s*(\d{1,2}:\d{2}))?/);
-        if (mDayRange) {
-            const sD = parseInt(mDayRange[1]), sT = mDayRange[2] || '00:00', eD = parseInt(mDayRange[3]), eT = mDayRange[4] || '23:59';
-            const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
-            for (let o = -1; o <= 1; o++) {
-                const s = new Date(now.getFullYear(), now.getMonth() + o, sD, sh, sm, 0).getTime();
-                let e = new Date(now.getFullYear(), now.getMonth() + o, eD, eh, em, 59).getTime();
-                if (e < s) e = new Date(now.getFullYear(), now.getMonth() + o + 1, eD, eh, em, 59).getTime();
-                add(s, e, true);
+        parts.forEach(part => {
+            const partBars: { st: number, et: number, isR: boolean, isWeekly: boolean, matchedStr: string }[] = [];
+
+            const add = (st: number, et: number, isR: boolean, matchedStr: string, isWeekly = false) => {
+                const s = Math.max(st, winStart);
+                const e = Math.min(et, winEnd);
+                if (s < e) {
+                    partBars.push({ st, et, isR, isWeekly, matchedStr });
+                }
+            };
+
+            const parseDateVal = (dStr: string, tStr: string) => {
+                const dp = dStr.trim().split(/[\.\-\/]/).map(Number);
+                const tp = tStr.trim().split(':').map(Number);
+                const cy = now.getFullYear();
+                let y, m, d;
+                if (dp.length === 3) { y = dp[0]; m = dp[1]; d = dp[2]; }
+                else if (dp.length === 2) { y = cy; m = dp[0]; d = dp[1]; }
+                else return null;
+                const hh = tp[0], mm = tp[1] || 0;
+                // ALWAYS parse as Local to keep the absolute time fixed, then let formatTs handle the timezone shift
+                return new Date(y, m - 1, d, hh, mm, 0).getTime();
+            };
+
+            // 0. Explicit Comma-Separated List (Priority for Fortress/Citadel)
+            // e.g., "요새전: 요새7 금 23:00, 요새10 금 23:00"
+            if (part.includes(',') && /[월화수목금토일]\s*\d{2}:\d{2}/.test(part)) {
+                const subParts = part.split(',');
+                let specificHandled = false;
+
+                subParts.forEach(sp => {
+                    const cleanSp = sp.trim().replace(/^.*(요새전|성채전)[:\s：]*/, '').trim();
+                    const match = cleanSp.match(/(.+?)\s+([월화수목금토일])\s*(\d{2}:\d{2})/);
+
+                    if (match) {
+                        specificHandled = true;
+                        const label = match[1].trim();
+                        const dayStr = match[2];
+                        const timeStr = match[3];
+
+                        const targetIdx = dayNames.indexOf(dayStr);
+                        if (targetIdx !== -1) {
+                            const [sh, sm] = timeStr.split(':').map(Number);
+                            for (let i = 0; i < 8; i++) {
+                                const dAtWin = new Date(localStart + i * dayMs);
+                                if (dAtWin.getDay() === targetIdx) {
+                                    const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
+                                    const et = st + 3600000; // Default 1 hour
+
+                                    // Add directly to res
+                                    const s = Math.max(st, winStart);
+                                    const e = Math.min(et, winEnd);
+                                    if (s < e) {
+                                        const leftPct = (s - winStart) / totalMs * 100;
+                                        const widthPct = et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
+                                        res.push({
+                                            st, et, isR: true, isWeekly: true,
+                                            left: `${leftPct.toFixed(4)}%`,
+                                            width: `${widthPct.toFixed(4)}%`,
+                                            timeText: `${formatTs(st)} ~ ${formatTs(et)}`,
+                                            label: label
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                if (specificHandled) return; // Skip generic parsers
             }
-        }
-        else {
-            const mDaySingle = comb.match(/(\d{1,2})일\s*(\d{1,2}:\d{2})/);
-            if (mDaySingle) {
-                const sD = parseInt(mDaySingle[1]), [sh, sm] = mDaySingle[2].split(':').map(Number);
+
+            // 1. ISO/Fixed Range (e.g., 2026.02.13 09:00 ~ 2026.02.15 09:00)
+            const mIsoRange = part.match(/(\d{2,4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2})\s*(\d{1,2}:\d{2})\s*~\s*(\d{2,4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2})\s*(\d{1,2}:\d{2})/);
+            if (mIsoRange) {
+                const s = parseDateVal(mIsoRange[1], mIsoRange[2]), e = parseDateVal(mIsoRange[3], mIsoRange[4]);
+                if (s && e) add(s, e, true, mIsoRange[0]);
+            }
+            else {
+                const mIsoSingle = part.match(/(\d{2,4}[\.\-\/]\d{1,2}[\.\-\/]\d{1,2})\s*(\d{1,2}:\d{2})/);
+                if (mIsoSingle) {
+                    const s = parseDateVal(mIsoSingle[1], mIsoSingle[2]);
+                    if (s) add(s, s + 3600000, false, mIsoSingle[0]);
+                }
+            }
+
+            // 2. Day-of-Month (fixed day but not ISO)
+            const mDayRange = part.match(/(\d{1,2})일(?:\s*(\d{1,2}:\d{2}))?\s*~\s*(\d{1,2})일(?:\s*(\d{1,2}:\d{2}))?/);
+            if (mDayRange) {
+                const sD = parseInt(mDayRange[1]), sT = mDayRange[2] || '00:00', eD = parseInt(mDayRange[3]), eT = mDayRange[4] || '23:59';
+                const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
                 for (let o = -1; o <= 1; o++) {
                     const s = new Date(now.getFullYear(), now.getMonth() + o, sD, sh, sm, 0).getTime();
-                    add(s, s + 3600000, false); // Default 1 hour
+                    let e = new Date(now.getFullYear(), now.getMonth() + o, eD, eh, em, 59).getTime();
+                    if (e < s) e = new Date(now.getFullYear(), now.getMonth() + o + 1, eD, eh, em, 59).getTime();
+                    add(s, e, true, mDayRange[0]);
                 }
             }
-        }
-
-        // 3. Recurring (Lowest Priority) - Only if not a range handled above
-        const mRec = /(?:^|[^\d])([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?(?:\s*~\s*([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?)?/g;
-        let match;
-        while ((match = mRec.exec(comb)) !== null) {
-            const sW = match[1], sT = match[2], eW = match[3] || sW, eT = match[4] || sT, isR = !!match[3];
-            const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
-
-            if (sW === '매일') {
-                for (let i = 0; i < 8; i++) {
-                    const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                    let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
-                    if (isR && et <= st) et += dayMs;
-                    add(st, isR ? et : st + 3600000, isR, true); // Default 1 hour for single recurring points
+            else {
+                const mDaySingle = part.match(/(\d{1,2})일\s*(\d{1,2}:\d{2})/);
+                if (mDaySingle) {
+                    const sD = parseInt(mDaySingle[1]), [sh, sm] = mDaySingle[2].split(':').map(Number);
+                    for (let o = -1; o <= 1; o++) {
+                        const s = new Date(now.getFullYear(), now.getMonth() + o, sD, sh, sm, 0).getTime();
+                        add(s, s + 3600000, false, mDaySingle[0]);
+                    }
                 }
-            } else {
-                const targetIdx = dayNames.indexOf(sW);
-                if (targetIdx !== -1) {
-                    for (let i = 0; i < 8; i++) {
-                        const dAtWin = new Date(localStart + i * dayMs);
-                        if (dAtWin.getDay() === targetIdx) {
-                            const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                            let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
-                            if (isR) {
-                                if (eW !== sW) {
-                                    const d = (dayNames.indexOf(eW) - dayNames.indexOf(sW) + 7) % 7;
-                                    et += d * dayMs;
-                                } else if (et <= st) et += dayMs;
+            }
+
+            // 2.5 Multi-Day Single Time (e.g., "월, 화, 수 22:00")
+            // This handles cases where multiple days share one time, preventing the "unused days" from becoming a label.
+            const mMultiDay = part.match(/([일월화수목금토](?:\s*,\s*[일월화수목금토])+)\s*(\d{1,2}:\d{2})/);
+            if (mMultiDay) {
+                const daysStr = mMultiDay[1];
+                const timeStr = mMultiDay[2];
+                const days = daysStr.split(',').map(d => d.trim());
+                const [sh, sm] = timeStr.split(':').map(Number);
+
+                days.forEach(dName => {
+                    const targetIdx = dayNames.indexOf(dName);
+                    if (targetIdx !== -1) {
+                        for (let i = 0; i < 8; i++) {
+                            const dAtWin = new Date(localStart + i * dayMs);
+                            if (dAtWin.getDay() === targetIdx) {
+                                const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
+                                const et = st + 3600000; // Default 1 hour
+                                add(st, et, true, mMultiDay[0]);
                             }
-                            add(st, isR ? et : st + 3600000, isR, true);
+                        }
+                    }
+                });
+            }
+
+            // 3. Recurring (Lowest Priority) - Only if not a range handled above
+            const mRec = /(?:^|[^\d])([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?(?:\s*~\s*([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?)?/g;
+            let match;
+            while ((match = mRec.exec(part)) !== null) {
+                const sW = match[1], sT = match[2], eW = match[3] || sW, eT = match[4] || sT, isR = !!match[3];
+                const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
+
+                if (sW === '매일') {
+                    for (let i = 0; i < 8; i++) {
+                        const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
+                        let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
+                        if (isR && et <= st) et += dayMs;
+                        add(st, isR ? et : st + 3600000, isR, match![0], true);
+                    }
+                } else {
+                    const targetIdx = dayNames.indexOf(sW);
+                    if (targetIdx !== -1) {
+                        for (let i = 0; i < 8; i++) {
+                            const dAtWin = new Date(localStart + i * dayMs);
+                            if (dAtWin.getDay() === targetIdx) {
+                                const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
+                                let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
+                                if (isR) {
+                                    if (eW !== sW) {
+                                        const d = (dayNames.indexOf(eW) - dayNames.indexOf(sW) + 7) % 7;
+                                        et += d * dayMs;
+                                    } else if (et <= st) et += dayMs;
+                                }
+                                add(st, isR ? et : st + 3600000, isR, match![0], true);
+                            }
                         }
                     }
                 }
             }
-        }
+
+            // Calculate label for this part (remove matched date strings)
+            let label = part;
+            // Remove all unique matched strings
+            const uniqueMatches = Array.from(new Set(partBars.map(b => b.matchedStr)));
+            uniqueMatches.forEach(mStr => {
+                label = label.replace(mStr, '').trim();
+            });
+            // Cleanup common prefixes/punctuation (e.g., "요새전: 요새7" -> "요새7")
+            label = label.replace(/.*(요새전|성채전)[:\s：]*/g, '').replace(/^[:，,：\-\s]+/, '').replace(/[:，,：\-\s]+$/, '').trim();
+
+            // Filter out redundant day labels (e.g. "화, 목", "월, 화, 수")
+            const isDayOnly = label && /^[일월화수목금토\s,]+$/.test(label);
+            if (isDayOnly) label = '';
+
+            partBars.forEach(b => {
+                const s = Math.max(b.st, winStart);
+                const e = Math.min(b.et, winEnd);
+                const leftPct = (s - winStart) / totalMs * 100;
+                const widthPct = b.et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
+
+                res.push({
+                    st: b.st,
+                    et: b.et,
+                    isR: b.isR,
+                    isWeekly: b.isWeekly,
+                    left: `${leftPct.toFixed(4)}%`,
+                    width: `${widthPct.toFixed(4)}%`,
+                    timeText: b.isR ? `${formatTs(b.st)} ~ ${formatTs(b.et)}` : formatTs(b.st),
+                    label: label || undefined
+                });
+            });
+
+        });
         return res.sort((a, b) => a.st - b.st);
     };
 
@@ -487,7 +590,28 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                     <View key={`tt-bar-${ev.id}-${i}`} className="flex-row items-center">
                                                                                         <View className={`w-1.5 h-1.5 rounded-full mr-3 ${b.st === p.st ? 'bg-orange-500' : 'bg-slate-700'}`} />
                                                                                         <Text className={`text-[12px] ${b.st === p.st ? 'text-orange-300 font-bold' : 'text-slate-400 font-medium'}`}>
-                                                                                            {formatTs(b.st)}{b.isR ? ` ~ ${formatTs(b.et)}` : ''}
+                                                                                            {!!b.label ? (
+                                                                                                <View className="flex-row items-center">
+                                                                                                    <Text className={`text-[12px] font-bold ${b.st === p.st ? 'text-orange-300' : 'text-slate-400'}`}>
+                                                                                                        {dayNames[new Date(b.st).getDay()]}요일
+                                                                                                    </Text>
+                                                                                                    <Text className="text-slate-600 mx-1.5">•</Text>
+                                                                                                    <View className="flex-row items-center mr-2">
+                                                                                                        <Text className={`text-[12px] font-bold ${b.st === p.st ? 'text-white' : 'text-slate-300'}`}>
+                                                                                                            {String(new Date(b.st).getHours()).padStart(2, '0')}:{String(new Date(b.st).getMinutes()).padStart(2, '0')}
+                                                                                                        </Text>
+                                                                                                    </View>
+                                                                                                    <View className={`px-1.5 py-0.5 rounded ${b.st === p.st ? 'bg-orange-500/20' : 'bg-slate-700/50'}`}>
+                                                                                                        <Text className={`text-[10px] font-bold ${b.st === p.st ? 'text-orange-300' : 'text-slate-400'}`}>
+                                                                                                            {b.label}
+                                                                                                        </Text>
+                                                                                                    </View>
+                                                                                                </View>
+                                                                                            ) : (
+                                                                                                <Text className={`text-[12px] ${b.st === p.st ? 'text-orange-300 font-bold' : 'text-slate-400 font-medium'}`}>
+                                                                                                    {formatTs(b.st)}{b.isR ? ` ~ ${formatTs(b.et)}` : ''}
+                                                                                                </Text>
+                                                                                            )}
                                                                                         </Text>
                                                                                     </View>
                                                                                 ))}

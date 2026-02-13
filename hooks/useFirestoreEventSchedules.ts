@@ -23,7 +23,9 @@ const ID_MAP: { [key: string]: string } = {
     'a_weapon': 'alliance_frost_league',
     'a_castle': 'alliance_castle',
     'a_dragon': 'alliance_dragon',
-    'a_svs': 'server_svs_prep'
+    'a_svs': 'server_svs_prep',
+    'alliance_citadel': 'a_citadel',
+    'alliance_fortress': 'a_fortress'
 };
 
 const normalizeId = (id: string) => {
