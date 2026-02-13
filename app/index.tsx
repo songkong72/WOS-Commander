@@ -1676,8 +1676,12 @@ export default function Home() {
                 }
             } else if (e.eventId === 'a_fortress' || e.eventId === 'alliance_fortress') {
                 // Split Fortress Battle into separate 'Fortress' and 'Citadel' events
-                const rawTime = (e.time || '').replace(/\//g, ',');
-                const parts = rawTime.split(',').map(p => p.trim()).filter(p => p);
+                const rawTime = (e.time || '').replace(/\s*\/\s*/g, ', ');
+                const parts = rawTime.split(',').map(p => {
+                    let cleaned = p.trim().replace(/.*(요새전|성채전)[:\s：]*/, '');
+                    // Remove all spaces for Fortress/Citadel names in the split view to match user screenshot (e.g. "요새7")
+                    return cleaned.trim();
+                }).filter(p => p);
 
                 const fortressParts: string[] = [];
                 const citadelParts: string[] = [];
@@ -1697,6 +1701,7 @@ export default function Home() {
                         eventId: `${e.eventId}_fortress`,
                         originalEventId: e.eventId,
                         title: '요새 쟁탈전',
+                        day: '요새',
                         time: fortressParts.join(', '),
                         isFortressSplit: true
                     });
@@ -1709,6 +1714,7 @@ export default function Home() {
                         eventId: `${e.eventId}_citadel`,
                         originalEventId: e.eventId,
                         title: '성채 쟁탈전',
+                        day: '성채',
                         time: citadelParts.join(', '),
                         isFortressSplit: true
                     });
@@ -1982,7 +1988,7 @@ export default function Home() {
         }
 
         // 2. Grouped Day Case: "요새7 금(23:00), 요새10 금(23:00)" or "요새7 금 23:00"
-        const dayTimeMatches = Array.from(timeStr.matchAll(/(.*?)\s*([일월화수목금토])\(?(\d{2}:\d{2})\)?/g));
+        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，\-\s：\:\(\)\[\]/]+)(.*?)\s+([일월화수목금토])\(?(\d{2}:\d{2})\)?/g));
         if (dayTimeMatches.length > 0) {
             const groups: { [key: string]: { label: string, time: string, days: string[] } } = {};
             dayTimeMatches.forEach(m => {
@@ -2004,21 +2010,48 @@ export default function Home() {
             const resultParts = Object.values(groups);
 
             return (
-                <View className="flex-col gap-1.5">
+                <View className="flex-col gap-2.5 mt-2">
                     {resultParts.map((part, i) => (
-                        <View key={i} className="flex-row items-center mb-1 last:mb-0">
+                        <View key={i} className="flex-row items-center">
+                            <Ionicons
+                                name="calendar-outline"
+                                size={16}
+                                color={isDark ? '#38bdf8' : '#2563eb'}
+                                style={{ marginRight: 4 }}
+                            />
+                            <Text style={{
+                                color: isDark ? '#38bdf8' : '#2563eb',
+                                fontSize: 18 * fontSizeScale,
+                                fontWeight: '900'
+                            }}>
+                                {part.days.join('·')}
+                            </Text>
+
+                            <Text style={{ color: isDark ? '#475569' : '#94a3b8', marginHorizontal: 8, fontSize: 18 }}>·</Text>
+
                             <Ionicons
                                 name="time-outline"
-                                size={14}
-                                color={isDark ? '#475569' : '#94a3b8'}
-                                style={{ marginRight: 6 }}
+                                size={16}
+                                color={isDark ? '#cbd5e1' : '#475569'}
+                                style={{ marginRight: 4 }}
                             />
-                            <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}>
-                                {renderWithHighlightedDays(part.days.join('·'), isUpcomingSoon)} {part.time}
+                            <Text style={{
+                                color: isDark ? '#cbd5e1' : '#475569',
+                                fontSize: 18 * fontSizeScale,
+                                fontWeight: '900'
+                            }}>
+                                {part.time}
                             </Text>
+
                             {part.label ? (
-                                <View className={`ml-2 px-1.5 py-0.5 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
-                                    <Text style={{ fontSize: 12 * fontSizeScale, fontWeight: '700', color: isDark ? '#94a3b8' : '#64748b' }}>{part.label}</Text>
+                                <View className={`ml-4 px-2.5 py-1 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                    <Text style={{
+                                        fontSize: 13 * fontSizeScale,
+                                        fontWeight: '900',
+                                        color: isDark ? '#94a3b8' : '#64748b'
+                                    }}>
+                                        {part.label.replace(/\s+/g, '')}
+                                    </Text>
                                 </View>
                             ) : null}
                         </View>
@@ -2132,11 +2165,13 @@ export default function Home() {
                             (eid === 'a_foundry' && sid === 'alliance_foundry') ||
                             (eid === 'alliance_foundry' && sid === 'a_foundry') ||
                             (eid === 'a_fortress' && sid === 'alliance_fortress') ||
-                            (eid === 'alliance_fortress' && sid === 'a_fortress');
+                            (eid === 'alliance_fortress' && sid === 'a_fortress') ||
+                            (eid === 'a_citadel' && sid === 'alliance_fortress') ||
+                            (eid === 'alliance_fortress' && sid === 'a_citadel');
                     });
 
                     const displayDay = currentSchedule?.day || event.day;
-                    const displayTime = (event.isBearSplit || event.isFoundrySplit) ? event.time : (currentSchedule?.time || event.time);
+                    const displayTime = (event.isBearSplit || event.isFoundrySplit || event.isFortressSplit || event.isCanyonSplit) ? event.time : (currentSchedule?.time || event.time);
 
                     return isActive ? (
                         <View className={`w-full rounded-[32px] border ${hovered ? 'border-blue-400' : 'border-blue-500/40'} overflow-hidden bg-slate-950 transition-all`} style={{

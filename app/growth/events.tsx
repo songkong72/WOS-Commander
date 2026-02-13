@@ -380,21 +380,36 @@ const EventCard = memo(({
                             const hasMultipleParts = parts.length > 1;
                             const selectedTab = selectedTeamTab || 0;
                             if (isBearOrFoundry && hasMultipleParts) {
-                                const getTabLabel = (part: string, idx: number) => {
-                                    const trimmed = part.trim();
-                                    const colonIdx = trimmed.indexOf(':');
-                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                    if (colonIdx > -1 && !isTimeColon) return trimmed.substring(0, colonIdx).trim();
+                                const getTabLabel = (part: string | undefined, idx: number) => {
+                                    const trimmed = (part || "").trim();
+                                    const cleaned = trimmed.replace(/.*(요새전|성채전)[:\s：]*/, '').trim();
+                                    const formatted = cleaned.replace(/(요새|성채)(\d+)/g, '$1 $2').trim();
+
+                                    const colonIdx = formatted.indexOf(':');
+                                    if (colonIdx > -1) {
+                                        const isTimeColon = colonIdx > 0 && /\d/.test(formatted[colonIdx - 1]) && /\d/.test(formatted[colonIdx + 1]);
+                                        if (!isTimeColon) return formatted.substring(0, colonIdx).trim();
+                                    }
+
+                                    const nameMatch = formatted.match(/^(.*?)\s+([일월화수목금토]|[매일])/);
+                                    if (nameMatch) return nameMatch[1].trim();
+
                                     return `${idx + 1}군`;
                                 };
+
                                 const selectedContent = ((part: string | undefined) => {
                                     if (!part) return "";
                                     const trimmed = part.trim();
-                                    const colonIdx = trimmed.indexOf(':');
-                                    const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
-                                    if (colonIdx > -1 && !isTimeColon) return trimmed.substring(colonIdx + 1).trim();
-                                    return trimmed;
-                                })(parts[selectedTab]);
+                                    const cleaned = trimmed.replace(/.*(요새전|성채전)[:\s：]*/, '').trim();
+                                    const formatted = cleaned.replace(/(요새|성채)(\d+)/g, '$1 $2').trim();
+
+                                    const colonIdx = formatted.indexOf(':');
+                                    if (colonIdx > -1) {
+                                        const isTimeColon = colonIdx > 0 && /\d/.test(formatted[colonIdx - 1]) && /\d/.test(formatted[colonIdx + 1]);
+                                        if (!isTimeColon) return formatted.substring(colonIdx + 1).trim();
+                                    }
+                                    return formatted;
+                                })(parts[selectedTeamTab]);
                                 return (
                                     <View className="w-full gap-3">
                                         <View className="flex-row gap-2">
@@ -1175,10 +1190,11 @@ export default function EventTracker() {
         for (const d of day.split(',').map(s => s.trim())) {
             const weekday = dayMap[d];
             if (weekday) {
+                // 1. Just-in-time notification (On event start)
                 await Notifications.scheduleNotificationAsync({
                     content: {
                         title: `🏰 이벤트 시작 알림: ${event.title}`,
-                        body: `잠시 후 ${event.title} 이벤트가 시작됩니다! 본부를 수호하세요.`,
+                        body: `${event.title} 이벤트가 지금 시작되었습니다! 본부를 수호하세요.`,
                         sound: true,
                         data: { eventId: event.id },
                     },
@@ -1186,6 +1202,36 @@ export default function EventTracker() {
                         weekday,
                         hour: h,
                         minute: m,
+                        repeats: true,
+                    },
+                });
+
+                // 2. 10-minute warning notification
+                let warnH = h;
+                let warnM = m - 10;
+                let warnWeekday = weekday;
+
+                if (warnM < 0) {
+                    warnM += 60;
+                    warnH -= 1;
+                    if (warnH < 0) {
+                        warnH = 23;
+                        // Rolling back weekday (1: Sunday, 7: Saturday)
+                        warnWeekday = (warnWeekday - 2 + 7) % 7 + 1;
+                    }
+                }
+
+                await Notifications.scheduleNotificationAsync({
+                    content: {
+                        title: `🛎️ 이벤트 10분 전 알림: ${event.title}`,
+                        body: `10분 후 ${event.title} 이벤트가 시작됩니다! 준비하세요.`,
+                        sound: true,
+                        data: { eventId: event.id, isWarning: true },
+                    },
+                    trigger: {
+                        weekday: warnWeekday,
+                        hour: warnH,
+                        minute: warnM,
                         repeats: true,
                     },
                 });
@@ -1913,13 +1959,13 @@ export default function EventTracker() {
             let finalDay = '';
 
             if (editingEvent.id === 'a_fortress') {
-                const fStr = fortressList.length > 0 ? `요새전: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
+                const fStr = fortressList.length > 0 ? fortressList.map(f => `${f.name} ${f.day || '토'} ${f.h}:${f.m}`).join(', ') : '';
                 timeStr = fStr;
-                finalDay = fortressList.length > 0 ? '요새전' : '';
+                finalDay = fortressList.length > 0 ? '요새' : '';
             } else {
-                const cStr = citadelList.length > 0 ? `성채전: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
+                const cStr = citadelList.length > 0 ? citadelList.map(c => `${c.name} ${c.day || '일'} ${c.h}:${c.m}`).join(', ') : '';
                 timeStr = cStr;
-                finalDay = citadelList.length > 0 ? '성채전' : '';
+                finalDay = citadelList.length > 0 ? '성채' : '';
             }
 
             // Optimistic update handled by hook
