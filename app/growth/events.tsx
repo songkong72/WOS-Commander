@@ -203,7 +203,7 @@ const formatDisplayDate = (str: string, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
         const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
         const days = ['일', '월', '화', '수', '목', '금', '토'];
         const dayName = days[date.getDay()];
-        return `${y}-${pad(parseInt(m))}-${pad(parseInt(d))}(${dayName}) ${timePart}`;
+        return `${pad(parseInt(m))}/${pad(parseInt(d))}(${dayName}) ${timePart}`;
     }
     return converted;
 };
@@ -282,7 +282,7 @@ const EventCard = memo(({
 
     return (
         <View
-            style={{ width: isTwoColumn ? '50%' : '100%', padding: 8 }}
+            style={{ width: isTwoColumn ? '50%' : '100%', padding: 8, opacity: isExpired ? 0.5 : 1 }}
             onLayout={(e) => onLayout(e.nativeEvent.layout.y)}
         >
             <Pressable
@@ -299,8 +299,14 @@ const EventCard = memo(({
                         elevation: hovered ? 10 : 0
                     }
                 ]}
-                className={`rounded-3xl border shadow-lg transition-all ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/40 shadow-blue-500/10' : 'bg-white border-blue-200 shadow-blue-200/30') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
+                className={`rounded-3xl border shadow-lg transition-all overflow-hidden ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/40 shadow-blue-500/10' : 'bg-white border-blue-200 shadow-blue-200/30') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
             >
+                {/* Strikethrough overlay for expired events */}
+                {isExpired && (
+                    <View className="absolute inset-0 z-10 items-center justify-center pointer-events-none" style={{ overflow: 'hidden' }}>
+                        <View style={{ position: 'absolute', width: '120%', height: 2, backgroundColor: isDark ? '#475569' : '#94a3b8', transform: [{ rotate: '-3deg' }], opacity: 0.7 }} />
+                    </View>
+                )}
                 <View className={`px-4 py-3 flex-col border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <View className="flex-row items-center mb-2">
                         {event.imageUrl ? (
@@ -313,6 +319,11 @@ const EventCard = memo(({
                             </View>
                         )}
                         <Text className={`text-lg font-bold flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
+                        {event.wikiUrl && (
+                            <TouchableOpacity onPress={() => openWikiLink(event.wikiUrl || '')} className={`w-8 h-8 rounded-lg items-center justify-center ml-2 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                <Ionicons name="document-text-outline" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
+                            </TouchableOpacity>
+                        )}
                     </View>
                     <View className="flex-row items-center flex-wrap gap-1.5">
                         <View className={`flex-row items-center px-2 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
@@ -330,9 +341,9 @@ const EventCard = memo(({
                                 <Text className="text-white text-[8px] font-black ml-0.5">종료</Text>
                             </View>
                         ) : (
-                            <View className="bg-emerald-600 px-2 py-0.5 rounded-md flex-row items-center">
-                                <Ionicons name="time" size={9} color="white" />
-                                <Text className="text-white text-[8px] font-black ml-0.5">예정</Text>
+                            <View className={`px-2.5 py-1 rounded-full flex-row items-center border ${isDark ? 'bg-amber-500/20 border-amber-500/40' : 'bg-amber-50 border-amber-200'}`}>
+                                <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
+                                <Text className={`text-[10px] font-black ml-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>예정</Text>
                             </View>
                         )}
                         {isAdmin && (
@@ -640,33 +651,6 @@ const EventCard = memo(({
                                 <Text className={`font-bold text-sm ${attendHover ? 'text-emerald-950' : 'text-white'}`}>참석</Text>
                             </Pressable>
                         )}
-                        {event.wikiUrl && (
-                            <Pressable
-                                onPress={() => openWikiLink(event.wikiUrl || '')}
-                                onHoverIn={() => setWikiHover(true)}
-                                onHoverOut={() => setWikiHover(false)}
-                                className={`w-10 h-10 rounded-2xl items-center justify-center border ${wikiHover ? 'bg-slate-400 border-slate-300' : 'bg-slate-500/20 border-slate-700/50'}`}
-                                style={({ pressed }: any) => [
-                                    {
-                                        transform: [{ scale: pressed ? 0.95 : (wikiHover ? 1.15 : 1) }],
-                                        // @ts-ignore
-                                        transition: 'all 0.05s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        shadowColor: '#000',
-                                        shadowOffset: { width: 0, height: wikiHover ? 6 : 0 },
-                                        shadowOpacity: wikiHover ? 0.3 : 0,
-                                        shadowRadius: wikiHover ? 12 : 0,
-                                        elevation: wikiHover ? 6 : 0,
-                                        cursor: 'pointer',
-                                    }
-                                ]}
-                            >
-                                <Ionicons
-                                    name="document-text-outline"
-                                    size={20}
-                                    color={wikiHover ? '#1e293b' : '#fff'}
-                                />
-                            </Pressable>
-                        )}
                     </View>
                 </View>
             </Pressable>
@@ -968,10 +952,13 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
 
     return (
         <View className="mb-6" style={{ zIndex: activeDateDropdown?.type === type ? 10000 : 1, elevation: activeDateDropdown?.type === type ? 50 : 0, overflow: 'visible' }}>
-            <Text className="text-sky-400 text-[11px] font-black mb-3 ml-1 uppercase tracking-widest">{label}</Text>
+            <View className="flex-row items-center mb-3 ml-1">
+                <Ionicons name={type === 'start' ? 'play-circle' : 'stop-circle'} size={14} color={type === 'start' ? '#10b981' : '#ef4444'} style={{ marginRight: 6 }} />
+                <Text className={`text-[11px] font-black uppercase tracking-widest ${type === 'start' ? 'text-emerald-400' : 'text-rose-400'}`}>{label}</Text>
+            </View>
             <View className="flex-row" style={{ overflow: 'visible', zIndex: activeDateDropdown?.type === type ? 10001 : 1 }}>
                 {/* Date Selection */}
-                <View style={{ flex: 1.8, marginRight: 8 }}>
+                <View style={{ flex: 2.2, marginRight: 8 }}>
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(type)}
                         className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
@@ -987,60 +974,64 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                 </View>
 
                 {/* Hour Selection */}
-                <View style={{ flex: 1, marginRight: 8, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
+                <View style={{ flex: 0.9, marginRight: 8, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
                     <TouchableOpacity
                         onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? null : { type, field: 'h' })}
                         className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
+                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
                             <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
                         </View>
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'h' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 bg-slate-900 rounded-3xl border border-slate-700 h-52 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
+                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 rounded-2xl border overflow-hidden shadow-2xl z-[50000] elevation-25 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`} style={{ height: 208 }}>
                             <FlatList
                                 data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
                                 renderItem={({ item: hour }) => (
                                     <TouchableOpacity
                                         onPress={() => { onChange(`${datePart} ${hour}:${m}`); setActiveDateDropdown(null); }}
-                                        className={`h-12 items-center justify-center border-b border-white/5 ${h === hour ? 'bg-sky-500/20' : ''}`}
+                                        className={`h-11 items-center justify-center border-b ${h === hour ? (isDark ? 'bg-sky-500/25 border-sky-500/20' : 'bg-sky-50 border-sky-100') : (isDark ? 'border-slate-700/30' : 'border-slate-100')}`}
                                     >
-                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : 'text-slate-400'}`}>{hour}시</Text>
+                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{hour}시</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
+                                showsVerticalScrollIndicator={true}
+                                initialScrollIndex={Math.max(0, parseInt(h) - 2)}
+                                getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
                             />
                         </View>
                     )}
                 </View>
 
                 {/* Minute Selection */}
-                <View style={{ flex: 1, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
+                <View style={{ flex: 0.9, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
                     <TouchableOpacity
                         onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? null : { type, field: 'min' })}
                         className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
                     >
                         <View className="flex-row items-center">
-                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
+                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
                             <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
                         </View>
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
                     {activeDateDropdown?.type === type && activeDateDropdown.field === 'min' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 bg-slate-900 rounded-3xl border border-slate-700 h-52 overflow-hidden shadow-2xl z-[50000] elevation-25`}>
+                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 rounded-2xl border overflow-hidden shadow-2xl z-[50000] elevation-25 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`} style={{ height: 208 }}>
                             <FlatList
                                 data={['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']}
                                 renderItem={({ item: min }) => (
                                     <TouchableOpacity
                                         onPress={() => { onChange(`${datePart} ${h}:${min}`); setActiveDateDropdown(null); }}
-                                        className={`h-12 items-center justify-center border-b border-white/5 ${m === min ? 'bg-sky-500/20' : ''}`}
+                                        className={`h-11 items-center justify-center border-b ${m === min ? (isDark ? 'bg-sky-500/25 border-sky-500/20' : 'bg-sky-50 border-sky-100') : (isDark ? 'border-slate-700/30' : 'border-slate-100')}`}
                                     >
-                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : 'text-slate-400'}`}>{min}분</Text>
+                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{min}분</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
+                                showsVerticalScrollIndicator={true}
                             />
                         </View>
                     )}
@@ -2537,7 +2528,7 @@ export default function EventTracker() {
                                 setActiveNamePickerId(null);
                             }}
                             className={`p-0 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}
-                            style={{ height: '85%', maxHeight: '90%' }}
+                            style={{ height: (DATE_RANGE_IDS.includes(editingEvent?.id || '') || editingEvent?.category === '개인') ? 'auto' : '85%', maxHeight: '90%' }}
                         >
                             <View className="px-6 pt-5 pb-1 flex-row justify-between items-start" style={{ zIndex: (!!activeDateDropdown || hourDropdownVisible || minuteDropdownVisible || !!activeFortressDropdown || !!activeNamePickerId) ? 1 : 100 }}>
                                 <View className="flex-1 mr-4">
@@ -2656,9 +2647,9 @@ export default function EventTracker() {
                                                     </View>
                                                 </View>
 
-                                                <TouchableOpacity onPress={() => addFortressSlot()} className={`mt-2 w-full ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-3 rounded-xl border items-center flex-row justify-center`}>
-                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 6 }} />
-                                                    <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-bold text-sm`}>{editingSlotId ? '수정 완료' : '이 일정 추가 등록'}</Text>
+                                                <TouchableOpacity onPress={() => addFortressSlot()} className={`mt-2 w-full ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-500 border-emerald-400'} py-3 rounded-xl border items-center flex-row justify-center`}>
+                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color={editingSlotId ? "#10b981" : "white"} style={{ marginRight: 6 }} />
+                                                    <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-sm`}>{editingSlotId ? '수정 완료' : '이 일정 추가 등록'}</Text>
                                                 </TouchableOpacity>
                                             </View>
                                         </ScrollView>
@@ -2693,6 +2684,36 @@ export default function EventTracker() {
                                                             isDark={isDark}
                                                             setShowDatePicker={setShowDatePicker}
                                                         />
+                                                        {/* Duration Summary */}
+                                                        {mStart && mEnd && (() => {
+                                                            const parseDate = (v: string) => {
+                                                                const [dp, tp] = v.split(' ');
+                                                                const [y, mo, d] = dp.split('.');
+                                                                const [hh, mm] = (tp || '00:00').split(':');
+                                                                return new Date(+y, +mo - 1, +d, +hh, +mm);
+                                                            };
+                                                            const s = parseDate(mStart);
+                                                            const e = parseDate(mEnd);
+                                                            const diffMs = e.getTime() - s.getTime();
+                                                            if (diffMs <= 0) return (
+                                                                <View className={`mt-2 p-3 rounded-xl border border-dashed ${isDark ? 'border-rose-500/30 bg-rose-500/5' : 'border-rose-300 bg-rose-50'} flex-row items-center justify-center`}>
+                                                                    <Ionicons name="alert-circle-outline" size={14} color="#ef4444" style={{ marginRight: 6 }} />
+                                                                    <Text className="text-rose-400 text-xs font-bold">종료 일시가 시작 일시보다 빠릅니다</Text>
+                                                                </View>
+                                                            );
+                                                            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                                            const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                            const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                                                            let text = '📅 총 ';
+                                                            if (days > 0) text += `${days}일 `;
+                                                            if (hours > 0) text += `${hours}시간 `;
+                                                            if (mins > 0 && days === 0) text += `${mins}분`;
+                                                            return (
+                                                                <View className={`mt-2 p-3 rounded-xl ${isDark ? 'bg-sky-500/10 border border-sky-500/20' : 'bg-sky-50 border border-sky-100'} flex-row items-center justify-center`}>
+                                                                    <Text className={`text-xs font-bold ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>{text.trim()}</Text>
+                                                                </View>
+                                                            );
+                                                        })()}
                                                     </View>
                                                 );
                                             })()}
@@ -2812,9 +2833,9 @@ export default function EventTracker() {
                                                                     </View>
 
                                                                     <View className="flex-row gap-2 mt-2">
-                                                                        <TouchableOpacity onPress={() => addTimeSlot()} className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-blue-500/20 border-blue-500/40'} py-4 rounded-xl border items-center flex-row justify-center`}>
-                                                                            <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "#38bdf8"} style={{ marginRight: 8 }} />
-                                                                            <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-[#38bdf8]'} font-bold text-base`}>{editingSlotId ? '수정 완료' : '이 시간 추가 등록'}</Text>
+                                                                        <TouchableOpacity onPress={() => addTimeSlot()} className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-500 border-emerald-400'} py-4 rounded-xl border items-center flex-row justify-center`}>
+                                                                            <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "white"} style={{ marginRight: 8 }} />
+                                                                            <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-base`}>{editingSlotId ? '수정 완료' : '이 시간 추가 등록'}</Text>
                                                                         </TouchableOpacity>
                                                                         {!!editingSlotId && (
                                                                             <TouchableOpacity

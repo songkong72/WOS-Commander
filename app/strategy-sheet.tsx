@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, Platform, Modal, TextInput, Alert, Pressable, Image } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,6 +41,81 @@ export default function StrategySheet() {
     const [showTooltip, setShowTooltip] = useState(false);
     const [accessError, setAccessError] = useState(false);
     const [viewMode, setViewMode] = useState<'sheet' | 'guide'>('sheet');
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+
+    const handleRetry = useCallback(() => {
+        setLoadError(false);
+        setIsLoading(true);
+        setAccessError(false);
+    }, []);
+
+    // Skeleton Loader Component
+    const SkeletonLoader = () => (
+        <View className={`absolute inset-0 p-6 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+            {/* Header skeleton */}
+            <View className="mb-6">
+                <View className={`h-8 w-48 rounded-xl mb-3 animate-pulse ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
+                <View className={`h-4 w-72 rounded-lg animate-pulse ${isDark ? 'bg-slate-800/60' : 'bg-slate-200/80'}`} />
+            </View>
+            {/* Table skeleton rows */}
+            <View className={`rounded-2xl border overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                {/* Table header */}
+                <View className={`flex-row p-4 ${isDark ? 'bg-slate-800/50' : 'bg-slate-100'}`}>
+                    {[80, 120, 100, 90, 110].map((w, i) => (
+                        <View key={i} className={`h-4 rounded-md mr-4 animate-pulse ${isDark ? 'bg-slate-700' : 'bg-slate-300'}`} style={{ width: w }} />
+                    ))}
+                </View>
+                {/* Table rows */}
+                {Array.from({ length: 10 }).map((_, rowIdx) => (
+                    <View key={rowIdx} className={`flex-row p-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                        {[80, 120, 100, 90, 110].map((w, i) => (
+                            <View key={i} className={`h-3.5 rounded-md mr-4 animate-pulse ${isDark ? 'bg-slate-800/80' : 'bg-slate-200/60'}`} style={{ width: w * (0.7 + Math.random() * 0.6), animationDelay: `${(rowIdx * 5 + i) * 100}ms` } as any} />
+                        ))}
+                    </View>
+                ))}
+            </View>
+            {/* Loading label */}
+            <View className="items-center mt-8">
+                <View className="flex-row items-center">
+                    <Ionicons name="document-text" size={18} color={isDark ? '#38bdf8' : '#3b82f6'} style={{ marginRight: 8 }} />
+                    <Text className={`font-bold text-sm ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>문서를 불러오는 중...</Text>
+                </View>
+            </View>
+        </View>
+    );
+
+    // Load Error Component
+    const LoadErrorView = () => (
+        <View className={`absolute inset-0 items-center justify-center p-8 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+            <View className="max-w-sm w-full items-center">
+                <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? 'bg-rose-500/15' : 'bg-rose-50'}`}>
+                    <Ionicons name="cloud-offline" size={40} color={isDark ? '#fb7185' : '#e11d48'} />
+                </View>
+                <Text className={`text-2xl font-black text-center mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>문서 로드 실패</Text>
+                <Text className={`text-center text-sm font-medium mb-8 leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    네트워크 연결을 확인하거나{"\n"}잠시 후 다시 시도해주세요.
+                </Text>
+                <View className="flex-row gap-3 w-full">
+                    <TouchableOpacity
+                        onPress={() => Platform.OS === 'web' ? window.open(targetUrl, '_blank') : null}
+                        className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                    >
+                        <Text className={`text-center font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>새 창으로 열기</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={handleRetry}
+                        className={`flex-1 py-4 rounded-2xl ${isDark ? 'bg-sky-500' : 'bg-blue-600'}`}
+                    >
+                        <View className="flex-row items-center justify-center">
+                            <Ionicons name="refresh" size={16} color="white" style={{ marginRight: 6 }} />
+                            <Text className="text-white font-bold">다시 시도</Text>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </View>
+    );
 
     // Determine the URL to display
     let targetUrl = DEFAULT_SHEET_URL;
@@ -223,48 +298,56 @@ export default function StrategySheet() {
                         </View>
                     </View>
                 ) : (
-                    Platform.OS === 'web' ? (
-                        <iframe
-                            src={targetUrl}
-                            style={{
-                                width: `${100 / zoom}%`,
-                                height: `${100 / zoom}%`,
-                                border: 'none',
-                                transform: `scale(${zoom})`,
-                                transformOrigin: 'top left',
-                                transition: 'transform 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out'
-                            }}
-                        />
-                    ) : (
-                        <WebView
-                            ref={webViewRef}
-                            source={{ uri: targetUrl }}
-                            style={{ flex: 1 }}
-                            javaScriptEnabled={true}
-                            scalesPageToFit={true}
-                            domStorageEnabled={true}
-                            startInLoadingState={true}
-                            onMessage={(event: any) => {
-                                const title = event.nativeEvent.data;
-                                // Only trigger access error for google sheet related messages
-                                if (!isFile && (title.includes('권한') || title.includes('Access') || title.includes('Denied') || title.includes('Login'))) {
-                                    setAccessError(true);
-                                }
-                            }}
-                            renderLoading={() => (
-                                <View className={`absolute inset-0 items-center justify-center ${isDark ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
-                                    <Text className={`${isDark ? 'text-[#38bdf8]' : 'text-blue-600'} font-bold text-lg`}>문서를 불러오는 중...</Text>
-                                </View>
-                            )}
-                            injectedJavaScript={`
-                                (function() {
-                                    window.ReactNativeWebView.postMessage(document.title);
-                                })();
-                                document.body.style.zoom = '${zoom}'; 
-                                true;
-                            `}
-                        />
-                    )
+                    <View className="flex-1">
+                        {Platform.OS === 'web' ? (
+                            <>
+                                <iframe
+                                    key={loadError ? 'retry' : 'initial'}
+                                    src={targetUrl}
+                                    onLoad={() => { setIsLoading(false); setLoadError(false); }}
+                                    onError={() => { setIsLoading(false); setLoadError(true); }}
+                                    style={{
+                                        width: `${100 / zoom}%`,
+                                        height: `${100 / zoom}%`,
+                                        border: 'none',
+                                        transform: `scale(${zoom})`,
+                                        transformOrigin: 'top left',
+                                        transition: 'transform 0.2s ease-out, width 0.2s ease-out, height 0.2s ease-out',
+                                        opacity: isLoading ? 0 : 1,
+                                    }}
+                                />
+                                {isLoading && !loadError && <SkeletonLoader />}
+                                {loadError && <LoadErrorView />}
+                            </>
+                        ) : (
+                            <WebView
+                                ref={webViewRef}
+                                source={{ uri: targetUrl }}
+                                style={{ flex: 1 }}
+                                javaScriptEnabled={true}
+                                scalesPageToFit={true}
+                                domStorageEnabled={true}
+                                startInLoadingState={true}
+                                onLoadStart={() => setIsLoading(true)}
+                                onLoadEnd={() => setIsLoading(false)}
+                                onError={() => { setIsLoading(false); setLoadError(true); }}
+                                onMessage={(event: any) => {
+                                    const title = event.nativeEvent.data;
+                                    if (!isFile && (title.includes('권한') || title.includes('Access') || title.includes('Denied') || title.includes('Login'))) {
+                                        setAccessError(true);
+                                    }
+                                }}
+                                renderLoading={() => <SkeletonLoader />}
+                                injectedJavaScript={`
+                                    (function() {
+                                        window.ReactNativeWebView.postMessage(document.title);
+                                    })();
+                                    document.body.style.zoom = '${zoom}'; 
+                                    true;
+                                `}
+                            />
+                        )}
+                    </View>
                 )}
 
                 {/* Floating Zoom Controls */}

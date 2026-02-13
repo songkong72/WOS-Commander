@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, Pressable, Image, Platform, ViewStyle, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 
 interface TimelineViewProps {
     events: any[];
@@ -444,25 +445,30 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     if (!evs || evs.length === 0) return null;
                     const cfg = (() => {
                         switch (ck) {
-                            case '연맹': return { label: '연맹 이벤트', gradient: ['#f43f5e', '#9f1239'] as [string, string] }; // Vibrant Rose to Deep Crimson
-                            case '서버': return { label: '서버 이벤트', gradient: ['#3b82f6', '#1e40af'] as [string, string] }; // Royal Blue to Deep Navy
-                            case '개인': return { label: '개인 이벤트', gradient: ['#eab308', '#a16207'] as [string, string] }; // Golden Amber to Brown Gold
-                            default: return { label: '기타 이벤트', gradient: ['#64748b', '#334155'] as [string, string] }; // Sleek Slate to Navy Gray
+                            case '연맹': return { label: '연맹 이벤트', icon: 'people', color: '#be123c', bg: 'bg-rose-500/10', border: 'border-rose-500/20', text: 'text-rose-600', darkText: 'text-rose-400', gradient: ['#f43f5e', '#9f1239'] as [string, string] };
+                            case '서버': return { label: '서버 이벤트', icon: 'earth', color: '#1d4ed8', bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-600', darkText: 'text-blue-400', gradient: ['#3b82f6', '#1e40af'] as [string, string] };
+                            case '개인': return { label: '개인 이벤트', icon: 'person', color: '#a16207', bg: 'bg-amber-500/10', border: 'border-amber-500/20', text: 'text-amber-600', darkText: 'text-amber-400', gradient: ['#eab308', '#a16207'] as [string, string] };
+                            default: return { label: '기타 이벤트', icon: 'grid', color: '#334155', bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-600', darkText: 'text-slate-400', gradient: ['#64748b', '#334155'] as [string, string] };
                         }
                     })();
                     return (
-                        <View key={`cat-${ck}-${idx}`} className="mb-6">
-                            <Text key={`cat-label-${ck}`} className={`text-[11px] font-black mb-2 px-4 uppercase tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{cfg.label}</Text>
+                        <View key={`cat-${ck}-${idx}`} className="mb-8">
+                            <View className={`flex-row items-center px-4 mb-3`}>
+                                <View className={`p-1.5 rounded-lg mr-2 ${cfg.bg} border ${cfg.border}`}>
+                                    <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
+                                </View>
+                                <Text className={`text-[13px] font-black uppercase tracking-wide ${isDark ? cfg.darkText : cfg.text}`}>{cfg.label}</Text>
+                            </View>
                             {evs.map((ev: any, evIdx: number) => {
                                 const isTopRow = ck === '연맹' && evIdx < 2;
                                 const isRowHovered = hoveredBarId?.startsWith(ev.id);
                                 return (
                                     <View
                                         key={`${ev.id}-${ck}-${evIdx}`}
-                                        className="h-10 relative mb-2 justify-center"
+                                        className="h-14 relative mb-3 justify-center"
                                         style={{ zIndex: isRowHovered ? 1000 : 1 }}
                                     >
-                                        <View key={`rail-${ev.id}`} className={`absolute inset-x-0 h-8 rounded-lg ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/60'}`} />
+                                        <View key={`rail-${ev.id}`} className={`absolute inset-x-0 h-11 rounded-2xl ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/40'}`} />
                                         {ev._bars.map((p: any, bi: number) => {
                                             const barKey = `bar-${ev.id}-${bi}`;
                                             const isHovered = hoveredBarId === barKey;
@@ -470,7 +476,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                             return (
                                                 <View
                                                     key={barKey}
-                                                    className="absolute h-10 py-1"
+                                                    className="absolute h-14 py-1.5"
                                                     style={{
                                                         left: p.left,
                                                         width: p.width,
@@ -523,9 +529,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                     <Animated.View
                                                                         style={{
                                                                             flex: 1,
-                                                                            borderRadius: 8,
+                                                                            borderRadius: 12,
                                                                             overflow: 'hidden',
-                                                                            transform: [{ scale: activeHover ? 1.02 : (isActive ? 1.01 : 1) }],
+                                                                            transform: [{ scale: activeHover ? 1.04 : (isActive ? 1.01 : 1) }],
                                                                             borderWidth: isActive ? 2 : 0,
                                                                             borderColor: isActive ? pulseAnim.interpolate({
                                                                                 inputRange: [0.4, 1],
@@ -535,7 +541,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                             boxShadow: isActive ? pulseAnim.interpolate({
                                                                                 inputRange: [0.4, 1],
                                                                                 outputRange: ['0 0 5px rgba(255,255,255,0.2)', '0 0 20px rgba(255,255,255,0.6)']
-                                                                            }) : 'none'
+                                                                            }) : (activeHover ? `0 4px 16px ${cfg.gradient[1]}80` : `0 2px 8px ${cfg.gradient[1]}40`)
                                                                         } as any}
                                                                     >
                                                                         <LinearGradient
@@ -655,6 +661,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 })}
 
                 <View key="indicator" className="absolute top-0 bottom-0 w-[3px] bg-orange-500 z-50 pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
+                    <View key="indicator-label" className="absolute -top-6 -left-5 bg-orange-500 px-1.5 py-0.5 rounded shadow-sm">
+                        <Text className="text-white text-[10px] font-bold">
+                            {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
+                        </Text>
+                    </View>
                     <View key="indicator-dot" className="w-5 h-5 rounded-full bg-orange-500 -ml-[8.5px] -mt-2.5 border-2 border-white shadow-2xl items-center justify-center">
                         <View key="indicator-inner" className="w-2 h-2 rounded-full bg-white" />
                     </View>

@@ -171,8 +171,20 @@ export default function GlobalNavigationBar() {
                             ]}
                         >
                             {({ hovered }: any) => (
-                                <>
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center transition-all ${isActive ? (isDark ? 'bg-blue-500/20' : 'bg-blue-50') : (hovered ? (isDark ? 'bg-slate-800/50' : 'bg-slate-100/50') : '')}`}>
+                                <View className="items-center">
+                                    {/* Top indicator bar */}
+                                    {isActive && (
+                                        <View
+                                            className={`absolute -top-2.5 w-8 h-1 rounded-full ${isDark ? 'bg-sky-400' : 'bg-blue-500'}`}
+                                            style={{
+                                                shadowColor: isDark ? '#38bdf8' : '#3b82f6',
+                                                shadowOffset: { width: 0, height: 2 },
+                                                shadowOpacity: 0.6,
+                                                shadowRadius: 4,
+                                            }}
+                                        />
+                                    )}
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center transition-all ${isActive ? (isDark ? 'bg-sky-500/20' : 'bg-blue-100/80') : (hovered ? (isDark ? 'bg-slate-800/50' : 'bg-slate-100/50') : '')}`}>
                                         <Ionicons
                                             name={isActive ? item.activeIcon : item.icon}
                                             size={24}
@@ -180,11 +192,13 @@ export default function GlobalNavigationBar() {
                                         />
                                     </View>
                                     <Text
-                                        className={`mt-1 text-[9px] font-black tracking-tighter ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}
+                                        className={`mt-0.5 text-[9px] font-black tracking-tighter ${isActive ? (isDark ? 'text-sky-400' : 'text-blue-600') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}
                                     >
                                         {item.label}
                                     </Text>
-                                </>
+                                    {/* Bottom indicator dot */}
+                                    <View className={`w-1 h-1 rounded-full mt-0.5 ${isActive ? (isDark ? 'bg-sky-400' : 'bg-blue-500') : 'bg-transparent'}`} />
+                                </View>
                             )}
                         </Pressable>
                     );

@@ -29,6 +29,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
 
     const [searchTerm, setSearchTerm] = useState('');
     const [uploading, setUploading] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
     const [strategyUploading, setStrategyUploading] = useState(false);
     const [previewData, setPreviewData] = useState<{ id: string, nickname: string }[]>([]);
     const [showGuide, setShowGuide] = useState(false);
@@ -91,6 +92,51 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
             console.error('Template download error:', error);
             Alert.alert('오류', '양식 다운로드 중 문제가 발생했습니다.');
         }
+    };
+
+    const processExcelFile = (file: File) => {
+        setUploading(true);
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+            try {
+                const ab = e.target.result;
+                const wb = XLSX.read(ab, { type: 'array' });
+                const wsname = wb.SheetNames[0];
+                const ws = wb.Sheets[wsname];
+                const json: any[] = XLSX.utils.sheet_to_json(ws);
+
+                const formatted = json.map(row => {
+                    const keys = Object.keys(row);
+                    const idKey = keys.find(k => k.toLowerCase().includes('id') || k.includes('아이디'));
+                    const nickKey = keys.find(k => k.toLowerCase().includes('nick') || k.includes('닉네임') || k.includes('이름'));
+                    return {
+                        id: String(row[idKey || keys[0]] || ''),
+                        nickname: String(row[nickKey || keys[1]] || '')
+                    };
+                }).filter(item => item.id && item.nickname);
+
+                setPreviewData(formatted);
+            } catch (err) {
+                console.error('Excel parse error:', err);
+                showCustomAlert('오류', '파일을 읽는 중 문제가 발생했습니다.', 'error');
+            } finally {
+                setUploading(false);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleDrop = (e: any) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv'];
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+            showCustomAlert('파일 오류', '.xlsx, .xls, .csv 파일만 업로드할 수 있습니다.', 'warning');
+            return;
+        }
+        processExcelFile(file);
     };
 
     const handleExcelUpload = async () => {
@@ -158,13 +204,14 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
     };
 
     const handleManualAdd = async () => {
-        if (!manualNick.trim() || !manualId.trim()) {
-            showCustomAlert('입력 오류', '닉네임과 ID를 모두 입력해주세요.', 'warning');
+        if (!manualNick.trim()) {
+            showCustomAlert('입력 오류', '닉네임을 입력해주세요.', 'warning');
             return;
         }
         try {
+            const finalId = manualId.trim() || `auto_${Date.now()}`;
             await saveMembers([{
-                id: manualId.trim(),
+                id: finalId,
                 nickname: manualNick.trim(),
                 password: manualPw.trim() || '1234'
             }]);
@@ -448,25 +495,48 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         </View>
                                         <Text className={`font-bold text-base ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>일괄 영주 등록</Text>
                                     </View>
+
+                                    {/* Drag & Drop Zone */}
+                                    <View
+                                        // @ts-ignore - Web-specific events
+                                        onDragOver={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
+                                        onDragLeave={() => setIsDragOver(false)}
+                                        onDrop={handleDrop}
+                                        className={`items-center justify-center py-8 px-6 rounded-2xl border-2 border-dashed mb-4 transition-all duration-300 ${isDragOver ? (isDark ? 'bg-indigo-500/15 border-indigo-400' : 'bg-indigo-50 border-indigo-400') : (isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-200')}`}
+                                    >
+                                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mb-3 ${isDragOver ? (isDark ? 'bg-indigo-500/30' : 'bg-indigo-100') : (isDark ? 'bg-slate-800' : 'bg-slate-100')}`}>
+                                            <Ionicons name={isDragOver ? "cloud-upload" : "document-text-outline"} size={28} color={isDragOver ? (isDark ? "#818cf8" : "#4f46e5") : (isDark ? "#64748b" : "#94a3b8")} />
+                                        </View>
+                                        {uploading ? (
+                                            <View className="items-center">
+                                                <ActivityIndicator size="small" color={isDark ? "#818cf8" : "#4f46e5"} />
+                                                <Text className={`text-xs font-bold mt-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>파일 처리 중...</Text>
+                                            </View>
+                                        ) : isDragOver ? (
+                                            <Text className={`text-sm font-black ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>여기에 놓으세요!</Text>
+                                        ) : (
+                                            <View className="items-center">
+                                                <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Excel 파일을 이곳에 드래그하세요</Text>
+                                                <Text className={`text-[11px] mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>.xlsx, .xls, .csv 지원</Text>
+                                            </View>
+                                        )}
+                                    </View>
+
+                                    {/* Action Buttons */}
                                     <View className="flex-row gap-3 w-full">
-                                        <TouchableOpacity onPress={handleExcelUpload} disabled={uploading} className={`flex-1 py-3.5 rounded-xl border items-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
-                                            {uploading ? <ActivityIndicator size="small" color={isDark ? "white" : "#4f46e5"} /> : (
-                                                <View className="flex-row items-center">
-                                                    <Ionicons name="document-text-outline" size={16} color={isDark ? "white" : "#475569"} style={{ marginRight: 6 }} />
-                                                    <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-600'}`}>파일 선택</Text>
-                                                </View>
-                                            )}
+                                        <TouchableOpacity onPress={handleExcelUpload} disabled={uploading} className={`flex-1 py-3.5 rounded-xl border items-center flex-row justify-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
+                                            <Ionicons name="folder-open-outline" size={16} color={isDark ? "white" : "#475569"} style={{ marginRight: 6 }} />
+                                            <Text className={`font-bold text-xs ${isDark ? 'text-white' : 'text-slate-600'}`}>파일 선택</Text>
                                         </TouchableOpacity>
                                         {previewData.length > 0 ? (
-                                            <TouchableOpacity onPress={handleSaveMembers} className="flex-1 bg-indigo-600 py-3.5 rounded-xl items-center">
+                                            <TouchableOpacity onPress={handleSaveMembers} className="flex-1 bg-indigo-600 py-3.5 rounded-xl items-center flex-row justify-center">
+                                                <Ionicons name="save-outline" size={16} color="white" style={{ marginRight: 6 }} />
                                                 <Text className="text-white font-bold text-xs">명단 저장 ({previewData.length}건)</Text>
                                             </TouchableOpacity>
                                         ) : (
-                                            <TouchableOpacity onPress={downloadTemplate} className={`flex-1 py-3.5 rounded-xl border items-center ${isDark ? 'bg-slate-800 border-indigo-500/30' : 'bg-white border-indigo-100'}`}>
-                                                <View className="flex-row items-center">
-                                                    <Ionicons name="download-outline" size={16} color={isDark ? "#818cf8" : "#4f46e5"} style={{ marginRight: 6 }} />
-                                                    <Text className={`font-bold text-xs ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>양식 다운로드</Text>
-                                                </View>
+                                            <TouchableOpacity onPress={downloadTemplate} className={`flex-1 py-3.5 rounded-xl border items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-indigo-500/30' : 'bg-white border-indigo-100'}`}>
+                                                <Ionicons name="download-outline" size={16} color={isDark ? "#818cf8" : "#4f46e5"} style={{ marginRight: 6 }} />
+                                                <Text className={`font-bold text-xs ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>양식 다운로드</Text>
                                             </TouchableOpacity>
                                         )}
                                     </View>
@@ -483,7 +553,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <View className="flex-1">
                                             <TextInput
                                                 className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
-                                                placeholder="닉네임"
+                                                placeholder="닉네임 *"
                                                 placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                                 value={manualNick}
                                                 onChangeText={setManualNick}
@@ -494,7 +564,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <View className="flex-[1.2]">
                                             <TextInput
                                                 className={`w-full h-full px-4 rounded-xl border text-sm font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
-                                                placeholder="ID(숫자)"
+                                                placeholder="ID (선택)"
                                                 placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                                 value={manualId}
                                                 onChangeText={setManualId}
@@ -587,32 +657,47 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                         // @ts-ignore
                                                         onMouseEnter={() => setHoveredRow(m.id)}
                                                         onMouseLeave={() => setHoveredRow(null)}
-                                                        className={`flex-row items-center justify-between p-5 transition-all duration-200 ${isHovered ? (isDark ? 'bg-slate-700/40' : 'bg-slate-100') : (idx % 2 === 0 ? (isDark ? 'bg-slate-800/20' : 'bg-slate-50/50') : '')} border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}
+                                                        className={`flex-row items-center justify-between p-4 transition-all duration-200 ${isHovered ? (isDark ? 'bg-slate-700/40' : 'bg-indigo-50/50') : (idx % 2 === 0 ? (isDark ? 'bg-slate-800/20' : 'bg-slate-50/30') : '')} border-b ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
                                                     >
                                                         <View className="flex-row items-center flex-1">
+                                                            {/* Checkbox */}
                                                             <View
-                                                                className={`w-5 h-5 rounded-md items-center justify-center border-2 mr-4 ${selectedIds.includes(m.id) ? 'bg-indigo-500 border-indigo-500' : (isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300')}`}
+                                                                className={`w-5 h-5 rounded-md items-center justify-center border-2 mr-3 ${selectedIds.includes(m.id) ? 'bg-indigo-500 border-indigo-500' : (isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300')}`}
                                                             >
                                                                 {selectedIds.includes(m.id) && <Ionicons name="checkmark" size={12} color="white" />}
                                                             </View>
+
+                                                            {/* Avatar Circle */}
+                                                            <View className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${isRowStaff ? (isDark ? 'bg-sky-500/20 border-2 border-sky-500/40' : 'bg-sky-100 border-2 border-sky-200') : (isDark ? 'bg-slate-700 border-2 border-slate-600' : 'bg-slate-200 border-2 border-slate-300')}`}>
+                                                                <Text className={`text-sm font-black ${isRowStaff ? (isDark ? 'text-sky-400' : 'text-sky-600') : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>
+                                                                    {m.nickname.charAt(0).toUpperCase()}
+                                                                </Text>
+                                                            </View>
+
+                                                            {/* Info */}
                                                             <View className="flex-1">
                                                                 <View className="flex-row items-center">
                                                                     <Text className={`font-black text-base ${isDark ? 'text-white' : 'text-slate-800'}`}>{m.nickname}</Text>
-                                                                    {isRowStaff && <View className="ml-2 px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20"><Text className="text-sky-500 text-[9px] font-black uppercase">운영관리자</Text></View>}
+                                                                    {isRowStaff && (
+                                                                        <View className="ml-2 flex-row items-center px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-500/25">
+                                                                            <Ionicons name="shield-checkmark" size={10} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 3 }} />
+                                                                            <Text className={`text-[9px] font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>운영관리자</Text>
+                                                                        </View>
+                                                                    )}
                                                                 </View>
-                                                                <Text className="text-slate-500 text-[11px]">UID: {m.id}</Text>
+                                                                <Text className={`text-[11px] mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>UID: {m.id}</Text>
                                                             </View>
                                                         </View>
-                                                        <View className="flex-row gap-3">
+                                                        <View className="flex-row gap-2">
                                                             <View className="relative">
                                                                 <TouchableOpacity
                                                                     onPress={(e) => { e.stopPropagation(); toggleStaff(m); }}
                                                                     // @ts-ignore
                                                                     onMouseEnter={() => setHoveredStaffBtn(m.id)}
                                                                     onMouseLeave={() => setHoveredStaffBtn(null)}
-                                                                    className={`w-10 h-10 rounded-xl items-center justify-center border ${isRowStaff ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}`}
+                                                                    className={`w-9 h-9 rounded-xl items-center justify-center border ${isRowStaff ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}`}
                                                                 >
-                                                                    <Ionicons name={isRowStaff ? "shield-checkmark" : "shield-outline"} size={18} color={isRowStaff ? "white" : (isDark ? "#64748b" : "#94a3b8")} />
+                                                                    <Ionicons name={isRowStaff ? "shield-checkmark" : "shield-outline"} size={16} color={isRowStaff ? "white" : (isDark ? "#64748b" : "#94a3b8")} />
                                                                 </TouchableOpacity>
                                                                 {hoveredStaffBtn === m.id && (
                                                                     <View className={`absolute top-1/2 -translate-y-1/2 right-full mr-3 border px-3 py-2 rounded-lg shadow-xl z-50 flex-row items-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
@@ -621,7 +706,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                                     </View>
                                                                 )}
                                                             </View>
-                                                            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showCustomAlert('영주 삭제', `${m.nickname}님을 삭제하시겠습니까?`, 'confirm', () => deleteMember(m.id)); }} className="w-10 h-10 rounded-xl items-center justify-center border border-red-500/20 bg-red-500/10 shadow-sm shadow-red-500/10"><Ionicons name="trash-outline" size={18} color="#ef4444" /></TouchableOpacity>
+                                                            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showCustomAlert('영주 삭제', `${m.nickname}님을 삭제하시겠습니까?`, 'confirm', () => deleteMember(m.id)); }} className="w-9 h-9 rounded-xl items-center justify-center border border-red-500/20 bg-red-500/10"><Ionicons name="trash-outline" size={16} color="#ef4444" /></TouchableOpacity>
                                                         </View>
                                                     </TouchableOpacity>
                                                 );
@@ -639,13 +724,48 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
             <Modal visible={customAlert.visible} transparent animationType="fade">
                 <View className="flex-1 bg-black/60 items-center justify-center p-6 text-center">
                     <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <Text className={`text-2xl font-black mb-4 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                        <Text className={`text-center mb-8 text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                        {/* Type-specific Icon */}
+                        <View className={`w-16 h-16 rounded-full items-center justify-center mb-5 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/20' : 'bg-emerald-50') :
+                                customAlert.type === 'error' ? (isDark ? 'bg-rose-500/20' : 'bg-rose-50') :
+                                    customAlert.type === 'warning' ? (isDark ? 'bg-amber-500/20' : 'bg-amber-50') :
+                                        (isDark ? 'bg-red-500/20' : 'bg-red-50')
+                            }`}>
+                            <Ionicons
+                                name={
+                                    customAlert.type === 'success' ? 'checkmark-circle' :
+                                        customAlert.type === 'error' ? 'close-circle' :
+                                            customAlert.type === 'warning' ? 'warning' :
+                                                'alert-circle'
+                                }
+                                size={36}
+                                color={
+                                    customAlert.type === 'success' ? '#10b981' :
+                                        customAlert.type === 'error' ? '#f43f5e' :
+                                            customAlert.type === 'warning' ? '#f59e0b' :
+                                                '#ef4444'
+                                }
+                            />
+                        </View>
+                        <Text className={`text-2xl font-black mb-3 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                        <Text className={`text-center mb-8 text-sm font-medium leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
                         <View className="flex-row gap-3 w-full">
                             {customAlert.type === 'confirm' && (
-                                <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`flex-1 py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}><Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text></TouchableOpacity>
+                                <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                    <Text className={`text-center font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>취소</Text>
+                                </TouchableOpacity>
                             )}
-                            <TouchableOpacity onPress={() => { setCustomAlert({ ...customAlert, visible: false }); customAlert.onConfirm?.(); }} className={`flex-1 py-4 rounded-2xl bg-blue-600`}><Text className="text-center font-bold text-white">확인</Text></TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => { setCustomAlert({ ...customAlert, visible: false }); customAlert.onConfirm?.(); }}
+                                className={`flex-1 py-4 rounded-2xl ${customAlert.type === 'confirm' ? 'bg-red-500' :
+                                        customAlert.type === 'success' ? 'bg-emerald-500' :
+                                            customAlert.type === 'warning' ? 'bg-amber-500' :
+                                                'bg-blue-600'
+                                    }`}
+                            >
+                                <Text className={`text-center font-bold ${customAlert.type === 'warning' ? 'text-black' : 'text-white'}`}>
+                                    {customAlert.type === 'confirm' ? '삭제' : '확인'}
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </View>
