@@ -5,13 +5,27 @@ import { NativeWindStyleSheet } from "nativewind";
 import { AdminStatus } from '../data/admin-config';
 import { View, Platform, ImageBackground, StyleSheet, Image, useWindowDimensions, ScrollView } from 'react-native';
 import Head from 'expo-router/head';
-import { AuthContext, ThemeContext } from './context';
+import { AuthContext, ThemeContext, LanguageContext, Language } from './context';
 import "../global.css";
 import GlobalNavigationBar from '../components/GlobalNavigationBar';
+import '../services/i18n';
+import i18next from '../services/i18n';
 
 NativeWindStyleSheet.setOutput({
     default: "native",
 });
+
+// Detect system language
+const detectSystemLanguage = (): Language => {
+    if (Platform.OS === 'web') {
+        // @ts-ignore - navigator is available in web
+        const browserLang = navigator.language || navigator.userLanguage || '';
+        // Check if language starts with 'ko' (ko, ko-KR, ko-kr, etc.)
+        return browserLang.toLowerCase().startsWith('ko') ? 'ko' : 'en';
+    }
+    // For mobile, default to English (can be enhanced with expo-localization)
+    return 'en';
+};
 
 export default function Layout() {
     const [auth, setAuth] = useState<AdminStatus>({ isLoggedIn: false, adminName: null, role: null });
@@ -19,6 +33,7 @@ export default function Layout() {
     const [serverId, setServerId] = useState<string | null>(null);
     const [allianceId, setAllianceId] = useState<string | null>(null);
     const [dashboardScrollY, setDashboardScrollY] = useState(0);
+    const [language, setLanguage] = useState<Language>(detectSystemLanguage());
     const [fontSizeScale, setFontSizeScale] = useState(1.0);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
     const [isGateOpen, setIsGateOpen] = useState(true);
@@ -31,6 +46,7 @@ export default function Layout() {
                 const savedAdminId = await AsyncStorage.getItem('lastAdminId');
                 const savedRole = await AsyncStorage.getItem('lastAdminRole');
                 const savedTheme = await AsyncStorage.getItem('theme');
+                const savedLanguage = await AsyncStorage.getItem('language');
                 const savedServer = await AsyncStorage.getItem('serverId');
                 const savedAlliance = await AsyncStorage.getItem('allianceId');
                 const savedFontSize = await AsyncStorage.getItem('fontSizeScale');
@@ -40,6 +56,16 @@ export default function Layout() {
                 }
                 if (savedTheme) {
                     setTheme(savedTheme as 'dark' | 'light');
+                }
+                if (savedLanguage) {
+                    // Saved language takes priority
+                    setLanguage(savedLanguage as Language);
+                    i18next.changeLanguage(savedLanguage);
+                } else {
+                    // No saved language, use detected system language
+                    const systemLang = detectSystemLanguage();
+                    setLanguage(systemLang);
+                    i18next.changeLanguage(systemLang);
                 }
                 if (savedServer) setServerId(savedServer);
                 if (savedAlliance) setAllianceId(savedAlliance);
@@ -80,6 +106,12 @@ export default function Layout() {
         AsyncStorage.setItem('theme', newTheme);
     };
 
+    const changeLanguage = (lang: Language) => {
+        setLanguage(lang);
+        i18next.changeLanguage(lang);
+        AsyncStorage.setItem('language', lang);
+    };
+
     const changeFontSize = (scale: number) => {
         setFontSizeScale(scale);
         AsyncStorage.setItem('fontSizeScale', scale.toString());
@@ -93,34 +125,36 @@ export default function Layout() {
     return (
         <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen }}>
             <ThemeContext.Provider value={{ theme, toggleTheme, fontSizeScale, changeFontSize }}>
-                {Platform.OS === 'web' && (
-                    <Head>
-                        <meta name="mobile-web-app-capable" content="yes" />
-                        <meta name="apple-mobile-web-app-status-bar-style" content={isDark ? "black-translucent" : "default"} />
-                        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-                        <link rel="manifest" href="/manifest.json" />
-                        <style>{`
-                            html, body, #root, [data-expo-router-root] {
-                                width: 100% !important;
-                                height: 100% !important;
-                                margin: 0 !important;
-                                padding: 0 !important;
-                                overflow-x: hidden;
-                                background-color: ${isDark ? '#020617' : '#fafaf9'};
-                            }
-                            /* Hide native password reveal button in Edge/Internet Explorer */
-                            input::-ms-reveal,
-                            input::-ms-clear {
-                                display: none !important;
-                            }
-                        `}</style>
-                    </Head>
-                )}
+                <LanguageContext.Provider value={{ language, changeLanguage }}>
+                    {Platform.OS === 'web' && (
+                        <Head>
+                            <meta name="mobile-web-app-capable" content="yes" />
+                            <meta name="apple-mobile-web-app-status-bar-style" content={isDark ? "black-translucent" : "default"} />
+                            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+                            <link rel="manifest" href="/manifest.json" />
+                            <style>{`
+                                html, body, #root, [data-expo-router-root] {
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    margin: 0 !important;
+                                    padding: 0 !important;
+                                    overflow-x: hidden;
+                                    background-color: ${isDark ? '#020617' : '#fafaf9'};
+                                }
+                                /* Hide native password reveal button in Edge/Internet Explorer */
+                                input::-ms-reveal,
+                                input::-ms-clear {
+                                    display: none !important;
+                                }
+                            `}</style>
+                        </Head>
+                    )}
 
-                <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9', paddingLeft: isPC ? 256 : 0 }]}>
-                    <Slot />
-                    {!isGateOpen && <GlobalNavigationBar />}
-                </View>
+                    <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9', paddingLeft: isPC ? 256 : 0 }]}>
+                        <Slot />
+                        {!isGateOpen && <GlobalNavigationBar />}
+                    </View>
+                </LanguageContext.Provider>
             </ThemeContext.Provider>
         </AuthContext.Provider>
     );
