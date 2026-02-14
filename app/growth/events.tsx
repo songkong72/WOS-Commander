@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from '
 import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable, Animated, Dimensions } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth, useTheme } from '../context';
+import { useTranslation } from 'react-i18next';
 import { getGuideContent } from '../../data/event-guides';
 import { Attendee } from '../../data/mock-attendees';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,8 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Custom Korean Calendar Locale Constants
-const KR_MONTHS = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
-const KR_DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+// Note: Dates and days are localized using t() keys in the render logic
 
 // Web-specific scrollbar styles
 // Web-specific scrollbar styles
@@ -81,8 +81,9 @@ Notifications.setNotificationHandler({
 });
 
 const HERO_NAMES = heroesData.map(h => h.name);
-const FORTRESS_OPTIONS = Array.from({ length: 12 }, (_, i) => `요새 ${i + 1}`);
-const CITADEL_OPTIONS = Array.from({ length: 4 }, (_, i) => `성채 ${i + 1}`);
+// Note: Options are localized in the render function using t()
+const FORTRESS_IDS = Array.from({ length: 12 }, (_, i) => `fortress_${i + 1}`);
+const CITADEL_IDS = ['citadel_1'];
 
 // Shimmer Icon Component with animated light sweep effect
 const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactNode, colors: { bg: string, shadow: string, shimmer: string }, isDark: boolean }) => {
@@ -192,7 +193,7 @@ const processConversion = (str: string, diffMinutes: number) => {
 };
 
 
-const formatDisplayDate = (str: string, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
+const formatDisplayDate = (str: string, t: any, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
     if (!str) return '';
     const converted = mode === 'LOCAL' ? toLocal(str) : toUTC(str);
 
@@ -201,21 +202,21 @@ const formatDisplayDate = (str: string, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
     if (match) {
         const [_, y, m, d, timePart] = match;
         const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-        const days = ['일', '월', '화', '수', '목', '금', '토'];
-        const dayName = days[date.getDay()];
-        return `${pad(parseInt(m))}/${pad(parseInt(d))}(${dayName}) ${timePart}`;
+        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const dayStr = t(`events.days.${days[date.getDay()]}`);
+        return `${pad(parseInt(m))}/${pad(parseInt(d))}(${dayStr}) ${timePart}`;
     }
     return converted;
 };
 
-const formatTime12h = (timeStr: string) => {
+const formatTime12h = (timeStr: string, t: any) => {
     if (!timeStr) return '';
     const [hStr, mStr] = timeStr.split(':');
     const h = parseInt(hStr || '0');
     const m = parseInt(mStr || '0');
     const isPM = h >= 12;
     const h12 = h % 12 === 0 ? 12 : h % 12;
-    const ampm = isPM ? '오후' : '오전';
+    const ampm = isPM ? t('common.pm') : t('common.am');
     return `${ampm} ${h12}:${m.toString().padStart(2, '0')}`;
 };
 
@@ -242,6 +243,7 @@ const EventCard = memo(({
     checkItemOngoing, openScheduleModal, openGuideModal, openAttendeeModal, openWikiLink,
     onSetSelectedTeamTab, onLayout
 }: EventCardProps) => {
+    const { t } = useTranslation();
     const [guideHover, setGuideHover] = useState(false);
     const [attendHover, setAttendHover] = useState(false);
     const [wikiHover, setWikiHover] = useState(false);
@@ -255,7 +257,7 @@ const EventCard = memo(({
                 <ShimmerIcon isDark={isDark} colors={{ bg: isDark ? '#1e3a5f' : '#dbeafe', shadow: isDark ? '#38bdf8' : '#0284c7', shimmer: isDark ? '#38bdf8' : '#60a5fa' }}>
                     <Ionicons name="calendar" size={20} color={isDark ? '#38bdf8' : '#0284c7'} />
                 </ShimmerIcon>
-                <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(str, isUtc ? 'UTC' : 'LOCAL')}</Text>
+                <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(str, t, isUtc ? 'UTC' : 'LOCAL')}</Text>
             </View>
         );
         const parts = str.split('~').map(s => s.trim());
@@ -263,15 +265,15 @@ const EventCard = memo(({
             <View className="gap-3">
                 <View className="flex-row items-center">
                     <View className={`px-2.5 py-1 rounded-lg border mr-3 items-center justify-center ${isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'}`}>
-                        <Text className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>시작</Text>
+                        <Text className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('common.start')}</Text>
                     </View>
-                    <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(parts[0], isUtc ? 'UTC' : 'LOCAL')}</Text>
+                    <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(parts[0], t, isUtc ? 'UTC' : 'LOCAL')}</Text>
                 </View>
                 <View className="flex-row items-center">
                     <View className={`px-2.5 py-1 rounded-lg border mr-3 items-center justify-center ${isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
-                        <Text className={`text-[11px] font-bold ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>종료</Text>
+                        <Text className={`text-[11px] font-bold ${isDark ? 'text-rose-400' : 'text-rose-600'}`}>{t('common.end')}</Text>
                     </View>
-                    <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(parts[1], isUtc ? 'UTC' : 'LOCAL')}</Text>
+                    <Text className={`${textClass} text-base font-medium`}>{formatDisplayDate(parts[1], t, isUtc ? 'UTC' : 'LOCAL')}</Text>
                 </View>
             </View>
         );
@@ -318,32 +320,44 @@ const EventCard = memo(({
                                 <Ionicons name="calendar-outline" size={18} color={isDark ? '#475569' : '#94a3b8'} />
                             </View>
                         )}
-                        <Text className={`text-lg font-bold flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{event.title}</Text>
+                        <Text className={`text-lg font-bold flex-1 ${textColor} ${isExpired ? 'line-through' : ''}`} numberOfLines={1}>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
                         {event.wikiUrl && (
                             <TouchableOpacity onPress={() => openWikiLink(event.wikiUrl || '')} className={`w-8 h-8 rounded-lg items-center justify-center ml-2 ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                                 <Ionicons name="document-text-outline" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                             </TouchableOpacity>
                         )}
                     </View>
+                    {/* Event Description (Added for cleaner design) */}
+                    {!!event.description && (
+                        <Text className={`text-sm mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'} ${isOngoing ? (isDark ? 'text-slate-200 font-medium' : 'text-slate-700 font-medium') : ''}`} numberOfLines={isOngoing ? undefined : 2}>
+                            {t(`events.${event.id}_description`, { defaultValue: event.description })}
+                        </Text>
+                    )}
                     <View className="flex-row items-center flex-wrap gap-1.5">
                         <View className={`flex-row items-center px-2 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                             <Ionicons name={event.category === '연맹' ? 'flag-outline' : event.category === '개인' ? 'person-outline' : event.category === '서버' ? 'earth-outline' : event.category === '초보자' ? 'star-outline' : 'apps-outline'} size={10} color={isDark ? '#94a3b8' : '#64748b'} />
-                            <Text className={`text-[9px] font-bold ml-1 uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{event.category}</Text>
+                            <Text className={`text-[9px] font-bold ml-1 uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                {event.category === '연맹' ? t('events.category.alliance')
+                                    : event.category === '개인' ? t('events.category.individual')
+                                        : event.category === '서버' ? t('events.category.server')
+                                            : event.category === '초보자' ? t('events.category.beginner')
+                                                : t('events.category.etc')}
+                            </Text>
                         </View>
                         {isOngoing ? (
                             <View className="bg-[#00ff88] px-2.5 py-1 rounded-full flex-row items-center border border-[#00cc6a] shadow-[0_0_15px_rgba(0,255,136,0.6)]" style={{ shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 5 }}>
                                 <Ionicons name="flash" size={10} color="#0f172a" style={{ marginRight: 2 }} />
-                                <Text className="text-slate-900 text-[10px] font-black ml-0.5" style={{ textShadowColor: 'rgba(255, 255, 255, 0.5)', textShadowRadius: 2 }}>진행중</Text>
+                                <Text className="text-slate-900 text-[10px] font-black ml-0.5" style={{ textShadowColor: 'rgba(255, 255, 255, 0.5)', textShadowRadius: 2 }}>{t('events.status.ongoing')}</Text>
                             </View>
                         ) : isExpired ? (
                             <View className="bg-slate-500 px-2 py-0.5 rounded-md flex-row items-center">
                                 <Ionicons name="checkmark-circle" size={9} color="white" />
-                                <Text className="text-white text-[8px] font-black ml-0.5">종료</Text>
+                                <Text className="text-white text-[8px] font-black ml-0.5">{t('events.status.ended')}</Text>
                             </View>
                         ) : (
                             <View className={`px-2.5 py-1 rounded-full flex-row items-center border ${isDark ? 'bg-amber-500/20 border-amber-500/40' : 'bg-amber-50 border-amber-200'}`}>
                                 <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
-                                <Text className={`text-[10px] font-black ml-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>예정</Text>
+                                <Text className={`text-[10px] font-black ml-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('events.status.upcoming')}</Text>
                             </View>
                         )}
                         {isAdmin && (
@@ -355,7 +369,7 @@ const EventCard = memo(({
                     <View className="mb-4">
                         {(!event.day && (!event.time || !event.time.trim())) ? (
                             <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
-                                <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다</Text>
+                                <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.schedule_empty')}</Text>
                             </View>
                         ) : (
                             event.day && (!event.time || !event.time.trim() || DATE_RANGE_IDS.includes(event.id)) && event.day !== '상설' && event.day !== '상시' ? (
@@ -394,7 +408,7 @@ const EventCard = memo(({
                                     const nameMatch = formatted.match(/^(.*?)\s+([일월화수목금토]|[매일])/);
                                     if (nameMatch) return nameMatch[1].trim();
 
-                                    return `${idx + 1}군`;
+                                    return `${t('events.team_unit')}${idx + 1}`;
                                 };
                                 const selectedContent = ((part: string | undefined) => {
                                     if (!part) return "";
@@ -438,31 +452,27 @@ const EventCard = memo(({
                                                         <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-blue-600/20' : 'bg-blue-50') : ''}`}>
                                                             <View className="flex-row items-center flex-1">
                                                                 {(() => {
-                                                                    const displayStr = formatDisplayDate(formatted, timezone);
-                                                                    const isSpecialTarget = false;
-
-                                                                    // Check for Day(Time) format
-                                                                    const dtMatch = displayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
-
-                                                                    if (dtMatch && isSpecialTarget) {
-                                                                        const [_, d, t] = dtMatch;
-                                                                        return (
-                                                                            <View className="flex-row items-center">
-                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{`${d}(${t})`}</Text>
-                                                                            </View>
-                                                                        );
-                                                                    }
+                                                                    const displayStr = formatDisplayDate(formatted, t, timezone);
+                                                                    const dtMatch = displayStr.match(/([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/);
 
                                                                     if (dtMatch) {
-                                                                        const [_, d, t] = dtMatch;
+                                                                        const [_, dRaw, tPart] = dtMatch;
+                                                                        const dStr = dRaw === '매일' ? t('events.days.daily')
+                                                                            : dRaw === '상시' ? t('events.days.always')
+                                                                                : (() => {
+                                                                                    const krDays = ['일', '월', '화', '수', '목', '금', '토'];
+                                                                                    const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                                                                    const idx = krDays.indexOf(dRaw);
+                                                                                    return idx !== -1 ? t(`events.days.${enKeys[idx]}`) : dRaw;
+                                                                                })();
+
                                                                         return (
                                                                             <View className="flex-row items-center">
                                                                                 <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{d}</Text>
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{dStr}</Text>
                                                                                 <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
                                                                                 <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
+                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{tPart}</Text>
                                                                             </View>
                                                                         );
                                                                     }
@@ -479,14 +489,14 @@ const EventCard = memo(({
                                                             {isSlotOngoing && (
                                                                 <View className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a] shadow-[0_0_10px_rgba(0,255,136,0.5)]" style={{ shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }}>
                                                                     <Ionicons name="flash" size={8} color="#0f172a" style={{ marginRight: 2 }} />
-                                                                    <Text className="text-slate-900 text-[9px] font-black ml-0.5">진행중</Text>
+                                                                    <Text className="text-slate-900 text-[9px] font-black ml-0.5">{t('events.status.ongoing')}</Text>
                                                                 </View>
                                                             )}
                                                         </View>
                                                     );
                                                 }) : (
                                                     <View className="px-4 py-8 items-center justify-center">
-                                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 일정이 없습니다</Text>
+                                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.schedule_empty')}</Text>
                                                     </View>
                                                 )}
                                             </View>
@@ -502,111 +512,65 @@ const EventCard = memo(({
                                         const colonIdx = trimmed.indexOf(':');
                                         const isTimeColon = colonIdx > 0 && /\d/.test(trimmed[colonIdx - 1]) && /\d/.test(trimmed[colonIdx + 1]);
                                         const rawLabel = (colonIdx > -1 && !isTimeColon) ? trimmed.substring(0, colonIdx).trim() : '';
+
+                                        // Localize raw label if it matches common terms
+                                        const displayLabel = rawLabel
+                                            .replaceAll('1군', t('events.team1'))
+                                            .replaceAll('2군', t('events.team2'))
+                                            .replaceAll('요새전', t('events.fortress_battle'))
+                                            .replaceAll('성채전', t('events.citadel_battle'));
+
                                         const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                                         if (content === "." || !content) return null;
                                         return (
                                             <View key={idx} className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
                                                 {!!rawLabel && (
                                                     <View className={`px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{rawLabel}</Text>
+                                                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{displayLabel}</Text>
                                                     </View>
                                                 )}
                                                 <View className="flex-col">
                                                     {content.split(/[,|]/).map((item: string, iIdx: number) => {
                                                         const trimmedItem = item.trim();
-                                                        // Extract Name if exists (e.g., "Fortress1 Sat(23:00)" or "Fortress1 Sat 23:00")
-                                                        // We assume the standard format from backend is "Name Day(HH:mm)" or "Name Day HH:mm"
-                                                        // Let's try to capture the name before the day.
-                                                        const nameMatch = trimmedItem.match(/^(.*?)\s*([일월화수목금토])\s*\(?(\d{1,2}:\d{2})\)?/);
+                                                        const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                        const displayStr = formatDisplayDate(formatted, t, timezone);
 
-                                                        let displayName = '';
-                                                        let displayDay = '';
-                                                        let displayTime = '';
-                                                        let fullDisplayStr = '';
+                                                        // Skip detailed time display for ongoing events to achieve cleaner design emphasizing title/message
+                                                        if (isOngoing) return null;
 
-                                                        if (nameMatch && nameMatch[1].trim()) {
-                                                            displayName = nameMatch[1].trim();
-                                                            displayDay = nameMatch[2];
-                                                            displayTime = nameMatch[3];
-                                                        } else {
-                                                            const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                            fullDisplayStr = formatDisplayDate(formatted, timezone);
+                                                        const dtMatch = displayStr.match(/([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/);
+
+                                                        if (dtMatch) {
+                                                            const [_, dRaw, tPart] = dtMatch;
+                                                            const dStr = dRaw === '매일' ? t('events.days.daily')
+                                                                : dRaw === '상시' ? t('events.days.always')
+                                                                    : (() => {
+                                                                        const krDays = ['일', '월', '화', '수', '목', '금', '토'];
+                                                                        const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                                                        const idx = krDays.indexOf(dRaw);
+                                                                        return idx !== -1 ? t(`events.days.${enKeys[idx]}`) : dRaw;
+                                                                    })();
+
+                                                            return (
+                                                                <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                    <View className="flex-row items-center flex-1">
+                                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                        <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{dStr}</Text>
+                                                                        <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
+                                                                        <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                        <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{tPart}</Text>
+                                                                    </View>
+                                                                </View>
+                                                            );
                                                         }
 
-                                                        const isSlotOngoing = checkItemOngoing(trimmedItem);
-
+                                                        // Default Fallback
                                                         return (
-                                                            <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-blue-600/20' : 'bg-blue-50') : ''}`}>
+                                                            <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
                                                                 <View className="flex-row items-center flex-1">
-                                                                    {(() => {
-                                                                        if (displayName && displayDay && displayTime) {
-                                                                            return (
-                                                                                <View className="flex-row items-center">
-                                                                                    {/* Render based on Event Type Style */}
-                                                                                    {event.id === 'a_fortress' || event.id === 'a_citadel' ? (
-                                                                                        <>
-                                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayDay}</Text>
-                                                                                            <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
-                                                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayTime}</Text>
-                                                                                            {/* Badge for Name */}
-                                                                                            <View className={`ml-3 px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                                                                                <Text className={`text-xs font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'} ${isExpired ? 'line-through opacity-40' : ''}`}>{displayName}</Text>
-                                                                                            </View>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        // Fallback for other events if they match this pattern (unlikely but safe)
-                                                                                        <>
-                                                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayName} {displayDay} {displayTime}</Text>
-                                                                                        </>
-                                                                                    )}
-                                                                                </View>
-                                                                            );
-                                                                        }
-
-                                                                        const isSpecialTarget = false;
-                                                                        const dtMatch = fullDisplayStr.match(/([일월화수목금토매일])\s*\(?(\d{1,2}:\d{2})\)?/);
-
-                                                                        if (dtMatch && isSpecialTarget) {
-                                                                            const [_, d, t] = dtMatch;
-                                                                            return (
-                                                                                <View className="flex-row items-center">
-                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{`${d}(${t})`}</Text>
-                                                                                </View>
-                                                                            );
-                                                                        }
-
-                                                                        if (dtMatch) {
-                                                                            const [_, d, t] = dtMatch;
-                                                                            return (
-                                                                                <View className="flex-row items-center">
-                                                                                    <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{d}</Text>
-                                                                                    <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
-                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{t}</Text>
-                                                                                </View>
-                                                                            );
-                                                                        }
-
-                                                                        // Default Fallback
-                                                                        return (
-                                                                            <View className="flex-row items-center">
-                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{fullDisplayStr || trimmedItem}</Text>
-                                                                            </View>
-                                                                        );
-                                                                    })()}
+                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
+                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base ${isExpired ? 'line-through opacity-40' : ''}`}>{displayStr}</Text>
                                                                 </View>
-                                                                {isSlotOngoing && (
-                                                                    <View className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a] shadow-[0_0_10px_rgba(0,255,136,0.5)]" style={{ shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }}>
-                                                                        <Ionicons name="flash" size={8} color="#0f172a" style={{ marginRight: 2 }} />
-                                                                        <Text className="text-slate-900 text-[9px] font-black ml-0.5">진행중</Text>
-                                                                    </View>
-                                                                )}
                                                             </View>
                                                         );
                                                     })}
@@ -639,7 +603,7 @@ const EventCard = memo(({
                             ]}
                         >
                             <Ionicons name="book-outline" size={16} color={guideHover ? '#172554' : '#fff'} style={{ marginRight: 6 }} />
-                            <Text className={`font-bold text-sm ${guideHover ? 'text-blue-950' : 'text-white'}`}>{event.category === '연맹' ? '공략' : 'Guide'}</Text>
+                            <Text className={`font-bold text-sm ${guideHover ? 'text-blue-950' : 'text-white'}`}>{t('events.guide')}</Text>
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
@@ -662,7 +626,7 @@ const EventCard = memo(({
                                 ]}
                             >
                                 <Ionicons name="people-outline" size={16} color={attendHover ? '#064e3b' : '#fff'} style={{ marginRight: 6 }} />
-                                <Text className={`font-bold text-sm ${attendHover ? 'text-emerald-950' : 'text-white'}`}>참석</Text>
+                                <Text className={`font-bold text-sm ${attendHover ? 'text-emerald-950' : 'text-white'}`}>{t('events.attend')}</Text>
                             </Pressable>
                         )}
                     </View>
@@ -674,6 +638,7 @@ const EventCard = memo(({
 
 // Shimmer Schedule Button Component (for admin schedule button)
 const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, isDark: boolean }) => {
+    const { t } = useTranslation();
     const shimmerAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -726,7 +691,7 @@ const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, 
                 />
                 <View className="flex-row items-center justify-center relative z-10">
                     <Ionicons name="calendar" size={12} color="white" style={{ marginRight: 4 }} />
-                    <Text className="text-white text-[10px] font-bold">시간 설정</Text>
+                    <Text className="text-white text-[10px] font-bold">{t('events.set_time')}</Text>
                 </View>
                 <Animated.View
                     style={{
@@ -751,7 +716,8 @@ const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, 
 });
 
 // Mini Hero Picker Component
-const HeroPicker = memo(({ value, onSelect, label }: { value: string, onSelect: (v: string) => void, label: string }) => {
+const HeroPicker = memo(({ value, onSelect, num }: { value: string, onSelect: (v: string) => void, num: number }) => {
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const [showDropdown, setShowDropdown] = useState(false);
@@ -769,9 +735,9 @@ const HeroPicker = memo(({ value, onSelect, label }: { value: string, onSelect: 
 
     return (
         <View className="flex-1 relative" style={{ zIndex: showDropdown ? 60 : 1 }}>
-            <Text className={`text-[9px] font-bold mb-1.5 ml-1 uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{label}</Text>
+            <Text className={`text-[9px] font-bold mb-1.5 ml-1 uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.hero_placeholder', { num })}</Text>
             <TextInput
-                placeholder={label === 'HERO 1' ? '영웅 1' : label === 'HERO 2' ? '영웅 2' : '영웅 3'}
+                placeholder={t('events.no_hero')}
                 placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
                 value={search}
                 onChangeText={(v) => {
@@ -829,7 +795,7 @@ const OptionPicker = memo(({ value, options, onSelect, label, isDark, direction 
             {show && (
                 <View
                     style={{ zIndex: 9999, elevation: 9999, minHeight: 160 }}
-                    className={`absolute ${direction === 'up' ? 'bottom-16' : 'top-14'} left-0 right-0 border rounded-[20px] max-h-64 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                    className={`absolute ${direction === 'up' ? 'bottom-16' : 'top-14'} left-0 right-0 rounded-2xl border max-h-64 shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
                 >
                     <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={true} className="flex-1">
                         {options.map(opt => (
@@ -851,6 +817,7 @@ const OptionPicker = memo(({ value, options, onSelect, label, isDark, direction 
 
 // Member Picker for Attendance
 const MemberPicker = memo(({ value, onSelect, members, isAdmin, setOverlayContent }: { value: string, onSelect: (v: string) => void, members: any[], isAdmin: boolean, setOverlayContent: (node: React.ReactNode | null) => void }) => {
+    const { t } = useTranslation();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const [search, setSearch] = useState(value);
@@ -928,7 +895,7 @@ const MemberPicker = memo(({ value, onSelect, members, isAdmin, setOverlayConten
     return (
         <View ref={containerRef} className="flex-1 relative" style={{ zIndex: 1 }}>
             <TextInput
-                placeholder="영주 이름 선택/입력"
+                placeholder={t('events.member_placeholder')}
                 placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                 value={search}
                 onChangeText={(v) => {
@@ -959,6 +926,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
     isDark: boolean,
     setShowDatePicker: (v: 'start' | 'end' | null) => void
 }) => {
+    const { t } = useTranslation();
     const parts = value ? value.split(' ') : [];
     const datePart = parts[0] || ''; // YYYY.MM.DD
     const timePart = parts[1] || '';
@@ -980,7 +948,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                         <View className="flex-row items-center flex-1">
                             <Ionicons name="calendar" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
                             <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'} flex-1`} numberOfLines={1}>
-                                {datePart ? datePart.replace(/\./g, '-') : '날짜 선택'}
+                                {datePart ? datePart.replace(/\./g, '-') : t('common.select_date')}
                             </Text>
                         </View>
                         <Ionicons name="chevron-down" size={14} color="#475569" />
@@ -995,7 +963,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     >
                         <View className="flex-row items-center">
                             <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}시</Text>
+                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}{t('common.hour')}</Text>
                         </View>
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
@@ -1008,7 +976,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                                         onPress={() => { onChange(`${datePart} ${hour}:${m}`); setActiveDateDropdown(null); }}
                                         className={`h-11 items-center justify-center border-b ${h === hour ? (isDark ? 'bg-sky-500/25 border-sky-500/20' : 'bg-sky-50 border-sky-100') : (isDark ? 'border-slate-700/30' : 'border-slate-100')}`}
                                     >
-                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{hour}시</Text>
+                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{hour}{t('common.hour')}</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -1028,7 +996,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     >
                         <View className="flex-row items-center">
                             <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}분</Text>
+                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}{t('common.minute')}</Text>
                         </View>
                         <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
                     </TouchableOpacity>
@@ -1041,7 +1009,7 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                                         onPress={() => { onChange(`${datePart} ${h}:${min}`); setActiveDateDropdown(null); }}
                                         className={`h-11 items-center justify-center border-b ${m === min ? (isDark ? 'bg-sky-500/25 border-sky-500/20' : 'bg-sky-50 border-sky-100') : (isDark ? 'border-slate-700/30' : 'border-slate-100')}`}
                                     >
-                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{min}분</Text>
+                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{min}{t('common.minute')}</Text>
                                     </TouchableOpacity>
                                 )}
                                 keyExtractor={item => item}
@@ -1063,6 +1031,7 @@ export default function EventTracker() {
     const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
     const { auth, serverId, allianceId } = useAuth();
+    const { t } = useTranslation();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
 
@@ -1134,7 +1103,8 @@ export default function EventTracker() {
                         ...event,
                         day: (savedSchedule.day === '.' ? '' : (savedSchedule.day || '')),
                         time: (savedSchedule.time === '.' ? '' : (savedSchedule.time || '')),
-                        strategy: savedSchedule.strategy || ''
+                        strategy: savedSchedule.strategy || '',
+                        updatedAt: savedSchedule.updatedAt // For Bear Hunt bi-weekly rotation
                     };
                 }
                 return { ...event, day: '', time: '' };
@@ -1192,8 +1162,8 @@ export default function EventTracker() {
                 // 1. Just-in-time notification (On event start)
                 await Notifications.scheduleNotificationAsync({
                     content: {
-                        title: `🏰 이벤트 시작 알림: ${event.title}`,
-                        body: `${event.title} 이벤트가 지금 시작되었습니다! 본부를 수호하세요.`,
+                        title: t('events.notification.start_title', { title: t(`events.${event.id}_title`, { defaultValue: event.title }) }),
+                        body: t('events.notification.start_body', { title: t(`events.${event.id}_title`, { defaultValue: event.title }) }),
                         sound: true,
                         data: { eventId: event.id },
                     },
@@ -1222,8 +1192,8 @@ export default function EventTracker() {
 
                 await Notifications.scheduleNotificationAsync({
                     content: {
-                        title: `🛎️ 이벤트 10분 전 알림: ${event.title}`,
-                        body: `10분 후 ${event.title} 이벤트가 시작됩니다! 준비하세요.`,
+                        title: t('events.notification.warning_title', { title: t(`events.${event.id}_title`, { defaultValue: event.title }) }),
+                        body: t('events.notification.warning_body', { title: t(`events.${event.id}_title`, { defaultValue: event.title }) }),
                         sound: true,
                         data: { eventId: event.id, isWarning: true },
                     },
@@ -1400,6 +1370,12 @@ export default function EventTracker() {
         }
     }, [firestoreAttendees, managedEvent]);
 
+    // Event Time Formatting Helpers
+    const getKoreanDayOfWeek = (date: Date) => {
+        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        return t(`events.days.${days[date.getDay()]}`);
+    };
+
     const checkItemOngoing = useCallback((str: string) => {
         if (!str) return false;
         const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
@@ -1542,6 +1518,245 @@ export default function EventTracker() {
         return base;
     }, [events, selectedCategory, isExpiredMap, isOngoingMap, now]);
 
+    // Timeline-specific sorted events (matching dashboard sort logic exactly)
+    const timelineEvents = useMemo(() => {
+        // 1. Process events (split teams for Bear Hunt, Canyon, Foundry, Fortress/Citadel)
+        const processedList: any[] = [];
+        filteredEvents.forEach(e => {
+            if (e.id === 'a_bear' || e.id === 'alliance_bear') {
+                // Split Bear Hunt into separate cards for Team 1 and Team 2
+                const parts = (e.time || '').split(/\s*\/\s*/);
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const isSingleTeam = parts.length === 1;
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/곰|팀|군/g, '').trim() + '군') : '';
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            id: `${e.id}_team${idx + 1}`,
+                            originalEventId: e.id,
+                            title: cleanLabel ? `곰 사냥 작전(${cleanLabel})` : '곰 사냥 작전',
+                            time: simplifiedTime,
+                            isBearSplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: '🐻'
+                        });
+                    });
+                } else {
+                    processedList.push(e);
+                }
+            } else if (e.id === 'a_fortress' || e.id === 'alliance_fortress') {
+                // Split Fortress Battle into separate 'Fortress' and 'Citadel' events
+                const rawTime = (e.time || '').replace(/\s*\/\s*/g, ', ');
+                const parts = rawTime.split(',').map(p => {
+                    let cleaned = p.trim().replace(/.*(요새전|성채전|Fortress|Citadel)[:\s：]*/, '');
+                    return cleaned.trim();
+                }).filter(p => p);
+
+                const fortressParts: string[] = [];
+                const citadelParts: string[] = [];
+
+                parts.forEach(part => {
+                    if (part.includes('성채') || part.toLowerCase().includes('citadel')) {
+                        citadelParts.push(part);
+                    } else {
+                        fortressParts.push(part);
+                    }
+                });
+
+                if (fortressParts.length > 0) {
+                    processedList.push({
+                        ...e,
+                        id: `${e.id}_fortress`,
+                        originalEventId: e.id,
+                        title: t('events.fortress_battle_title'),
+                        day: t('events.fortress'),
+                        time: fortressParts.join(', '),
+                        isFortressSplit: true
+                    });
+                }
+
+                if (citadelParts.length > 0) {
+                    processedList.push({
+                        ...e,
+                        id: `${e.id}_citadel`,
+                        originalEventId: e.id,
+                        title: t('events.citadel_battle_title'),
+                        day: t('events.citadel'),
+                        time: citadelParts.join(', '),
+                        isFortressSplit: true
+                    });
+                }
+
+                if (fortressParts.length === 0 && citadelParts.length === 0) {
+                    processedList.push(e);
+                }
+            } else if (e.id === 'alliance_canyon') {
+                // Split Canyon Battle into Team 1 and Team 2
+                const parts = (e.time || '').split(/\s*\/\s*/);
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const isSingleTeam = parts.length === 1;
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/협곡|전투|팀|군/g, '').trim() + '군') : '';
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            id: `${e.id}_team${idx + 1}`,
+                            originalEventId: e.id,
+                            title: cleanLabel ? `${t('events.canyon_title')}(${cleanLabel})` : t('events.canyon_title'),
+                            time: simplifiedTime,
+                            isCanyonSplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: '⛰️'
+                        });
+                    });
+                } else {
+                    processedList.push(e);
+                }
+            } else if (e.id === 'a_foundry' || e.id === 'alliance_foundry') {
+                // Split Weapon Factory into Team 1 and Team 2
+                const parts = (e.time || '').split(/\s*\/\s*/);
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const isSingleTeam = parts.length === 1;
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/무기|공장|팀|군/g, '').trim() + '군') : '';
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            id: `${e.id}_team${idx + 1}`,
+                            originalEventId: e.id,
+                            title: cleanLabel ? `${t('events.foundry_title')}(${cleanLabel})` : t('events.foundry_title'),
+                            time: simplifiedTime,
+                            isFoundrySplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: '🏭'
+                        });
+                    });
+                } else {
+                    processedList.push(e);
+                }
+            } else {
+                processedList.push(e);
+            }
+        });
+
+        // 2. Helper functions
+        const getBundleId = (ev: any) => {
+            const gid = ev.originalEventId || ev.id;
+            if (gid === 'a_fortress' || gid === 'a_citadel' || gid === 'alliance_fortress' || gid === 'alliance_citadel') return 'fortress_bundle';
+            return gid;
+        };
+
+        const getSortTime = (ev: any) => {
+            const dStr = ev.day || '';
+            const tStr = ev.time || '';
+            const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+
+            const rangeMatch = (dStr + tStr).match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
+            if (rangeMatch) return new Date(rangeMatch[1] + '-' + rangeMatch[2] + '-' + rangeMatch[3]).getTime();
+
+            const firstDay = (dStr + tStr).match(/[월화수목금토일]/)?.[0];
+            const timeMatch = (dStr + tStr).match(/(\d{2}:\d{2})/)?.[1] || '00:00';
+            if (firstDay) {
+                const [h, m] = timeMatch.split(':').map(Number);
+                return dayMap[firstDay] * 86400000 + h * 3600000 + m * 60000;
+            }
+            return 9999999999999;
+        };
+
+        // 3. Pre-calculate group-level data
+        const groupData: { [key: string]: { minTime: number, hasActive: boolean, allExpired: boolean, count: number } } = {};
+        processedList.forEach(e => {
+            const groupId = getBundleId(e);
+            const sTime = getSortTime(e);
+            const active = isOngoingMap[e.id] || false;
+            const expired = isExpiredMap[e.id] || false;
+
+            if (!groupData[groupId]) {
+                groupData[groupId] = { minTime: sTime, hasActive: active, allExpired: expired, count: 1 };
+            } else {
+                if (sTime < groupData[groupId].minTime) groupData[groupId].minTime = sTime;
+                if (active) groupData[groupId].hasActive = true;
+                groupData[groupId].allExpired = groupData[groupId].allExpired && expired;
+                groupData[groupId].count += 1;
+            }
+        });
+
+        // 4. Sort with full dashboard logic
+        return processedList.sort((a, b) => {
+            const groupIdA = getBundleId(a);
+            const groupIdB = getBundleId(b);
+            const gDataA = groupData[groupIdA];
+            const gDataB = groupData[groupIdB];
+
+            // Priority 1: Group Active Status
+            if (gDataA.hasActive && !gDataB.hasActive) return -1;
+            if (!gDataA.hasActive && gDataB.hasActive) return 1;
+
+            // Priority 2: Group Expired Status
+            if (!gDataA.allExpired && gDataB.allExpired) return -1;
+            if (gDataA.allExpired && !gDataB.allExpired) return 1;
+
+            // Priority 3: Bundle Priority
+            const isBundleA = gDataA.count > 1;
+            const isBundleB = gDataB.count > 1;
+            if (isBundleA && !isBundleB) return -1;
+            if (!isBundleA && isBundleB) return 1;
+
+            // Priority 4: Group Sort Time
+            if (gDataA.minTime !== gDataB.minTime) return gDataA.minTime - gDataB.minTime;
+
+            // Priority 5: Strict Group ID grouping
+            if (groupIdA !== groupIdB) return groupIdA.localeCompare(groupIdB);
+
+            // Priority 6: Internal Order - Team Order
+            const teamA = a.teamLabel ? (parseInt(a.teamLabel) || (a.teamLabel.includes('1') ? 1 : 2)) : 0;
+            const teamB = b.teamLabel ? (parseInt(b.teamLabel) || (b.teamLabel.includes('1') ? 1 : 2)) : 0;
+            if (teamA !== teamB) return teamA - teamB;
+
+            // Priority 7: Fortress/Citadel Priority
+            const aIsFortress = a.title.includes('요새') || a.title.toLowerCase().includes('fortress');
+            const aIsCitadel = a.title.includes('성채') || a.title.toLowerCase().includes('citadel');
+            const bIsFortress = b.title.includes('요새') || b.title.toLowerCase().includes('fortress');
+            const bIsCitadel = b.title.includes('성채') || b.title.toLowerCase().includes('citadel');
+            if (aIsFortress && bIsCitadel) return -1;
+            if (aIsCitadel && bIsFortress) return 1;
+
+            // Priority 8: Title Alphabetical
+            return (a.title || '').localeCompare(b.title || '');
+        });
+    }, [filteredEvents, isOngoingMap, isExpiredMap, t]);
+
     const handleSetSelectedTeamTab = useCallback((eventId: string, idx: number) => {
         setSelectedTeamTabs(prev => ({ ...prev, [eventId]: idx }));
     }, []);
@@ -1552,12 +1767,12 @@ export default function EventTracker() {
                 setCurrentWikiUrl(url);
                 setBrowserVisible(true);
             } else {
-                Linking.openURL(url).catch(err => showCustomAlert('오류', '링크를 열 수 없습니다: ' + err.message, 'error'));
+                Linking.openURL(url).catch(err => showCustomAlert(t('common.error'), t('events.link_error', { error: err.message }), 'error'));
             }
         } else {
-            showCustomAlert('알림', '위키 링크가 존재하지 않습니다.', 'warning');
+            showCustomAlert(t('common.info'), t('events.no_wiki_link'), 'warning');
         }
-    }, [showCustomAlert]);
+    }, [showCustomAlert, t]);
 
     const addTimeSlot = () => {
         const isT1 = activeTab === 1;
@@ -1580,7 +1795,7 @@ export default function EventTracker() {
         // Check for duplicate
         const isDuplicate = currentSlots.some(s => s.day === selectedDayForSlot && s.time === `${editHour}:${editMinute}`);
         if (isDuplicate) {
-            showCustomAlert('중복 알림', '이미 동일한 요일과 시간이 등록되어 있습니다.', 'warning');
+            showCustomAlert(t('common.duplicate_alert'), t('events.duplicate_schedule_entry'), 'warning');
             return;
         }
 
@@ -1608,7 +1823,7 @@ export default function EventTracker() {
 
     const addFortressSlot = () => {
         if (!selectedFortressName) {
-            showCustomAlert('알림', (editingEvent?.id === 'a_fortress') ? '요새를 선택해주세요.' : '성채를 선택해주세요.', 'warning');
+            showCustomAlert(t('common.info'), (editingEvent?.id === 'a_fortress') ? t('events.select_fortress') : t('events.select_citadel'), 'warning');
             return;
         }
 
@@ -1627,7 +1842,7 @@ export default function EventTracker() {
         // Check duplicate
         const isDuplicate = list.some(item => item.name === selectedFortressName && item.day === selectedDayForSlot && item.h === editHour && item.m === editMinute);
         if (isDuplicate) {
-            showCustomAlert('중복', '이미 동일한 설정이 존재합니다.', 'warning');
+            showCustomAlert(t('common.duplicate_alert'), t('events.duplicate_setting'), 'warning');
             return;
         }
 
@@ -1670,12 +1885,12 @@ export default function EventTracker() {
                     strategy: strategyContent
                 });
                 setIsEditingStrategy(false);
-                showCustomAlert('완료', '연맹 작전이 저장되었습니다.', 'success');
+                showCustomAlert(t('common.completed'), t('events.strategy_saved'), 'success');
             } catch (error: any) {
-                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
+                showCustomAlert(t('common.error'), t('events.save_error', { error: error.message }), 'error');
             }
         }
-    }, [events, strategyContent, updateSchedule, showCustomAlert]);
+    }, [events, strategyContent, updateSchedule, showCustomAlert, t]);
 
     const parseScheduleStr = (str: string) => {
         if (!str || str === '.') return [];
@@ -1841,8 +2056,8 @@ export default function EventTracker() {
         if ((event.category === '연맹' || event.category === '서버') && !SINGLE_SLOT_IDS.includes(event.id)) {
             const parts = (event.time || '').split(' / ');
             parts.forEach(p => {
-                if (p.startsWith('1군:')) s1 = parseScheduleStr(p.replace('1군:', ''));
-                if (p.startsWith('2군:')) s2 = parseScheduleStr(p.replace('2군:', ''));
+                if (p.startsWith('1군:') || p.startsWith('Team1:')) s1 = parseScheduleStr(p.replace(/^(1군:|Team1:)\s*/, ''));
+                if (p.startsWith('2군:') || p.startsWith('Team2:')) s2 = parseScheduleStr(p.replace(/^(2군:|Team2:)\s*/, ''));
             });
             if (s1.length === 0 && s2.length === 0) s1 = parseScheduleStr(event.time || '');
         } else {
@@ -1855,12 +2070,12 @@ export default function EventTracker() {
         setInitialSlots2(s2.map(s => ({ day: s.day, time: s.time })));
 
         const nowTime = new Date();
-        setSelectedDayForSlot('월');
+        setSelectedDayForSlot(t('events.days.mon'));
         setEditHour(nowTime.getHours().toString().padStart(2, '0'));
         setEditMinute('00');
         setEditingSlotId(null);
         setScheduleModalVisible(true);
-    }, [parseScheduleStr]);
+    }, [parseScheduleStr, selectedTeamTabs]);
 
     const toggleDay = useCallback((day: string) => {
         setSelectedDayForSlot(day);
@@ -1893,26 +2108,26 @@ export default function EventTracker() {
         }
 
         Alert.alert(
-            '불참 사유 선택',
-            `${name} 영주의 불참 사유를 선택해주세요.\n(무단 불참 시 페널티가 부여됩니다)`,
+            t('events.penalty_reason_title'),
+            t('events.penalty_reason_desc', { name }) + `\n(${t('events.penalty_warning')})`,
             [
-                { text: '취소', style: 'cancel' },
+                { text: t('common.cancel'), style: 'cancel' },
                 {
-                    text: '상태 초기화',
+                    text: t('events.penalty_reset'),
                     onPress: () => updateAttendeeField(id, 'penalty', '')
                 },
                 {
-                    text: '사전 통보',
+                    text: t('events.penalty_notice'),
                     onPress: () => updateAttendeeField(id, 'penalty', 'NOTICE')
                 },
                 {
-                    text: '무단 불참 (페널티)',
+                    text: t('events.penalty_no_show'),
                     style: 'destructive',
                     onPress: () => updateAttendeeField(id, 'penalty', 'NO_SHOW')
                 }
             ]
         );
-    }, [updateAttendeeField]);
+    }, [updateAttendeeField, t]);
 
     const deleteAttendee = useCallback((id: string) => {
         setBulkAttendees(prev => prev.filter(a => a.id !== id));
@@ -1921,28 +2136,28 @@ export default function EventTracker() {
     const saveAttendees = useCallback(() => {
         const validAttendees = bulkAttendees.filter(a => a.name?.trim());
         if (validAttendees.length === 0) {
-            showCustomAlert('알림', '최소 한 명 이상의 이름을 입력해주세요.', 'warning');
+            showCustomAlert(t('common.info'), t('events.save_attendees_empty'), 'warning');
             return;
         }
 
         const summary = validAttendees.map(a =>
-            `- ${a.name}: ${[a.hero1, a.hero2, a.hero3].filter(Boolean).join(', ') || '지정 안 함'}`
+            `- ${a.name}: ${[a.hero1, a.hero2, a.hero3].filter(Boolean).join(', ') || t('events.no_hero')}`
         ).join('\n');
 
         setAttendeeModalVisible(false);
         setIsSaving(true);
         showCustomAlert(
-            '참석 명단 저장 완료',
-            `${managedEvent?.title} 이벤트를 위해 총 ${validAttendees.length}명의 영주가 등록되었습니다.\n\n${summary}`,
+            t('events.save_attendees_title'),
+            t('events.save_attendees_success_desc', { title: managedEvent?.title, count: validAttendees.length }) + `\n\n${summary}`,
             'success'
         );
 
         if (managedEvent) {
             saveAttendeesToFirestore(validAttendees.length > 0 ? validAttendees : [], managedEvent.title)
-                .then(() => showCustomAlert('성공', '명단이 서버에 저장되었습니다.', 'success'))
-                .catch((e) => showCustomAlert('오류', '저장 중 문제가 발생했습니다: ' + e.message, 'error'));
+                .then(() => showCustomAlert(t('common.success'), t('events.save_success'), 'success'))
+                .catch((e) => showCustomAlert(t('common.error'), t('events.save_error', { error: e.message }), 'error'));
         }
-    }, [bulkAttendees, managedEvent, showCustomAlert, saveAttendeesToFirestore]);
+    }, [bulkAttendees, managedEvent, showCustomAlert, saveAttendeesToFirestore, t]);
 
     const saveSchedule = async () => {
         if (!editingEvent) return;
@@ -1969,9 +2184,9 @@ export default function EventTracker() {
                     strategy: editingEvent.strategy || ''
                 });
                 setScheduleModalVisible(false);
-                showCustomAlert('완료', `${editingEvent.title} 일정이 저장되었습니다.`, 'success');
+                showCustomAlert(t('common.completed'), t('events.schedule_saved', { title: editingEvent.title }), 'success');
             } catch (error: any) {
-                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
+                showCustomAlert(t('common.error'), t('events.save_error', { error: error.message }), 'error');
             } finally {
                 setTimeout(() => { setIsSaving(false); }, 100);
             }
@@ -1984,13 +2199,13 @@ export default function EventTracker() {
             let finalDay = '';
 
             if (editingEvent.id === 'a_fortress') {
-                const fStr = fortressList.length > 0 ? `요새전: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
+                const fStr = fortressList.length > 0 ? `${t('events.fortress_battle')}: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
                 timeStr = fStr;
-                finalDay = fortressList.length > 0 ? '요새전' : '';
+                finalDay = fortressList.length > 0 ? t('events.fortress_battle') : '';
             } else {
-                const cStr = citadelList.length > 0 ? `성채전: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
+                const cStr = citadelList.length > 0 ? `${t('events.citadel_battle')}: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
                 timeStr = cStr;
-                finalDay = citadelList.length > 0 ? '성채전' : '';
+                finalDay = citadelList.length > 0 ? t('events.citadel_battle') : '';
             }
 
             // Optimistic update handled by hook
@@ -2020,11 +2235,11 @@ export default function EventTracker() {
                     }
                 }
 
-                showCustomAlert('완료', `${editingEvent.title} 일정이 저장되었습니다.`, 'success', () => {
+                showCustomAlert(t('common.completed'), t('events.schedule_saved', { title: editingEvent.title }), 'success', () => {
                     setScheduleModalVisible(false);
                 });
             } catch (error: any) {
-                showCustomAlert('오류', '저장 실패: ' + error.message, 'error');
+                showCustomAlert(t('common.error'), t('events.save_error', { error: error.message }), 'error');
             } finally {
                 setTimeout(() => { setIsSaving(false); }, 100);
             }
@@ -2056,8 +2271,8 @@ export default function EventTracker() {
             const str2 = buildStr(slots2);
 
             const parts = [];
-            if (str1) parts.push(`1군: ${str1}`);
-            if (str2) parts.push(`2군: ${str2}`);
+            if (str1) parts.push(`${t('events.team1')}: ${str1}`);
+            if (str2) parts.push(`${t('events.team2')}: ${str2}`);
             finalTime = parts.join(' / ');
 
             // DEBUG
@@ -2101,12 +2316,12 @@ export default function EventTracker() {
                 }
             }
 
-            showCustomAlert('저장 완료', '이벤트 일정이 성공적으로 등록되었습니다.', 'success', () => {
+            showCustomAlert(t('common.completed'), t('events.schedule_saved', { title: editingEvent.title }), 'success', () => {
                 setScheduleModalVisible(false);
             });
 
         } catch (error: any) {
-            showCustomAlert('저장 실패', '서버 통신 중 오류가 발생했습니다.\n' + error.message, 'error');
+            showCustomAlert(t('common.error'), t('events.save_error', { error: error.message }), 'error');
         } finally {
             setTimeout(() => { setIsSaving(false); }, 100);
         }
@@ -2117,8 +2332,8 @@ export default function EventTracker() {
 
         setIsSaving(true);
         showCustomAlert(
-            '일정 초기화',
-            '이 이벤트의 요일/시간 설정을 정말로 삭제하시겠습니까?',
+            t('events.schedule_reset_title'),
+            t('events.schedule_reset_confirm'),
             'confirm',
             async () => {
                 setIsSaving(true);
@@ -2135,11 +2350,11 @@ export default function EventTracker() {
                     if (Platform.OS !== 'web') {
                         await Notifications.cancelAllScheduledNotificationsAsync();
                     }
-                    showCustomAlert('완료', '일정이 초기화되었습니다.', 'success', () => {
+                    showCustomAlert(t('common.completed'), t('events.schedule_reset_success'), 'success', () => {
                         setScheduleModalVisible(false);
                     });
                 } catch (error: any) {
-                    showCustomAlert('오류', '초기화 실패: ' + error.message, 'error');
+                    showCustomAlert(t('common.error'), t('events.save_error', { error: error.message }), 'error');
                 } finally {
                     setTimeout(() => { setIsSaving(false); }, 500);
                 }
@@ -2154,7 +2369,7 @@ export default function EventTracker() {
             <View className={`flex-1 justify-center items-center ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
                 <Stack.Screen options={{ headerShown: false }} />
                 <ActivityIndicator size="large" color="#38bdf8" />
-                <Text className={`mt-4 font-semibold ${isDark ? 'text-white' : 'text-slate-600'}`}>데이터 동기화 중...</Text>
+                <Text className={`mt-4 font-semibold ${isDark ? 'text-white' : 'text-slate-600'}`}>{t('common.syncing')}</Text>
             </View>
         );
     }
@@ -2167,7 +2382,7 @@ export default function EventTracker() {
                 {/* Layout: Sidebar for Desktop */}
                 {isDesktop && (
                     <View className={`w-60 border-r pt-16 px-4 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                        <Text className={`text-[11px] font-bold uppercase tracking-widest mb-6 px-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Category</Text>
+                        <Text className={`text-[11px] font-bold uppercase tracking-widest mb-6 px-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.category.title')}</Text>
                         <View className="space-y-1">
                             {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
                                 <Pressable
@@ -2196,7 +2411,12 @@ export default function EventTracker() {
                                                 color={selectedCategory === cat ? '#6366f1' : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
                                             />
                                             <Text className={`ml-3 font-bold text-sm ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-800') : (isDark ? 'text-slate-400' : 'text-slate-500'))}`}>
-                                                {cat}
+                                                {cat === '전체' ? t('common.all')
+                                                    : cat === '연맹' ? t('events.category.alliance')
+                                                        : cat === '개인' ? t('events.category.individual')
+                                                            : cat === '서버' ? t('events.category.server')
+                                                                : cat === '초보자' ? t('events.category.beginner')
+                                                                    : cat}
                                             </Text>
                                             {(selectedCategory === cat || hovered) && (
                                                 <View
@@ -2231,8 +2451,8 @@ export default function EventTracker() {
                                 <Ionicons name="arrow-back-outline" size={20} color={isDark ? "white" : "#1e293b"} />
                             </TouchableOpacity>
                             <View className="flex-1">
-                                <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>이벤트 스케줄</Text>
-                                <Text className={`text-sm font-semibold mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>서버 및 연맹 이벤트를 한눈에 확인하세요</Text>
+                                <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('events.title')}</Text>
+                                <Text className={`text-sm font-semibold mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('events.subtitle')}</Text>
                             </View>
 
                             {/* Timezone Toggle */}
@@ -2255,7 +2475,7 @@ export default function EventTracker() {
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[11px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
+                                    <Text className={`text-[11px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('events.timezone_local')}</Text>
                                 </Pressable>
                                 <Pressable
                                     onPress={() => setTimezone('UTC')}
@@ -2275,7 +2495,7 @@ export default function EventTracker() {
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[11px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                    <Text className={`text-[11px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('events.timezone_utc')}</Text>
                                 </Pressable>
                             </View>
 
@@ -2334,7 +2554,14 @@ export default function EventTracker() {
                                                         color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
                                                         className="mr-2"
                                                     />
-                                                    <Text className={`text-sm font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}>{cat}</Text>
+                                                    <Text className={`text-sm font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}>
+                                                        {cat === '전체' ? t('common.all')
+                                                            : cat === '연맹' ? t('events.category.alliance')
+                                                                : cat === '개인' ? t('events.category.individual')
+                                                                    : cat === '서버' ? t('events.category.server')
+                                                                        : cat === '초보자' ? t('events.category.beginner')
+                                                                            : cat}
+                                                    </Text>
                                                     {(selectedCategory === cat || hovered) && (
                                                         <View
                                                             className="absolute bottom-0 left-4 right-4 h-0.5 rounded-t-full transition-all"
@@ -2360,7 +2587,7 @@ export default function EventTracker() {
                     {/* Event Grid / Timeline View Content */}
                     {viewMode === 'timeline' ? (
                         <TimelineView
-                            events={events}
+                            events={timelineEvents}
                             isDark={isDark}
                             timezone={timezone}
                             onEventPress={(ev) => {
@@ -2387,8 +2614,8 @@ export default function EventTracker() {
                                         <View className={`w-24 h-24 rounded-full items-center justify-center mb-6 shadow-inner ${isDark ? 'bg-slate-800/40 border border-slate-700/50' : 'bg-slate-50 border border-slate-100'}`}>
                                             <Ionicons name="calendar-outline" size={48} color={isDark ? "#475569" : "#94a3b8"} />
                                         </View>
-                                        <Text className={`text-xl font-black mb-2 tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>진행 중인 이벤트가 없습니다</Text>
-                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>다른 카테고리 필터를 선택해 주세요</Text>
+                                        <Text className={`text-xl font-black mb-2 tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{t('events.no_ongoing_events')}</Text>
+                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.select_another_category')}</Text>
                                     </View>
                                 ) : (
                                     filteredEvents.map((event) => (
@@ -2462,17 +2689,17 @@ export default function EventTracker() {
                                     <View className="flex-row items-center justify-between mb-2">
                                         <View className="flex-row items-center">
                                             <View className="w-1 h-4 bg-brand-accent rounded-full mr-2" />
-                                            <Text className="text-white font-semibold text-sm">실전 진행 방식 (Wiki)</Text>
+                                            <Text className="text-white font-semibold text-sm">{t('events.modal.wiki_title')}</Text>
                                         </View>
                                         <TouchableOpacity
                                             onPress={() => openWikiLink(selectedEventForGuide?.wikiUrl || '')}
                                             className="bg-[#38bdf8]/10 px-3 py-1.5 rounded-lg border border-[#38bdf8]/20"
                                         >
-                                            <Text className="text-[#38bdf8] text-xs font-semibold">🌐 위키 이동</Text>
+                                            <Text className="text-[#38bdf8] text-xs font-semibold">{t('events.modal.wiki_btn')}</Text>
                                         </TouchableOpacity>
                                     </View>
                                     <Text className="text-slate-400 text-xs leading-5">
-                                        {selectedEventForGuide?.wikiUrl || '위키 링크가 없습니다.'}
+                                        {selectedEventForGuide?.wikiUrl || t('events.modal.wiki_empty')}
                                     </Text>
                                 </View>
 
@@ -2480,10 +2707,10 @@ export default function EventTracker() {
                                 {(selectedEventForGuide?.category === '연맹' || selectedEventForGuide?.category === '서버') && (
                                     <View className="mb-6">
                                         <View className="flex-row items-center justify-between mb-3">
-                                            <Text className="text-purple-400 font-bold text-sm uppercase tracking-widest">🛡️ 연맹 작전 지시</Text>
+                                            <Text className="text-purple-400 font-bold text-sm uppercase tracking-widest">{t('events.modal.strategy_title')}</Text>
                                             {isAdmin && !isEditingStrategy && (
                                                 <TouchableOpacity onPress={() => setIsEditingStrategy(true)} className="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
-                                                    <Text className="text-slate-400 text-[10px] font-semibold">수정</Text>
+                                                    <Text className="text-slate-400 text-[10px] font-semibold">{t('common.edit')}</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </View>
@@ -2496,23 +2723,23 @@ export default function EventTracker() {
                                                         value={strategyContent}
                                                         onChangeText={setStrategyContent}
                                                         className="text-slate-200 text-sm leading-6 min-h-[100px] mb-4"
-                                                        placeholder="연맹원들에게 전달할 작전을 입력하세요..."
+                                                        placeholder={t('events.modal.strategy_placeholder')}
                                                         placeholderTextColor="#64748b"
                                                         style={{ textAlignVertical: 'top' }}
                                                     />
                                                     <View className="flex-row justify-end space-x-2">
                                                         <TouchableOpacity onPress={() => { setIsEditingStrategy(false); setStrategyContent(selectedEventForGuide?.strategy || ''); }} className="bg-slate-700 px-4 py-2 rounded-xl">
-                                                            <Text className="text-slate-300 font-semibold text-xs">취소</Text>
+                                                            <Text className="text-slate-300 font-semibold text-xs">{t('common.cancel')}</Text>
                                                         </TouchableOpacity>
                                                         <TouchableOpacity onPress={() => saveStrategy(selectedEventForGuide!)} className="bg-purple-600 px-4 py-2 rounded-xl">
-                                                            <Text className="text-white font-semibold text-xs">저장</Text>
+                                                            <Text className="text-white font-semibold text-xs">{t('common.save')}</Text>
                                                         </TouchableOpacity>
                                                     </View>
                                                 </View>
                                             ) : (
                                                 <View className="p-5">
                                                     <Text className="text-slate-200 text-sm font-medium leading-6">
-                                                        {selectedEventForGuide?.strategy || '🥶 현재 등록된 작전 지시가 없습니다.'}
+                                                        {selectedEventForGuide?.strategy || t('events.modal.strategy_empty')}
                                                     </Text>
                                                 </View>
                                             )}
@@ -2523,13 +2750,13 @@ export default function EventTracker() {
                                 {/* Overview Section */}
                                 {guideContent && (
                                     <View className="mb-6">
-                                        <Text className="text-slate-500 text-xs font-bold uppercase mb-3">이벤트 개요</Text>
+                                        <Text className="text-slate-500 text-xs font-bold uppercase mb-3">{t('events.modal.guide_overview')}</Text>
                                         <Text className="text-slate-300 text-sm leading-6 mb-6">{guideContent.overview}</Text>
 
                                         {/* How to Play */}
                                         {guideContent.howToPlay && guideContent.howToPlay.length > 0 && (
                                             <View className="mb-6">
-                                                <Text className="text-slate-500 text-xs font-bold uppercase mb-3">상세 진행 가이드</Text>
+                                                <Text className="text-slate-500 text-xs font-bold uppercase mb-3">{t('events.modal.guide_detail')}</Text>
                                                 <View className="space-y-3">
                                                     {guideContent.howToPlay.map((step: { text: string; images?: string[] }, idx: number) => (
                                                         <View key={idx} className="flex-row">
@@ -2548,7 +2775,7 @@ export default function EventTracker() {
                                             <View className="mb-6 bg-yellow-500/5 p-5 rounded-2xl border border-yellow-500/10">
                                                 <View className="flex-row items-center mb-4">
                                                     <Ionicons name="bulb" size={16} color="#eab308" className="mr-2" />
-                                                    <Text className="text-yellow-500 text-xs font-bold uppercase">이벤트 공략 꿀팁</Text>
+                                                    <Text className="text-yellow-500 text-xs font-bold uppercase">{t('events.modal.guide_tips')}</Text>
                                                 </View>
                                                 <View className="space-y-2">
                                                     {guideContent.tips.map((tip: string, idx: number) => (
@@ -2570,7 +2797,7 @@ export default function EventTracker() {
                                 onPress={() => setGuideModalVisible(false)}
                                 className="bg-slate-800 py-4 items-center border-t border-slate-700"
                             >
-                                <Text className="text-slate-400 font-semibold text-sm">닫기</Text>
+                                <Text className="text-slate-400 font-semibold text-sm">{t('common.close')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -2611,7 +2838,7 @@ export default function EventTracker() {
                                             </Text>
                                         </View>
                                         <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                            {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'alliance_champion' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? '이벤트 진행 기간을 설정하세요.' : '이벤트 진행 요일과 시간을 설정하세요.'}
+                                            {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'alliance_champion' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? t('events.modal.set_date_range_desc') : t('events.modal.set_day_time_desc')}
                                         </Text>
 
                                     </>
@@ -2627,19 +2854,19 @@ export default function EventTracker() {
                                         <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
                                             <View className="mb-2">
                                                 <View className="flex-row items-center mb-2">
-                                                    <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">등록된 일정</Text>
+                                                    <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">{t('events.modal.registered_schedule')}</Text>
                                                 </View>
                                                 <View className="flex-row flex-wrap gap-2">
                                                     {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).map(slot => (
                                                         <TouchableOpacity key={slot.id} onPress={() => { setSelectedFortressName(slot.name); setSelectedDayForSlot(slot.day || '토'); setEditHour(slot.h); setEditMinute(slot.m); if (editingSlotId === slot.id) { setEditingSlotId(null); setSelectedFortressName(''); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}>
-                                                            <Text className="text-white text-xs font-bold mr-2">{slot.name} {slot.day}({slot.h}:{slot.m})</Text>
+                                                            <Text className="text-white text-xs font-bold mr-2">{slot.name} {t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(slot.day || '토')]}`)}({slot.h}:{slot.m})</Text>
                                                             <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeFortressSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity>
                                                         </TouchableOpacity>
                                                     ))}
                                                     {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).length === 0 && (
                                                         <View className={`w-full h-8 flex-row items-center justify-center border border-dashed rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}>
                                                             <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
-                                                            <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>일정 없음</Text>
+                                                            <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('events.modal.no_schedule')}</Text>
                                                         </View>
                                                     )}
                                                 </View>
@@ -2650,10 +2877,11 @@ export default function EventTracker() {
                                                 <View>
                                                     <View className="flex-row items-center mb-2">
                                                         <Ionicons name="shield-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{editingEvent?.id === 'a_fortress' ? '요새 선택' : '성채 선택'}</Text>
+                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{editingEvent?.id === 'a_fortress' ? t('events.select_fortress') : t('events.select_citadel')}</Text>
                                                     </View>
                                                     <View className="flex-row flex-wrap gap-2 justify-center">
-                                                        {(editingEvent?.id === 'a_fortress' ? FORTRESS_OPTIONS : CITADEL_OPTIONS).map((name) => {
+                                                        {(editingEvent?.id === 'a_fortress' ? FORTRESS_IDS : CITADEL_IDS).map((id) => {
+                                                            const name = (editingEvent?.id === 'a_fortress') ? `${t('events.fortress')} ${id.split('_')[1]}` : `${t('events.citadel')} ${id.split('_')[1]}`;
                                                             const isSelected = selectedFortressName === name;
                                                             return (
                                                                 <TouchableOpacity
@@ -2661,7 +2889,7 @@ export default function EventTracker() {
                                                                     onPress={() => setSelectedFortressName(name)}
                                                                     className={`px-3 py-1.5 rounded-lg border ${isSelected ? 'bg-brand-accent border-brand-accent' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}`}
                                                                 >
-                                                                    <Text className={`text-[11px] font-bold ${isSelected ? 'text-brand-dark' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{name}</Text>
+                                                                    <Text className={`font-black text-[13px] ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{name}</Text>
                                                                 </TouchableOpacity>
                                                             );
                                                         })}
@@ -2672,13 +2900,16 @@ export default function EventTracker() {
                                                 <View>
                                                     <View className="flex-row items-center mb-2">
                                                         <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                        <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일</Text>
+                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.day_of_week')}</Text>
                                                     </View>
                                                     <View className="flex-row justify-between gap-1">
                                                         {['월', '화', '수', '목', '금', '토', '일'].map((d) => {
+                                                            const krDays = ['일', '월', '화', '수', '목', '금', '토'];
+                                                            const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                                            const dayLabel = t(`events.days.${enKeys[krDays.indexOf(d)]}`);
                                                             const isSelected = selectedDayForSlot === d;
                                                             return (
-                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`flex-1 h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
+                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`flex-1 h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{dayLabel}</Text></TouchableOpacity>
                                                             );
                                                         })}
                                                     </View>
@@ -2689,11 +2920,11 @@ export default function EventTracker() {
                                                     <View className="flex-row items-center justify-between mb-2">
                                                         <View className="flex-row items-center">
                                                             <Ionicons name="alarm-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                            <Text className="text-brand-accent text-xs font-bold uppercase">시간 설정</Text>
+                                                            <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.modal.set_time')}</Text>
                                                         </View>
                                                         <View className={`flex-row p-0.5 rounded-lg ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
-                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오전</Text></TouchableOpacity>
-                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오후</Text></TouchableOpacity>
+                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('common.am')}</Text></TouchableOpacity>
+                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('common.pm')}</Text></TouchableOpacity>
                                                         </View>
                                                     </View>
 
@@ -2720,7 +2951,7 @@ export default function EventTracker() {
 
                                                 <TouchableOpacity onPress={() => addFortressSlot()} className={`mt-2 w-full ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-500 border-emerald-400'} py-3 rounded-xl border items-center flex-row justify-center`}>
                                                     <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color={editingSlotId ? "#10b981" : "white"} style={{ marginRight: 6 }} />
-                                                    <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-sm`}>{editingSlotId ? '수정 완료' : '이 일정 추가 등록'}</Text>
+                                                    <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-sm`}>{editingSlotId ? t('events.edit_completed') : t('events.add_schedule_entry')}</Text>
                                                 </TouchableOpacity>
                                             </View>
                                         </ScrollView>
@@ -2733,10 +2964,10 @@ export default function EventTracker() {
                                                     <View className={`mt-6 p-4 rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'}`} style={{ zIndex: 50 }}>
                                                         <View className="flex-row items-center mb-4">
                                                             <Ionicons name="calendar-number-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                            <Text className="text-brand-accent text-xs font-bold uppercase">일정 설정</Text>
+                                                            <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.set_schedule')}</Text>
                                                         </View>
                                                         <RenderDateSelector
-                                                            label="시작 일시"
+                                                            label={t('events.start_datetime')}
                                                             value={mStart}
                                                             onChange={setMStart}
                                                             type="start"
@@ -2746,7 +2977,7 @@ export default function EventTracker() {
                                                             setShowDatePicker={setShowDatePicker}
                                                         />
                                                         <RenderDateSelector
-                                                            label="종료 일시"
+                                                            label={t('events.end_datetime')}
                                                             value={mEnd}
                                                             onChange={setMEnd}
                                                             type="end"
@@ -2769,19 +3000,21 @@ export default function EventTracker() {
                                                             if (diffMs <= 0) return (
                                                                 <View className={`mt-2 p-3 rounded-xl border border-dashed ${isDark ? 'border-rose-500/30 bg-rose-500/5' : 'border-rose-300 bg-rose-50'} flex-row items-center justify-center`}>
                                                                     <Ionicons name="alert-circle-outline" size={14} color="#ef4444" style={{ marginRight: 6 }} />
-                                                                    <Text className="text-rose-400 text-xs font-bold">종료 일시가 시작 일시보다 빠릅니다</Text>
+                                                                    <Text className="text-rose-400 text-xs font-bold">{t('events.error_end_before_start')}</Text>
                                                                 </View>
                                                             );
                                                             const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
                                                             const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
                                                             const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                                                            let text = '📅 총 ';
-                                                            if (days > 0) text += `${days}일 `;
-                                                            if (hours > 0) text += `${hours}시간 `;
-                                                            if (mins > 0 && days === 0) text += `${mins}분`;
+
+                                                            let durationText = '';
+                                                            if (days > 0) durationText += `${days}${t('events.day_unit')} `;
+                                                            if (hours > 0) durationText += `${hours}${t('events.hour_unit')} `;
+                                                            if (mins > 0 && days === 0) durationText += `${mins}${t('events.min_unit')}`;
+
                                                             return (
                                                                 <View className={`mt-2 p-3 rounded-xl ${isDark ? 'bg-sky-500/10 border border-sky-500/20' : 'bg-sky-50 border border-sky-100'} flex-row items-center justify-center`}>
-                                                                    <Text className={`text-xs font-bold ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>{text.trim()}</Text>
+                                                                    <Text className={`text-xs font-bold ${isDark ? 'text-sky-300' : 'text-sky-600'}`}>{t('events.total_duration', { duration: durationText.trim() })}</Text>
                                                                 </View>
                                                             );
                                                         })()}
@@ -2798,153 +3031,179 @@ export default function EventTracker() {
                                             if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                 return (
                                                     <View className={`flex-row mb-2 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                                        <TouchableOpacity onPress={() => handleTabSwitch(1)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰1 설정' : '1군 설정'}</Text></TouchableOpacity>
-                                                        <TouchableOpacity onPress={() => handleTabSwitch(2)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? '곰2 설정' : '2군 설정'}</Text></TouchableOpacity>
+                                                        <TouchableOpacity onPress={() => handleTabSwitch(1)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? t('events.bear1_setting') : t('events.team1_setting')}</Text></TouchableOpacity>
+                                                        <TouchableOpacity onPress={() => handleTabSwitch(2)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? t('events.bear2_setting') : t('events.team2_setting')}</Text></TouchableOpacity>
                                                     </View>
                                                 );
                                             }
                                             return null;
                                         })()}
 
-                                        {editingEvent?.id !== 'alliance_champion' && editingEvent?.id !== 'alliance_frost_league' && editingEvent?.id !== 'a_weapon' && (
-                                            <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
-                                                <View className="flex-1 justify-between pb-4">
-                                                    {/* Registered Slots List */}
-                                                    {editingEvent?.id !== 'a_center' && (
-                                                        <View className="mb-2">
-                                                            <View className="flex-row items-center mb-2">
-                                                                <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">등록된 일정</Text>
-                                                            </View>
-                                                            <View className="flex-row flex-wrap gap-2">
-                                                                {(activeTab === 1 ? slots1 : slots2).map(slot => {
-                                                                    if (slot.isNew) {
-                                                                        const backgroundColor = newSlotPulse.interpolate({
-                                                                            inputRange: [0, 1],
-                                                                            outputRange: ['rgba(251, 191, 36, 0.1)', 'rgba(251, 191, 36, 0.4)']
-                                                                        });
-                                                                        const borderColor = newSlotPulse.interpolate({
-                                                                            inputRange: [0, 1],
-                                                                            outputRange: ['rgba(251, 191, 36, 0.3)', 'rgba(251, 191, 36, 0.8)']
-                                                                        });
-
-                                                                        return (
-                                                                            <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }}>
-                                                                                <Animated.View style={{ backgroundColor, borderColor, borderWidth: 1 }} className={`px-3 py-1.5 rounded-xl flex-row items-center border`}>
-                                                                                    <Text className={`text-amber-400 text-xs font-bold mr-2`}>{slot.day}{slot.time ? `(${formatTime12h(slot.time)})` : ''}</Text>
-                                                                                    <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#fbbf24" /></TouchableOpacity>
-                                                                                </Animated.View>
-                                                                            </TouchableOpacity>
-                                                                        );
-                                                                    }
-                                                                    return (
-                                                                        <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}><Text className="text-white text-xs font-bold mr-2">{slot.day}{slot.time ? `(${formatTime12h(slot.time)})` : ''}</Text><TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity></TouchableOpacity>
-                                                                    );
-                                                                })}
-                                                                {(activeTab === 1 ? slots1 : slots2).length === 0 && (
-                                                                    <View className={`w-full h-8 flex-row items-center justify-center border border-dashed rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}>
-                                                                        <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
-                                                                        <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>일정 없음</Text>
-                                                                    </View>
-                                                                )}
-                                                            </View>
+                                        <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
+                                            <View className="flex-1 justify-between pb-4">
+                                                {/* Registered Slots List */}
+                                                {editingEvent?.id !== 'a_center' && (
+                                                    <View className="mb-2">
+                                                        <View className="flex-row items-center mb-2">
+                                                            <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">{t('events.modal.registered_schedule')}</Text>
                                                         </View>
-                                                    )}
+                                                        <View className="flex-row flex-wrap gap-2">
+                                                            {(activeTab === 1 ? slots1 : slots2).map(slot => {
+                                                                if (slot.isNew) {
+                                                                    const backgroundColor = newSlotPulse.interpolate({
+                                                                        inputRange: [0, 1],
+                                                                        outputRange: ['rgba(251, 191, 36, 0.1)', 'rgba(251, 191, 36, 0.4)']
+                                                                    });
+                                                                    const borderColor = newSlotPulse.interpolate({
+                                                                        inputRange: [0, 1],
+                                                                        outputRange: ['rgba(251, 191, 36, 0.3)', 'rgba(251, 191, 36, 0.8)']
+                                                                    });
 
-                                                    {/* Input Form */}
-                                                    {editingEvent?.id !== 'a_center' && (
-                                                        <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
-                                                            {selectedDayForSlot !== '상시' ? (
-                                                                <>
-                                                                    <View>
-                                                                        <View className="flex-row items-center mb-2">
-                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                                            <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일</Text>
+                                                                    return (
+                                                                        <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }}>
+                                                                            <Animated.View style={{ backgroundColor, borderColor, borderWidth: 1 }} className={`px-3 py-1.5 rounded-xl flex-row items-center border`}>
+                                                                                <Text className={`text-amber-400 text-xs font-bold mr-2`}>{t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'daily', 'always'][['일', '월', '화', '수', '목', '금', '토', '매일', '상시'].indexOf(slot.day)]}`)}{slot.time ? `(${formatTime12h(slot.time, t)})` : ''}</Text>
+                                                                                <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#fbbf24" /></TouchableOpacity>
+                                                                            </Animated.View>
+                                                                        </TouchableOpacity>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}><Text className="text-white text-xs font-bold mr-2">{t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'daily', 'always'][['일', '월', '화', '수', '목', '금', '토', '매일', '상시'].indexOf(slot.day)]}`)}{slot.time ? `(${formatTime12h(slot.time, t)})` : ''}</Text><TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity></TouchableOpacity>
+                                                                );
+                                                            })}
+                                                            {(activeTab === 1 ? slots1 : slots2).length === 0 && (
+                                                                <View className={`w-full h-8 flex-row items-center justify-center border border-dashed rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}>
+                                                                    <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
+                                                                    <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('events.modal.no_schedule')}</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                    </View>
+                                                )}
+
+                                                {/* Input Form */}
+                                                {editingEvent?.id !== 'a_center' && (
+                                                    <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
+                                                        {selectedDayForSlot !== '상시' ? (
+                                                            <>
+                                                                <View>
+                                                                    <View className="flex-row items-center mb-2">
+                                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.day_of_week')}</Text>
+                                                                    </View>
+                                                                    <View className="flex-row flex-wrap justify-between gap-1">
+                                                                        {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
+                                                                            const isSelected = selectedDayForSlot === d;
+                                                                            const dayLabel = d === '월' ? t('events.days.mon') : d === '화' ? t('events.days.tue') : d === '수' ? t('events.days.wed') : d === '목' ? t('events.days.thu') : d === '금' ? t('events.days.fri') : d === '토' ? t('events.days.sat') : d === '일' ? t('events.days.sun') : t('events.days.always');
+                                                                            return (
+                                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{dayLabel}</Text></TouchableOpacity>
+                                                                            );
+                                                                        })}
+                                                                    </View>
+                                                                </View>
+
+                                                                <View>
+                                                                    <View className="flex-row items-center justify-between mb-2">
+                                                                        <View className="flex-row items-center">
+                                                                            <Ionicons name="alarm-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                            <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.modal.set_time')}</Text>
                                                                         </View>
-                                                                        <View className="flex-row flex-wrap justify-between gap-1">
-                                                                            {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
-                                                                                const isSelected = selectedDayForSlot === d;
-                                                                                return (
-                                                                                    <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
-                                                                                );
-                                                                            })}
+                                                                        <View className={`flex-row p-0.5 rounded-lg ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
+                                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('common.am')}</Text></TouchableOpacity>
+                                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('common.pm')}</Text></TouchableOpacity>
                                                                         </View>
                                                                     </View>
 
-                                                                    <View>
-                                                                        <View className="flex-row items-center justify-between mb-2">
-                                                                            <View className="flex-row items-center">
-                                                                                <Ionicons name="alarm-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                                                <Text className="text-brand-accent text-xs font-bold uppercase">시간 설정</Text>
-                                                                            </View>
-                                                                            <View className={`flex-row p-0.5 rounded-lg ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
-                                                                                <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오전</Text></TouchableOpacity>
-                                                                                <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>오후</Text></TouchableOpacity>
-                                                                            </View>
-                                                                        </View>
-
-                                                                        <View className="flex-row flex-wrap justify-between gap-1 mb-2">
-                                                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h12 => {
-                                                                                const curH = parseInt(editHour);
-                                                                                const isPM = curH >= 12;
-                                                                                const displayH = curH % 12 === 0 ? 12 : curH % 12;
-                                                                                const isSelected = displayH === h12;
-                                                                                return (
-                                                                                    <TouchableOpacity key={h12} onPress={() => { let newH = h12; if (isPM) newH = h12 === 12 ? 12 : h12 + 12; else newH = h12 === 12 ? 0 : h12; setEditHour(newH.toString().padStart(2, '0')); }} className={`w-[15%] aspect-square rounded-xl items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-xs font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{h12}</Text></TouchableOpacity>
-                                                                                )
-                                                                            })}
-                                                                        </View>
-                                                                        <View className="flex-row justify-between gap-1">
-                                                                            {['00', '10', '20', '30', '40', '50'].map(m => {
-                                                                                const isSelected = editMinute === m;
-                                                                                return (
-                                                                                    <TouchableOpacity key={m} onPress={() => setEditMinute(m)} className={`flex-1 py-2 rounded-lg items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-[10px] font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{m}</Text></TouchableOpacity>
-                                                                                )
-                                                                            })}
-                                                                        </View>
+                                                                    <View className="flex-row flex-wrap justify-between gap-1 mb-2">
+                                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h12 => {
+                                                                            const curH = parseInt(editHour);
+                                                                            const isPM = curH >= 12;
+                                                                            const displayH = curH % 12 === 0 ? 12 : curH % 12;
+                                                                            const isSelected = displayH === h12;
+                                                                            return (
+                                                                                <TouchableOpacity key={h12} onPress={() => { let newH = h12; if (isPM) newH = h12 === 12 ? 12 : h12 + 12; else newH = h12 === 12 ? 0 : h12; setEditHour(newH.toString().padStart(2, '0')); }} className={`w-[15%] aspect-square rounded-xl items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-xs font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{h12}</Text></TouchableOpacity>
+                                                                            )
+                                                                        })}
                                                                     </View>
+                                                                    <View className="flex-row justify-between gap-1">
+                                                                        {['00', '10', '20', '30', '40', '50'].map(m => {
+                                                                            const isSelected = editMinute === m;
+                                                                            return (
+                                                                                <TouchableOpacity key={m} onPress={() => setEditMinute(m)} className={`flex-1 py-2 rounded-lg items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-[10px] font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{m}</Text></TouchableOpacity>
+                                                                            )
+                                                                        })}
+                                                                    </View>
+                                                                </View>
 
+                                                                {/* Bear Hunt: Only allow one time slot (but allow editing) */}
+                                                                {editingEvent?.id?.includes('bear') ? (
+                                                                    editingSlotId ? (
+                                                                        // Editing mode: Show edit buttons
+                                                                        <View className="flex-row gap-2 mt-2">
+                                                                            <TouchableOpacity onPress={() => addTimeSlot()} className="flex-1 bg-emerald-500/20 border-emerald-500/40 py-4 rounded-xl border items-center flex-row justify-center">
+                                                                                <Ionicons name="checkmark-circle" size={20} color="#10b981" style={{ marginRight: 8 }} />
+                                                                                <Text className="text-emerald-400 font-bold text-base">{t('events.edit_completed')}</Text>
+                                                                            </TouchableOpacity>
+                                                                            <TouchableOpacity
+                                                                                onPress={() => { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); }}
+                                                                                className="bg-slate-800 px-4 py-4 rounded-xl border border-slate-700 justify-center"
+                                                                            >
+                                                                                <Text className="text-slate-400 font-semibold text-sm">{t('common.cancel')}</Text>
+                                                                            </TouchableOpacity>
+                                                                        </View>
+                                                                    ) : (
+                                                                        // Not editing: Show info message instead of add button
+                                                                        <View className="mt-3 px-4 py-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                                                                            <Text className="text-blue-400 text-sm text-center">
+                                                                                {t('events.modal.bear_hunt_single_time', { defaultValue: '곰 사냥은 한 개의 시간만 등록할 수 있습니다.' })}
+                                                                            </Text>
+                                                                        </View>
+                                                                    )
+                                                                ) : (
                                                                     <View className="flex-row gap-2 mt-2">
                                                                         <TouchableOpacity onPress={() => addTimeSlot()} className={`flex-1 ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-500 border-emerald-400'} py-4 rounded-xl border items-center flex-row justify-center`}>
                                                                             <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color={editingSlotId ? "#10b981" : "white"} style={{ marginRight: 8 }} />
-                                                                            <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-base`}>{editingSlotId ? '수정 완료' : '이 시간 추가 등록'}</Text>
+                                                                            <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-base`}>{editingSlotId ? t('events.edit_completed') : t('events.modal.add_time_slot')}</Text>
                                                                         </TouchableOpacity>
                                                                         {!!editingSlotId && (
                                                                             <TouchableOpacity
                                                                                 onPress={() => { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); }}
                                                                                 className="bg-slate-800 px-4 py-4 rounded-xl border border-slate-700 justify-center"
                                                                             >
-                                                                                <Text className="text-slate-400 font-semibold text-sm">취소</Text>
+                                                                                <Text className="text-slate-400 font-semibold text-sm">{t('common.cancel')}</Text>
                                                                             </TouchableOpacity>
                                                                         )}
                                                                     </View>
-                                                                </>
-                                                            ) : (
-                                                                <View className="flex-1 justify-center">
-                                                                    <View>
-                                                                        <View className="flex-row items-center mb-2">
-                                                                            <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                                            <Text className="text-brand-accent text-xs font-bold uppercase">진행 요일</Text>
-                                                                        </View>
-                                                                        <View className="flex-row flex-wrap justify-between gap-1">
-                                                                            {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
-                                                                                const isSelected = selectedDayForSlot === d;
-                                                                                return (
-                                                                                    <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{d}</Text></TouchableOpacity>
-                                                                                );
-                                                                            })}
-                                                                        </View>
+                                                                )}
+                                                            </>
+                                                        ) : (
+                                                            <View className="flex-1 justify-center">
+                                                                <View>
+                                                                    <View className="flex-row items-center mb-2">
+                                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.day_of_week')}</Text>
                                                                     </View>
-                                                                    <View className="flex-1 justify-center items-center">
-                                                                        <TouchableOpacity onPress={addTimeSlot} className="bg-brand-accent/20 py-4 px-8 rounded-xl border border-brand-accent/40 items-center"><Text className="text-brand-accent font-bold text-lg">상시 진행으로 등록</Text></TouchableOpacity>
+                                                                    <View className="flex-row flex-wrap justify-between gap-1">
+                                                                        {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
+                                                                            const isSelected = selectedDayForSlot === d;
+                                                                            const dayLabel = d === '월' ? t('events.days.mon') : d === '화' ? t('events.days.tue') : d === '수' ? t('events.days.wed') : d === '목' ? t('events.days.thu') : d === '금' ? t('events.days.fri') : d === '토' ? t('events.days.sat') : d === '일' ? t('events.days.sun') : t('events.days.always');
+                                                                            return (
+                                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{dayLabel}</Text></TouchableOpacity>
+                                                                            );
+                                                                        })}
                                                                     </View>
                                                                 </View>
-                                                            )}
-                                                        </View>
-                                                    )}
-                                                </View>
+                                                                <View className="flex-1 justify-center items-center">
+                                                                    <TouchableOpacity onPress={addTimeSlot} className="bg-brand-accent/20 py-4 px-8 rounded-xl border border-brand-accent/40 items-center"><Text className="text-brand-accent font-bold text-lg">{t('events.days.always')} {t('common.add')}</Text></TouchableOpacity>
+                                                                </View>
+                                                            </View>
+                                                        )}
+                                                    </View>
+                                                )}
+                                            </View>
 
-                                            </ScrollView>
-                                        )}
+                                        </ScrollView>
                                     </View>
                                 )}
                             </View>
@@ -2953,10 +3212,10 @@ export default function EventTracker() {
                             <View className={`px-6 pt-4 pb-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`} style={{ zIndex: 100 }}>
                                 <View className="flex-row gap-4">
                                     <TouchableOpacity onPress={handleDeleteSchedule} className={`flex-1 py-4 rounded-2xl border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>초기화</Text>
+                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.reset')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity onPress={saveSchedule} className="flex-[2] bg-brand-accent py-4 rounded-2xl items-center justify-center shadow-lg shadow-brand-accent/20">
-                                        <Text className="text-brand-dark font-black text-lg">저장하기</Text>
+                                        <Text className="text-brand-dark font-black text-lg">{t('common.save')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -2973,10 +3232,9 @@ export default function EventTracker() {
                                 let onSelect: (v: string) => void = () => { };
 
                                 if (activeNamePickerId) {
-                                    title = isFortress ? '요새 선택' : '성채 선택';
-                                    options = isFortress ? FORTRESS_OPTIONS : CITADEL_OPTIONS;
-                                    const item = list.find(l => l.id === activeNamePickerId);
-                                    selectedValue = item?.name || '';
+                                    title = isFortress ? t('events.select_fortress') : t('events.select_citadel');
+                                    options = isFortress ? FORTRESS_IDS.map(id => `${t('events.fortress')} ${id.split('_')[1]}`) : CITADEL_IDS.map(id => `${t('events.citadel')} ${id.split('_')[1]}`);
+                                    selectedValue = list.find(l => l.id === activeNamePickerId)?.name || '';
                                     onSelect = (v) => {
                                         const newList = [...list];
                                         const idx = newList.findIndex(l => l.id === activeNamePickerId);
@@ -2987,7 +3245,7 @@ export default function EventTracker() {
                                     const { id, type } = activeFortressDropdown;
                                     const item = list.find(l => l.id === id);
                                     if (type === 'h') {
-                                        title = '시간 선택';
+                                        title = t('events.modal.select_hour');
                                         options = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
                                         selectedValue = item?.h || '00';
                                         onSelect = (v) => {
@@ -2997,7 +3255,7 @@ export default function EventTracker() {
                                             setActiveFortressDropdown(null);
                                         };
                                     } else {
-                                        title = '분 선택';
+                                        title = t('events.modal.select_minute');
                                         options = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'];
                                         selectedValue = item?.m || '00';
                                         onSelect = (v) => {
@@ -3042,7 +3300,7 @@ export default function EventTracker() {
                         <Pressable className="flex-1 justify-end" onPress={() => { }}>
                             <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
                                 <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                                    <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} 명단 관리</Text>
+                                    <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} {t('events.modal.manage_attendees')}</Text>
                                     <View className="flex-row items-center">
                                         {isAdmin && (
                                             <TouchableOpacity
@@ -3051,7 +3309,7 @@ export default function EventTracker() {
                                             >
                                                 <Ionicons name="add" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 4 }} />
                                                 <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                    영주 추가
+                                                    {t('events.modal.add_lord')}
                                                 </Text>
                                             </TouchableOpacity>
                                         )}
@@ -3084,7 +3342,7 @@ export default function EventTracker() {
                                                         />
                                                         {attendee.penalty && (
                                                             <Text className="text-[10px] text-red-500 mt-1 font-bold ml-1">
-                                                                {attendee.penalty === 'NO_SHOW' ? '⛔ 무단 불참 (페널티)' : '⚠️ 사전 통보'}
+                                                                {attendee.penalty === 'NO_SHOW' ? t('events.modal.penalty_no_show') : t('events.modal.penalty_notice')}
                                                             </Text>
                                                         )}
                                                     </View>
@@ -3108,9 +3366,9 @@ export default function EventTracker() {
                                                 </View>
 
                                                 <View className="flex-row space-x-2 pointer-events-auto" style={{ zIndex: 1 }}>
-                                                    <HeroPicker label="HERO 1" value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
-                                                    <HeroPicker label="HERO 2" value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
-                                                    <HeroPicker label="HERO 3" value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
+                                                    <HeroPicker num={1} value={attendee.hero1 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero1', v)} />
+                                                    <HeroPicker num={2} value={attendee.hero2 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero2', v)} />
+                                                    <HeroPicker num={3} value={attendee.hero3 || ''} onSelect={(v) => updateAttendeeField(attendee.id!, 'hero3', v)} />
                                                 </View>
                                             </View>
                                         )
@@ -3118,8 +3376,8 @@ export default function EventTracker() {
                                     ListEmptyComponent={
                                         <View className="items-center justify-center py-10 opacity-50">
                                             <Ionicons name="documents-outline" size={48} color="#94a3b8" />
-                                            <Text className="text-slate-400 mt-4 font-semibold">등록된 참석 명단이 없습니다.</Text>
-                                            <Text className="text-slate-600 text-xs mt-1">관리자가 명단을 추가하면 여기에 표시됩니다.</Text>
+                                            <Text className="text-slate-400 mt-4 font-semibold">{t('events.modal.no_attendees_registered')}</Text>
+                                            <Text className="text-slate-600 text-xs mt-1">{t('events.modal.admin_add_attendees_message')}</Text>
                                         </View>
                                     }
                                     ListFooterComponent={null}
@@ -3138,11 +3396,11 @@ export default function EventTracker() {
                                 <View className={`p-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                     {isAdmin ? (
                                         <TouchableOpacity onPress={saveAttendees} className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-600/20">
-                                            <Text className="text-white font-bold text-lg">명단 저장 ({bulkAttendees.filter(a => a.name?.trim()).length}명)</Text>
+                                            <Text className="text-white font-bold text-lg">{t('events.modal.save_attendees')} ({bulkAttendees.filter(a => a.name?.trim()).length}{t('events.person_unit')})</Text>
                                         </TouchableOpacity>
                                     ) : (
                                         <View className="w-full py-4 items-center">
-                                            <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>관리자만 명단을 수정할 수 있습니다.</Text>
+                                            <Text className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.modal.admin_only_edit_attendees')}</Text>
                                         </View>
                                     )}
                                 </View>
@@ -3159,7 +3417,7 @@ export default function EventTracker() {
                                                 {penaltyTarget.name}
                                             </Text>
                                             <Text className={`text-sm mt-1 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                불참 사유를 선택해주세요
+                                                {t('events.modal.select_absence_reason')}
                                             </Text>
                                         </View>
 
@@ -3172,7 +3430,7 @@ export default function EventTracker() {
                                                 className="w-full py-4 bg-yellow-500/10 border border-yellow-500/50 rounded-2xl items-center flex-row justify-center"
                                             >
                                                 <Ionicons name="warning" size={18} color="#eab308" style={{ marginRight: 8 }} />
-                                                <Text className="text-yellow-500 font-bold">⚠️ 사전 통보 (참작)</Text>
+                                                <Text className="text-yellow-500 font-bold">{t('events.modal.penalty_notice')}</Text>
                                             </TouchableOpacity>
 
                                             <TouchableOpacity
@@ -3183,7 +3441,7 @@ export default function EventTracker() {
                                                 className="w-full py-4 bg-red-500/10 border border-red-500/50 rounded-2xl items-center flex-row justify-center"
                                             >
                                                 <Ionicons name="skull" size={18} color="#ef4444" style={{ marginRight: 8 }} />
-                                                <Text className="text-red-500 font-bold">⛔ 무단 불참 (페널티)</Text>
+                                                <Text className="text-red-500 font-bold">{t('events.modal.penalty_no_show')}</Text>
                                             </TouchableOpacity>
 
                                             <TouchableOpacity
@@ -3194,14 +3452,14 @@ export default function EventTracker() {
                                                 className={`w-full py-4 border rounded-2xl items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                                             >
                                                 <Ionicons name="refresh" size={18} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 8 }} />
-                                                <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>상태 초기화</Text>
+                                                <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.modal.reset_status')}</Text>
                                             </TouchableOpacity>
 
                                             <TouchableOpacity
                                                 onPress={() => setPenaltyTarget(null)}
                                                 className="w-full py-3 items-center mt-2"
                                             >
-                                                <Text className={isDark ? 'text-slate-500' : 'text-slate-400'}>취소</Text>
+                                                <Text className={isDark ? 'text-slate-500' : 'text-slate-400'}>{t('common.cancel')}</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -3216,14 +3474,14 @@ export default function EventTracker() {
                     <View className="flex-1 bg-white">
                         <View className="h-16 bg-slate-900 flex-row items-center justify-between px-4 border-b border-slate-700">
                             <View className="flex-row items-center flex-1 mr-4">
-                                <Text className="text-white font-semibold mr-2">🌐 WIKI</Text>
+                                <Text className="text-white font-semibold mr-2">🌐 {t('events.wiki')}</Text>
                                 <Text className="text-slate-400 text-xs truncate flex-1" numberOfLines={1}>{currentWikiUrl}</Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => setBrowserVisible(false)}
                                 className="bg-slate-700 px-4 py-2 rounded-lg hover:bg-slate-600"
                             >
-                                <Text className="text-white font-semibold text-sm">닫기 ✖️</Text>
+                                <Text className="text-white font-semibold text-sm">{t('common.close')} ✖️</Text>
                             </TouchableOpacity>
                         </View>
                         <View className="flex-1 bg-slate-100">
@@ -3264,7 +3522,7 @@ export default function EventTracker() {
                                         onPress={() => setCustomAlert({ ...customAlert, visible: false })}
                                         className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                                     >
-                                        <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>취소</Text>
+                                        <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => {
@@ -3273,7 +3531,7 @@ export default function EventTracker() {
                                         }}
                                         className="flex-1 py-4 bg-red-600 rounded-2xl"
                                     >
-                                        <Text className="text-white text-center font-bold text-lg">삭제</Text>
+                                        <Text className="text-white text-center font-bold text-lg">{t('common.delete')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
@@ -3284,7 +3542,7 @@ export default function EventTracker() {
                                     }}
                                     className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
                                 >
-                                    <Text className="text-white text-center font-bold text-lg">확인</Text>
+                                    <Text className="text-white text-center font-bold text-lg">{t('common.ok')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -3312,11 +3570,22 @@ export default function EventTracker() {
                                 setViewDate(new Date(year, month + offset, 1));
                             };
 
+                            const monthNames = [
+                                t('common.month_1'), t('common.month_2'), t('common.month_3'), t('common.month_4'),
+                                t('common.month_5'), t('common.month_6'), t('common.month_7'), t('common.month_8'),
+                                t('common.month_9'), t('common.month_10'), t('common.month_11'), t('common.month_12')
+                            ];
+
+                            const dayNames = [
+                                t('events.days.sun'), t('events.days.mon'), t('events.days.tue'), t('events.days.wed'),
+                                t('events.days.thu'), t('events.days.fri'), t('events.days.sat')
+                            ];
+
                             return (
                                 <View className={`w-full max-w-sm rounded-[32px] overflow-hidden border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
                                     {/* Calendar Header */}
                                     <View className="flex-row items-center justify-between p-6 border-b border-slate-800/10">
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{year}년 {KR_MONTHS[month]}</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{year}{t('common.year')} {monthNames[month]}</Text>
                                         <View className="flex-row gap-2">
                                             <TouchableOpacity onPress={() => changeMonth(-1)} className={`p-2 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}><Ionicons name="chevron-back" size={20} color="#38bdf8" /></TouchableOpacity>
                                             <TouchableOpacity onPress={() => changeMonth(1)} className={`p-2 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}><Ionicons name="chevron-forward" size={20} color="#38bdf8" /></TouchableOpacity>
@@ -3325,7 +3594,7 @@ export default function EventTracker() {
 
                                     {/* Days Header */}
                                     <View className="flex-row px-4 pt-4">
-                                        {KR_DAYS.map((d, i) => (
+                                        {dayNames.map((d, i) => (
                                             <View key={d} className="flex-1 items-center"><Text className={`text-[11px] font-black ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-slate-500'} uppercase tracking-tighter`}>{d}</Text></View>
                                         ))}
                                     </View>
@@ -3365,7 +3634,7 @@ export default function EventTracker() {
                                         onPress={() => setShowDatePicker(null)}
                                         className={`py-5 items-center border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} active:bg-sky-500/5`}
                                     >
-                                        <Text className="text-slate-500 font-bold">닫기</Text>
+                                        <Text className="text-slate-500 font-bold">{t('common.close')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             );
@@ -3386,9 +3655,9 @@ export default function EventTracker() {
                             <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-amber-500/10">
                                 <Ionicons name="warning" size={32} color="#fbbf24" />
                             </View>
-                            <Text className={`text-xl font-bold mb-3 text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>저장되지 않은 변경사항</Text>
+                            <Text className={`text-xl font-bold mb-3 text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('common.unsaved_changes')}</Text>
                             <Text className={`text-center mb-6 text-sm leading-6 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                현재 탭에 저장되지 않은 변경사항이 있습니다.{'\n'}저장하지 않고 이동하시겠습니까?
+                                {t('common.unsaved_changes_message')}
                             </Text>
 
                             <View className="flex-row gap-3 w-full">
@@ -3399,7 +3668,7 @@ export default function EventTracker() {
                                     }}
                                     className={`flex-1 py-3 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                                 >
-                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>취소</Text>
+                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => {
@@ -3409,7 +3678,7 @@ export default function EventTracker() {
                                     }}
                                     className="flex-1 py-3 bg-amber-500 rounded-xl"
                                 >
-                                    <Text className="text-white text-center font-bold text-base">이동</Text>
+                                    <Text className="text-white text-center font-bold text-base">{t('common.navigate_without_save')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

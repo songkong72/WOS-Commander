@@ -7,6 +7,7 @@ export interface EventSchedule {
     day: string;
     time: string;
     strategy?: string;
+    updatedAt?: number; // Timestamp for Bear Hunt bi-weekly rotation logic
 }
 
 const ID_MAP: { [key: string]: string } = {
@@ -148,15 +149,19 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
             const rawId = scheduleToUpdate.eventId.trim();
             const nid = normalizeId(rawId);
 
-            // 낙관적 업데이트
+            // 낙관적 업데이트 (optimistic update with timestamp)
+            const scheduleWithTimestamp = {
+                ...scheduleToUpdate,
+                updatedAt: Date.now()
+            };
             setSchedules(prev => {
                 const existingIdx = prev.findIndex(s => normalizeId(s.eventId) === nid);
                 if (existingIdx > -1) {
                     const next = [...prev];
-                    next[existingIdx] = scheduleToUpdate;
+                    next[existingIdx] = scheduleWithTimestamp;
                     return next;
                 }
-                return [...prev, scheduleToUpdate];
+                return [...prev, scheduleWithTimestamp];
             });
 
             await runTransaction(db, async (transaction) => {
@@ -192,8 +197,12 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
                     });
                 }
 
-                // 2. Apply the new update to our map
-                mergedMap.set(nid, scheduleToUpdate);
+                // 2. Apply the new update to our map (with timestamp for Bear Hunt rotation)
+                const scheduleWithTimestamp = {
+                    ...scheduleToUpdate,
+                    updatedAt: Date.now() // Add timestamp for bi-weekly rotation calculations
+                };
+                mergedMap.set(nid, scheduleWithTimestamp);
 
                 // 3. Prepare the CLEAN payload (No legacy fields!)
                 const cleanScheduleMap: any = {};
