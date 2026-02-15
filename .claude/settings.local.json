@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.whiteoutsurvival.wiki)",
+      "Bash(/cost)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(vercel --version:*)",
+      "Bash(vercel:*)",
+      "Bash(npx vercel --version)",
+      "Bash(npx vercel:*)"
+    ]
+  }
+}
