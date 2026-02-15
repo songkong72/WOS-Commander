@@ -2985,7 +2985,7 @@ export default function EventTracker() {
                                                         {editingEvent?.id === 'a_fortress' ? t('events.fortress') : t('events.citadel')}
                                                     </Text>
                                                     <TouchableOpacity
-                                                        onPress={() => setActiveNamePickerId('fortress_picker')}
+                                                        onPress={() => setActiveNamePickerId(activeNamePickerId === 'fortress_picker' ? null : 'fortress_picker')}
                                                         className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
                                                     >
                                                         <Text className={`text-base font-semibold ${selectedFortressName ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
@@ -3001,7 +3001,7 @@ export default function EventTracker() {
                                                         {t('events.day_of_week')}
                                                     </Text>
                                                     <TouchableOpacity
-                                                        onPress={() => setActiveFortressDropdown('day_picker')}
+                                                        onPress={() => setActiveFortressDropdown(activeFortressDropdown === 'day_picker' ? null : 'day_picker')}
                                                         className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
                                                     >
                                                         <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -3022,7 +3022,7 @@ export default function EventTracker() {
                                                         {t('events.modal.set_time')}
                                                     </Text>
                                                     <TouchableOpacity
-                                                        onPress={() => setActiveFortressDropdown('time_picker')}
+                                                        onPress={() => setActiveFortressDropdown(activeFortressDropdown === 'time_picker' ? null : 'time_picker')}
                                                         className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
                                                     >
                                                         <Text className={`text-base font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -3435,22 +3435,21 @@ export default function EventTracker() {
 
                                 return (
                                     <Pressable className="absolute inset-0 bg-black/60 z-[1000] justify-center items-center" onPress={() => { setActiveNamePickerId(null); setActiveFortressDropdown(null); }}>
-                                        <Pressable className={`w-64 max-h-[50%] rounded-2xl overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`} onPress={e => e.stopPropagation()}>
+                                        <Pressable className={`w-64 rounded-2xl overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-white'}`} style={{ maxHeight: '60%' }} onPress={e => e.stopPropagation()}>
                                             <View className={`px-4 py-3 border-b ${isDark ? 'border-slate-700' : 'border-slate-100'}`}>
                                                 <Text className={`text-center font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{title}</Text>
                                             </View>
-                                            <FlatList
-                                                data={options}
-                                                keyExtractor={item => item}
-                                                renderItem={({ item }) => (
+                                            <ScrollView style={{ maxHeight: 400 }}>
+                                                {options.map((item) => (
                                                     <TouchableOpacity
+                                                        key={item}
                                                         onPress={() => onSelect(item)}
                                                         className={`px-4 py-3 border-b items-center justify-center ${isDark ? 'border-slate-700 hover:bg-slate-700' : 'border-slate-100 hover:bg-slate-50'} ${selectedValue === item ? (isDark ? 'bg-sky-500/20' : 'bg-sky-50') : ''}`}
                                                     >
                                                         <Text className={`font-semibold ${selectedValue === item ? 'text-sky-500' : (isDark ? 'text-slate-300' : 'text-slate-700')}`}>{item}</Text>
                                                     </TouchableOpacity>
-                                                )}
-                                            />
+                                                ))}
+                                            </ScrollView>
                                         </Pressable>
                                     </Pressable>
                                 );
