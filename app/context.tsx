@@ -41,3 +41,19 @@ export function useTheme() {
     if (!context) throw new Error('useTheme must be used within a ThemeProvider');
     return context;
 }
+
+// --- Language Context ---
+export type Language = 'ko' | 'en';
+
+interface LanguageContextType {
+    language: Language;
+    changeLanguage: (lang: Language) => void;
+}
+
+export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+export function useLanguage() {
+    const context = useContext(LanguageContext);
+    if (!context) throw new Error('useLanguage must be used within a LanguageProvider');
+    return context;
+}

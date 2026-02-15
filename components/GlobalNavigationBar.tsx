@@ -4,21 +4,22 @@ import { useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useAuth, useTheme } from '../app/context';
+import { useTranslation } from 'react-i18next';
 
 interface NavItemProps {
     id: string;
-    label: string;
+    labelKey: string;
     icon: any;
     activeIcon: any;
     path: string;
 }
 
 const NAV_ITEMS: NavItemProps[] = [
-    { id: 'home', label: '홈', icon: 'home-outline', activeIcon: 'home', path: '/' },
-    { id: 'events', label: '이벤트', icon: 'calendar-outline', activeIcon: 'calendar', path: '/growth/events' },
-    { id: 'strategy', label: '전략', icon: 'map-outline', activeIcon: 'map', path: '/strategy-sheet' },
-    { id: 'heroes', label: '영웅', icon: 'people-outline', activeIcon: 'people', path: '/hero-management' },
-    { id: 'settings', label: '설정', icon: 'settings-outline', activeIcon: 'settings', path: '/settings' },
+    { id: 'home', labelKey: 'navigation.dashboard', icon: 'home-outline', activeIcon: 'home', path: '/' },
+    { id: 'events', labelKey: 'navigation.events', icon: 'calendar-outline', activeIcon: 'calendar', path: '/growth/events' },
+    { id: 'strategy', labelKey: 'navigation.wiki', icon: 'map-outline', activeIcon: 'map', path: '/strategy-sheet' },
+    { id: 'heroes', labelKey: 'navigation.heroes', icon: 'people-outline', activeIcon: 'people', path: '/hero-management' },
+    { id: 'settings', labelKey: 'navigation.settings', icon: 'settings-outline', activeIcon: 'settings', path: '/settings' },
 ];
 
 export default function GlobalNavigationBar() {
@@ -28,6 +29,7 @@ export default function GlobalNavigationBar() {
     const pathname = usePathname();
     const { theme } = useTheme();
     const { auth, serverId, allianceId, mainScrollRef } = useAuth();
+    const { t } = useTranslation();
     const isDark = theme === 'dark';
 
     const handleNavPress = (item: NavItemProps) => {
@@ -36,14 +38,12 @@ export default function GlobalNavigationBar() {
             // Check if showCustomAlert exists in context or use windows alert for simple feedback
             // Since this component is outside main context's local state, we'll suggest login via router or alert
             if (Platform.OS === 'web') {
-                alert('연맹원 전용 기능입니다. 연맹원 로그인이 필요합니다.');
+                alert(t('common.member_only_alert'));
             }
             return;
         }
 
-        if (item.id === 'settings') {
-            router.push('/?showAdminMenu=true');
-        } else if (item.path === '/' && pathname === '/') {
+        if (item.path === '/' && pathname === '/') {
             // If already on Home, scroll to top
             mainScrollRef?.current?.scrollTo({ y: 0, animated: true });
         } else {
@@ -64,9 +64,9 @@ export default function GlobalNavigationBar() {
                             <Ionicons name="flash" size={28} color="#10b981" />
                         </View>
                         <View className="flex-1">
-                            <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{auth.adminName || 'WOS 커맨더'}</Text>
+                            <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{auth.adminName || t('dashboard.title')}</Text>
                             <Text className={`text-[10px] font-bold tracking-tight ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                                {serverId && allianceId ? `#${serverId} - ${allianceId}` : 'Welcome, Commander'}
+                                {serverId && allianceId ? `#${serverId} - ${allianceId}` : t('common.welcome')}
                             </Text>
                         </View>
                     </View>
@@ -112,7 +112,7 @@ export default function GlobalNavigationBar() {
                                         <Text
                                             className={`text-base font-black tracking-tight ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}
                                         >
-                                            {item.label}
+                                            {t(item.labelKey)}
                                         </Text>
                                         {isActive && (
                                             <View className="absolute left-0 w-1 h-6 bg-emerald-500 rounded-r-full" />
@@ -126,8 +126,8 @@ export default function GlobalNavigationBar() {
 
                 {/* Footer Section */}
                 <View className={`mx-4 mb-8 p-6 rounded-3xl border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                    <Text className={`text-[10px] font-black tracking-widest uppercase mb-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>© 2026 WOS Studio</Text>
-                    <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-700' : 'text-slate-400'}`}>All rights reserved.</Text>
+                    <Text className={`text-[10px] font-black tracking-widest uppercase mb-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{t('dashboard.footer_copyright_simple')}</Text>
+                    <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-700' : 'text-slate-400'}`}>{t('dashboard.footer_rights')}</Text>
                 </View>
             </View>
         );
@@ -194,7 +194,7 @@ export default function GlobalNavigationBar() {
                                     <Text
                                         className={`mt-0.5 text-[9px] font-black tracking-tighter ${isActive ? (isDark ? 'text-sky-400' : 'text-blue-600') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}
                                     >
-                                        {item.label}
+                                        {t(item.labelKey)}
                                     </Text>
                                     {/* Bottom indicator dot */}
                                     <View className={`w-1 h-1 rounded-full mt-0.5 ${isActive ? (isDark ? 'bg-sky-400' : 'bg-blue-500') : 'bg-transparent'}`} />

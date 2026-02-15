@@ -8,6 +8,7 @@ export interface EventSchedule {
     time: string;
     strategy?: string;
     updatedAt?: number; // Timestamp for Bear Hunt bi-weekly rotation logic
+    startDate?: string; // Optional start date for one-time weekly events (YYYY-MM-DD format)
 }
 
 const ID_MAP: { [key: string]: string } = {

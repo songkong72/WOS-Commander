@@ -1127,28 +1127,60 @@ export default function Home() {
         return () => clearInterval(timer);
     }, []);
 
+    const getEventSchedule = (event: any) => {
+        if (!event) return null;
+        const id = (event.id || event.eventId || '').trim();
+        return schedules.find(s => {
+            const sid = (s.eventId || '').trim();
+            if (sid === id) return true;
+
+            const mappings: { [key: string]: string[] } = {
+                'a_joe': ['alliance_joe'],
+                'alliance_joe': ['a_joe'],
+                'a_bear': ['alliance_bear', 'alliance_bear_title'],
+                'alliance_bear': ['a_bear'],
+                'a_weapon': ['alliance_frost_league'],
+                'alliance_frost_league': ['a_weapon'],
+                'a_operation': ['alliance_operation'],
+                'alliance_operation': ['a_operation'],
+                'a_mobilization': ['alliance_mobilization'],
+                'alliance_mobilization': ['a_mobilization', 'a_total'],
+                'a_total': ['alliance_mobilization'],
+                'a_foundry': ['alliance_foundry'],
+                'alliance_foundry': ['a_foundry'],
+                'a_fortress': ['alliance_fortress'],
+                'alliance_fortress': ['a_fortress'],
+                'a_citadel': ['alliance_citadel'],
+                'alliance_citadel': ['a_citadel'],
+                'a_canyon': ['alliance_canyon'],
+                'alliance_canyon': ['a_canyon']
+            };
+
+            return mappings[id]?.includes(sid) || mappings[sid]?.includes(id);
+        });
+    };
+
     const getEventEndDate = (event: any) => {
         try {
-            const id = (event.id || event.eventId || '').trim();
-            const schedule = schedules.find(s => {
-                const sid = (s.eventId || '').trim();
-                return sid === id ||
-                    (id === 'a_joe' && sid === 'alliance_joe') ||
-                    (id === 'alliance_joe' && sid === 'a_joe') ||
-                    (id === 'a_bear' && sid === 'alliance_bear') ||
-                    (id === 'alliance_bear' && sid === 'a_bear') ||
-                    (id === 'a_weapon' && sid === 'alliance_frost_league') ||
-                    (id === 'alliance_frost_league' && sid === 'a_weapon') ||
-                    (id === 'a_operation' && sid === 'alliance_operation') ||
-                    (id === 'alliance_operation' && sid === 'a_operation') ||
-                    (id === 'a_mobilization' && sid === 'alliance_mobilization') ||
-                    (id === 'alliance_mobilization' && sid === 'a_mobilization') ||
-                    (id === 'a_total' && sid === 'alliance_mobilization') ||
-                    (id === 'a_foundry' && sid === 'alliance_foundry') ||
-                    (id === 'alliance_foundry' && sid === 'a_foundry') ||
-                    (id === 'a_fortress' && sid === 'alliance_fortress') ||
-                    (id === 'alliance_fortress' && sid === 'a_fortress');
-            });
+            const schedule = getEventSchedule(event);
+
+            // 0. Check startDate first (for one-time weekly events)
+            const startDate = schedule?.startDate || event.startDate;
+            if (startDate) {
+                try {
+                    const timeStr = schedule?.time || event.time || '00:00';
+                    // Extract first time if multiple slots (e.g., "1군: 화(22:30) / 2군: 목(21:00)")
+                    const timeMatch = timeStr.match(/(\d{2}):(\d{2})/);
+                    const finalTime = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
+                    const dateTimeStr = `${startDate}T${finalTime}:00`;
+                    const eventDateTime = new Date(dateTimeStr);
+                    if (!isNaN(eventDateTime.getTime())) {
+                        // Add 1 hour buffer
+                        return new Date(eventDateTime.getTime() + 3600000);
+                    }
+                } catch (e) { }
+            }
+
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
             const combined = `${dayStr} ${timeStr} `;
@@ -1174,15 +1206,93 @@ export default function Home() {
         return null;
     };
 
+    const checkWeeklyExpired = (str: string) => {
+        if (!str || str.includes('상시') || str.includes('상설')) return false;
+        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
+        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        // JavaScript getDay()는 일요일=0이므로 월요일=0으로 변환
+        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+        // Points
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+        if (explicitMatches.length > 0) {
+            return explicitMatches.every(m => {
+                const dayStr = m[1];
+                const h = parseInt(m[2]);
+                const min = parseInt(m[3]);
+                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+                return scheduledDays.every(d => {
+                    const dayIdx = dayMapObj[d];
+                    if (dayIdx === undefined) return true;
+                    if (currentDay > dayIdx) return true;
+                    if (currentDay === dayIdx) return currentMinutes >= (h * 60 + min + 30);
+                    return false;
+                });
+            });
+        }
+
+        // Weekly Range
+        const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
+        if (weeklyMatch) {
+            const endDayIdx = dayMapObj[weeklyMatch[4]];
+            const endH = parseInt(weeklyMatch[5]);
+            const endMin = parseInt(weeklyMatch[6]);
+            if (currentDay > endDayIdx) return true;
+            if (currentDay === endDayIdx) return currentMinutes >= (endH * 60 + endMin);
+            return false;
+        }
+
+        return false;
+    };
+
     const isEventExpired = (event: any) => {
+        // originalEventId를 우선 사용 (분할된 이벤트의 경우)
+        const originalId = (event.originalEventId || '').trim();
+        const id = (originalId || event.id || event.eventId || '').trim();
+
+        // 곰 사냥 작전은 항상 예정 스케줄에 머물도록 함 (종료 일정으로 보내지 않음)
+        // 반복 이벤트이므로 종료되지 않음
+        if (id === 'a_bear' || id === 'alliance_bear' || id.includes('_bear')) return false;
+
+        const schedule = getEventSchedule(event);
+
+        // 1. startDate가 있으면 날짜 기준 판단 (우선순위 높음)
+        // 미치광이 조이, 협곡, 요새, 성채, 무기공장 등 일회성 주간 이벤트용
+        const startDate = schedule?.startDate || event.startDate;
+        if (startDate) {
+            try {
+                const timeStr = schedule?.time || event.time || '00:00';
+                const dateTimeStr = `${startDate}T${timeStr}:00`;
+                const eventDateTime = new Date(dateTimeStr);
+                if (!isNaN(eventDateTime.getTime())) {
+                    // 이벤트 시작 후 1시간이 지나면 만료로 간주
+                    const expireTime = new Date(eventDateTime.getTime() + 3600000);
+                    return now > expireTime;
+                }
+            } catch (e) {
+                // startDate 파싱 실패 시 기존 로직으로 fallback
+            }
+        }
+
+        // 2. 기존 날짜 범위 체크
         const end = getEventEndDate(event);
-        return !!end && now > end;
+        if (end) return now > end;
+
+        // 3. 주간 반복 일정 만료 체크 (startDate 없는 경우)
+        const dayStr = schedule?.day || event.day || '';
+        const timeStr = schedule?.time || event.time || '';
+        const combined = `${dayStr} ${timeStr}`;
+
+        return checkWeeklyExpired(combined);
     };
 
     const getRemainingSeconds = (str: string) => {
         if (!str || str.includes('상시') || str.includes('상설')) return null;
-        const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-        const currentTotal = now.getDay() * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
+        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
+        const currentTotal = currentDay * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
         const totalWeekSeconds = 7 * 1440 * 60;
 
         // 점형 일시 체크
@@ -1238,8 +1348,10 @@ export default function Home() {
     // -- 일정 단위가 활성 상태인지 체크하는 헬퍼 함수 --
     const checkItemActive = (str: string) => {
         if (!str) return false;
-        const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-        const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
+        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
+        const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
         const totalWeekMinutes = 7 * 1440;
 
         if (str.includes('상시') || str.includes('상설')) return true;
@@ -1299,33 +1411,19 @@ export default function Home() {
         const end = getEventEndDate(event);
         if (!end) return true; // For weekly/everlasting events, keep them visible.
 
-        const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
-        const threshold = new Date(end.getTime() + twoDaysInMs);
+        // For one-time events with startDate, keep visible for 7 days (rest of the week)
+        const schedule = getEventSchedule(event);
+        const hasStartDate = !!(schedule?.startDate || event.startDate);
+        const bufferDays = hasStartDate ? 7 : 2;
+
+        const bufferMs = bufferDays * 24 * 60 * 60 * 1000;
+        const threshold = new Date(end.getTime() + bufferMs);
         return now <= threshold;
     };
 
     const isEventActive = (event: any) => {
         try {
-            const id = (event.id || event.eventId || '').trim();
-            const schedule = schedules.find(s => {
-                const sid = (s.eventId || '').trim();
-                return sid === id ||
-                    (id === 'a_joe' && sid === 'alliance_joe') ||
-                    (id === 'alliance_joe' && sid === 'a_joe') ||
-                    (id === 'a_bear' && sid === 'alliance_bear') ||
-                    (id === 'alliance_bear' && sid === 'a_bear') ||
-                    (id === 'a_weapon' && sid === 'alliance_frost_league') ||
-                    (id === 'alliance_frost_league' && sid === 'a_weapon') ||
-                    (id === 'a_operation' && sid === 'alliance_operation') ||
-                    (id === 'alliance_operation' && sid === 'a_operation') ||
-                    (id === 'a_mobilization' && sid === 'alliance_mobilization') ||
-                    (id === 'alliance_mobilization' && sid === 'a_mobilization') ||
-                    (id === 'a_total' && sid === 'alliance_mobilization') ||
-                    (id === 'a_foundry' && sid === 'alliance_foundry') ||
-                    (id === 'alliance_foundry' && sid === 'a_foundry') ||
-                    (id === 'a_fortress' && sid === 'alliance_fortress') ||
-                    (id === 'alliance_fortress' && sid === 'a_fortress');
-            });
+            const schedule = getEventSchedule(event);
             const dayStr = schedule?.day || event.day || '';
             const timeStr = schedule?.time || event.time || '';
 
@@ -1668,7 +1766,7 @@ export default function Home() {
                             ...e,
                             eventId: `${e.eventId}_team${idx + 1} `,
                             originalEventId: e.eventId,
-                            title: cleanLabel ? `곰 사냥 작전(${cleanLabel})` : '곰 사냥 작전',
+                            title: t('events.alliance_bear_title'),
                             time: simplifiedTime,
                             isBearSplit: true,
                             teamLabel: cleanLabel,
@@ -1950,17 +2048,35 @@ export default function Home() {
         return t(`events.days.${days[date.getDay()]}`);
     };
 
+    // Translate Korean day to current language
+    const translateDay = (day: string) => {
+        const dayMap: { [key: string]: string } = {
+            '일': 'sun', '월': 'mon', '화': 'tue', '수': 'wed',
+            '목': 'thu', '금': 'fri', '토': 'sat'
+        };
+        return dayMap[day] ? t(`events.days.${dayMap[day]}`) : day;
+    };
+
+    // Translate fortress/citadel labels
+    const translateLabel = (label: string) => {
+        if (!label) return '';
+        return label
+            .replace(/요새\s*#?(\d+)/g, (match, num) => `${t('events.fortress')} ${num}`)
+            .replace(/성채\s*#?(\d+)/g, (match, num) => `${t('events.citadel')} ${num}`);
+    };
+
     const renderWithHighlightedDays = (str: string, isUpcomingSoon: boolean) => {
         const parts = str.split(/([일월화수목금토]|\((?:일|월|화|수|목|금|토)\))/g);
         return parts.map((part, i) => {
             const isDay = /([일월화수목금토]|\((?:일|월|화|수|목|금|토)\))/.test(part);
             if (isDay) {
+                const translatedDay = translateDay(part.replace(/[\(\)]/g, ''));
                 return (
                     <Text key={i} style={{
                         fontWeight: '900',
                         color: isUpcomingSoon ? (isDark ? '#34d399' : '#059669') : (isDark ? '#38bdf8' : '#2563eb')
                     }}>
-                        {part}
+                        {translatedDay}
                     </Text>
                 );
             }
@@ -1999,11 +2115,12 @@ export default function Home() {
         // Also handles "월(22:00)" without space
         const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，\-\s：\:\(\)\[\]/]+)(.*?)\s*([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*/g));
         if (dayTimeMatches.length > 0) {
-            const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-            const currentDay = now.getDay();
+            // 월요일~일요일이 한 주 (월요일 00:00 리셋)
+            const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+            const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
             const currentTotalMinToday = now.getHours() * 60 + now.getMinutes();
 
-            const groups: { [key: string]: { label: string, time: string, days: string[] } } = {};
+            const groups: { [key: string]: { label: string, time: string, days: string[], isExpired: boolean } } = {};
             dayTimeMatches.forEach(m => {
                 const rawLabel = (m[1] || "").trim();
                 const day = m[2];
@@ -2094,7 +2211,7 @@ export default function Home() {
                                         color: isDark ? '#94a3b8' : '#64748b',
                                         textDecorationLine: part.isExpired ? 'line-through' : 'none'
                                     }}>
-                                        {part.label.replace(/\s+/g, '')}
+                                        {translateLabel(part.label).replace(/\s+/g, ' ')}
                                     </Text>
                                 </View>
                             ) : null}
@@ -2177,8 +2294,10 @@ export default function Home() {
 
         const checkIsSoon = (str: string) => {
             if (!str) return false;
-            const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-            const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+            // 월요일~일요일이 한 주 (월요일 00:00 리셋)
+            const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+            const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
+            const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
             const totalWeekMinutes = 7 * 1440;
 
             const dateRangeMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
@@ -2236,21 +2355,7 @@ export default function Home() {
                 ]}
             >
                 {({ hovered }: any) => {
-                    const currentSchedule = schedules.find(s => {
-                        const sid = (s.eventId || '').trim();
-                        const eid = (event.originalEventId || event.eventId || '').trim();
-                        return sid === eid ||
-                            (eid === 'a_joe' && sid === 'alliance_joe') ||
-                            (eid === 'alliance_joe' && sid === 'a_joe') ||
-                            (eid === 'a_operation' && sid === 'alliance_operation') ||
-                            (eid === 'alliance_operation' && sid === 'a_operation') ||
-                            (eid === 'a_weapon' && sid === 'alliance_frost_league') ||
-                            (eid === 'alliance_frost_league' && sid === 'a_weapon') ||
-                            (eid === 'a_foundry' && sid === 'alliance_foundry') ||
-                            (eid === 'alliance_foundry' && sid === 'a_foundry') ||
-                            (eid === 'a_fortress' && sid === 'alliance_fortress') ||
-                            (eid === 'alliance_fortress' && sid === 'a_fortress');
-                    });
+                    const currentSchedule = getEventSchedule(event);
 
                     const displayDay = currentSchedule?.day || event.day;
                     const displayTime = (event.isBearSplit || event.isFoundrySplit || event.isFortressSplit || event.isCanyonSplit) ? event.time : (currentSchedule?.time || event.time);
@@ -2290,7 +2395,22 @@ export default function Home() {
                                     </View>
                                     <View className="flex-1 min-w-[160px] py-1">
                                         <Text className="text-white text-xl font-black tracking-tighter mb-1" style={{ fontSize: 22 * fontSizeScale }}>
-                                            {t(`events.${(event.originalEventId || event.eventId || '').replace(/_fortress|_citadel|_team\d+/g, '')}_title`, { defaultValue: event.title })}
+                                            {(() => {
+                                                const eventId = event.eventId || '';
+                                                const originalId = event.originalEventId || '';
+
+                                                // Handle fortress/citadel titles
+                                                if (eventId.includes('citadel')) {
+                                                    return t('events.citadel_battle_title');
+                                                }
+                                                if (eventId.includes('fortress')) {
+                                                    return t('events.fortress_battle_title');
+                                                }
+
+                                                // Handle other events
+                                                const cleanId = (originalId || eventId).replace(/_fortress|_citadel|_team\d+/g, '');
+                                                return t(`events.${cleanId}_title`, { defaultValue: event.title });
+                                            })()}
                                         </Text>
                                         <View className="mb-2">
                                             {(() => {
@@ -2303,8 +2423,8 @@ export default function Home() {
                                         </View>
                                         <Text className={`text-[11px] font-bold leading-4 transition-all ${hovered ? 'text-slate-300' : 'text-slate-400'}`} numberOfLines={1}>
                                             {event.eventId.includes('total') || event.eventId.includes('operation')
-                                                ? '최적의 영웅 조합과 전략으로 생존을 지휘하세요'
-                                                : '최적의 전략으로 승리를 쟁취하세요'}
+                                                ? t('dashboard.hero_combination_desc')
+                                                : t('dashboard.winning_strategy_desc')}
                                         </Text>
                                     </View>
 
@@ -2359,12 +2479,29 @@ export default function Home() {
                                         <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={16} color={isDark ? '#94a3b8' : '#64748b'} />
                                     )}
                                 </View>
-                                <Text className={`text-lg font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{t(`events.${(event.originalEventId || event.eventId || '').replace(/_fortress|_citadel|_team\d+/g, '')}_title`, { defaultValue: event.title })}</Text>
+                                <Text className={`text-lg font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>
+                                    {(() => {
+                                        const eventId = event.eventId || '';
+                                        const originalId = event.originalEventId || '';
+
+                                        // Handle fortress/citadel titles
+                                        if (eventId.includes('citadel')) {
+                                            return t('events.citadel_battle_title');
+                                        }
+                                        if (eventId.includes('fortress')) {
+                                            return t('events.fortress_battle_title');
+                                        }
+
+                                        // Handle other events
+                                        const cleanId = (originalId || eventId).replace(/_fortress|_citadel|_team\d+/g, '');
+                                        return t(`events.${cleanId}_title`, { defaultValue: event.title });
+                                    })()}
+                                </Text>
                             </View>
 
                             <View className="flex-1 justify-center">
                                 {(!displayDay && !displayTime) ? (
-                                    <View className="items-center opacity-30 py-4"><Text className="text-slate-500 text-sm">미지정</Text></View>
+                                    <View className="items-center opacity-30 py-4"><Text className="text-slate-500 text-sm">{t('dashboard.unassigned')}</Text></View>
                                 ) : (
                                     <View className="space-y-2">
                                         {(() => {
@@ -2622,7 +2759,7 @@ export default function Home() {
                                         cursor: 'pointer'
                                     }
                                 ]}
-                                // @ts-ignore - Web-specific property
+                                // @ts-ignore
                                 tabIndex={-1}
                             >
                                 <Text className={`font-black text-xs ${isRegisterMode ? 'text-amber-400' : 'text-white/90'}`}>{t('dashboard.applyAdmin')}</Text>
@@ -2634,7 +2771,10 @@ export default function Home() {
                             <View className="flex-row gap-2.5" style={{ zIndex: (activeInput === 'server' || activeInput === 'alliance') ? 100 : 50 }}>
                                 {/* Server Number */}
                                 <View className="flex-1" style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
-                                    <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">{t('dashboard.serverNumber')}</Text>
+                                    <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
+                                        <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest text-left ">{t('dashboard.serverNumber')}</Text>
+                                        <Text className={`${isRegisterMode ? 'text-amber-500/80' : 'text-sky-500/80'} text-[8px] font-bold text-right `}>{t('dashboard.required')}</Text>
+                                    </View>
                                     <View className="relative">
                                         <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
                                             <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
@@ -2646,7 +2786,7 @@ export default function Home() {
                                             onChangeText={setInputServer}
                                             onFocus={() => setActiveInput('server')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800'}`}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !inputServer.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             keyboardType="number-pad"
                                             // @ts-ignore - Web-specific property
                                             tabIndex={1}
@@ -2657,7 +2797,10 @@ export default function Home() {
 
                                 {/* Alliance Name */}
                                 <View className="flex-1" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
-                                    <Text className="text-white/60 text-[10px] font-black ml-4 mb-1.5 uppercase tracking-widest">{t('dashboard.allianceName')}</Text>
+                                    <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
+                                        <Text className="text-white/60 text-[10px] font-black uppercase tracking-widest text-left ">{t('dashboard.allianceName')}</Text>
+                                        <Text className={`${isRegisterMode ? 'text-amber-500/80' : 'text-sky-500/80'} text-[8px] font-bold text-right `}>{t('dashboard.required')}</Text>
+                                    </View>
                                     <View className="relative">
                                         <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
                                             <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
@@ -2669,7 +2812,7 @@ export default function Home() {
                                             onChangeText={setInputAlliance}
                                             onFocus={() => setActiveInput('alliance')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800'}`}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !inputAlliance.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             autoCapitalize="characters"
                                             // @ts-ignore - Web-specific property
                                             tabIndex={2}
@@ -2689,7 +2832,7 @@ export default function Home() {
                                             <Ionicons name="person-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                                         </View>
                                         <TextInput
-                                            placeholder="ID/닉네임"
+                                            placeholder={t('auth.onlyIdErrorPlaceholder')}
                                             placeholderTextColor="rgba(30, 41, 59, 0.5)"
                                             ref={gateUserIdRef}
                                             value={inputUserId}
@@ -2701,7 +2844,7 @@ export default function Home() {
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                             onSubmitEditing={() => gatePasswordRef.current?.focus()}
                                             blurOnSubmit={false}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${gateLoginError ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !!inputUserId.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             // @ts-ignore - Web-specific property
                                             tabIndex={3}
                                         />
@@ -2734,7 +2877,7 @@ export default function Home() {
                                             onFocus={() => setActiveInput('password')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                             onSubmitEditing={handleEnterAlliance}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 pr-12 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${gateLoginError ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
+                                            className={`bg-slate-950/50 p-2.5 pl-14 pr-12 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !!inputPassword.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             // @ts-ignore - Web-specific property
                                             tabIndex={4}
                                         />
@@ -2918,7 +3061,7 @@ export default function Home() {
                                         onPress={() => setCustomAlert({ ...customAlert, visible: false })}
                                         className={`flex-1 py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
                                     >
-                                        <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>취소</Text>
+                                        <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => {
@@ -2927,7 +3070,7 @@ export default function Home() {
                                         }}
                                         className={`flex-[1.5] py-4 rounded-2xl ${isDark ? 'bg-sky-500' : 'bg-sky-600'}`}
                                     >
-                                        <Text className="text-center font-bold text-base text-white">확인</Text>
+                                        <Text className="text-center font-bold text-base text-white">{t('common.confirm')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
@@ -2935,7 +3078,7 @@ export default function Home() {
                                     onPress={() => setCustomAlert({ ...customAlert, visible: false })}
                                     className={`w-full py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
                                 >
-                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>확인</Text>
+                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.ok')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -3393,7 +3536,7 @@ export default function Home() {
                         {/* Weekly Program Title & Timezone */}
                         <View className={`flex-row flex-wrap items-center justify-between gap-y-4 px-6 py-5 border ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
                             <View className="flex-row items-center">
-                                <View className={`w-1.5 h-10 rounded-full mr-5 ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                <View className="w-1.5 h-10 rounded-full mr-5 bg-[#38bdf8]" />
                                 <View>
                                     <Text className={`text-[11px] font-black tracking-[0.25em] uppercase mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Weekly Program</Text>
                                     <Text className={`text-2xl md:text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.weekly_event_title')}</Text>
@@ -3556,7 +3699,7 @@ export default function Home() {
                         <View className={viewMode === 'timeline' ? 'w-full' : 'flex-col gap-3'}>
                             {loading ? (
                                 <View className={`p-16 rounded-[32px] border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                                    <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>일정을 불러오는 중...</Text>
+                                    <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('dashboard.loading_schedule')}</Text>
                                 </View>
                             ) : displayEvents.length > 0 ? (
                                 <View className="flex-col gap-4">
@@ -4067,7 +4210,7 @@ export default function Home() {
                                 <View className="flex-1 flex-row items-center bg-sky-500/10 px-4 py-2 rounded-xl">
                                     <Ionicons name="checkbox" size={18} color="#38bdf8" />
                                     <Text className={`ml-2 font-black text-base ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                                        {selectedReqIds.size}개 <Text className="text-xs font-bold opacity-60">선택</Text>
+                                        {selectedReqIds.size}{t('common.count')} <Text className="text-xs font-bold opacity-60">{t('common.selected')}</Text>
                                     </Text>
                                 </View>
                                 <View className="flex-row gap-2">
@@ -4217,7 +4360,7 @@ export default function Home() {
                                     <Ionicons name="notifications" size={28} color="#f59e0b" />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>ANNOUNCEMENT</Text>
+                                    <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('popup.announcement_label')}</Text>
                                     <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('popup.announcement')}</Text>
                                 </View>
                             </View>
@@ -4329,7 +4472,7 @@ export default function Home() {
                                     setNewPassword('');
                                     setConfirmPassword('');
                                 }}
-                                className={`flex-1 h-16 rounded-2xl items-center justify-center border ${isDark ? 'border-slate-800 bg-slate-800/30' : 'border-slate-200 bg-slate-50'}`}
+                                className={`flex-1 h-16 rounded-2xl items-center justify-center border ${isDark ? 'border-slate-800 bg-slate-800/30' : 'border-slate-50 bg-slate-50'}`}
                             >
                                 <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
                             </TouchableOpacity>
@@ -4398,7 +4541,7 @@ export default function Home() {
                                         <Ionicons name="notifications" size={24} color="#f59e0b" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>NOTICE</Text>
+                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('dashboard.notice_label')}</Text>
                                         <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.noticeDetail')}</Text>
                                     </View>
                                 </View>
@@ -4438,7 +4581,7 @@ export default function Home() {
                                         <Ionicons name="create" size={24} color="#3b82f6" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>ADMIN SETTING</Text>
+                                        <Text className={`text-[10px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('admin.setting_label')}</Text>
                                         <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.noticeSetting')}</Text>
                                     </View>
                                 </View>

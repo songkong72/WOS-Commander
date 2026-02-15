@@ -8,6 +8,7 @@ import { BlurView } from 'expo-blur';
 import { useAuth, useTheme } from './context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFirestoreStrategySheet } from '../hooks/useFirestoreStrategySheet';
+import { useTranslation } from 'react-i18next';
 
 const DEFAULT_SHEET_ID = '1p-Q6jvTITyFmQjMGlTR4PSw9aFZW3jih-9NNNI0QIiI';
 const DEFAULT_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/htmlview?embedded=true`;
@@ -17,6 +18,7 @@ export default function StrategySheet() {
     const { auth } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const isDark = theme === 'dark';
+    const { t } = useTranslation();
     const [zoom, setZoom] = useState(1.0);
     const webViewRef = useRef<any>(null);
 
@@ -191,9 +193,9 @@ export default function StrategySheet() {
                         <Ionicons name="arrow-back" size={28} color={isDark ? "white" : "#1e293b"} />
                     </TouchableOpacity>
                     <View>
-                        <Text className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>전략 문서</Text>
+                        <Text className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.title')}</Text>
                         <Text className={`text-sm font-bold mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {isFile ? (sheetData?.fileName || '업로드된 파일') : '실시간 연맹 공지 및 배치도'}
+                            {isFile ? (sheetData?.fileName || t('strategy.uploaded_file')) : t('strategy.subtitle')}
                         </Text>
                     </View>
                 </View>
@@ -210,7 +212,7 @@ export default function StrategySheet() {
                         </Pressable>
                         {showTooltip && (
                             <View className={`absolute top-14 right-0 px-3 py-2 rounded-lg border shadow-xl w-48 z-50 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`}>
-                                <Text className={`text-xs font-bold text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>전략 문서 관리 (관리자 전용)</Text>
+                                <Text className={`text-xs font-bold text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.manage_title')}</Text>
                             </View>
                         )}
                     </View>
@@ -226,7 +228,7 @@ export default function StrategySheet() {
                     <View className="flex-row items-center">
                         <Ionicons name="document-text" size={16} color={viewMode === 'sheet' ? (isDark ? "#38bdf8" : "#0284c7") : "#64748b"} className="mr-2" />
                         <Text className={`font-black text-sm ${viewMode === 'sheet' ? (isDark ? 'text-white' : 'text-slate-800') : 'text-slate-500'}`}>
-                            {isFile ? '문서 보기' : '전략 문서'}
+                            {isFile ? t('strategy.view_doc') : t('strategy.title')}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -236,7 +238,7 @@ export default function StrategySheet() {
                 >
                     <View className="flex-row items-center">
                         <Ionicons name="help-circle" size={16} color={viewMode === 'guide' ? (isDark ? "#f59e0b" : "#d97706") : "#64748b"} className="mr-2" />
-                        <Text className={`font-black text-sm ${viewMode === 'guide' ? (isDark ? 'text-white' : 'text-slate-800') : 'text-slate-500'}`}>권한 가이드</Text>
+                        <Text className={`font-black text-sm ${viewMode === 'guide' ? (isDark ? 'text-white' : 'text-slate-800') : 'text-slate-500'}`}>{t('strategy.guide')}</Text>
                     </View>
                 </TouchableOpacity>
             </View>

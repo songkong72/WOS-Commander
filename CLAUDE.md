@@ -12,6 +12,61 @@
 - **Language**: 모든 답변은 항상 **한국어**로 작성합니다. (Always respond in Korean)
 - **Persona**: `.agent/skills/moon/SKILL.md`의 '문 개발부장' 페르소나를 적극 활용합니다.
 
+## Internationalization (i18n) Guidelines
+
+이 프로젝트는 **다국어(한국어/영어)를 지원**합니다. 모든 소스 수정 시 반드시 다음 규칙을 준수하세요.
+
+### 1. 하드코딩 금지
+- ❌ **절대 금지**: 한글/영어 텍스트를 직접 작성
+  ```typescript
+  // ❌ 잘못된 예시
+  <Text>곰 사냥 작전</Text>
+  <Text>Bear Hunt</Text>
+  ```
+- ✅ **올바른 방법**: i18n 번역 키 사용
+  ```typescript
+  // ✅ 올바른 예시
+  <Text>{t('events.alliance_bear_title')}</Text>
+  ```
+
+### 2. 번역 파일 필수 업데이트
+- 새로운 UI 텍스트 추가 시 **반드시** 번역 파일 업데이트
+- 위치: `services/i18n/locales/ko.json`, `services/i18n/locales/en.json`
+- 양쪽 파일 모두 동일한 키로 추가
+
+### 3. 동적 값 처리
+- 팀 번호, 요새/성채 번호 등은 **코드에서 동적 추가**
+  ```typescript
+  // ✅ 올바른 예시
+  const title = t('events.bear_hunt_title'); // "Bear Hunt"
+  const fullTitle = teamNum ? `${title} (Team ${teamNum})` : title;
+  ```
+- 번역 키에 동적 값을 포함하지 않음 (예: `bear_hunt_team1_title` ❌)
+
+### 4. 중복 방지 체크
+- 동적 값을 추가하기 전 **이미 포함되어 있는지 확인**
+  ```typescript
+  // ✅ 중복 방지
+  if (teamMatch && !displayTitle.includes(`Team ${teamMatch[1]}`)) {
+      displayTitle = `${displayTitle} (Team ${teamMatch[1]})`;
+  }
+  ```
+
+### 5. 날짜/시간 포맷
+- 요일, 월 이름 등도 번역 키 사용
+  ```typescript
+  // ✅ 올바른 예시
+  const dayMap = { '월': 'mon', '화': 'tue', ... };
+  const translatedDay = t(`events.days.${dayMap[day]}`);
+  ```
+
+### 6. 수정 전 체크리스트
+소스 코드 수정 시 항상 확인:
+- [ ] 하드코딩된 한글/영어 텍스트가 없는가?
+- [ ] 번역 키가 양쪽 언어 파일에 모두 존재하는가?
+- [ ] 동적 값이 중복으로 추가되지 않는가?
+- [ ] 양쪽 언어 모드에서 모두 정상 작동하는가?
+
 ## Token Optimization Rules
 
 토큰 사용을 최소화하기 위한 필수 규칙:
@@ -40,3 +95,22 @@
 - **메모리 활용**: 반복되는 패턴은 `MEMORY.md`에 기록
 - **요약 선호**: 긴 결과는 요약해서 전달
 - **불필요한 로그 제외**: 에러 메시지나 긴 출력은 핵심만 발췌
+
+### 6. 토큰 사용량 모니터링
+- **작업 완료 후 체크**: 매 작업 완료 시 토큰 사용량 및 예상 비용 보고
+- **보고 형식**:
+  ```
+  📊 토큰 사용 통계
+  - 세션 전체: X.Xk 토큰 (200K 중 XX%) | XXX원
+  - 이번 작업: X.Xk 토큰 (전체 대비 XX%) | XXX원
+  ```
+- **작업별 세부 통계**: 여러 작업을 수행한 경우 각 작업별 토큰 사용량과 비율 표시
+  ```
+  📊 토큰 사용 통계
+  - 세션 전체: 6.9k 토큰 (200K 중 34%) | 592원
+  - 작업1 (영어 툴팁 수정): 1.3k 토큰 (18.8%) | 116원
+  - 작업2 (이벤트 배치 로직): 1.5k 토큰 (21.7%) | 125원
+  ```
+- **비용 계산**: Input(70%) × $3 + Output(30%) × $15 per 1M tokens, 환율 1,300원 기준
+- **참고**: 정확한 Input/Output 비율을 알 수 없어 대략적인 추정치임
+- **목적**: 사용자가 작업별 토큰 효율성을 파악하고 세션 관리 가능

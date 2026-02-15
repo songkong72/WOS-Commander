@@ -3,6 +3,7 @@ import { View, Text, ScrollView, Pressable, Image, Platform, ViewStyle, Animated
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { useLanguage } from '../app/context';
 
 interface TimelineViewProps {
     events: any[];
@@ -14,6 +15,7 @@ interface TimelineViewProps {
 
 const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPress, checkIsOngoing, timezone = 'LOCAL' }) => {
     const { t } = useTranslation();
+    const { language } = useLanguage();
     const [now, setNow] = useState(new Date());
     const [hoveredBarId, setHoveredBarId] = useState<string | null>(null);
 
@@ -86,6 +88,69 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
     // Core positioning logic used for EVERY bar
     const getPosList = (ev: any) => {
+        // Check for startDate first (one-time events)
+        const startDate = ev.startDate;
+        if (startDate) {
+            // Convert startDate to a format the timeline can process
+            // Extract first time from the time field
+            const timeStr = ev.time || '00:00';
+            const timeMatch = timeStr.match(/(\d{2}):(\d{2})/);
+            const finalTime = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
+
+            // Override fullComb to use the specific date instead of day-of-week
+            const specificDateComb = `${startDate.replace(/-/g, '.')} ${finalTime}`;
+
+            // Check if this date is within the timeline window
+            const eventDate = new Date(`${startDate}T${finalTime}:00`);
+            const eventTime = eventDate.getTime();
+
+            // If event is outside the timeline window, don't show it
+            if (eventTime + 3600000 < winStart || eventTime > winEnd) {
+                return [];
+            }
+
+            // Let the ISO single date parser handle it
+            const fullComb = specificDateComb;
+            const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean, label?: string }[] = [];
+
+            const parseDateVal = (dStr: string, tStr: string) => {
+                if (!dStr) return null;
+                const dp = dStr.replace(/\([^)]+\)/g, '').trim().split(/[.\-/]/).map(s => parseInt(s.trim()));
+                const tp = (tStr || '00:00').trim().split(':').map(Number);
+                let y, m, d;
+                if (dp.length === 3) { y = dp[0]; m = dp[1]; d = dp[2]; }
+                else return null;
+                if (y < 100) y += 2000;
+                const hh = tp[0], mm = tp[1] || 0;
+                return new Date(y, m - 1, d, hh, mm, 0).getTime();
+            };
+
+            const mIsoSingle = fullComb.match(/(\d{2,4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2})\s*(?:\([^)]+\))?\s*(\d{1,2}:\d{2})?/);
+            if (mIsoSingle) {
+                const sDate = mIsoSingle[1];
+                const sTime = mIsoSingle[2] || '00:00';
+                const st = parseDateVal(sDate, sTime);
+                if (st) {
+                    const duration = 3600000; // 1 hour
+                    const et = st + duration;
+                    const s = Math.max(st, winStart);
+                    const e = Math.min(et, winEnd);
+                    if (s < e) {
+                        const leftPct = (s - winStart) / totalMs * 100;
+                        const widthPct = et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
+                        res.push({
+                            st, et, isR: true,
+                            left: `${leftPct.toFixed(4)}%`,
+                            width: `${widthPct.toFixed(4)}%`,
+                            timeText: `${formatTs(st)} ~ ${formatTs(et)}`
+                        });
+                    }
+                }
+            }
+
+            return res;
+        }
+
         const fullComb = ((ev.day || '') + ' ' + (ev.time || '')).trim();
         if (!fullComb || fullComb === '.') return [];
 
@@ -303,40 +368,40 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
             // 3. Recurring (Lowest Priority) - Only if not already handled by Multi-Day
             if (!handledByMultiDay) {
                 const mRec = /(?:^|[^\d])([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?(?:\s*~\s*([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?)?/g;
-            let match;
-            while ((match = mRec.exec(part)) !== null) {
-                const sW = match[1], sT = match[2], eW = match[3] || sW, eT = match[4] || sT, isR = !!match[3];
-                const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
+                let match;
+                while ((match = mRec.exec(part)) !== null) {
+                    const sW = match[1], sT = match[2], eW = match[3] || sW, eT = match[4] || sT, isR = !!match[3];
+                    const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
 
-                if (sW === '매일') {
-                    for (let i = 0; i < 8; i++) {
-                        const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                        let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
-                        if (isR && et <= st) et += dayMs;
-                        const duration = isBearHunt ? 1800000 : 3600000;
-                        add(st, isR ? et : st + duration, isR, match![0], true);
-                    }
-                } else {
-                    const targetIdx = KR_DAYS_PARSER.indexOf(sW);
-                    if (targetIdx !== -1) {
+                    if (sW === '매일') {
                         for (let i = 0; i < 8; i++) {
-                            const dAtWin = new Date(localStart + i * dayMs);
-                            if (dAtWin.getDay() === targetIdx) {
-                                const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                                let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
-                                if (isR) {
-                                    if (eW !== sW) {
-                                        const d = (KR_DAYS_PARSER.indexOf(eW) - KR_DAYS_PARSER.indexOf(sW) + 7) % 7;
-                                        et += d * dayMs;
-                                    } else if (et <= st) et += dayMs;
+                            const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
+                            let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
+                            if (isR && et <= st) et += dayMs;
+                            const duration = isBearHunt ? 1800000 : 3600000;
+                            add(st, isR ? et : st + duration, isR, match![0], true);
+                        }
+                    } else {
+                        const targetIdx = KR_DAYS_PARSER.indexOf(sW);
+                        if (targetIdx !== -1) {
+                            for (let i = 0; i < 8; i++) {
+                                const dAtWin = new Date(localStart + i * dayMs);
+                                if (dAtWin.getDay() === targetIdx) {
+                                    const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
+                                    let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
+                                    if (isR) {
+                                        if (eW !== sW) {
+                                            const d = (KR_DAYS_PARSER.indexOf(eW) - KR_DAYS_PARSER.indexOf(sW) + 7) % 7;
+                                            et += d * dayMs;
+                                        } else if (et <= st) et += dayMs;
+                                    }
+                                    const duration = isBearHunt ? 1800000 : 3600000;
+                                    add(st, isR ? et : st + duration, isR, match![0], true);
                                 }
-                                const duration = isBearHunt ? 1800000 : 3600000;
-                                add(st, isR ? et : st + duration, isR, match![0], true);
                             }
                         }
                     }
                 }
-            }
             } // End of: if (!handledByMultiDay)
 
             // Calculate label for this part (remove matched date strings)
@@ -384,7 +449,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
             // Auto-infer category if missing
             let category = ev.category;
             if (!category || category === '기타') {
-                const lowTitle = title.toLowerCase();
+                const lowTitle = (ev.title || '').toLowerCase();
                 const lowEid = (ev.originalEventId || ev.eventId || '').toLowerCase();
 
                 // 1. Alliance Events
@@ -546,6 +611,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                             const barKey = `bar-${ev.id}-${bi}`;
                                             const isHovered = hoveredBarId === barKey;
                                             const isActive = checkIsOngoing(ev._original || ev);
+                                            const isFloatingIcon = p.et - p.st <= 3600000 || (ev.id && ev.id.includes('castle'));
                                             return (
                                                 <View
                                                     key={barKey}
@@ -558,21 +624,27 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                 >
                                                     <Pressable
                                                         onPress={() => onEventPress(ev)}
-                                                        className="w-full h-full"
                                                         // @ts-ignore
                                                         onMouseEnter={() => setHoveredBarId(barKey)}
                                                         // @ts-ignore
                                                         onMouseLeave={() => setHoveredBarId(null)}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            left: isFloatingIcon ? -40 : 0,
+                                                            right: 0,
+                                                            top: 0,
+                                                            bottom: 0,
+                                                            zIndex: isHovered ? 999 : 10
+                                                        }}
                                                     >
                                                         {({ hovered }: any) => {
                                                             const activeHover = hovered || isHovered;
                                                             return (
-                                                                <View key="bar-inner-wrap" className="w-full h-full" style={{ overflow: 'visible' }}>
+                                                                <View key="bar-inner-wrap" style={{ position: 'absolute', left: isFloatingIcon ? 40 : 0, right: 0, top: 0, bottom: 0, overflow: 'visible' }}>
                                                                     {/* Floating Icon OUTSIDE: for short bars (<= 1 hour) OR Castle Battle */}
-                                                                    {(p.et - p.st <= 3600000 || (ev.id && ev.id.includes('castle'))) && (
+                                                                    {isFloatingIcon && (
                                                                         <View
                                                                             key="floating-icon"
-                                                                            pointerEvents="none"
                                                                             style={{
                                                                                 position: 'absolute',
                                                                                 left: -32,
@@ -629,7 +701,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                     {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-3.5 h-3.5 rounded-full" />}
                                                                                 </View>
                                                                             )}
-                                                                            <Text key="title-text" className="text-white font-black text-[10px] flex-1" numberOfLines={1}>{t(`events.${(ev._original?.id || ev.id || ev.eventId || '').replace(/_(?:fortress|citadel|team\d+|t?\d+(?:_\d+)?)/g, '')}_title`)}</Text>
+                                                                            <Text key="title-text" className="text-white font-black text-[10px] flex-1" numberOfLines={1}>{t(`events.${(ev._original?.id || ev.id || ev.eventId || '').replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '')}_title`)}</Text>
                                                                             {isActive && (
                                                                                 <View key="live-badge" className="flex-row items-center bg-white/20 px-1.5 py-0.5 rounded-md ml-1 border border-white/30">
                                                                                     <Text key="live-text" className="text-[8px] text-white font-black tracking-tighter">LIVE</Text>
@@ -679,15 +751,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                 <Text className="text-white font-black text-[14px]">
                                                                                     {(() => {
                                                                                         const eventId = ev._original?.id || ev.id || ev.eventId || '';
-                                                                                        const baseId = eventId.replace(/_(?:fortress|citadel|team\d+|t?\d+(?:_\d+)?)/g, '');
+                                                                                        const baseId = eventId.replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '');
                                                                                         const teamMatch = eventId.match(/_team(\d+)/);
 
                                                                                         let displayTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
 
-                                                                                        // 팀 정보가 있으면 타이틀에 추가 (곰 사냥, 협곡, 무기공장)
+                                                                                        // 팀 정보가 있으면 언어에 맞게 추가 (중복 방지)
                                                                                         if (teamMatch) {
                                                                                             const teamNum = teamMatch[1];
-                                                                                            displayTitle = `${displayTitle} (${teamNum}군)`;
+                                                                                            const teamSuffix = language === 'ko' ? `${teamNum}군` : `Team ${teamNum}`;
+                                                                                            if (!displayTitle.includes(teamSuffix)) {
+                                                                                                displayTitle = `${displayTitle} (${teamSuffix})`;
+                                                                                            }
                                                                                         }
 
                                                                                         return displayTitle;
@@ -712,7 +787,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                                 </View>
                                                                                                 <View className="px-1.5 py-0.5 rounded bg-orange-500/20">
                                                                                                     <Text className="text-[10px] font-bold text-orange-300">
-                                                                                                        {p.label}
+                                                                                                        {(p.label || '').replace('요새', t('events.fortress_label')).replace('성채', t('events.citadel_label'))}
                                                                                                     </Text>
                                                                                                 </View>
                                                                                             </View>

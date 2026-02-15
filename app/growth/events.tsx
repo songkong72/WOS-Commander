@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable, Animated, Dimensions } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Modal, TextInput, Alert, FlatList, ActivityIndicator, useWindowDimensions, Linking, Platform, Pressable, Animated, Dimensions, Switch } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth, useTheme } from '../context';
 import { useTranslation } from 'react-i18next';
@@ -1104,7 +1104,8 @@ export default function EventTracker() {
                         day: (savedSchedule.day === '.' ? '' : (savedSchedule.day || '')),
                         time: (savedSchedule.time === '.' ? '' : (savedSchedule.time || '')),
                         strategy: savedSchedule.strategy || '',
-                        updatedAt: savedSchedule.updatedAt // For Bear Hunt bi-weekly rotation
+                        updatedAt: savedSchedule.updatedAt, // For Bear Hunt bi-weekly rotation
+                        startDate: savedSchedule.startDate // For one-time weekly events
                     };
                 }
                 return { ...event, day: '', time: '' };
@@ -1245,6 +1246,10 @@ export default function EventTracker() {
     const [editMinute, setEditMinute] = useState('00');
     const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
 
+    // startDate for one-time weekly events
+    const [enableStartDate, setEnableStartDate] = useState(false);
+    const [eventStartDate, setEventStartDate] = useState('');
+
     const [isPermanent, setIsPermanent] = useState(false);
     const [hourDropdownVisible, setHourDropdownVisible] = useState(false);
     const [minuteDropdownVisible, setMinuteDropdownVisible] = useState(false);
@@ -1257,21 +1262,27 @@ export default function EventTracker() {
     const [mStart, setMStart] = useState('');
     const [mEnd, setMEnd] = useState('');
     const [activeDateDropdown, setActiveDateDropdown] = useState<{ type: 'start' | 'end', field: 'y' | 'm' | 'd' | 'h' | 'min' } | null>(null);
-    const [showDatePicker, setShowDatePicker] = useState<'start' | 'end' | null>(null);
+    const [showDatePicker, setShowDatePicker] = useState<'start' | 'end' | 'startDate' | null>(null);
     const [viewDate, setViewDate] = useState(new Date());
 
     // Sync viewDate with selectedValue when modal opens
     useEffect(() => {
         if (showDatePicker) {
-            const selectedValue = showDatePicker === 'start' ? mStart : mEnd;
-            const parts = (selectedValue.split(' ')[0] || '').split('.');
+            let selectedValue = '';
+            if (showDatePicker === 'startDate') {
+                // For startDate, convert YYYY-MM-DD to YYYY.MM.DD format
+                selectedValue = eventStartDate ? eventStartDate.replace(/-/g, '.') : '';
+            } else {
+                selectedValue = showDatePicker === 'start' ? mStart : mEnd;
+            }
+            const parts = (selectedValue.split(' ')[0] || selectedValue).split('.');
             const selY = parseInt(parts[0]);
             const selM = parseInt(parts[1]);
             if (!isNaN(selY) && !isNaN(selM)) {
                 setViewDate(new Date(selY, selM - 1, 1));
             }
         }
-    }, [showDatePicker, mStart, mEnd]);
+    }, [showDatePicker, mStart, mEnd, eventStartDate]);
 
     // Championship States
     const [champStart, setChampStart] = useState({ d: '월', h: '22', m: '00' });
@@ -1378,8 +1389,10 @@ export default function EventTracker() {
 
     const checkItemOngoing = useCallback((str: string) => {
         if (!str) return false;
-        const dayMapObj: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-        const currentTotal = now.getDay() * 1440 + now.getHours() * 60 + now.getMinutes();
+        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
+        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
+        const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
         const totalWeekMinutes = 7 * 1440;
 
         if (str.includes('상시') || str.includes('상설')) return true;
@@ -1440,6 +1453,20 @@ export default function EventTracker() {
 
     const checkIsExpired = useCallback((event: WikiEvent) => {
         try {
+            // 1. startDate가 있으면 날짜 기준 판단 (우선순위 높음)
+            const startDate = (event as any).startDate;
+            if (startDate) {
+                const timeStr = event.time || '00:00';
+                const dateTimeStr = `${startDate}T${timeStr}:00`;
+                const eventDateTime = new Date(dateTimeStr);
+                if (!isNaN(eventDateTime.getTime())) {
+                    // 이벤트 시작 후 1시간이 지나면 만료
+                    const expireTime = new Date(eventDateTime.getTime() + 3600000);
+                    return now > expireTime;
+                }
+            }
+
+            // 2. 기존 날짜 범위 체크
             const dayStr = event.day || '';
             const timeStr = event.time || '';
             const combined = dayStr + ' ' + timeStr;
@@ -1545,7 +1572,7 @@ export default function EventTracker() {
                             ...e,
                             id: `${e.id}_team${idx + 1}`,
                             originalEventId: e.id,
-                            title: cleanLabel ? `곰 사냥 작전(${cleanLabel})` : '곰 사냥 작전',
+                            title: t('events.alliance_bear_title'),
                             time: simplifiedTime,
                             isBearSplit: true,
                             teamLabel: cleanLabel,
@@ -1623,7 +1650,7 @@ export default function EventTracker() {
                             ...e,
                             id: `${e.id}_team${idx + 1}`,
                             originalEventId: e.id,
-                            title: cleanLabel ? `${t('events.canyon_title')}(${cleanLabel})` : t('events.canyon_title'),
+                            title: t('events.alliance_canyon_title'),
                             time: simplifiedTime,
                             isCanyonSplit: true,
                             teamLabel: cleanLabel,
@@ -1655,7 +1682,7 @@ export default function EventTracker() {
                             ...e,
                             id: `${e.id}_team${idx + 1}`,
                             originalEventId: e.id,
-                            title: cleanLabel ? `${t('events.foundry_title')}(${cleanLabel})` : t('events.foundry_title'),
+                            title: t('events.alliance_foundry_title'),
                             time: simplifiedTime,
                             isFoundrySplit: true,
                             teamLabel: cleanLabel,
@@ -1699,8 +1726,10 @@ export default function EventTracker() {
         processedList.forEach(e => {
             const groupId = getBundleId(e);
             const sTime = getSortTime(e);
-            const active = isOngoingMap[e.id] || false;
-            const expired = isExpiredMap[e.id] || false;
+            // 분할된 이벤트의 경우 originalEventId로 체크
+            const checkId = e.originalEventId || e.id;
+            const active = isOngoingMap[checkId] || false;
+            const expired = isExpiredMap[checkId] || false;
 
             if (!groupData[groupId]) {
                 groupData[groupId] = { minTime: sTime, hasActive: active, allExpired: expired, count: 1 };
@@ -2074,6 +2103,17 @@ export default function EventTracker() {
         setEditHour(nowTime.getHours().toString().padStart(2, '0'));
         setEditMinute('00');
         setEditingSlotId(null);
+
+        // Load startDate if exists
+        const storedStartDate = (event as any).startDate;
+        if (storedStartDate) {
+            setEnableStartDate(true);
+            setEventStartDate(storedStartDate);
+        } else {
+            setEnableStartDate(false);
+            setEventStartDate('');
+        }
+
         setScheduleModalVisible(true);
     }, [parseScheduleStr, selectedTeamTabs]);
 
@@ -2175,13 +2215,19 @@ export default function EventTracker() {
                 const targetId = (editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') ? 'a_weapon' : editingEvent.id;
 
                 console.log(`[Save] DateRange: ${targetId}, day: ${finalDay}, time: ${finalTime}`);
-                setEvents(prev => prev.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? { ...e, day: finalDay, time: finalTime } : e));
+                setEvents(prev => prev.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? {
+                    ...e,
+                    day: finalDay,
+                    time: finalTime,
+                    startDate: enableStartDate ? eventStartDate : e.startDate // Preserve existing startDate
+                } : e));
 
                 await updateSchedule({
                     eventId: targetId,
                     day: finalDay,
                     time: finalTime,
-                    strategy: editingEvent.strategy || ''
+                    strategy: editingEvent.strategy || '',
+                    startDate: enableStartDate ? eventStartDate : undefined
                 });
                 setScheduleModalVisible(false);
                 showCustomAlert(t('common.completed'), t('events.schedule_saved', { title: editingEvent.title }), 'success');
@@ -2211,14 +2257,20 @@ export default function EventTracker() {
             // Optimistic update handled by hook
 
             try {
-                console.log(`[Save] Fortress/Citadel: ${editingEvent.id}, day: ${finalDay}, time: ${timeStr}`);
-                setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: finalDay, time: timeStr } : e));
+                console.log(`[Save] Fortress/Citadel: ${editingEvent.id}, day: ${finalDay}, time: ${timeStr}, startDate: ${enableStartDate ? eventStartDate : 'none'}`);
+                setEvents(prev => prev.map(e => e.id === editingEvent.id ? {
+                    ...e,
+                    day: finalDay,
+                    time: timeStr,
+                    startDate: enableStartDate ? eventStartDate : undefined
+                } : e));
 
                 await updateSchedule({
                     eventId: editingEvent.id,
                     day: finalDay,
                     time: timeStr,
-                    strategy: editingEvent.strategy || ''
+                    strategy: editingEvent.strategy || '',
+                    startDate: enableStartDate ? eventStartDate : undefined
                 });
 
                 // Cancel old notifications and schedule new ones
@@ -2295,14 +2347,20 @@ export default function EventTracker() {
 
 
         try {
-            console.log(`[Save] General: ${editingEvent.id}, day: ${finalDay}, time: ${finalTime}`);
-            setEvents(prev => prev.map(e => e.id === editingEvent.id ? { ...e, day: finalDay || '', time: finalTime || '' } : e));
+            console.log(`[Save] General: ${editingEvent.id}, day: ${finalDay}, time: ${finalTime}, startDate: ${enableStartDate ? eventStartDate : 'none'}`);
+            setEvents(prev => prev.map(e => e.id === editingEvent.id ? {
+                ...e,
+                day: finalDay || '',
+                time: finalTime || '',
+                startDate: enableStartDate ? eventStartDate : undefined
+            } : e));
 
             await updateSchedule({
                 eventId: editingEvent.id,
                 day: finalDay || '',
                 time: finalTime || '',
-                strategy: editingEvent.strategy || ''
+                strategy: editingEvent.strategy || '',
+                startDate: enableStartDate ? eventStartDate : undefined
             });
 
             // Schedule Notifications for Weekly Events (Day + Time)
@@ -2344,7 +2402,8 @@ export default function EventTracker() {
                         eventId: editingEvent.id,
                         day: '',
                         time: '',
-                        strategy: editingEvent.strategy || ''
+                        strategy: editingEvent.strategy || '',
+                        startDate: undefined
                     });
 
                     if (Platform.OS !== 'web') {
@@ -3085,6 +3144,41 @@ export default function EventTracker() {
                                                 {/* Input Form */}
                                                 {editingEvent?.id !== 'a_center' && (
                                                     <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
+                                                        {/* StartDate Option */}
+                                                        <View className="mb-3">
+                                                            <View className="flex-row items-center justify-between mb-2">
+                                                                <View className="flex-row items-center">
+                                                                    <Ionicons name="calendar-number-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                    <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.specify_date')}</Text>
+                                                                </View>
+                                                                <Switch
+                                                                    value={enableStartDate}
+                                                                    onValueChange={setEnableStartDate}
+                                                                    trackColor={{ false: '#64748b', true: '#3b82f6' }}
+                                                                    thumbColor={'white'}
+                                                                    style={{ transform: [{ scale: 0.8 }] }}
+                                                                />
+                                                            </View>
+                                                            {enableStartDate && (
+                                                                <TouchableOpacity
+                                                                    onPress={() => setShowDatePicker('startDate')}
+                                                                    className={`p-3 rounded-xl border ${isDark ? 'bg-slate-900/40 border-slate-700' : 'bg-white border-slate-200'}`}
+                                                                >
+                                                                    <View className="flex-row items-center justify-between">
+                                                                        <View className="flex-1">
+                                                                            <Text className={`text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                                {t('events.select_date')}
+                                                                            </Text>
+                                                                            <Text className={`font-mono text-sm ${eventStartDate ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                                                                {eventStartDate || 'YYYY-MM-DD'}
+                                                                            </Text>
+                                                                        </View>
+                                                                        <Ionicons name="calendar" size={20} color={isDark ? "#64748b" : "#94a3b8"} />
+                                                                    </View>
+                                                                </TouchableOpacity>
+                                                            )}
+                                                        </View>
+
                                                         {selectedDayForSlot !== '상시' ? (
                                                             <>
                                                                 <View>
@@ -3554,7 +3648,14 @@ export default function EventTracker() {
                     <View className="flex-1 bg-black/60 items-center justify-center p-6">
                         <TouchableOpacity activeOpacity={1} onPress={() => setShowDatePicker(null)} className="absolute inset-0" />
                         {(() => {
-                            const selectedValue = showDatePicker === 'start' ? mStart : mEnd;
+                            // Determine selected value based on picker type
+                            let selectedValue = '';
+                            if (showDatePicker === 'startDate') {
+                                // For startDate, convert YYYY-MM-DD to YYYY.MM.DD format for display
+                                selectedValue = eventStartDate ? eventStartDate.replace(/-/g, '.') + ' 00:00' : '';
+                            } else {
+                                selectedValue = showDatePicker === 'start' ? mStart : mEnd;
+                            }
                             const [selY, selM, selD] = (selectedValue.split(' ')[0] || '').split('.').map(v => parseInt(v));
 
                             const year = viewDate.getFullYear();
@@ -3612,8 +3713,16 @@ export default function EventTracker() {
                                                         if (!day) return;
                                                         const dateStr = `${year}.${(month + 1).toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`;
                                                         const timePart = selectedValue.split(' ')[1] || '00:00';
-                                                        if (showDatePicker === 'start') setMStart(`${dateStr} ${timePart}`);
-                                                        else setMEnd(`${dateStr} ${timePart}`);
+
+                                                        if (showDatePicker === 'startDate') {
+                                                            // For startDate, save in YYYY-MM-DD format
+                                                            const isoDateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                                                            setEventStartDate(isoDateStr);
+                                                        } else if (showDatePicker === 'start') {
+                                                            setMStart(`${dateStr} ${timePart}`);
+                                                        } else {
+                                                            setMEnd(`${dateStr} ${timePart}`);
+                                                        }
                                                         setShowDatePicker(null);
                                                     }}
                                                     className="w-[14.28%] aspect-square items-center justify-center p-1"
