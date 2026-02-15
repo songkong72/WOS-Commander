@@ -2113,7 +2113,7 @@ export default function Home() {
 
         // 2. Grouped Day Case: "요새7 금(23:00), 요새10 금(23:00)" or "요새전: 요새7 금 23:00"
         // Also handles "월(22:00)" without space
-        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，\-\s：\:\(\)\[\]/]+)(.*?)\s*([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*/g));
+        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，/]+)\s*(.*?)\s+([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*/g));
         if (dayTimeMatches.length > 0) {
             // 월요일~일요일이 한 주 (월요일 00:00 리셋)
             const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
@@ -2647,7 +2647,15 @@ export default function Home() {
                                     // @ts-ignore
                                     tabIndex={-1}
                                 >
-                                    <Text className={`text-[11px] font-black ${language === 'ko' ? 'text-white' : 'text-slate-500'}`}>한국어</Text>
+                                    <View className="flex-row items-center">
+                                        <Ionicons
+                                            name="language"
+                                            size={14}
+                                            color={language === 'ko' ? 'white' : '#64748b'}
+                                            style={{ marginRight: 6 }}
+                                        />
+                                        <Text className={`text-[11px] font-black ${language === 'ko' ? 'text-white' : 'text-slate-500'}`}>한국어</Text>
+                                    </View>
                                 </Pressable>
 
                                 <Pressable
@@ -2670,7 +2678,15 @@ export default function Home() {
                                     // @ts-ignore
                                     tabIndex={-1}
                                 >
-                                    <Text className={`text-[11px] font-black ${language === 'en' ? 'text-white' : 'text-slate-500'}`}>English</Text>
+                                    <View className="flex-row items-center">
+                                        <Ionicons
+                                            name="globe-outline"
+                                            size={14}
+                                            color={language === 'en' ? 'white' : '#64748b'}
+                                            style={{ marginRight: 6 }}
+                                        />
+                                        <Text className={`text-[11px] font-black ${language === 'en' ? 'text-white' : 'text-slate-500'}`}>English</Text>
+                                    </View>
                                 </Pressable>
                             </View>
 

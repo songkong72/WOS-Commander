@@ -393,6 +393,8 @@
             "set_day_time_desc": "Set the event days and times.",
             "registered_schedule": "Registered Schedule",
             "no_schedule": "No Schedule",
+            "new_schedule": "New Schedule",
+            "update_schedule": "Update Schedule",
             "set_time": "Set Time",
             "add_time_slot": "Add Time Slot",
             "bear_hunt_single_time": "Bear Hunt allows only one time slot.",

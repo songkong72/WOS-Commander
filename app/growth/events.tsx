@@ -83,7 +83,7 @@ Notifications.setNotificationHandler({
 const HERO_NAMES = heroesData.map(h => h.name);
 // Note: Options are localized in the render function using t()
 const FORTRESS_IDS = Array.from({ length: 12 }, (_, i) => `fortress_${i + 1}`);
-const CITADEL_IDS = ['citadel_1'];
+const CITADEL_IDS = Array.from({ length: 4 }, (_, i) => `citadel_${i + 1}`);
 
 // Shimmer Icon Component with animated light sweep effect
 const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactNode, colors: { bg: string, shadow: string, shimmer: string }, isDark: boolean }) => {
@@ -2909,15 +2909,28 @@ export default function EventTracker() {
 
                             <View className="px-6 flex-1" style={{ overflow: 'visible', zIndex: (activeDateDropdown || activeFortressDropdown || activeNamePickerId || hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
                                 {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
-                                    <View className="flex-1 mt-6">
-                                        <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
+                                    <View className="flex-1 mt-4">
+                                        <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false} className="flex-1">
                                             <View className="mb-2">
                                                 <View className="flex-row items-center mb-2">
                                                     <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">{t('events.modal.registered_schedule')}</Text>
                                                 </View>
                                                 <View className="flex-row flex-wrap gap-2">
                                                     {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).map(slot => (
-                                                        <TouchableOpacity key={slot.id} onPress={() => { setSelectedFortressName(slot.name); setSelectedDayForSlot(slot.day || '토'); setEditHour(slot.h); setEditMinute(slot.m); if (editingSlotId === slot.id) { setEditingSlotId(null); setSelectedFortressName(''); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}>
+                                                        <TouchableOpacity key={slot.id} onPress={() => {
+                                                            if (editingSlotId === slot.id) {
+                                                                // Deselect if already editing this slot
+                                                                setEditingSlotId(null);
+                                                                setSelectedFortressName('');
+                                                            } else {
+                                                                // Select this slot for editing
+                                                                setEditingSlotId(slot.id);
+                                                                setSelectedFortressName(slot.name);
+                                                                setSelectedDayForSlot(slot.day || '토');
+                                                                setEditHour(slot.h);
+                                                                setEditMinute(slot.m);
+                                                            }
+                                                        }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}>
                                                             <Text className="text-white text-xs font-bold mr-2">{slot.name} {t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(slot.day || '토')]}`)}({slot.h}:{slot.m})</Text>
                                                             <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeFortressSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity>
                                                         </TouchableOpacity>
@@ -2931,86 +2944,103 @@ export default function EventTracker() {
                                                 </View>
                                             </View>
 
-                                            <View className={`rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'}`}>
-                                                {/* Name Selector */}
-                                                <View>
-                                                    <View className="flex-row items-center mb-2">
-                                                        <Ionicons name="shield-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{editingEvent?.id === 'a_fortress' ? t('events.select_fortress') : t('events.select_citadel')}</Text>
+                                            {/* Start Date Toggle - Compact */}
+                                            <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                <View className="flex-row items-center justify-between">
+                                                    <View className="flex-row items-center flex-1">
+                                                        <Ionicons name="calendar-number-outline" size={16} color="#0ea5e9" style={{ marginRight: 8 }} />
+                                                        <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('events.specify_date')}</Text>
                                                     </View>
-                                                    <View className="flex-row flex-wrap gap-2 justify-center">
-                                                        {(editingEvent?.id === 'a_fortress' ? FORTRESS_IDS : CITADEL_IDS).map((id) => {
-                                                            const name = (editingEvent?.id === 'a_fortress') ? `${t('events.fortress')} ${id.split('_')[1]}` : `${t('events.citadel')} ${id.split('_')[1]}`;
-                                                            const isSelected = selectedFortressName === name;
-                                                            return (
-                                                                <TouchableOpacity
-                                                                    key={name}
-                                                                    onPress={() => setSelectedFortressName(name)}
-                                                                    className={`px-3 py-1.5 rounded-lg border ${isSelected ? 'bg-brand-accent border-brand-accent' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}`}
-                                                                >
-                                                                    <Text className={`font-black text-[13px] ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{name}</Text>
-                                                                </TouchableOpacity>
-                                                            );
-                                                        })}
-                                                    </View>
+                                                    <Switch
+                                                        value={enableStartDate}
+                                                        onValueChange={setEnableStartDate}
+                                                        trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#0ea5e9' }}
+                                                        thumbColor={enableStartDate ? '#ffffff' : '#94a3b8'}
+                                                    />
                                                 </View>
-
-                                                {/* Day Selector */}
-                                                <View>
-                                                    <View className="flex-row items-center mb-2">
-                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.day_of_week')}</Text>
-                                                    </View>
-                                                    <View className="flex-row justify-between gap-1">
-                                                        {['월', '화', '수', '목', '금', '토', '일'].map((d) => {
-                                                            const krDays = ['일', '월', '화', '수', '목', '금', '토'];
-                                                            const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-                                                            const dayLabel = t(`events.days.${enKeys[krDays.indexOf(d)]}`);
-                                                            const isSelected = selectedDayForSlot === d;
-                                                            return (
-                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`flex-1 h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-xs ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{dayLabel}</Text></TouchableOpacity>
-                                                            );
-                                                        })}
-                                                    </View>
-                                                </View>
-
-                                                {/* Time Selector */}
-                                                <View>
-                                                    <View className="flex-row items-center justify-between mb-2">
-                                                        <View className="flex-row items-center">
-                                                            <Ionicons name="alarm-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                            <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.modal.set_time')}</Text>
+                                                {enableStartDate && (
+                                                    <TouchableOpacity
+                                                        onPress={() => setShowDatePicker('startDate')}
+                                                        className={`mt-3 p-2.5 rounded-lg border ${isDark ? 'bg-slate-900/40 border-slate-600' : 'bg-white border-slate-300'}`}
+                                                    >
+                                                        <View className="flex-row items-center justify-between">
+                                                            <Text className={`font-mono text-base ${eventStartDate ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                                                {eventStartDate || 'YYYY-MM-DD'}
+                                                            </Text>
+                                                            <Ionicons name="calendar" size={18} color="#0ea5e9" />
                                                         </View>
-                                                        <View className={`flex-row p-0.5 rounded-lg ${isDark ? 'bg-slate-900/80' : 'bg-slate-200/50'}`}>
-                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h >= 12) setEditHour((h - 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) < 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) < 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('common.am')}</Text></TouchableOpacity>
-                                                            <TouchableOpacity onPress={() => { const h = parseInt(editHour); if (h < 12) setEditHour((h + 12).toString().padStart(2, '0')); }} className={`px-2 py-0.5 rounded ${parseInt(editHour) >= 12 ? 'bg-sky-500' : ''}`}><Text className={`font-bold text-[10px] ${parseInt(editHour) >= 12 ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('common.pm')}</Text></TouchableOpacity>
-                                                        </View>
-                                                    </View>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
 
-                                                    <View className="flex-row flex-wrap justify-between gap-1 mb-2">
-                                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(h12 => {
-                                                            const curH = parseInt(editHour);
-                                                            const isPM = curH >= 12;
-                                                            const displayH = curH % 12 === 0 ? 12 : curH % 12;
-                                                            const isSelected = displayH === h12;
-                                                            return (
-                                                                <TouchableOpacity key={h12} onPress={() => { let newH = h12; if (isPM) newH = h12 === 12 ? 12 : h12 + 12; else newH = h12 === 12 ? 0 : h12; setEditHour(newH.toString().padStart(2, '0')); }} className={`w-[15%] aspect-square rounded-xl items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-xs font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{h12}</Text></TouchableOpacity>
-                                                            )
-                                                        })}
-                                                    </View>
-                                                    <View className="flex-row justify-between gap-1">
-                                                        {['00', '10', '20', '30', '40', '50'].map(m => {
-                                                            const isSelected = editMinute === m;
-                                                            return (
-                                                                <TouchableOpacity key={m} onPress={() => setEditMinute(m)} className={`flex-1 py-2 rounded-lg items-center justify-center border ${isSelected ? 'bg-sky-500 border-sky-400' : (isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white border-slate-100')}`}><Text className={`text-[10px] font-bold ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{m}</Text></TouchableOpacity>
-                                                            )
-                                                        })}
-                                                    </View>
+                                            {/* Compact Form */}
+                                            <View className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-50 border-slate-200'}`}>
+                                                <Text className={`text-sm font-bold mb-4 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                    {t('events.modal.new_schedule')}
+                                                </Text>
+
+                                                {/* Fortress/Citadel Dropdown */}
+                                                <View className="mb-3">
+                                                    <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                                        {editingEvent?.id === 'a_fortress' ? t('events.fortress') : t('events.citadel')}
+                                                    </Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => setActiveNamePickerId('fortress_picker')}
+                                                        className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
+                                                    >
+                                                        <Text className={`text-base font-semibold ${selectedFortressName ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                                            {selectedFortressName || `${editingEvent?.id === 'a_fortress' ? t('events.select_fortress') : t('events.select_citadel')}`}
+                                                        </Text>
+                                                        <Ionicons name="chevron-down" size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+                                                    </TouchableOpacity>
                                                 </View>
 
-                                                <TouchableOpacity onPress={() => addFortressSlot()} className={`mt-2 w-full ${editingSlotId ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-500 border-emerald-400'} py-3 rounded-xl border items-center flex-row justify-center`}>
-                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color={editingSlotId ? "#10b981" : "white"} style={{ marginRight: 6 }} />
-                                                    <Text className={`${editingSlotId ? 'text-emerald-400' : 'text-white'} font-bold text-sm`}>{editingSlotId ? t('events.edit_completed') : t('events.add_schedule_entry')}</Text>
+                                                {/* Day Dropdown */}
+                                                <View className="mb-3">
+                                                    <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                                        {t('events.day_of_week')}
+                                                    </Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => setActiveFortressDropdown('day_picker')}
+                                                        className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
+                                                    >
+                                                        <Text className={`text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                            {(() => {
+                                                                const krDays = ['일', '월', '화', '수', '목', '금', '토'];
+                                                                const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                                                const idx = krDays.indexOf(selectedDayForSlot);
+                                                                return idx >= 0 ? t(`events.days.${enKeys[idx]}`) : t('events.days.mon');
+                                                            })()}
+                                                        </Text>
+                                                        <Ionicons name="chevron-down" size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                {/* Time Dropdown */}
+                                                <View className="mb-4">
+                                                    <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                                                        {t('events.modal.set_time')}
+                                                    </Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => setActiveFortressDropdown('time_picker')}
+                                                        className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
+                                                    >
+                                                        <Text className={`text-base font-mono font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                            {editHour}:{editMinute}
+                                                        </Text>
+                                                        <Ionicons name="chevron-down" size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                {/* Add Button */}
+                                                <TouchableOpacity
+                                                    onPress={() => addFortressSlot()}
+                                                    className={`w-full py-3.5 rounded-xl items-center flex-row justify-center ${editingSlotId ? 'bg-emerald-600' : 'bg-sky-600'}`}
+                                                >
+                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color="white" style={{ marginRight: 8 }} />
+                                                    <Text className="text-white font-bold text-base">
+                                                        {editingSlotId ? t('events.modal.update_schedule') : t('events.add_schedule_entry')}
+                                                    </Text>
                                                 </TouchableOpacity>
                                             </View>
                                         </ScrollView>
@@ -3325,7 +3355,17 @@ export default function EventTracker() {
                                 let selectedValue = '';
                                 let onSelect: (v: string) => void = () => { };
 
-                                if (activeNamePickerId) {
+                                if (activeNamePickerId === 'fortress_picker') {
+                                    // Simplified UI: Fortress/Citadel picker
+                                    title = isFortress ? t('events.select_fortress') : t('events.select_citadel');
+                                    options = isFortress ? FORTRESS_IDS.map(id => `${t('events.fortress')} ${id.split('_')[1]}`) : CITADEL_IDS.map(id => `${t('events.citadel')} ${id.split('_')[1]}`);
+                                    selectedValue = selectedFortressName;
+                                    onSelect = (v) => {
+                                        setSelectedFortressName(v);
+                                        setActiveNamePickerId(null);
+                                    };
+                                } else if (activeNamePickerId) {
+                                    // Legacy: Inline name picker for registered slots
                                     title = isFortress ? t('events.select_fortress') : t('events.select_citadel');
                                     options = isFortress ? FORTRESS_IDS.map(id => `${t('events.fortress')} ${id.split('_')[1]}`) : CITADEL_IDS.map(id => `${t('events.citadel')} ${id.split('_')[1]}`);
                                     selectedValue = list.find(l => l.id === activeNamePickerId)?.name || '';
@@ -3335,7 +3375,39 @@ export default function EventTracker() {
                                         if (idx > -1) { newList[idx].name = v; setList(newList); }
                                         setActiveNamePickerId(null);
                                     };
+                                } else if (activeFortressDropdown === 'day_picker') {
+                                    // Simplified UI: Day picker
+                                    title = t('events.day_of_week');
+                                    const krDays = ['월', '화', '수', '목', '금', '토', '일'];
+                                    const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                    options = krDays.map((d, i) => t(`events.days.${enKeys[i]}`));
+                                    const idx = krDays.indexOf(selectedDayForSlot);
+                                    selectedValue = idx >= 0 ? t(`events.days.${enKeys[idx]}`) : '';
+                                    onSelect = (v) => {
+                                        const selectedIdx = options.indexOf(v);
+                                        if (selectedIdx >= 0) {
+                                            setSelectedDayForSlot(krDays[selectedIdx]);
+                                        }
+                                        setActiveFortressDropdown(null);
+                                    };
+                                } else if (activeFortressDropdown === 'time_picker') {
+                                    // Simplified UI: Time picker (30-minute intervals)
+                                    title = t('events.modal.set_time');
+                                    options = [];
+                                    for (let h = 0; h < 24; h++) {
+                                        for (let m of ['00', '30']) {
+                                            options.push(`${h.toString().padStart(2, '0')}:${m}`);
+                                        }
+                                    }
+                                    selectedValue = `${editHour}:${editMinute}`;
+                                    onSelect = (v) => {
+                                        const [h, m] = v.split(':');
+                                        setEditHour(h);
+                                        setEditMinute(m);
+                                        setActiveFortressDropdown(null);
+                                    };
                                 } else if (activeFortressDropdown) {
+                                    // Legacy: Inline time picker for registered slots
                                     const { id, type } = activeFortressDropdown;
                                     const item = list.find(l => l.id === id);
                                     if (type === 'h') {

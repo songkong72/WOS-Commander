@@ -48,36 +48,48 @@ export default function Settings() {
                     <View className="gap-3">
                         <TouchableOpacity
                             onPress={() => changeLanguage('ko')}
-                            className={`rounded-[20px] p-5 flex-row items-center justify-between ${language === 'ko' ? (isDark ? 'bg-blue-500/15 border-2 border-blue-500/40' : 'bg-blue-50 border-2 border-blue-200') : (isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-slate-200')}`}
-                            style={{ shadowColor: language === 'ko' ? '#3b82f6' : '#000', shadowOffset: { width: 0, height: language === 'ko' ? 4 : 2 }, shadowOpacity: language === 'ko' ? 0.15 : 0.05, shadowRadius: 12 }}
+                            className={`rounded-[24px] p-5 flex-row items-center justify-between ${language === 'ko' ? (isDark ? 'bg-blue-500/15 border-2 border-blue-500/40' : 'bg-blue-50 border-2 border-blue-200') : (isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-slate-200')}`}
+                            style={{ shadowColor: language === 'ko' ? '#3b82f6' : '#000', shadowOffset: { width: 0, height: language === 'ko' ? 6 : 2 }, shadowOpacity: language === 'ko' ? 0.2 : 0.05, shadowRadius: 15 }}
                         >
                             <View className="flex-row items-center">
-                                <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${language === 'ko' ? (isDark ? 'bg-blue-500/20' : 'bg-blue-100') : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
-                                    <Text className="text-2xl">🇰🇷</Text>
+                                <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${language === 'ko' ? (isDark ? 'bg-blue-500/20' : 'bg-blue-100') : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
+                                    <View className="absolute inset-0 items-center justify-center opacity-10">
+                                        <Text className="text-[40px] font-black">KR</Text>
+                                    </View>
+                                    <Ionicons name="language" size={28} color={language === 'ko' ? '#3b82f6' : (isDark ? '#475569' : '#94a3b8')} />
                                 </View>
-                                <Text className={`text-lg font-bold ${language === 'ko' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>한국어</Text>
+                                <View>
+                                    <Text className={`text-lg font-black ${language === 'ko' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>한국어</Text>
+                                    <Text className={`text-[10px] font-bold uppercase tracking-widest ${language === 'ko' ? 'text-blue-500/60' : 'text-slate-500/40'}`}>Korean</Text>
+                                </View>
                             </View>
                             {language === 'ko' && (
-                                <View className="bg-blue-500/15 p-1.5 rounded-full">
-                                    <Ionicons name="checkmark-circle" size={26} color="#3b82f6" />
+                                <View className="bg-blue-500 p-1 rounded-full border-4 border-white/10">
+                                    <Ionicons name="checkmark" size={16} color="white" />
                                 </View>
                             )}
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => changeLanguage('en')}
-                            className={`rounded-[20px] p-5 flex-row items-center justify-between ${language === 'en' ? (isDark ? 'bg-blue-500/15 border-2 border-blue-500/40' : 'bg-blue-50 border-2 border-blue-200') : (isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-slate-200')}`}
-                            style={{ shadowColor: language === 'en' ? '#3b82f6' : '#000', shadowOffset: { width: 0, height: language === 'en' ? 4 : 2 }, shadowOpacity: language === 'en' ? 0.15 : 0.05, shadowRadius: 12 }}
+                            className={`rounded-[24px] p-5 flex-row items-center justify-between ${language === 'en' ? (isDark ? 'bg-blue-500/15 border-2 border-blue-500/40' : 'bg-blue-50 border-2 border-blue-200') : (isDark ? 'bg-slate-900/60 border border-slate-800/60' : 'bg-white border border-slate-200')}`}
+                            style={{ shadowColor: language === 'en' ? '#3b82f6' : '#000', shadowOffset: { width: 0, height: language === 'en' ? 6 : 2 }, shadowOpacity: language === 'en' ? 0.2 : 0.05, shadowRadius: 15 }}
                         >
                             <View className="flex-row items-center">
-                                <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${language === 'en' ? (isDark ? 'bg-blue-500/20' : 'bg-blue-100') : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
-                                    <Text className="text-2xl">🇺🇸</Text>
+                                <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${language === 'en' ? (isDark ? 'bg-blue-500/20' : 'bg-blue-100') : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
+                                    <View className="absolute inset-0 items-center justify-center opacity-10">
+                                        <Text className="text-[40px] font-black">US</Text>
+                                    </View>
+                                    <Ionicons name="globe-outline" size={28} color={language === 'en' ? '#3b82f6' : (isDark ? '#475569' : '#94a3b8')} />
                                 </View>
-                                <Text className={`text-lg font-bold ${language === 'en' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>English</Text>
+                                <View>
+                                    <Text className={`text-lg font-black ${language === 'en' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>English</Text>
+                                    <Text className={`text-[10px] font-bold uppercase tracking-widest ${language === 'en' ? 'text-blue-500/60' : 'text-slate-500/40'}`}>International</Text>
+                                </View>
                             </View>
                             {language === 'en' && (
-                                <View className="bg-blue-500/15 p-1.5 rounded-full">
-                                    <Ionicons name="checkmark-circle" size={26} color="#3b82f6" />
+                                <View className="bg-blue-500 p-1 rounded-full border-4 border-white/10">
+                                    <Ionicons name="checkmark" size={16} color="white" />
                                 </View>
                             )}
                         </TouchableOpacity>
