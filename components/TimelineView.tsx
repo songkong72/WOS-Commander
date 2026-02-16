@@ -94,7 +94,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
             // Convert startDate to a format the timeline can process
             // Extract first time from the time field
             const timeStr = ev.time || '00:00';
-            const timeMatch = timeStr.match(/(\d{2}):(\d{2})/);
+            const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
             const finalTime = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
 
             // Override fullComb to use the specific date instead of day-of-week
@@ -243,13 +243,13 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
             // 0. Explicit Comma-Separated List (Priority for Fortress/Citadel)
             // e.g., "요새전: 요새7 금 23:00, 요새10 금 23:00"
-            if (part.includes(',') && /[월화수목금토일]\s*\d{2}:\d{2}/.test(part)) {
+            if (part.includes(',') && /[월화수목금토일]\s*\d{1,2}:\d{2}/.test(part)) {
                 const subParts = part.split(',');
                 let specificHandled = false;
 
                 subParts.forEach(sp => {
                     const cleanSp = sp.trim().replace(/^.*(요새전|성채전|Fortress|Citadel)[:\s：]*/, '').trim();
-                    const match = cleanSp.match(/(.+?)\s+([월화수목금토일])\s*(\d{2}:\d{2})/);
+                    const match = cleanSp.match(/(.+?)\s+([월화수목금토일])\s*(\d{1,2}:\d{2})/);
 
                     if (match) {
                         specificHandled = true;
@@ -599,7 +599,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                             </View>
                             {evs.map((ev: any, evIdx: number) => {
                                 const isTopRow = ck === '연맹' && evIdx < 2;
-                                const isRowHovered = hoveredBarId?.startsWith(ev.id);
+                                const isRowHovered = hoveredBarId?.startsWith(`bar-${ev.id}-`);
                                 return (
                                     <View
                                         key={`${ev.id}-${ck}-${evIdx}`}

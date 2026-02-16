@@ -22,6 +22,7 @@
         "confirm": "확인",
         "year": "년",
         "month": "월",
+        "week": "주",
         "day": "일",
         "ok": "확인",
         "close": "닫기",
@@ -347,6 +348,10 @@
         "day_unit": "일",
         "hour_unit": "시간",
         "min_unit": "분",
+        "recurrence": "반복 주기 설정",
+        "recurrence_days": "며칠 (Days)",
+        "recurrence_weeks": "몇 주 (Weeks)",
+        "recurrence_guide": "{{value}}{{unit}} 마다 이벤트가 반복됩니다.",
         "no_ongoing_events": "현재 진행 중인 이벤트가 없습니다",
         "select_another_category": "다른 카테고리를 선택해보세요",
         "notification": {
@@ -374,6 +379,7 @@
             "dec": "12월"
         },
         "modal": {
+            "select_time": "시간 설정",
             "wiki_title": "공식 위키",
             "wiki_btn": "위키 열기",
             "wiki_empty": "링크 없음",
@@ -418,8 +424,8 @@
         "bearHunt": "곰 사냥 작전",
         "fortress_label": "요새",
         "citadel_label": "성채",
-        "bear1": "곰1",
-        "bear2": "곰2",
+        "bear1": "1군",
+        "bear2": "2군",
         "crazyJoe": "미친 조",
         "foundry": "최강 용광로",
         "foundry_title": "무기공장",
@@ -427,7 +433,7 @@
         "canyon_title": "협곡대전",
         "island": "태양성 공방전",
         "castle": "왕성 쟁탈전",
-        "mercenary": "용병 명성",
+        "mercenary": "용병 명예",
         "lab": "보안 시설",
         "time": "시간",
         "location": "장소/위치",
@@ -510,7 +516,8 @@
         "p8_description": "새로운 시대를 여는 희망의 빛.",
         "p9_description": "다양한 아이템을 교환하세요.",
         "p10_description": "기술 개혁을 향한 리듬.",
-        "p11_description": "고대 에너지 불의 수정을 깨우세요."
+        "p11_description": "고대 에너지 불의 수정을 깨우세요.",
+        "one_time": "1회성"
     },
     "manual": {
         "gateTitle": "Gate 화면 개요",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -37,6 +37,14 @@ import { doc, setDoc, getDoc, collection, getDocs, query, writeBatch, updateDoc,
 import { db } from '../firebaseConfig';
 import AdminManagement from '../components/AdminManagement';
 import TimelineView from '../components/TimelineView';
+
+const DATE_RANGE_IDS = [
+    'a_castle', 'server_castle', 'a_operation', 'alliance_operation',
+    'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon',
+    'alliance_frost_league', 'server_svs_prep', 'server_svs_battle',
+    'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization',
+    'p26'
+];
 
 export default function Home() {
     const router = useRouter();
@@ -1186,20 +1194,31 @@ export default function Home() {
             const combined = `${dayStr} ${timeStr} `;
 
             // 1. Date Range Match (Improved regex for various separators and optional day info)
-            // Expected: YYYY.MM.DD (Day) HH:mm ~ YYYY.MM.DD (Day) HH:mm or YYYY-MM-DD ...
-            const rangeMatch = combined.match(/(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?\s*~\s*(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?/);
+            // Expected: YYYY.MM.DD (Day) HH:mm ~ YYYY.MM.DD (Day) HH:mm or MM/DD ...
+            // Day marker (e.g. '월') can appear between date and time without parentheses.
+            const rangeMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
             if (rangeMatch) {
-                const endDatePart = rangeMatch[3].replace(/\./g, '-');
-                const endTimePart = rangeMatch[4] || '23:59';
-                const end = new Date(`${endDatePart}T${endTimePart}:00`);
+                const currentYear = now.getFullYear();
+                const eYear = parseInt(rangeMatch[5] || currentYear.toString());
+                const eMonth = parseInt(rangeMatch[6]) - 1;
+                const eDay = parseInt(rangeMatch[7]);
+                const timePart = rangeMatch[8] || '23:59';
+                const [eH, eM] = timePart.split(':').map(Number);
+
+                const end = new Date(eYear, eMonth, eDay, eH, eM);
                 return isNaN(end.getTime()) ? null : end;
             }
 
             // 2. Single Date Match
-            const singleMatch = combined.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})/);
+            const singleMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(?:오후|오전)?\s*(\d{1,2}):(\d{2})/);
             if (singleMatch) {
-                const eStr = `${singleMatch[1].replace(/\./g, '-')}T${singleMatch[2]}:00`;
-                const end = new Date(eStr);
+                const currentYear = now.getFullYear();
+                const y = parseInt(singleMatch[1] || currentYear.toString());
+                const m = parseInt(singleMatch[2]) - 1;
+                const d = parseInt(singleMatch[3]);
+                const h = parseInt(singleMatch[4]);
+                const min = parseInt(singleMatch[5]);
+                const end = new Date(y, m, d, h + 1, min); // 1 hour buffer
                 return isNaN(end.getTime()) ? null : end;
             }
         } catch (e) { }
@@ -1251,16 +1270,18 @@ export default function Home() {
         const originalId = (event.originalEventId || '').trim();
         const id = (originalId || event.id || event.eventId || '').trim();
 
-        // 곰 사냥 작전은 항상 예정 스케줄에 머물도록 함 (종료 일정으로 보내지 않음)
-        // 반복 이벤트이므로 종료되지 않음
-        if (id === 'a_bear' || id === 'alliance_bear' || id.includes('_bear')) return false;
+        // 곰사냥은 반복 이벤트이므로 대시보드에서 만료된 섹션으로 보내지 않음
+        if (id === 'a_bear' || id === 'alliance_bear') return false;
 
         const schedule = getEventSchedule(event);
 
         // 1. startDate가 있으면 날짜 기준 판단 (우선순위 높음)
         // 미치광이 조이, 협곡, 요새, 성채, 무기공장 등 일회성 주간 이벤트용
         const startDate = schedule?.startDate || event.startDate;
-        if (startDate) {
+        const dayStr = schedule?.day || event.day || '';
+        const isRange = dayStr.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id);
+
+        if (startDate && !isRange) {
             try {
                 const timeStr = schedule?.time || event.time || '00:00';
                 const dateTimeStr = `${startDate}T${timeStr}:00`;
@@ -1280,7 +1301,6 @@ export default function Home() {
         if (end) return now > end;
 
         // 3. 주간 반복 일정 만료 체크 (startDate 없는 경우)
-        const dayStr = schedule?.day || event.day || '';
         const timeStr = schedule?.time || event.time || '';
         const combined = `${dayStr} ${timeStr}`;
 
@@ -1357,21 +1377,45 @@ export default function Home() {
         if (str.includes('상시') || str.includes('상설')) return true;
 
         // 1. 기간형 체크 (예: 2024.01.01 10:00 ~ 2024.01.03 10:00)
-        // YYYY.MM.DD 또는 YYYY-MM-DD, 요일 정보 포함 여부, 시간 생략 등 대응
-        const dateRangeMatch = str.match(/(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?\s*~\s*(\d{4}[\.-]\d{2}[\.-]\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})?/);
+        const dateRangeMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}:\d{2})?/);
         if (dateRangeMatch) {
-            const sDate = dateRangeMatch[1].replace(/\./g, '-');
-            const sTime = dateRangeMatch[2] || '00:00';
-            const eDate = dateRangeMatch[3].replace(/\./g, '-');
-            const eTime = dateRangeMatch[4] || '23:59';
-            const start = new Date(`${sDate}T${sTime}:00`);
-            const end = new Date(`${eDate}T${eTime}:00`);
+            const currentYear = now.getFullYear();
+            const sYear = dateRangeMatch[1] || currentYear.toString();
+            const sMonth = dateRangeMatch[2];
+            const sDay = dateRangeMatch[3];
+            const sTime = dateRangeMatch[4] || '00:00';
+
+            const eYear = dateRangeMatch[5] || currentYear.toString();
+            const eMonth = dateRangeMatch[6];
+            const eDay = dateRangeMatch[7];
+            const eTime = dateRangeMatch[8] || '23:59';
+
+            const [hStart, mStart] = sTime.split(':').map(Number);
+            const [hEnd, mEnd] = eTime.split(':').map(Number);
+
+            const start = new Date(parseInt(sYear), parseInt(sMonth) - 1, parseInt(sDay), hStart, mStart);
+            const end = new Date(parseInt(eYear), parseInt(eMonth) - 1, parseInt(eDay), hEnd, mEnd);
             if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
                 return now >= start && now <= end;
             }
         }
 
-        // 2. 주간 요일 범위 체크 (예: 월 10:00 ~ 수 10:00)
+        // 2. 단일 날짜 체크 (예: 2026-02-22 일(23:00) 또는 2026.02.22 10:00)
+        const singleDateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(?:오후|오전)?\s*(\d{1,2}):(\d{2})/);
+        if (singleDateMatch) {
+            const currentYear = now.getFullYear();
+            const y = parseInt(singleDateMatch[1] || currentYear.toString());
+            const m = parseInt(singleDateMatch[2]) - 1;
+            const d = parseInt(singleDateMatch[3]);
+            const h = parseInt(singleDateMatch[4]);
+            const min = parseInt(singleDateMatch[5]);
+
+            const start = new Date(y, m, d, h, min);
+            const end = new Date(start.getTime() + 30 * 60000); // 30 min duration
+            return now >= start && now <= end;
+        }
+
+        // 3. 주간 요일 범위 체크 (예: 월 10:00 ~ 수 10:00)
         const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
         if (weeklyMatch) {
             const startTotal = dayMapObj[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
@@ -1380,29 +1424,33 @@ export default function Home() {
             return currentTotal >= startTotal || currentTotal <= endTotal;
         }
 
-        // 3. 점형 일시 체크 (예: 화 23:50, 매일 10:00)
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
-        if (explicitMatches.length > 0) {
-            return explicitMatches.some(m => {
-                const dayStr = m[1];
-                const h = parseInt(m[2]);
-                const min = parseInt(m[3]);
-                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-                return scheduledDays.some(d => {
-                    const dayOffset = dayMapObj[d];
-                    if (dayOffset === undefined) return false;
-                    const startTotal = dayOffset * 1440 + h * 60 + min;
-                    const endTotal = startTotal + 30; // 30분 지속
-                    if (startTotal <= endTotal) {
-                        return currentTotal >= startTotal && currentTotal <= endTotal;
-                    } else { // 자정 근처 주간 순환
-                        if (endTotal >= totalWeekMinutes) {
-                            return currentTotal >= startTotal || currentTotal <= (endTotal % totalWeekMinutes);
+        // 4. 점형 일시 체크 (예: 화 23:50, 매일 10:00) - 날짜 없는 주간 반복만
+        // 날짜가 포함되어 있으면 주간 반복으로 인식하지 않음
+        const hasDateInfo = /\d{4}[\.-]\d{2}[\.-]\d{2}/.test(str);
+        if (!hasDateInfo) {
+            const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+            if (explicitMatches.length > 0) {
+                return explicitMatches.some(m => {
+                    const dayStr = m[1];
+                    const h = parseInt(m[2]);
+                    const min = parseInt(m[3]);
+                    const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+                    return scheduledDays.some(d => {
+                        const dayOffset = dayMapObj[d];
+                        if (dayOffset === undefined) return false;
+                        const startTotal = dayOffset * 1440 + h * 60 + min;
+                        const endTotal = startTotal + 30; // 30분 지속
+                        if (startTotal <= endTotal) {
+                            return currentTotal >= startTotal && currentTotal <= endTotal;
+                        } else { // 자정 근처 주간 순환
+                            if (endTotal >= totalWeekMinutes) {
+                                return currentTotal >= startTotal || currentTotal <= (endTotal % totalWeekMinutes);
+                            }
                         }
-                    }
-                    return false;
+                        return false;
+                    });
                 });
-            });
+            }
         }
         return false;
     };
@@ -1421,14 +1469,91 @@ export default function Home() {
         return now <= threshold;
     };
 
+    // 곰사냥 2일 단위 로테이션: 다음 이벤트 요일 계산
+    const calculateBearHuntDay = useCallback((event: any, targetTime?: string): string => {
+        const isBear = (event.eventId === 'a_bear' || event.eventId === 'alliance_bear' || event.originalEventId === 'a_bear' || event.originalEventId === 'alliance_bear');
+        const schedule = getEventSchedule(event);
+        const registeredDay = event.day || schedule?.day || '';
+        if (!isBear || !registeredDay) return registeredDay;
+
+        const dayMap: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
+        const dayMapReverse: { [key: number]: string } = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
+
+        // 여러 요일이 쉼표로 연결된 경우 첫 번째 요일을 기준으로 로테이션 계산
+        const firstDayMatch = registeredDay.match(/[일월화수목금토]/);
+        if (!firstDayMatch) return registeredDay;
+        const regDayNum = dayMap[firstDayMatch[0]];
+
+        const todayNum = now.getDay();
+        const daysSinceRegistered = (todayNum - regDayNum + 7) % 7;
+        const isEventDay = daysSinceRegistered % 2 === 0;
+
+        if (isEventDay) {
+            // 체크할 대상 시간 결정 (특정 팀 시간이 주어지면 그것을 사용, 아니면 이벤트 전체의 마지막 시간)
+            const checkTime = targetTime || event.time || '';
+            const allTimes = Array.from(checkTime.matchAll(/(\d{1,2}):(\d{2})/g));
+            let latestEventMinutes = -1;
+
+            for (const match of allTimes) {
+                const h = parseInt(match[1]);
+                const m = parseInt(match[2]);
+                const eventMinutes = h * 60 + m;
+                if (eventMinutes > latestEventMinutes) latestEventMinutes = eventMinutes;
+            }
+
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            // 해당 팀 시간이 이미 지났으면(30분 지속 고려) 다음 로테이션(2일 후)으로
+            if (latestEventMinutes >= 0 && currentMinutes > latestEventMinutes + 30) {
+                const nextEventNum = (todayNum + 2) % 7;
+                return dayMapReverse[nextEventNum];
+            }
+            return dayMapReverse[todayNum];
+        }
+
+        // 오늘이 이벤트 날이 아니면 다음 로테이션 요일 계산
+        const nextEventNum = (todayNum + (2 - (daysSinceRegistered % 2))) % 7;
+        return dayMapReverse[nextEventNum];
+    }, [now, getEventSchedule]);
+
     const isEventActive = (event: any) => {
         try {
             const schedule = getEventSchedule(event);
-            const dayStr = schedule?.day || event.day || '';
-            const timeStr = schedule?.time || event.time || '';
+            const startDate = schedule?.startDate || event.startDate;
 
-            // 모든 내부 로직은 '현재 유저의 로컬 시간'과 비교하므로, KST 데이터를 로컬로 변환하여 체크합니다.
-            return checkItemActive(toLocal(dayStr)) || checkItemActive(toLocal(timeStr));
+            const originalId = (event.originalEventId || '').trim();
+            const id = (originalId || event.id || event.eventId || '').trim();
+
+            const dayStrRaw = schedule?.day || event.day || '';
+            const titleMatch = (event.title || '').includes('집결') || (event.title || '').includes('공연') || (event.title || '').includes('전당');
+            const isRange = dayStrRaw.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId) || titleMatch;
+
+            // startDate가 있고, 기간형 이벤트가 아닐 때만 단일 날짜 체크
+            if (startDate && !isRange) {
+                const eventDate = new Date(startDate);
+                const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                // 날짜가 일치하지 않으면 진행중 아님
+                if (eventDate.getTime() !== nowDate.getTime()) {
+                    return false;
+                }
+
+                // 날짜가 일치하면 시간 체크
+                const timeStr = schedule?.time || event.time || '';
+                return checkItemActive(toLocal(timeStr));
+            }
+
+            // startDate 없으면 주간 반복 이벤트
+            const isBear = (id === 'a_bear' || id === 'alliance_bear');
+            const dayStr = isBear ? calculateBearHuntDay(event) : (schedule?.day || event.day || '');
+            // split된 이벤트는 event.time 우선 사용
+            const timeStr = (event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) ? event.time : (schedule?.time || event.time || '');
+
+            const combinedStr = `${dayStr || ''} ${timeStr || ''}`.trim();
+            const result = checkItemActive(toLocal(combinedStr));
+
+
+
+            return result;
         } catch (e) { return false; }
     };
 
@@ -1453,9 +1578,10 @@ export default function Home() {
     const processConversion = (str: string, diffMinutes: number) => {
         if (!str || diffMinutes === 0) return str;
 
-        // 1. Full Date Range Case (2026.02.13 09:00)
-        let processed = str.replace(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/g, (match, y, m, d, h, min) => {
-            const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+        // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
+        let processed = str.replace(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
+            const currentYear = now.getFullYear();
+            const date = new Date(parseInt(y || currentYear.toString()), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
             if (isNaN(date.getTime())) return match;
             const converted = new Date(date.getTime() + diffMinutes * 60000);
             return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
@@ -1496,22 +1622,30 @@ export default function Home() {
         if (!str) return { date: '', time: '' };
 
         // 1. Handle full date range type (2024.01.01 10:00)
-        const fullDateMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+        const fullDateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d\s~\.\/-]*\s*(\d{2}):(\d{2})/);
         if (fullDateMatch) {
-            const [_, y, m, d, h, min] = fullDateMatch;
+            const currentYear = now.getFullYear();
+            const y = fullDateMatch[1] || currentYear.toString();
+            const m = fullDateMatch[2];
+            const d = fullDateMatch[3];
+            const h = fullDateMatch[4];
+            const min = fullDateMatch[5];
             const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
             const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-            const dateStr = `${m}월 ${d}일 (${days[dateObj.getDay()]})`;
-            return { date: dateStr, time: `${h}:${min}` };
+            const dateStr = `${m}/${d}(${days[dateObj.getDay()]})`;
+            return { date: dateStr, time: `${pad(parseInt(h))}:${pad(parseInt(min))}` };
         }
 
         // 2. Handle date only (2024.01.01)
-        const justDateMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
+        const justDateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})/);
         if (justDateMatch) {
-            const [_, y, m, d] = justDateMatch;
+            const currentYear = now.getFullYear();
+            const y = justDateMatch[1] || currentYear.toString();
+            const m = justDateMatch[2];
+            const d = justDateMatch[3];
             const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
             const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-            const dateStr = `${m}월 ${d}일 (${days[dateObj.getDay()]})`;
+            const dateStr = `${m}/${d}(${days[dateObj.getDay()]})`;
             return { date: dateStr, time: '' };
         }
 
@@ -1744,6 +1878,7 @@ export default function Home() {
         const processedList: any[] = [];
         rawList.forEach(e => {
             if (e.eventId === 'a_bear' || e.eventId === 'alliance_bear') {
+                // 곰사냥 2일 단위 로테이션으로 실제 요일 계산
                 const parts = (e.time || '').split(/\s*\/\s*/);
                 if (parts.length > 0) {
                     parts.forEach((part, idx) => {
@@ -1757,20 +1892,70 @@ export default function Home() {
                         const cleanLabel = rawLabel ? (rawLabel.replace(/곰|팀|군/g, '').trim() + '군') : '';
                         const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
 
-                        // Simplify individual times (Remove Departure/Return etc)
-                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                        // Extract day from teamTime (e.g., "월(12:30)" -> "월")
+                        const dayMatch = teamTime.match(/^([일월화수목금토])/);
+                        const registeredTeamDay = dayMatch ? dayMatch[1] : (e.day || '월');
+
+                        // 곰사냥 로테이션을 반영한 실제 요일 계산 (각 팀별 등록 요일과 팀별 시간을 기준)
+                        const actualTeamDay = calculateBearHuntDay({ ...e, day: registeredTeamDay }, teamTime);
+
+                        let simplifiedTime = teamTime.split(/[,|]/).map(t => {
                             return t.replace(/출격|귀환|시작|종료/g, '').trim();
                         }).join(', ');
+
+                        // 만약 시간이 "월 01:30" 처럼 요일을 포함하고 있다면, 실제 요일로 교체
+                        if (dayMatch && dayMatch[0] !== actualTeamDay) {
+                            simplifiedTime = simplifiedTime.replace(dayMatch[0], actualTeamDay);
+                        }
 
                         processedList.push({
                             ...e,
                             eventId: `${e.eventId}_team${idx + 1} `,
                             originalEventId: e.eventId,
                             title: t('events.alliance_bear_title'),
+                            day: actualTeamDay, // 각 팀별 실제 요일
                             time: simplifiedTime,
                             isBearSplit: true,
                             teamLabel: cleanLabel,
                             teamIcon: '🐻'
+                        });
+                    });
+                } else {
+                    const actualDay = calculateBearHuntDay(e);
+                    const dayMatch = (e.time || '').match(/^([일월화수목금토])/);
+                    let updatedTime = e.time || '';
+                    if (dayMatch && dayMatch[0] !== actualDay) {
+                        updatedTime = updatedTime.replace(dayMatch[0], actualDay);
+                    }
+                    processedList.push({ ...e, day: actualDay, time: updatedTime });
+                }
+            } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
+                // Split Foundry into separate cards for Team 1 and Team 2
+                const parts = (e.time || '').split(/\s*\/\s*/);
+                if (parts.length > 0) {
+                    parts.forEach((part, idx) => {
+                        const trimmed = part.trim();
+                        if (!trimmed) return;
+
+                        const colonIdx = trimmed.indexOf(':');
+                        const isSingleTeam = parts.length === 1;
+                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const cleanLabel = rawLabel ? (rawLabel.replace(/팀|군/g, '').trim() + '군') : '';
+                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+
+                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
+                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
+                        }).join(', ');
+
+                        processedList.push({
+                            ...e,
+                            eventId: `${e.eventId}_team${idx + 1}`,
+                            originalEventId: e.eventId,
+                            title: t('events.alliance_foundry_title'),
+                            time: simplifiedTime,
+                            isFoundrySplit: true,
+                            teamLabel: cleanLabel,
+                            teamIcon: '🏭'
                         });
                     });
                 } else {
@@ -1847,7 +2032,7 @@ export default function Home() {
                             ...e,
                             eventId: `${e.eventId}_team${idx + 1}`,
                             originalEventId: e.eventId,
-                            title: cleanLabel ? `${t('events.canyon_title')}(${cleanLabel})` : t('events.canyon_title'),
+                            title: t('events.canyon_title'),
                             time: simplifiedTime,
                             isCanyonSplit: true,
                             teamLabel: cleanLabel,
@@ -1913,6 +2098,31 @@ export default function Home() {
             if (rangeMatch) return new Date(rangeMatch[1] + '-' + rangeMatch[2] + '-' + rangeMatch[3]).getTime();
 
             // 2. Weekly Recurring
+            const currentDay = (now.getDay() + 6) % 7;
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+
+            const matches = Array.from((dStr + ' ' + tStr).matchAll(/([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/g));
+            if (matches.length > 0) {
+                // Find first non-expired slot
+                let nextSlot = matches.find(m => {
+                    const dRaw = m[1];
+                    const [h, min] = m[2].split(':').map(Number);
+                    if (dRaw === '매일' || dRaw === '상시') return true;
+                    const dIdx = dayMap[dRaw];
+                    if (dIdx > currentDay) return true;
+                    if (dIdx === currentDay) return currentMins < (h * 60 + min + 30);
+                    return false;
+                });
+
+                // If all expired this week, show first slot of next week or just the first match
+                if (!nextSlot) nextSlot = matches[0];
+
+                const [_, dRaw, tPart] = nextSlot;
+                const [h, min] = tPart.split(':').map(Number);
+                const dIdx = dRaw === '매일' || dRaw === '상시' ? -1 : (dayMap[dRaw] ?? 9);
+                return dIdx * 86400000 + h * 3600000 + min * 60000;
+            }
+
             const firstDay = (dStr + tStr).match(/[월화수목금토일]/)?.[0];
             const timeMatch = (dStr + tStr).match(/(\d{2}:\d{2})/)?.[1] || '00:00';
             if (firstDay) {
@@ -1983,7 +2193,7 @@ export default function Home() {
             // Priority 7: Title Alphabetical
             return (a.title || '').localeCompare(b.title || '');
         });
-    }, [schedules, now]);
+    }, [schedules, now, calculateBearHuntDay, t]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -2057,12 +2267,14 @@ export default function Home() {
         return dayMap[day] ? t(`events.days.${dayMap[day]}`) : day;
     };
 
-    // Translate fortress/citadel labels
+    // Translate fortress/citadel and group labels
     const translateLabel = (label: string) => {
         if (!label) return '';
         return label
             .replace(/요새\s*#?(\d+)/g, (match, num) => `${t('events.fortress')} ${num}`)
-            .replace(/성채\s*#?(\d+)/g, (match, num) => `${t('events.citadel')} ${num}`);
+            .replace(/성채\s*#?(\d+)/g, (match, num) => `${t('events.citadel')} ${num}`)
+            .replace(/(?:^|\s|\()1군(?:\s|\)|$)/g, (match) => match.replace('1군', t('events.team1')))
+            .replace(/(?:^|\s|\()2군(?:\s|\)|$)/g, (match) => match.replace('2군', t('events.team2')));
     };
 
     const renderWithHighlightedDays = (str: string, isUpcomingSoon: boolean) => {
@@ -2070,13 +2282,15 @@ export default function Home() {
         return parts.map((part, i) => {
             const isDay = /([일월화수목금토]|\((?:일|월|화|수|목|금|토)\))/.test(part);
             if (isDay) {
-                const translatedDay = translateDay(part.replace(/[\(\)]/g, ''));
+                const hasParens = part.includes('(');
+                const dayChar = part.replace(/[\(\)]/g, '');
+                const translatedDay = translateDay(dayChar);
                 return (
                     <Text key={i} style={{
                         fontWeight: '900',
                         color: isUpcomingSoon ? (isDark ? '#34d399' : '#059669') : (isDark ? '#38bdf8' : '#2563eb')
                     }}>
-                        {translatedDay}
+                        {hasParens ? `(${translatedDay})` : translatedDay}
                     </Text>
                 );
             }
@@ -2088,16 +2302,28 @@ export default function Home() {
         if (!timeStr) return null;
 
         // 1. Date Range Case: "2026.02.13 09:00 ~ 2026.02.15 09:00"
-        const rangeMatch = timeStr.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}:\d{2})\s*~\s*(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}:\d{2})/);
+        // Supports flexible separators and markers like '월' directly after date.
+        const rangeMatch = timeStr.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
         if (rangeMatch) {
-            const [_, y1, m1, d1, t1, y2, m2, d2, t2] = rangeMatch;
+            const currentYear = now.getFullYear();
+            const y1 = rangeMatch[1] || currentYear.toString();
+            const m1 = rangeMatch[2];
+            const d1 = rangeMatch[3];
+            const t1 = rangeMatch[4];
+            const y2 = rangeMatch[5] || currentYear.toString();
+            const m2 = rangeMatch[6];
+            const d2 = rangeMatch[7];
+            const t2 = rangeMatch[8];
             const start = new Date(parseInt(y1), parseInt(m1) - 1, parseInt(d1));
             const end = new Date(parseInt(y2), parseInt(m2) - 1, parseInt(d2));
             const startDay = getKoreanDayOfWeek(start);
             const endDay = getKoreanDayOfWeek(end);
+            const startPart = `${m1}/${d1} (${startDay}) ${t1 || '00:00'}`;
+            const endPart = `${m2}/${d2} (${endDay}) ${t2 || '23:59'}`;
 
-            const startPart = `${m1}.${d1}(${startDay})\u00A0${t1}`;
-            const endPart = `${m2}.${d2}(${endDay})\u00A0${t2}`;
+            // Clean 1군/2군 if present in date range matching (though rare)
+            const cleanStart = startPart.replace(/1군/g, t('events.team1')).replace(/2군/g, t('events.team2'));
+            const cleanEnd = endPart.replace(/1군/g, t('events.team1')).replace(/2군/g, t('events.team2'));
 
             return (
                 <Text
@@ -2106,14 +2332,14 @@ export default function Home() {
                     minimumFontScale={0.7}
                     style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
                 >
-                    {renderWithHighlightedDays(startPart, isUpcomingSoon)}{"\u00A0"}~ {renderWithHighlightedDays(endPart, isUpcomingSoon)}
+                    {renderWithHighlightedDays(cleanStart, isUpcomingSoon)}{"\u00A0"}~ {renderWithHighlightedDays(cleanEnd, isUpcomingSoon)}
                 </Text>
             );
         }
 
         // 2. Grouped Day Case: "요새7 금(23:00), 요새10 금(23:00)" or "요새전: 요새7 금 23:00"
         // Also handles "월(22:00)" without space
-        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，/]+)\s*(.*?)\s+([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*/g));
+        const dayTimeMatches = Array.from(timeStr.matchAll(/(?:^|[,，/]+)\s*(.*?)\s*([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*/g));
         if (dayTimeMatches.length > 0) {
             // 월요일~일요일이 한 주 (월요일 00:00 리셋)
             const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
@@ -2133,22 +2359,13 @@ export default function Home() {
                 const endTotal = startTotal + 30; // 30 mins duration
                 let isItemExpired = false;
 
-                // Calculate expiration considering week wrap-around
-                const currentDayIndex = now.getDay();
+                // Calculate expiration considering week wrap-around (Monday start)
+                const currentDayIndex = (now.getDay() + 6) % 7; // Mon=0, Tue=1 ... Sun=6
                 const targetDayIndex = dayMapObj[day];
 
-                // Simple expiration logic: if day passed, or same day and time passed
-                // Note: Sunday is 0 in JS, but 7 in our logic context (if Mon-Sun)
-                // Let's stick to standard JSgetDay: Sun=0, Mon=1...Sat=6.
-                // But dayMapObj: 일=0, 월=1...토=6. matching.
-
-                // If current day > target day, expired.
-                // But what about next week? Usually schedule shows this week.
-                // Let's assume standard weekly view.
-
-                if (currentDayIndex > dayIdx) {
+                if (currentDayIndex > targetDayIndex) {
                     isItemExpired = true;
-                } else if (currentDayIndex === dayIdx) {
+                } else if (currentDayIndex === targetDayIndex) {
                     const currentMinutes = now.getHours() * 60 + now.getMinutes();
                     const targetMinutes = h * 60 + min;
                     if (currentMinutes >= targetMinutes + 30) isItemExpired = true;
@@ -2175,19 +2392,29 @@ export default function Home() {
                 if (!groups[groupKey].days.includes(day)) groups[groupKey].days.push(day);
             });
 
-            // Sort: Expired items last? Or just keep order? User asked for strikethrough.
-            // Let's valid items first, then expired items.
+            // Sort: Expired items last
+            // Sort: Not Expired first, then by Day Index, then by Time
+            const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6, '매일': -1, '상시': -2 };
             const resultParts = Object.values(groups).sort((a, b) => {
-                if (a.isExpired === b.isExpired) return 0;
-                return a.isExpired ? 1 : -1;
+                if (a.isExpired !== b.isExpired) return a.isExpired ? 1 : -1;
+                const aDayIdx = dayMap[a.days[0]] ?? 9;
+                const bDayIdx = dayMap[b.days[0]] ?? 9;
+                if (aDayIdx !== bDayIdx) return aDayIdx - bDayIdx;
+                return a.time.localeCompare(b.time);
             });
 
             if (resultParts.length === 0) return null;
 
+            // Filter out expired items if there are any non-expired (upcoming) items.
+            // This ensures the dashboard always prioritizes the "Next" schedule as requested by the user.
+            const upcomingParts = resultParts.filter(p => !p.isExpired);
+            const finalParts = upcomingParts.length > 0 ? upcomingParts : resultParts;
+            const isAllExpired = upcomingParts.length === 0;
+
             return (
                 <View className="flex-col gap-1.5 mt-2">
-                    {resultParts.map((part, i) => (
-                        <View key={i} className={`flex-row items-center mb-1 ${part.isExpired ? 'opacity-40' : ''}`}>
+                    {finalParts.map((part, i) => (
+                        <View key={i} className={`flex-row items-center mb-1 ${(part.isExpired && !isAllExpired) ? 'opacity-40' : ''}`}>
                             <Ionicons
                                 name="time-outline"
                                 size={14}
@@ -2198,7 +2425,7 @@ export default function Home() {
                                 color: isDark ? '#cbd5e1' : '#475569',
                                 fontSize: 18 * fontSizeScale,
                                 fontWeight: '700',
-                                textDecorationLine: part.isExpired ? 'line-through' : 'none'
+                                textDecorationLine: 'none'
                             }}>
                                 {renderWithHighlightedDays(part.days.join('·'), isUpcomingSoon)} {part.time}
                             </Text>
@@ -2209,7 +2436,7 @@ export default function Home() {
                                         fontSize: 13 * fontSizeScale,
                                         fontWeight: '700',
                                         color: isDark ? '#94a3b8' : '#64748b',
-                                        textDecorationLine: part.isExpired ? 'line-through' : 'none'
+                                        textDecorationLine: 'none'
                                     }}>
                                         {translateLabel(part.label).replace(/\s+/g, ' ')}
                                     </Text>
@@ -2220,7 +2447,26 @@ export default function Home() {
                 </View>);
         }
 
-        // 3. Simple String (Mixed or unformatted) -> Try to parse "Day(Time)" first to unify UI
+        // 3. Single Date Match: "2026.02.13 09:00"
+        const singleDateMatch = timeStr.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(?:오후|오전)?\s*(\d{1,2}):(\d{2})/);
+        if (singleDateMatch) {
+            const currentYear = now.getFullYear();
+            const y = singleDateMatch[1] || currentYear.toString();
+            const m = singleDateMatch[2];
+            const d = singleDateMatch[3];
+            const t = singleDateMatch[4];
+            const min = singleDateMatch[5];
+            const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+            const day = getKoreanDayOfWeek(dateObj);
+            const formatted = `${m}/${d}(${day}) ${pad(parseInt(t))}:${pad(parseInt(min))}`;
+            return (
+                <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}>
+                    {renderWithHighlightedDays(formatted, isUpcomingSoon)}
+                </Text>
+            );
+        }
+
+        // 4. Simple String (Mixed or unformatted) -> Try to parse "Day(Time)" first to unify UI
         // e.g. "월(11:00)" or "월 11:00"
         const singleDayTimeMatch = timeStr.match(/^([일월화수목금토])[\s\(]*(\d{2}:\d{2})[\s\)]*$/);
         if (singleDayTimeMatch) {
@@ -2300,7 +2546,7 @@ export default function Home() {
             const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
             const totalWeekMinutes = 7 * 1440;
 
-            const dateRangeMatch = str.match(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{2}):(\d{2})/);
+            const dateRangeMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d\s~\.\/-]*\s*(\d{2}):(\d{2})/);
             if (dateRangeMatch) {
                 const [_, y, m, d, h, min] = dateRangeMatch;
                 const start = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
@@ -2357,8 +2603,50 @@ export default function Home() {
                 {({ hovered }: any) => {
                     const currentSchedule = getEventSchedule(event);
 
-                    const displayDay = currentSchedule?.day || event.day;
-                    const displayTime = (event.isBearSplit || event.isFoundrySplit || event.isFortressSplit || event.isCanyonSplit) ? event.time : (currentSchedule?.time || event.time);
+                    // split된 이벤트는 현재 시간 기준 가장 가까운 다음 일정을 displayDay로 사용
+                    let displayDay = (event.isBearSplit && event.day) ? event.day : (currentSchedule?.day || event.day);
+                    let displayTime = (event.isBearSplit || event.isFoundrySplit || event.isFortressSplit || event.isCanyonSplit) ? event.time : (currentSchedule?.time || event.time);
+
+                    // 다중 일정이 포함된 경우 다음 실행 요일 자동 계산
+                    if (event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) {
+                        const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+                        const currentDay = (now.getDay() + 6) % 7;
+                        const currentMins = now.getHours() * 60 + now.getMinutes();
+                        const matches = Array.from(displayTime.matchAll(/([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/g));
+
+                        if (matches.length > 0) {
+                            const nextSlot = matches.find(m => {
+                                const dRaw = m[1];
+                                const [h, min] = m[2].split(':').map(Number);
+                                if (dRaw === '매일' || dRaw === '상시') return true;
+                                const dIdx = dayMap[dRaw];
+                                if (dIdx > currentDay) return true;
+                                if (dIdx === currentDay) return currentMins < (h * 60 + min + 30);
+                                return false;
+                            });
+                            if (nextSlot) {
+                                displayDay = nextSlot[1];
+                                // If the time string contains multiple slots, let's only use the upcoming ones
+                                // to ensure the dashboard doesn't show finished slots.
+                                const upcomingMatches = matches.filter(m => {
+                                    const dRaw = m[1];
+                                    const [h, min] = m[2].split(':').map(Number);
+                                    if (dRaw === '매일' || dRaw === '상시') return true;
+                                    const dIdx = dayMap[dRaw];
+                                    if (dIdx > currentDay) return true;
+                                    if (dIdx === currentDay) return currentMins < (h * 60 + min + 30);
+                                    return false;
+                                });
+                                if (upcomingMatches.length > 0) {
+                                    displayTime = upcomingMatches.map(m => m[0]).join(', ');
+                                }
+                            }
+                        }
+                    }
+
+                    if (event.isBearSplit) {
+                        console.log('[Display Debug]', { eventId: event.eventId, isBearSplit: event.isBearSplit, eventDay: event.day, scheduleDay: currentSchedule?.day, displayDay, displayTime, eventTime: event.time });
+                    }
 
                     return isActive ? (
                         <View className={`w-full rounded-[32px] border ${hovered ? 'border-blue-400' : 'border-blue-500/40'} overflow-hidden bg-slate-950 transition-all`} style={{
@@ -2407,16 +2695,26 @@ export default function Home() {
                                                     return t('events.fortress_battle_title');
                                                 }
 
-                                                // Handle other events
+                                                // Handle Bear Hunt with team label
                                                 const cleanId = (originalId || eventId).replace(/_fortress|_citadel|_team\d+/g, '');
-                                                return t(`events.${cleanId}_title`, { defaultValue: event.title });
+                                                const baseTitle = t(`events.${cleanId}_title`, { defaultValue: event.title });
+
+                                                // Add team label for bear hunt, foundry, and canyon
+                                                if ((event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) && event.teamLabel) {
+                                                    const translatedTeam = event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'));
+                                                    return `${baseTitle} (${translatedTeam})`;
+                                                }
+
+                                                return baseTitle;
                                             })()}
                                         </Text>
                                         <View className="mb-2">
                                             {(() => {
                                                 let activeStr = displayTime || displayDay || '-';
-                                                if (displayDay && displayTime && !displayTime.includes(displayDay)) {
-                                                    if (!event.isBearSplit && !event.isFoundrySplit && !event.isCanyonSplit) activeStr = `${displayDay} ${displayTime}`;
+                                                // Combine day and time if they are separate (only if time doesn't have day info yet)
+                                                if (displayDay && displayTime && !/[일월화수목금토]/.test(displayTime)) {
+                                                    // 곰사냥, 무기공장, 협곡 모두 요일 + 시간 표시
+                                                    if (!event.isFortressSplit) activeStr = `${displayDay} ${displayTime}`;
                                                 }
                                                 return formatEventTimeCompact(convertTime(activeStr), checkIsSoon(toLocal(activeStr)));
                                             })()}
@@ -2492,9 +2790,17 @@ export default function Home() {
                                             return t('events.fortress_battle_title');
                                         }
 
-                                        // Handle other events
+                                        // Handle Bear Hunt and Foundry with team label
                                         const cleanId = (originalId || eventId).replace(/_fortress|_citadel|_team\d+/g, '');
-                                        return t(`events.${cleanId}_title`, { defaultValue: event.title });
+                                        const baseTitle = t(`events.${cleanId}_title`, { defaultValue: event.title });
+
+                                        // Add team label for bear hunt, foundry, and canyon
+                                        if ((event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) && event.teamLabel) {
+                                            const translatedTeam = event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'));
+                                            return `${baseTitle} (${translatedTeam})`;
+                                        }
+
+                                        return baseTitle;
                                     })()}
                                 </Text>
                             </View>
@@ -2507,10 +2813,10 @@ export default function Home() {
                                         {(() => {
                                             let finalStr = displayTime || displayDay || '-';
 
-                                            // Combine day and time if they are separate and shouldn't be
-                                            if (displayDay && displayTime && !displayTime.includes(displayDay)) {
-                                                if (!event.isBearSplit && !event.isFoundrySplit && !event.isCanyonSplit) {
-                                                    finalStr = `${displayDay}(${displayTime})`;
+                                            // Combine day and time if they are separate (only if time doesn't have day info yet)
+                                            if (displayDay && displayTime && !/[일월화수목금토]/.test(displayTime)) {
+                                                if (!event.isFortressSplit) {
+                                                    finalStr = `${displayDay} (${displayTime})`;
                                                 }
                                             }
 
@@ -2625,21 +2931,23 @@ export default function Home() {
                                 <Ionicons name="book-outline" size={20} color="#f59e0b" />
                             </Pressable>
 
-                            {/* Language Toggle Switch (Timezone style) */}
+                            {/* Language Toggle Switch (Icon Only) */}
                             <View className="absolute top-0 left-0 flex-row p-1 rounded-2xl border bg-slate-800/50 border-slate-600" style={{ zIndex: 10 }}>
                                 <Pressable
                                     onPress={() => changeLanguage('ko')}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            paddingHorizontal: 16,
-                                            paddingVertical: 8,
-                                            borderRadius: 12,
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                             backgroundColor: language === 'ko'
                                                 ? '#2563eb'
                                                 : (hovered ? 'rgba(59, 130, 246, 0.2)' : 'transparent'),
                                             borderColor: language === 'ko' ? 'transparent' : (hovered ? '#60a5fa' : 'transparent'),
                                             borderWidth: 1,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transform: [{ scale: pressed ? 0.92 : (hovered ? 1.08 : 1) }],
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                             cursor: 'pointer'
                                         }
@@ -2647,30 +2955,29 @@ export default function Home() {
                                     // @ts-ignore
                                     tabIndex={-1}
                                 >
-                                    <View className="flex-row items-center">
-                                        <Ionicons
-                                            name="language"
-                                            size={14}
-                                            color={language === 'ko' ? 'white' : '#64748b'}
-                                            style={{ marginRight: 6 }}
-                                        />
-                                        <Text className={`text-[11px] font-black ${language === 'ko' ? 'text-white' : 'text-slate-500'}`}>한국어</Text>
-                                    </View>
+                                    <Ionicons
+                                        name="language"
+                                        size={18}
+                                        color={language === 'ko' ? 'white' : '#64748b'}
+                                    />
                                 </Pressable>
 
                                 <Pressable
                                     onPress={() => changeLanguage('en')}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            paddingHorizontal: 16,
-                                            paddingVertical: 8,
-                                            borderRadius: 12,
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
                                             backgroundColor: language === 'en'
                                                 ? '#2563eb'
                                                 : (hovered ? 'rgba(59, 130, 246, 0.2)' : 'transparent'),
                                             borderColor: language === 'en' ? 'transparent' : (hovered ? '#60a5fa' : 'transparent'),
                                             borderWidth: 1,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            marginLeft: 4,
+                                            transform: [{ scale: pressed ? 0.92 : (hovered ? 1.08 : 1) }],
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                             cursor: 'pointer'
                                         }
@@ -2678,15 +2985,11 @@ export default function Home() {
                                     // @ts-ignore
                                     tabIndex={-1}
                                 >
-                                    <View className="flex-row items-center">
-                                        <Ionicons
-                                            name="globe-outline"
-                                            size={14}
-                                            color={language === 'en' ? 'white' : '#64748b'}
-                                            style={{ marginRight: 6 }}
-                                        />
-                                        <Text className={`text-[11px] font-black ${language === 'en' ? 'text-white' : 'text-slate-500'}`}>English</Text>
-                                    </View>
+                                    <Ionicons
+                                        name="globe-outline"
+                                        size={18}
+                                        color={language === 'en' ? 'white' : '#64748b'}
+                                    />
                                 </Pressable>
                             </View>
 

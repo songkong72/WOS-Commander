@@ -9,6 +9,8 @@ export interface EventSchedule {
     strategy?: string;
     updatedAt?: number; // Timestamp for Bear Hunt bi-weekly rotation logic
     startDate?: string; // Optional start date for one-time weekly events (YYYY-MM-DD format)
+    recurrenceValue?: string;
+    recurrenceUnit?: 'day' | 'week';
 }
 
 const ID_MAP: { [key: string]: string } = {
@@ -151,10 +153,18 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
             const nid = normalizeId(rawId);
 
             // 낙관적 업데이트 (optimistic update with timestamp)
-            const scheduleWithTimestamp = {
+            const scheduleWithTimestamp: any = {
                 ...scheduleToUpdate,
                 updatedAt: Date.now()
             };
+
+            // Remove undefined fields (Firestore doesn't support undefined values)
+            Object.keys(scheduleWithTimestamp).forEach(key => {
+                if (scheduleWithTimestamp[key] === undefined) {
+                    delete scheduleWithTimestamp[key];
+                }
+            });
+
             setSchedules(prev => {
                 const existingIdx = prev.findIndex(s => normalizeId(s.eventId) === nid);
                 if (existingIdx > -1) {
@@ -199,10 +209,18 @@ export const useFirestoreEventSchedules = (serverId?: string | null, allianceId?
                 }
 
                 // 2. Apply the new update to our map (with timestamp for Bear Hunt rotation)
-                const scheduleWithTimestamp = {
+                const scheduleWithTimestamp: any = {
                     ...scheduleToUpdate,
                     updatedAt: Date.now() // Add timestamp for bi-weekly rotation calculations
                 };
+
+                // Remove undefined fields (Firestore doesn't support undefined values)
+                Object.keys(scheduleWithTimestamp).forEach(key => {
+                    if (scheduleWithTimestamp[key] === undefined) {
+                        delete scheduleWithTimestamp[key];
+                    }
+                });
+
                 mergedMap.set(nid, scheduleWithTimestamp);
 
                 // 3. Prepare the CLEAN payload (No legacy fields!)
