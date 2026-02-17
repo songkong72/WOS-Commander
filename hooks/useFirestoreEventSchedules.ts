@@ -11,6 +11,7 @@ export interface EventSchedule {
     startDate?: string; // Optional start date for one-time weekly events (YYYY-MM-DD format)
     recurrenceValue?: string;
     recurrenceUnit?: 'day' | 'week';
+    isRecurring?: boolean;
 }
 
 const ID_MAP: { [key: string]: string } = {

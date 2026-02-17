@@ -95,7 +95,7 @@ export default function HeroManagement() {
 
             <View className="flex-1 flex-row">
                 {/* Fixed Sidebar for PC / Scrollable for Mobile */}
-                <View className={`w-16 md:w-24 border-r pt-12 ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <View className={`w-16 md:w-24 border-r pt-4 ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                     <ScrollView showsVerticalScrollIndicator={false}>
                         {categories.map((cat) => (
                             <Pressable
@@ -126,11 +126,11 @@ export default function HeroManagement() {
 
                 {/* Main Content Area */}
                 <View className={`flex-1 ${isDark ? 'bg-brand-dark/40' : 'bg-white'}`}>
-                    <View className="p-4 md:p-6">
-                        <View className="mb-6 flex-row items-center">
+                    <View className="p-3 md:p-6">
+                        <View className="mb-4 pt-4 flex-row items-center">
                             <Pressable
                                 onPress={() => router.canGoBack() ? router.back() : router.replace('/')}
-                                className={`mr-4 p-3 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200 shadow-sm'}`}
+                                className={`mr-3 p-2 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200 shadow-sm'}`}
                                 style={({ pressed, hovered }: any) => [
                                     {
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
@@ -140,12 +140,14 @@ export default function HeroManagement() {
                                     }
                                 ]}
                             >
-                                <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#1e293b"} />
+                                <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
                             </Pressable>
                             <View className="flex-1">
-                                <Text className={`font-bold text-[10px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Hero Archive</Text>
-                                <Text className={`text-3xl md:text-4xl font-bold mb-1.5 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{selectedCategory} 영웅 목록</Text>
-                                <View className={`h-1 w-12 rounded-full ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`} />
+                                <Text className={`font-black text-[9px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Hero Archive</Text>
+                                <View className="flex-row items-baseline">
+                                    <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{selectedCategory}</Text>
+                                    <Text className={`ml-1 text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>영웅 목록</Text>
+                                </View>
                             </View>
                         </View>
 

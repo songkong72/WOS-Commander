@@ -137,7 +137,7 @@ export default function GlobalNavigationBar() {
     return (
         <View className="absolute bottom-0 left-0 right-0 z-[9999]">
             <View
-                className={`flex-row items-center px-2 py-2 border-t shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/90 border-slate-900' : 'bg-white/95 border-slate-100'}`}
+                className={`flex-row items-center px-2 py-0.5 border-t shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/90 border-slate-900' : 'bg-white/95 border-slate-100'}`}
                 style={{
                     width: '100%',
                     borderTopLeftRadius: 0,
@@ -164,40 +164,62 @@ export default function GlobalNavigationBar() {
                                     flex: 1,
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    padding: 4,
-                                    transform: [{ scale: pressed ? 0.92 : (hovered ? 1.05 : 1) }],
-                                    transition: 'all 0.2s',
+                                    paddingVertical: 2,
+                                    paddingHorizontal: 4,
+                                    transform: [{ scale: pressed ? 0.92 : (hovered ? 1.08 : 1) }],
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                 }
                             ]}
                         >
                             {({ hovered }: any) => (
-                                <View className="items-center">
-                                    {/* Top indicator bar */}
+                                <View className="items-center justify-center">
+                                    {/* Top indicator bar - more refined and compact */}
                                     {isActive && (
                                         <View
-                                            className={`absolute -top-2.5 w-8 h-1 rounded-full ${isDark ? 'bg-sky-400' : 'bg-blue-500'}`}
+                                            className={`absolute -top-1 w-8 h-1 rounded-full ${isDark ? 'bg-sky-400' : 'bg-blue-500'}`}
                                             style={{
                                                 shadowColor: isDark ? '#38bdf8' : '#3b82f6',
                                                 shadowOffset: { width: 0, height: 2 },
-                                                shadowOpacity: 0.6,
+                                                shadowOpacity: 0.8,
                                                 shadowRadius: 4,
+                                                elevation: 5
                                             }}
                                         />
                                     )}
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center transition-all ${isActive ? (isDark ? 'bg-sky-500/20' : 'bg-blue-100/80') : (hovered ? (isDark ? 'bg-slate-800/50' : 'bg-slate-100/50') : '')}`}>
+
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center transition-all duration-300 ${isActive ? (isDark ? 'bg-white/10' : 'bg-blue-500/10') : (hovered ? (isDark ? 'bg-white/5' : 'bg-slate-100') : '')}`}>
                                         <Ionicons
                                             name={isActive ? item.activeIcon : item.icon}
-                                            size={24}
-                                            color={isActive ? (isDark ? '#38bdf8' : '#2563eb') : (hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#64748b' : '#94a3b8'))}
+                                            size={20}
+                                            color={isActive ? (isDark ? '#fff' : '#2563eb') : (isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.4)')}
+                                            style={isActive ? {
+                                                textShadowColor: isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(37, 99, 235, 0.3)',
+                                                textShadowOffset: { width: 0, height: 0 },
+                                                textShadowRadius: 10
+                                            } : {}}
                                         />
                                     </View>
-                                    <Text
-                                        className={`mt-0.5 text-[9px] font-black tracking-tighter ${isActive ? (isDark ? 'text-sky-400' : 'text-blue-600') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}
-                                    >
-                                        {t(item.labelKey)}
-                                    </Text>
-                                    {/* Bottom indicator dot */}
-                                    <View className={`w-1 h-1 rounded-full mt-0.5 ${isActive ? (isDark ? 'bg-sky-400' : 'bg-blue-500') : 'bg-transparent'}`} />
+
+                                    {/* Label - showing only on hover (web) */}
+                                    {hovered && (
+                                        <View
+                                            className={`absolute -top-10 px-3 py-1.5 rounded-xl border z-50 shadow-xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
+                                            style={{
+                                                minWidth: 60,
+                                                // @ts-ignore - web property
+                                                pointerEvents: 'none'
+                                            }}
+                                        >
+                                            <Text
+                                                className={`text-[11px] font-black text-center tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+                                            >
+                                                {t(item.labelKey)}
+                                            </Text>
+                                            <View
+                                                className={`absolute -bottom-1 left-1/2 -ml-1 w-2 h-2 rotate-45 border-b border-r ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}
+                                            />
+                                        </View>
+                                    )}
                                 </View>
                             )}
                         </Pressable>

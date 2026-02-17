@@ -17,6 +17,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     const { t } = useTranslation();
     const { language } = useLanguage();
     const [now, setNow] = useState(new Date());
+    const [selectedBarId, setSelectedBarId] = useState<string | null>(null);
     const [hoveredBarId, setHoveredBarId] = useState<string | null>(null);
 
     const pulseAnim = useRef(new Animated.Value(0.4)).current;
@@ -176,26 +177,46 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     const savedDate = new Date(updatedAt);
                     savedDate.setHours(0, 0, 0, 0);
 
-                    // Generate all dates within timeline range at +2 day intervals
-                    const dayNames = [];
-                    let currentDate = savedDate.getTime();
-                    const rangeStart = winStart - dayMs; // Include 1 day before
-                    const rangeEnd = winEnd + dayMs; // Include 1 day after
+                    // Get dynamic recurrence settings
+                    const isRecurring = ev.isRecurring ?? ev._original?.isRecurring ?? true;
+                    const rawRecurrenceValue = ev.recurrenceValue || ev._original?.recurrenceValue;
 
-                    // Iterate with +2 day intervals
-                    while (currentDate < rangeEnd) {
-                        if (currentDate >= rangeStart && currentDate <= rangeEnd) {
-                            const d = new Date(currentDate);
-                            const dayName = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-                            dayNames.push(dayName);
+                    // If not recurring or no recurrence value provided, treat as one-time event
+                    if (!isRecurring || !rawRecurrenceValue) {
+                        // Skip the multi-day generation loop
+                    } else {
+                        const recurrenceValue = parseInt(rawRecurrenceValue);
+                        const recurrenceUnit = ev.recurrenceUnit || ev._original?.recurrenceUnit || 'day';
+                        const intervalMs = (recurrenceUnit === 'week' ? recurrenceValue * 7 : recurrenceValue) * dayMs;
+
+                        // Generate all dates within timeline range at the specified intervals
+                        const dayNames = [];
+                        let currentDate = savedDate.getTime();
+                        const rangeStart = winStart - dayMs; // Include 1 day before
+                        const rangeEnd = winEnd + dayMs; // Include 1 day after
+
+                        // Jump to rangeStart while maintaining the cycle alignment
+                        if (currentDate < rangeStart) {
+                            const skipIntervals = Math.floor((rangeStart - currentDate) / intervalMs);
+                            currentDate += skipIntervals * intervalMs;
                         }
-                        currentDate += 2 * dayMs; // +2 days
-                    }
 
-                    // Reconstruct as comma-separated days with single time
-                    // e.g., "금, 일, 화, 목 22:00" → will be parsed by Multi-Day Single Time logic
-                    if (dayNames.length > 0) {
-                        processedComb = `${dayNames.join(', ')} ${time}`;
+                        // Iterate with specified intervals
+                        while (currentDate < rangeEnd) {
+                            if (currentDate >= rangeStart && currentDate <= rangeEnd) {
+                                const d = new Date(currentDate);
+                                const dIdx = timezone === 'UTC' ? d.getUTCDay() : d.getDay();
+                                const krDay = ['일', '월', '화', '수', '목', '금', '토'][dIdx];
+                                dayNames.push(krDay);
+                            }
+                            currentDate += intervalMs;
+                        }
+
+                        // Reconstruct as comma-separated days with single time
+                        // e.g., "금, 일, 화, 목 22:00" → will be parsed by Multi-Day Single Time logic
+                        if (dayNames.length > 0) {
+                            processedComb = `${dayNames.join(', ')} ${time}`;
+                        }
                     }
                 }
             }
@@ -485,7 +506,12 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                         // Check if it's NOT a time colon (like 22:00)
                         const isTimeColon = /\d$/.test(before) && /^\d/.test(after);
                         if (!isTimeColon) {
-                            label = before;
+                            label = before
+                                .replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`)
+                                .replace(/성채\s*(\d+)/, `${t('events.citadel')} $1`)
+                                .replace(/곰\s*(\d+)/, `${t('events.bear1').replace(/1|1군|Team\s*1/i, '')} $1`)
+                                .replaceAll('1군', t('events.team1'))
+                                .replaceAll('2군', t('events.team2'));
                             timePart = after;
                         }
                     }
@@ -570,7 +596,16 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 })}
             </View>
 
-            <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 60 }}>
+            <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ paddingBottom: 60 }}
+                onScroll={() => setSelectedBarId(null)}
+                scrollEventThrottle={16}
+            >
+                <Pressable
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    onPress={() => setSelectedBarId(null)}
+                />
                 <View className="absolute inset-x-0 top-0 bottom-0 flex-row pointer-events-none">
                     {[...Array(7)].map((_, i) => (
                         <View key={`grid-line-${i}`} className="flex-1 border-r border-sky-500/10" />
@@ -612,6 +647,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                             const isHovered = hoveredBarId === barKey;
                                             const isActive = checkIsOngoing(ev._original || ev);
                                             const isFloatingIcon = p.et - p.st <= 3600000 || (ev.id && ev.id.includes('castle'));
+
                                             return (
                                                 <View
                                                     key={barKey}
@@ -619,11 +655,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                     style={{
                                                         left: p.left,
                                                         width: p.width,
-                                                        zIndex: isHovered ? 999 : 10
+                                                        minWidth: 32,
+                                                        zIndex: (isHovered || selectedBarId === barKey) ? 999 : 10
                                                     }}
                                                 >
                                                     <Pressable
-                                                        onPress={() => onEventPress(ev)}
+                                                        onPress={() => {
+                                                            if (Platform.OS === 'web' && !('ontouchstart' in window)) {
+                                                                onEventPress(ev);
+                                                            } else {
+                                                                setSelectedBarId(selectedBarId === barKey ? null : barKey);
+                                                            }
+                                                        }}
                                                         // @ts-ignore
                                                         onMouseEnter={() => setHoveredBarId(barKey)}
                                                         // @ts-ignore
@@ -634,14 +677,14 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                             right: 0,
                                                             top: 0,
                                                             bottom: 0,
-                                                            zIndex: isHovered ? 999 : 10
+                                                            zIndex: (hoveredBarId === barKey || selectedBarId === barKey) ? 999 : 10
                                                         }}
                                                     >
                                                         {({ hovered }: any) => {
-                                                            const activeHover = hovered || isHovered;
+                                                            const activeHover = hovered || hoveredBarId === barKey || selectedBarId === barKey;
                                                             return (
                                                                 <View key="bar-inner-wrap" style={{ position: 'absolute', left: isFloatingIcon ? 40 : 0, right: 0, top: 0, bottom: 0, overflow: 'visible' }}>
-                                                                    {/* Floating Icon OUTSIDE: for short bars (<= 1 hour) OR Castle Battle */}
+                                                                    {/* Floating Icon */}
                                                                     {isFloatingIcon && (
                                                                         <View
                                                                             key="floating-icon"
@@ -649,23 +692,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                 position: 'absolute',
                                                                                 left: -32,
                                                                                 top: 4,
-                                                                                zIndex: 150,
+                                                                                zIndex: 20,
                                                                                 shadowColor: '#000',
                                                                                 shadowOffset: { width: 0, height: 2 },
                                                                                 shadowOpacity: 0.4,
                                                                                 shadowRadius: 4,
-                                                                                // @ts-ignore
-                                                                                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
-                                                                            } as any}
+                                                                            }}
                                                                         >
-                                                                            <View className={`w-6 h-6 rounded-full items-center justify-center border-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                                                            <View className={`w-8 h-8 rounded-2xl items-center justify-center border-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                                                                                 {!!ev.imageUrl ? (
-                                                                                    <Image
-                                                                                        source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl}
-                                                                                        className="w-4 h-4 rounded-full"
-                                                                                    />
+                                                                                    <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-5 h-5 rounded-full" />
                                                                                 ) : (
-                                                                                    <Text style={{ fontSize: 10 }}>📅</Text>
+                                                                                    <Text style={{ fontSize: 12 }}>📅</Text>
                                                                                 )}
                                                                             </View>
                                                                         </View>
@@ -674,140 +712,108 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                     <Animated.View
                                                                         style={{
                                                                             flex: 1,
-                                                                            borderRadius: 12,
+                                                                            borderRadius: 14,
                                                                             overflow: 'hidden',
                                                                             transform: [{ scale: activeHover ? 1.04 : (isActive ? 1.01 : 1) }],
                                                                             borderWidth: isActive ? 2 : 0,
                                                                             borderColor: isActive ? pulseAnim.interpolate({
                                                                                 inputRange: [0.4, 1],
-                                                                                outputRange: ['rgba(255,255,255,0.3)', 'rgba(255,255,255,1)']
+                                                                                outputRange: ['rgba(255,255,255,0.4)', 'rgba(255,255,255,1)']
                                                                             }) : 'transparent',
                                                                             // @ts-ignore
-                                                                            boxShadow: isActive ? pulseAnim.interpolate({
+                                                                            boxShadow: activeHover ? `0 6px 20px ${cfg.gradient[1]}B0` : (isActive ? pulseAnim.interpolate({
                                                                                 inputRange: [0.4, 1],
-                                                                                outputRange: ['0 0 5px rgba(255,255,255,0.2)', '0 0 20px rgba(255,255,255,0.6)']
-                                                                            }) : (activeHover ? `0 4px 16px ${cfg.gradient[1]}80` : `0 2px 8px ${cfg.gradient[1]}40`)
+                                                                                outputRange: ['0 4px 10px rgba(255,255,255,0.3)', '0 8px 30px rgba(255,255,255,0.8)']
+                                                                            }) : `0 4px 12px ${cfg.gradient[1]}60`)
                                                                         } as any}
                                                                     >
                                                                         <LinearGradient
                                                                             colors={cfg.gradient}
                                                                             start={{ x: 0, y: 0 }}
                                                                             end={{ x: 1, y: 0 }}
-                                                                            className="h-full flex-row items-center px-3 shadow-lg"
+                                                                            className="h-full flex-row items-center px-4 shadow-lg"
                                                                         >
-                                                                            {/* Icon INSIDE: only for long bars (> 1 hour) AND NOT Castle Battle */}
                                                                             {(p.et - p.st > 3600000 && !(ev.id && ev.id.includes('castle'))) && (
-                                                                                <View key="icon-wrap" className="w-5 h-5 rounded-full bg-white/30 items-center justify-center mr-2 shadow-sm">
-                                                                                    {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-3.5 h-3.5 rounded-full" />}
+                                                                                <View className="w-6 h-6 rounded-full bg-white/30 items-center justify-center mr-2.5 shadow-sm border border-white/20">
+                                                                                    {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-4 h-4 rounded-full" />}
                                                                                 </View>
                                                                             )}
-                                                                            <Text key="title-text" className="text-white font-black text-[10px] flex-1" numberOfLines={1}>{t(`events.${(ev._original?.id || ev.id || ev.eventId || '').replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '')}_title`)}</Text>
+                                                                            <Text key="title-text" className="text-white font-black text-[11px] flex-1 tracking-tight" numberOfLines={1}>
+                                                                                {t(`events.${(ev._original?.id || ev.id || ev.eventId || '').replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '')}_title`, { defaultValue: ev.title })}
+                                                                            </Text>
                                                                             {isActive && (
-                                                                                <View key="live-badge" className="flex-row items-center bg-white/20 px-1.5 py-0.5 rounded-md ml-1 border border-white/30">
-                                                                                    <Text key="live-text" className="text-[8px] text-white font-black tracking-tighter">LIVE</Text>
+                                                                                <View className="flex-row items-center bg-white/30 px-2 py-0.5 rounded-lg ml-1 border border-white/40">
+                                                                                    <View className="w-1 h-1 rounded-full bg-white mr-1" />
+                                                                                    <Text className="text-[8px] text-white font-black tracking-tighter">LIVE</Text>
                                                                                 </View>
-                                                                            )}
-
-                                                                            {/* Dynamic Shimmer Effect Overlay */}
-                                                                            {isActive && (
-                                                                                <Animated.View
-                                                                                    style={{
-                                                                                        position: 'absolute',
-                                                                                        top: 0,
-                                                                                        bottom: 0,
-                                                                                        width: '40%',
-                                                                                        left: shimmerAnim.interpolate({
-                                                                                            inputRange: [0, 1],
-                                                                                            outputRange: ['-100%', '200%']
-                                                                                        }),
-                                                                                        opacity: 0.3
-                                                                                    }}
-                                                                                >
-                                                                                    <LinearGradient
-                                                                                        colors={['transparent', 'rgba(255,255,255,0.5)', 'transparent']}
-                                                                                        start={{ x: 0, y: 0 }}
-                                                                                        end={{ x: 1, y: 0 }}
-                                                                                        style={{ flex: 1 }}
-                                                                                    />
-                                                                                </Animated.View>
                                                                             )}
                                                                         </LinearGradient>
                                                                     </Animated.View>
-                                                                    {activeHover && Platform.OS === 'web' && (
-                                                                        <View
-                                                                            className={`absolute ${isTopRow ? 'top-10' : '-top-28'} border border-white/20 p-4 rounded-2xl shadow-2xl z-[200]`}
+
+                                                                    {activeHover && (
+                                                                        <Pressable
+                                                                            onPress={() => onEventPress(ev)}
+                                                                            className={`absolute ${isTopRow ? 'top-12' : '-top-32'} border p-5 rounded-[28px] shadow-2xl z-[200]`}
                                                                             style={{
-                                                                                minWidth: 220,
-                                                                                pointerEvents: 'none',
-                                                                                backgroundColor: '#0f172a', // Solid Opaque
+                                                                                minWidth: 260,
+                                                                                pointerEvents: 'auto',
+                                                                                backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                                                                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                                                                                 left: parseFloat(p.left) > 70 ? 'auto' : 0,
                                                                                 right: parseFloat(p.left) > 70 ? 0 : 'auto'
                                                                             }}
                                                                         >
-                                                                            <View className="flex-row items-center mb-3">
-                                                                                <View className="w-6 h-6 rounded-full bg-white/10 items-center justify-center mr-2.5">
-                                                                                    {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-4 h-4 rounded-full" />}
+                                                                            <View className="flex-row items-center mb-4">
+                                                                                <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}>
+                                                                                    {!!ev.imageUrl ? (
+                                                                                        <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-7 h-7 rounded-full" />
+                                                                                    ) : (
+                                                                                        <Ionicons name="calendar" size={20} color={cfg.color} />
+                                                                                    )}
                                                                                 </View>
-                                                                                <Text className="text-white font-black text-[14px]">
-                                                                                    {(() => {
-                                                                                        const eventId = ev._original?.id || ev.id || ev.eventId || '';
-                                                                                        const baseId = eventId.replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '');
-                                                                                        const teamMatch = eventId.match(/_team(\d+)/);
-
-                                                                                        let displayTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
-
-                                                                                        // 팀 정보가 있으면 언어에 맞게 추가 (중복 방지)
-                                                                                        if (teamMatch) {
-                                                                                            const teamNum = teamMatch[1];
-                                                                                            const teamSuffix = language === 'ko' ? `${teamNum}군` : `Team ${teamNum}`;
-                                                                                            if (!displayTitle.includes(teamSuffix)) {
-                                                                                                displayTitle = `${displayTitle} (${teamSuffix})`;
+                                                                                <View className="flex-1">
+                                                                                    <Text className={`font-black text-[16px] leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                                                        {(() => {
+                                                                                            const eventId = ev._original?.id || ev.id || ev.eventId || '';
+                                                                                            const baseId = eventId.replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '');
+                                                                                            const teamMatch = eventId.match(/_team(\d+)/);
+                                                                                            let displayTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
+                                                                                            if (teamMatch) {
+                                                                                                const teamIdx = parseInt(teamMatch[1]);
+                                                                                                const teamLabel = teamIdx === 0 ? t('events.team1') : t('events.team2');
+                                                                                                displayTitle += ` (${teamLabel})`;
                                                                                             }
-                                                                                        }
-
-                                                                                        return displayTitle;
-                                                                                    })()}
-                                                                                </Text>
-                                                                            </View>
-                                                                            <View className="gap-2">
-                                                                                {/* Show only the hovered bar's time */}
-                                                                                <View key={`tt-bar-${ev.id}-current`} className="flex-row items-center">
-                                                                                    <View className="w-1.5 h-1.5 rounded-full mr-3 bg-orange-500" />
-                                                                                    <Text className="text-orange-300 font-bold text-[12px]">
-                                                                                        {!!p.label ? (
-                                                                                            <View className="flex-row items-center">
-                                                                                                <Text className="text-[12px] font-bold text-orange-300">
-                                                                                                    {dayNames[new Date(p.st).getDay()]}
-                                                                                                </Text>
-                                                                                                <Text className="text-slate-600 mx-1.5">•</Text>
-                                                                                                <View className="flex-row items-center mr-2">
-                                                                                                    <Text className="text-[12px] font-bold text-white">
-                                                                                                        {String(new Date(p.st).getHours()).padStart(2, '0')}:{String(new Date(p.st).getMinutes()).padStart(2, '0')}
-                                                                                                    </Text>
-                                                                                                </View>
-                                                                                                <View className="px-1.5 py-0.5 rounded bg-orange-500/20">
-                                                                                                    <Text className="text-[10px] font-bold text-orange-300">
-                                                                                                        {(p.label || '').replace('요새', t('events.fortress_label')).replace('성채', t('events.citadel_label'))}
-                                                                                                    </Text>
-                                                                                                </View>
-                                                                                            </View>
-                                                                                        ) : (
-                                                                                            <Text className="text-[12px] text-orange-300 font-bold">
-                                                                                                {formatTs(p.st)}
-                                                                                            </Text>
-                                                                                        )}
+                                                                                            return displayTitle;
+                                                                                        })()}
+                                                                                    </Text>
+                                                                                    <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                                        {ck} Event
                                                                                     </Text>
                                                                                 </View>
                                                                             </View>
+
+                                                                            <View className={`flex-row items-center p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
+                                                                                <Text className={`font-mono text-[12px] font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
+                                                                                    {p.timeText}
+                                                                                </Text>
+                                                                            </View>
+
+                                                                            <View className="mt-4 flex-row items-center justify-between">
+                                                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                                    {t('events.modal.tap_for_details')}
+                                                                                </Text>
+                                                                                <Ionicons name="chevron-forward" size={14} color={isDark ? '#475569' : '#cbd5e1'} />
+                                                                            </View>
+
                                                                             <View
-                                                                                className={`absolute ${isTopRow ? '-top-1.5 border-l border-t' : '-bottom-1.5 border-r border-b'} w-3 h-3 border-white/20 transform rotate-45`}
+                                                                                className={`absolute -bottom-1 w-3 h-3 rotate-45 border-b border-r ${isDark ? 'bg-[#1e293b] border-white/10' : 'bg-white border-black/5'}`}
                                                                                 style={{
-                                                                                    backgroundColor: '#0f172a', // Solid Opaque
-                                                                                    left: parseFloat(p.left) > 70 ? 'auto' : 18,
-                                                                                    right: parseFloat(p.left) > 70 ? 18 : 'auto'
+                                                                                    left: parseFloat(p.left) > 70 ? 'auto' : 20,
+                                                                                    right: parseFloat(p.left) > 70 ? 20 : 'auto'
                                                                                 }}
                                                                             />
-                                                                        </View>
+                                                                        </Pressable>
                                                                     )}
                                                                 </View>
                                                             );
@@ -823,16 +829,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     );
                 })}
 
-                <View key="indicator" className="absolute top-0 bottom-0 w-[3px] bg-orange-500 z-50 pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
-                    <View key="indicator-label" className="absolute -top-6 -left-5 bg-orange-500 px-1.5 py-0.5 rounded shadow-sm">
-                        <Text className="text-white text-[10px] font-bold">
+                {/* Current Time Indicator */}
+                <View key="indicator" className="absolute top-0 bottom-0 w-[4px] bg-orange-500 z-50 pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
+                    <View key="indicator-label" className="absolute -top-6 -left-6 bg-orange-600 px-2 py-1 rounded-lg shadow-lg">
+                        <Text className="text-white text-[10px] font-black tracking-tighter">
                             {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
                         </Text>
+                        <View className="absolute -bottom-1 left-1.2 w-2 h-2 bg-orange-600 rotate-45 self-center" />
                     </View>
-                    <View key="indicator-dot" className="w-5 h-5 rounded-full bg-orange-500 -ml-[8.5px] -mt-2.5 border-2 border-white shadow-2xl items-center justify-center">
-                        <View key="indicator-inner" className="w-2 h-2 rounded-full bg-white" />
+                    <View key="indicator-dot" className="w-5 h-5 rounded-full bg-orange-500 -ml-[8px] -mt-2.5 border-2 border-white shadow-2xl items-center justify-center">
+                        <View key="indicator-inner" className="w-2.5 h-2.5 rounded-full bg-white" />
                     </View>
-                    <View key="indicator-glow" className="absolute h-full w-[10px] -left-[3.5px] bg-orange-500/25" />
+                    <View key="indicator-glow" className="absolute h-full w-[12px] -left-[4px] bg-orange-500/20" />
                 </View>
             </ScrollView>
         </View>

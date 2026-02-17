@@ -16,4 +16,5 @@ export interface WikiEvent {
     isRecurring?: boolean;
     isBearSplit?: boolean;
     isFoundrySplit?: boolean;
+    updatedAt?: number;
 }

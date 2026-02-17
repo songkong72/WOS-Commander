@@ -131,7 +131,7 @@ export default function HeroDetail() {
     }
 
     const renderHeader = () => (
-        <View className="absolute top-0 left-0 right-0 z-50 flex-row justify-between items-center px-6 pt-12 pb-4">
+        <View className="absolute top-0 left-0 right-0 z-50 flex-row justify-between items-center px-6 pt-10 pb-2">
             <Pressable
                 onPress={() => {
                     // Determine the category to return to based on hero's gen or rarity
@@ -144,7 +144,7 @@ export default function HeroDetail() {
                         router.replace(`/hero-management?category=${category}`);
                     }
                 }}
-                className={`w-10 h-10 rounded-full items-center justify-center border transition-all ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200 shadow-sm'}`}
+                className={`w-9 h-9 rounded-full items-center justify-center border transition-all ${isDark ? 'bg-black/40 border-white/10' : 'bg-slate-100 border-slate-200 shadow-sm'}`}
                 style={({ pressed, hovered }: any) => [
                     {
                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
@@ -154,10 +154,10 @@ export default function HeroDetail() {
                     }
                 ]}
             >
-                <Ionicons name="arrow-back" size={24} color={isDark ? "white" : "#1e293b"} />
+                <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
             </Pressable>
-            <Text className={`font-bold text-xl tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{hero.name}</Text>
-            <View className="w-10 h-10" />
+            <Text className={`font-bold text-lg tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{hero.name}</Text>
+            <View className="w-9 h-9" />
         </View>
     );
 

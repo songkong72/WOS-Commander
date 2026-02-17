@@ -186,15 +186,15 @@ export default function StrategySheet() {
         <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Header */}
-            <View className={`pt-16 pb-6 px-6 border-b z-50 shadow-lg flex-row justify-between items-center ${isDark ? 'bg-[#0f172a] border-slate-800' : 'bg-white border-slate-100'}`}>
+            {/* Header - Compact */}
+            <View className={`pt-4 pb-1.5 px-6 border-b z-50 shadow-lg flex-row justify-between items-center ${isDark ? 'bg-[#0f172a] border-slate-800' : 'bg-white border-slate-100'}`}>
                 <View className="flex-row items-center">
-                    <TouchableOpacity onPress={() => router.back()} className={`mr-4 p-3 rounded-full active:bg-slate-700 ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200'}`}>
-                        <Ionicons name="arrow-back" size={28} color={isDark ? "white" : "#1e293b"} />
+                    <TouchableOpacity onPress={() => router.back()} className={`mr-3 w-8 h-8 rounded-full items-center justify-center active:bg-slate-700 ${isDark ? 'bg-slate-800' : 'bg-slate-100 border border-slate-200'}`}>
+                        <Ionicons name="arrow-back" size={16} color={isDark ? "white" : "#1e293b"} />
                     </TouchableOpacity>
                     <View>
-                        <Text className={`text-3xl font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.title')}</Text>
-                        <Text className={`text-sm font-bold mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.title')}</Text>
+                        <Text className={`text-[9px] font-bold mt-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                             {isFile ? (sheetData?.fileName || t('strategy.uploaded_file')) : t('strategy.subtitle')}
                         </Text>
                     </View>
@@ -206,9 +206,9 @@ export default function StrategySheet() {
                             onPress={onOpenAdmin}
                             onHoverIn={() => setShowTooltip(true)}
                             onHoverOut={() => setShowTooltip(false)}
-                            className={`p-3 rounded-full border active:bg-amber-500/20 ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}
+                            className={`p-2 rounded-full border active:bg-amber-500/20 ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}
                         >
-                            <Ionicons name="create-outline" size={24} color={isDark ? "#f59e0b" : "#d97706"} />
+                            <Ionicons name="create-outline" size={18} color={isDark ? "#f59e0b" : "#d97706"} />
                         </Pressable>
                         {showTooltip && (
                             <View className={`absolute top-14 right-0 px-3 py-2 rounded-lg border shadow-xl w-48 z-50 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`}>
@@ -220,7 +220,7 @@ export default function StrategySheet() {
             </View>
 
             {/* View Mode Toggle Tabs */}
-            <View className={`flex-row h-12 border-b ${isDark ? 'bg-[#0f172a] border-black' : 'bg-white border-slate-100'}`}>
+            <View className={`flex-row h-10 border-b ${isDark ? 'bg-[#0f172a] border-black' : 'bg-white border-slate-100'}`}>
                 <TouchableOpacity
                     onPress={() => setViewMode('sheet')}
                     className={`flex-1 items-center justify-center border-b-2 ${viewMode === 'sheet' ? 'border-[#38bdf8] bg-[#38bdf8]/5' : 'border-transparent'}`}

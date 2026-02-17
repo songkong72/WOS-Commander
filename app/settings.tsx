@@ -18,21 +18,20 @@ export default function Settings() {
         <View className={`flex-1 ${isDark ? 'bg-[#0a0e1a]' : 'bg-slate-50'}`}>
             <Stack.Screen options={{ headerShown: false }} />
 
-            {/* Header with Gradient */}
+            {/* Header with Gradient - Compact */}
             <LinearGradient
                 colors={isDark ? ['#1e293b', '#0f172a'] : ['#ffffff', '#f8fafc']}
-                className="px-6 pt-14 pb-8"
+                className="px-6 pt-4 pb-2"
                 style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 }}
             >
                 <View className="flex-row items-center">
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className={`mr-4 w-11 h-11 rounded-full items-center justify-center ${isDark ? 'bg-slate-800/60' : 'bg-white'}`}
-                        style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0 : 0.08, shadowRadius: 8 }}
+                        className={`mr-2 w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-slate-800/60' : 'bg-white border border-slate-100 shadow-sm'}`}
                     >
-                        <Ionicons name="arrow-back" size={22} color={isDark ? 'white' : '#0f172a'} />
+                        <Ionicons name="arrow-back" size={14} color={isDark ? 'white' : '#0f172a'} />
                     </TouchableOpacity>
-                    <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
                         {t('navigation.settings')}
                     </Text>
                 </View>

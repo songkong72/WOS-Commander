@@ -268,11 +268,11 @@ export default function SuperAdminDashboard() {
                 }} />
             </View>
 
-            <ScrollView className={`flex-1`} contentContainerStyle={{ paddingTop: 80 }}>
-                <View style={{ marginBottom: 40, paddingHorizontal: 40 }}>
-                    <Text className={`text-xs font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
-                    <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>시스템관리자 대시보드</Text>
-                    <View className="w-12 h-1 bg-sky-500 rounded-full mt-4" />
+            <ScrollView className={`flex-1`} contentContainerStyle={{ paddingTop: 40 }}>
+                <View style={{ marginBottom: 20, paddingHorizontal: 40 }}>
+                    <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
+                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>시스템관리자 대시보드</Text>
+                    <View className="w-10 h-1 bg-sky-500 rounded-full mt-2" />
                 </View>
 
                 {/* Stats / Interactive Tabs */}
