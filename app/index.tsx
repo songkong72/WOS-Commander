@@ -206,10 +206,10 @@ export default function Home() {
                             <Ionicons name="apps-outline" size={isMobile ? 24 : 32} color="#38bdf8" />
                         </View>
                         <View>
-                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.gateTitle')}</Text>
+                            <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.gateTitle')}</Text>
                         </View>
                     </View>
-                    <Text className={`${isMobile ? 'text-sm leading-6 mb-4' : 'text-xl leading-8 mb-8'} font-bold ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.gateDesc')}</Text>
+                    <Text className={`${isMobile ? 'text-xs leading-5 mb-4' : 'text-lg leading-7 mb-8'} font-bold ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.gateDesc')}</Text>
 
                     <View className={`flex-row rounded-[24px] overflow-hidden border-2 ${isDark ? 'border-sky-500/20 bg-slate-900/50' : 'border-sky-100 bg-white shadow-md'} ${isMobile ? 'mb-4' : 'mb-8'}`}>
                         <View className={`flex-1 ${isMobile ? 'p-3' : 'p-6'} items-center border-r border-sky-500/10`}>
@@ -225,13 +225,13 @@ export default function Home() {
                     <View className={`${isMobile ? 'gap-3' : 'gap-5'} px-2`}>
                         <View className="flex-row items-start">
                             <View className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 mr-3" />
-                            <Text className={`flex-1 ${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                            <Text className={`flex-1 ${isMobile ? 'text-xs' : 'text-base'} font-bold leading-6 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                                 <Text className="text-sky-400 font-black">{t('manual.enterDashboard')}:</Text> {t('manual.enterDashboardDesc')}
                             </Text>
                         </View>
                         <View className="flex-row items-start">
                             <View className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 mr-3" />
-                            <Text className={`flex-1 ${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>
+                            <Text className={`flex-1 ${isMobile ? 'text-xs' : 'text-base'} font-bold leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>
                                 <Text className="text-slate-400 font-black">{t('manual.applyAdmin')}:</Text> {t('manual.applyAdminDesc')}
                             </Text>
                         </View>
@@ -245,15 +245,15 @@ export default function Home() {
                             <Ionicons name="rocket-outline" size={isMobile ? 24 : 32} color="#3b82f6" />
                         </View>
                         <View>
-                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.startTitle')}</Text>
+                            <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.startTitle')}</Text>
                         </View>
                     </View>
                     <View className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
-                        <View className={`flex-row items-start ${isMobile ? 'mb-3' : 'mb-6'}`}>
+                        <View className={`flex-row items-start ${isMobile ? 'mb-2' : 'mb-4'}`}>
                             <View className="w-2 h-2 rounded-full bg-sky-500 mt-2 mr-3" />
-                            <Text className={`flex-1 ${isMobile ? 'text-base' : 'text-lg'} font-black leading-7 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.enterDashboard')}</Text>
+                            <Text className={`flex-1 ${isMobile ? 'text-sm' : 'text-base'} font-black leading-7 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.enterDashboard')}</Text>
                         </View>
-                        <Text className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ml-5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                        <Text className={`${isMobile ? 'text-xs' : 'text-base'} font-bold leading-6 ml-5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                             {t('manual.enterDashboardDesc')}
                         </Text>
                     </View>
@@ -266,12 +266,12 @@ export default function Home() {
                             <Ionicons name="lock-open-outline" size={isMobile ? 24 : 32} color="#10b981" />
                         </View>
                         <View>
-                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
+                            <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
                         </View>
                     </View>
                     <View className={isMobile ? 'gap-3' : 'gap-6'}>
                         <View className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                            <Text className={`${isMobile ? 'text-base mb-5' : 'text-2xl mb-10'} font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 {t('manual.inputGuide')}</Text>
+                            <Text className={`${isMobile ? 'text-sm mb-4' : 'text-xl mb-8'} font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 {t('manual.inputGuide')}</Text>
                             <View className={isMobile ? 'gap-4' : 'gap-8'}>
                                 {[
                                     { title: t('manual.serverNum'), desc: t('manual.serverNumDesc'), icon: 'server-outline' },
@@ -284,8 +284,8 @@ export default function Home() {
                                             <Ionicons name={item.icon as any} size={isMobile ? 22 : 28} color="#10b981" />
                                         </View>
                                         <View className="flex-1">
-                                            <Text className={`${isMobile ? 'text-sm' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</Text>
-                                            <Text className={`${isMobile ? 'text-xs' : 'text-lg'} font-bold mt-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{item.desc}</Text>
+                                            <Text className={`${isMobile ? 'text-xs' : 'text-lg'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</Text>
+                                            <Text className={`${isMobile ? 'text-[10px]' : 'text-base'} font-bold mt-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{item.desc}</Text>
                                         </View>
                                     </View>
                                 ))}
@@ -3676,11 +3676,11 @@ export default function Home() {
                             </View>
 
                             <View className="mb-2">
-                                <Text className={`font-bold text-[8px] md:text-xs tracking-[0.4em] mb-1 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>{t('dashboard.whiteoutSurvival')}</Text>
-                                <Text className={`text-2xl md:text-4xl font-black tracking-tighter leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.title')}</Text>
+                                <Text className={`font-bold text-[8px] md:text-xs tracking-[0.4em] mb-1 uppercase ${isDark ? 'text-sky-400' : 'text-slate-500'}`}>{t('dashboard.whiteoutSurvival')}</Text>
+                                <Text className={`text-2xl md:text-4xl font-black tracking-tighter leading-tight ${isDark ? 'text-white' : 'text-slate-950'}`}>{t('dashboard.title')}</Text>
                                 <View className="mt-2.5 flex-row items-center">
                                     <View className="h-0.5 w-8 bg-brand-accent rounded-full mr-2.5" />
-                                    <Text className={`text-[11px] font-bold leading-relaxed tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('dashboard.subtitle')}</Text>
+                                    <Text className={`text-[11px] font-bold leading-relaxed tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('dashboard.subtitle')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -3719,7 +3719,7 @@ export default function Home() {
                                     <Ionicons name={notice.visible ? "notifications" : "notifications-off"} size={20} color={notice.visible ? "#f59e0b" : "#94a3b8"} />
                                 </View>
                                 <View className="flex-1 min-w-0 pr-2">
-                                    <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-900'}`} numberOfLines={1} ellipsizeMode="tail">{notice.content || t('dashboard.notice_empty')}</Text>
+                                    <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-950'}`} numberOfLines={1} ellipsizeMode="tail">{notice.content || t('dashboard.notice_empty')}</Text>
                                 </View>
                                 {!!auth.isLoggedIn && (
                                     <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleOpenNotice(); }} className="p-2.5 bg-sky-500/10 rounded-xl flex-shrink-0">
@@ -3746,8 +3746,8 @@ export default function Home() {
                                     <Ionicons name={!auth.isLoggedIn ? 'lock-closed' : card.icon as any} size={22} color={card.color} />
                                 </View>
                                 <View>
-                                    <Text className={`text-base font-black ${isDark ? 'text-slate-100' : 'text-slate-900'}`}>{card.label}</Text>
-                                    <Text className={`text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>{card.desc}</Text>
+                                    <Text className={`text-base font-black ${isDark ? 'text-slate-100' : 'text-slate-950'}`}>{card.label}</Text>
+                                    <Text className={`text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{card.desc}</Text>
                                 </View>
                             </Pressable>
                         ))}
@@ -3762,7 +3762,7 @@ export default function Home() {
                             <View className="flex-row items-center">
                                 <View className="w-1.5 h-10 rounded-full mr-5 bg-[#38bdf8]" />
                                 <View>
-                                    <Text className={`text-[11px] font-black tracking-[0.25em] uppercase mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Weekly Program</Text>
+                                    <Text className={`text-[11px] font-black tracking-[0.25em] uppercase mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Weekly Program</Text>
                                     <Text className={`text-2xl md:text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.weekly_event_title')}</Text>
                                 </View>
                             </View>
@@ -4112,52 +4112,52 @@ export default function Home() {
             >
                 <View className="flex-1 bg-black/85 items-center justify-center p-6">
                     <BlurView intensity={60} className="absolute inset-0" />
-                    <View className={`w-full max-w-sm p-10 rounded-[48px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className="items-center mb-10">
-                            <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-6 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
-                                <Ionicons name="shield-checkmark" size={40} color="#38bdf8" />
+                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className="items-center mb-8">
+                            <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                                <Ionicons name="shield-checkmark" size={32} color="#38bdf8" />
                             </View>
-                            <Text className={`text-4xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.auth_title')}</Text>
-                            <Text className={`mt-4 text-lg font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{t('admin.auth_desc')}</Text>
+                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.auth_title')}</Text>
+                            <Text className={`mt-2 text-sm font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{t('admin.auth_desc')}</Text>
                         </View>
 
-                        <View className="space-y-6 mb-12">
+                        <View className="space-y-4 mb-8">
                             <View className="relative">
-                                <View className="absolute left-6 top-7 z-10">
-                                    <Ionicons name="person" size={24} color={isDark ? "#38bdf8" : "#2563eb"} />
+                                <View className="absolute left-5 top-5 z-10">
+                                    <Ionicons name="person" size={20} color={isDark ? "#38bdf8" : "#2563eb"} />
                                 </View>
                                 <TextInput
                                     placeholder={t('dashboard.lordName')}
-                                    placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                    placeholderTextColor={isDark ? "#475569" : "#64748b"}
                                     value={loginInput}
                                     onChangeText={(t) => { setLoginInput(t); setLoginError(''); }}
                                     autoCapitalize="none"
                                     onSubmitEditing={() => loginPasswordRef.current?.focus()}
                                     blurOnSubmit={false}
-                                    className={`p-7 pl-16 rounded-[32px] font-black border-2 text-xl ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-800 border-slate-100 focus:border-blue-500'}`}
+                                    className={`p-5 pl-14 rounded-[24px] font-black border-2 text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-700 border-slate-100 focus:border-blue-500'}`}
                                 />
                             </View>
 
-                            <View className="relative mt-4">
-                                <View className="absolute left-6 top-7 z-10">
-                                    <Ionicons name="lock-closed" size={24} color={isDark ? "#38bdf8" : "#2563eb"} />
+                            <View className="relative mt-3">
+                                <View className="absolute left-5 top-5 z-10">
+                                    <Ionicons name="lock-closed" size={20} color={isDark ? "#38bdf8" : "#2563eb"} />
                                 </View>
                                 <TextInput
                                     ref={loginPasswordRef}
                                     placeholder={t('dashboard.password')}
-                                    placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                    placeholderTextColor={isDark ? "#475569" : "#64748b"}
                                     value={passwordInput}
                                     onChangeText={(t) => { setPasswordInput(t); setLoginError(''); }}
                                     secureTextEntry={!showModalPw}
                                     autoCapitalize="none"
                                     onSubmitEditing={handleLogin}
-                                    className={`p-7 pl-16 pr-16 rounded-[32px] font-black border-2 text-xl ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-800 border-slate-100 focus:border-blue-500'}`}
+                                    className={`p-5 pl-14 pr-14 rounded-[24px] font-black border-2 text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-700 border-slate-100 focus:border-blue-500'}`}
                                 />
                                 <TouchableOpacity
                                     onPress={() => setShowModalPw(!showModalPw)}
-                                    className="absolute right-6 top-0 bottom-0 justify-center p-2"
+                                    className="absolute right-5 top-0 bottom-0 justify-center p-2"
                                 >
-                                    <Ionicons name={showModalPw ? "eye-off-outline" : "eye-outline"} size={24} color="#475569" />
+                                    <Ionicons name={showModalPw ? "eye-off-outline" : "eye-outline"} size={22} color="#475569" />
                                 </TouchableOpacity>
                             </View>
 
@@ -4169,18 +4169,18 @@ export default function Home() {
                             )}
                         </View>
 
-                        <View className="flex-row gap-4">
+                        <View className="flex-row gap-3">
                             <TouchableOpacity
                                 onPress={() => { setLoginModalVisible(false); setLoginError(''); setPasswordInput(''); }}
-                                className={`flex-1 py-6 rounded-[32px] border items-center justify-center active:scale-95 transition-all ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                className={`flex-1 py-4 rounded-[24px] border items-center justify-center active:scale-95 transition-all ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
                             >
-                                <Text className={`text-center font-bold text-xl ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{t('admin.cancel_btn')}</Text>
+                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('admin.cancel_btn')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleLogin}
-                                className="flex-[2] bg-[#0091ff] py-6 rounded-[32px] shadow-2xl shadow-blue-500/60 items-center justify-center active:scale-95 transition-all"
+                                className="flex-[2] bg-[#0091ff] py-4 rounded-[24px] shadow-lg shadow-blue-500/30 items-center justify-center active:scale-95 transition-all"
                             >
-                                <Text className="text-white text-center font-black text-2xl tracking-tight">{t('admin.login_btn')}</Text>
+                                <Text className="text-white text-center font-black text-lg tracking-tight">{t('admin.login_btn')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -4989,8 +4989,8 @@ export default function Home() {
                                         <Ionicons name="download" size={24} color="#3b82f6" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[9px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('install.title')}</Text>
+                                        <Text className={`text-[8px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
+                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('install.title')}</Text>
                                     </View>
                                 </View>
                                 <TouchableOpacity onPress={() => setInstallModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
@@ -4999,24 +4999,24 @@ export default function Home() {
                             </View>
                         </View>
                         <View className="p-8 pb-4">
-                            <View className="gap-8">
+                            <View className="gap-6">
                                 <View className="flex-row items-center">
-                                    <View className={`w-14 h-14 rounded-full items-center justify-center mr-5 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                        <Text className="text-xl font-black text-blue-500">1</Text>
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
+                                        <Text className="text-lg font-black text-blue-500">1</Text>
                                     </View>
-                                    <Text className={`flex-1 text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step1')}</Text>
+                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step1')}</Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <View className={`w-14 h-14 rounded-full items-center justify-center mr-5 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                        <Text className="text-xl font-black text-blue-500">2</Text>
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
+                                        <Text className="text-lg font-black text-blue-500">2</Text>
                                     </View>
-                                    <Text className={`flex-1 text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step2')}</Text>
+                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step2')}</Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <View className={`w-14 h-14 rounded-full items-center justify-center mr-5 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                        <Text className="text-xl font-black text-blue-500">3</Text>
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
+                                        <Text className="text-lg font-black text-blue-500">3</Text>
                                     </View>
-                                    <Text className={`flex-1 text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step3')}</Text>
+                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step3')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -5035,7 +5035,7 @@ export default function Home() {
                                     }
                                 ]}
                             >
-                                <Text className="text-blue-500 font-black text-xl tracking-widest">{t('common.confirm')}</Text>
+                                <Text className="text-blue-500 font-black text-lg tracking-widest">{t('common.confirm')}</Text>
                             </Pressable>
                         </View>
                     </View>
@@ -5047,7 +5047,7 @@ export default function Home() {
                 <View className="flex-1 bg-black/80 items-center justify-center p-4">
                     <BlurView intensity={40} className="absolute inset-0" />
                     <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
                                     <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
@@ -5064,7 +5064,7 @@ export default function Home() {
                             </View>
                         </View>
                         {renderGateManualContent()}
-                        <View className={`${isMobile ? 'px-6 pb-6' : 'px-10 pb-10'} pt-0 items-center justify-center`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
                             <Pressable
                                 onPress={() => setIsGateManualVisible(false)}
                                 style={({ hovered, pressed }: any) => [
@@ -5079,7 +5079,7 @@ export default function Home() {
                                     }
                                 ]}
                             >
-                                <Text className={`text-amber-500 font-black ${isMobile ? 'text-lg' : 'text-xl'} tracking-widest`}>{t('common.confirm')}</Text>
+                                <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
                             </Pressable>
                         </View>
                     </View>
@@ -5091,7 +5091,7 @@ export default function Home() {
                 <View className="flex-1 bg-black/80 items-center justify-center p-4">
                     <BlurView intensity={40} className="absolute inset-0" />
                     <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
                                     <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
@@ -5108,7 +5108,7 @@ export default function Home() {
                             </View>
                         </View>
                         {renderMainManualContent()}
-                        <View className={`${isMobile ? 'px-6 pb-6' : 'px-10 pb-10'} pt-0 items-center justify-center`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
                             <Pressable
                                 onPress={() => setIsManualVisible(false)}
                                 style={({ hovered, pressed }: any) => [
@@ -5123,7 +5123,7 @@ export default function Home() {
                                     }
                                 ]}
                             >
-                                <Text className={`text-amber-500 font-black ${isMobile ? 'text-lg' : 'text-xl'} tracking-widest`}>{t('common.confirm')}</Text>
+                                <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
                             </Pressable>
                         </View>
                     </View>
