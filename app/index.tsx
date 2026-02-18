@@ -16,7 +16,8 @@ import {
     LayoutAnimation,
     UIManager,
     ImageBackground,
-    ActivityIndicator
+    ActivityIndicator,
+    useWindowDimensions
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -59,6 +60,8 @@ export default function Home() {
     const [activeEventTab, setActiveEventTab] = useState<'active' | 'upcoming' | 'expired'>('active');
     const [containerY, setContainerY] = useState(0);
     const [isExpiredExpanded, setIsExpiredExpanded] = useState(false);
+    const { width: windowWidth } = useWindowDimensions();
+    const isMobile = windowWidth < 600;
 
     const scrollToSection = (section: 'active' | 'upcoming' | 'expired') => {
         if (section === 'expired') setIsExpiredExpanded(true);
@@ -192,41 +195,41 @@ export default function Home() {
     };
 
     const renderGateManualContent = () => (
-        <ScrollView className="flex-1 px-8 pt-8" showsVerticalScrollIndicator={false}>
-            <View className="gap-12 pb-20">
+        <ScrollView className={`flex-1 ${isMobile ? 'px-4 pt-4' : 'px-8 pt-8'}`} showsVerticalScrollIndicator={false}>
+            <View className={`${isMobile ? 'gap-6' : 'gap-12'} pb-20`}>
                 {/* 1. Gate 화면 개요 */}
                 <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
-                            <Ionicons name="apps-outline" size={32} color="#38bdf8" />
+                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
+                            <Ionicons name="apps-outline" size={isMobile ? 24 : 32} color="#38bdf8" />
                         </View>
                         <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.gateTitle')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.gateTitle')}</Text>
                         </View>
                     </View>
-                    <Text className={`text-xl mb-8 leading-8 font-bold ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.gateDesc')}</Text>
+                    <Text className={`${isMobile ? 'text-sm leading-6 mb-4' : 'text-xl leading-8 mb-8'} font-bold ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.gateDesc')}</Text>
 
-                    <View className={`flex-row rounded-[32px] overflow-hidden border-2 ${isDark ? 'border-sky-500/20 bg-slate-900/50' : 'border-sky-100 bg-white shadow-md'} mb-8`}>
-                        <View className="flex-1 p-6 items-center border-r border-sky-500/10">
-                            <Ionicons name="enter-outline" size={28} color="#38bdf8" className="mb-2" />
-                            <Text className="text-sm font-black text-sky-400">{t('manual.enterDashboard')}</Text>
+                    <View className={`flex-row rounded-[24px] overflow-hidden border-2 ${isDark ? 'border-sky-500/20 bg-slate-900/50' : 'border-sky-100 bg-white shadow-md'} ${isMobile ? 'mb-4' : 'mb-8'}`}>
+                        <View className={`flex-1 ${isMobile ? 'p-3' : 'p-6'} items-center border-r border-sky-500/10`}>
+                            <Ionicons name="enter-outline" size={isMobile ? 20 : 28} color="#38bdf8" className="mb-1" />
+                            <Text className={`${isMobile ? 'text-[10px]' : 'text-sm'} font-black text-sky-400`}>{t('manual.enterDashboard')}</Text>
                         </View>
-                        <View className="flex-1 p-6 items-center">
-                            <Ionicons name="person-add-outline" size={28} color="#94a3b8" className="mb-2" />
-                            <Text className="text-sm font-black text-slate-500">{t('manual.applyAdmin')}</Text>
+                        <View className={`flex-1 ${isMobile ? 'p-3' : 'p-6'} items-center`}>
+                            <Ionicons name="person-add-outline" size={isMobile ? 20 : 28} color="#94a3b8" className="mb-1" />
+                            <Text className={`${isMobile ? 'text-[10px]' : 'text-sm'} font-black text-slate-500`}>{t('manual.applyAdmin')}</Text>
                         </View>
                     </View>
 
-                    <View className="gap-5 px-2">
+                    <View className={`${isMobile ? 'gap-3' : 'gap-5'} px-2`}>
                         <View className="flex-row items-start">
-                            <View className="w-2 h-2 rounded-full bg-sky-500 mt-2.5 mr-4" />
-                            <Text className={`flex-1 text-lg font-bold leading-7 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                            <View className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 mr-3" />
+                            <Text className={`flex-1 ${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                                 <Text className="text-sky-400 font-black">{t('manual.enterDashboard')}:</Text> {t('manual.enterDashboardDesc')}
                             </Text>
                         </View>
                         <View className="flex-row items-start">
-                            <View className="w-2 h-2 rounded-full bg-slate-400 mt-2.5 mr-4" />
-                            <Text className={`flex-1 text-lg font-bold leading-7 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>
+                            <View className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 mr-3" />
+                            <Text className={`flex-1 ${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>
                                 <Text className="text-slate-400 font-black">{t('manual.applyAdmin')}:</Text> {t('manual.applyAdminDesc')}
                             </Text>
                         </View>
@@ -235,20 +238,20 @@ export default function Home() {
 
                 {/* 2. 시작하기 (연계 가이드) */}
                 <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
-                            <Ionicons name="rocket-outline" size={32} color="#3b82f6" />
+                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
+                            <Ionicons name="rocket-outline" size={isMobile ? 24 : 32} color="#3b82f6" />
                         </View>
                         <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.startTitle')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.startTitle')}</Text>
                         </View>
                     </View>
-                    <View className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
-                        <View className="flex-row items-start mb-6">
-                            <View className="w-2.5 h-2.5 rounded-full bg-sky-500 mt-2.5 mr-4" />
-                            <Text className={`flex-1 text-lg font-black leading-8 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.enterDashboard')}</Text>
+                    <View className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
+                        <View className={`flex-row items-start ${isMobile ? 'mb-3' : 'mb-6'}`}>
+                            <View className="w-2 h-2 rounded-full bg-sky-500 mt-2 mr-3" />
+                            <Text className={`flex-1 ${isMobile ? 'text-base' : 'text-lg'} font-black leading-7 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.enterDashboard')}</Text>
                         </View>
-                        <Text className={`text-lg font-bold leading-7 ml-6 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                        <Text className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ml-5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
                             {t('manual.enterDashboardDesc')}
                         </Text>
                     </View>
@@ -256,18 +259,18 @@ export default function Home() {
 
                 {/* 3. 대시보드 입장 (로그인) */}
                 <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
-                            <Ionicons name="lock-open-outline" size={32} color="#10b981" />
+                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
+                            <Ionicons name="lock-open-outline" size={isMobile ? 24 : 32} color="#10b981" />
                         </View>
                         <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
                         </View>
                     </View>
-                    <View className="gap-6">
-                        <View className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                            <Text className={`text-2xl font-black mb-10 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 {t('manual.inputGuide')}</Text>
-                            <View className="gap-8">
+                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
+                        <View className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
+                            <Text className={`${isMobile ? 'text-base mb-5' : 'text-2xl mb-10'} font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 {t('manual.inputGuide')}</Text>
+                            <View className={isMobile ? 'gap-4' : 'gap-8'}>
                                 {[
                                     { title: t('manual.serverNum'), desc: t('manual.serverNumDesc'), icon: 'server-outline' },
                                     { title: t('manual.allianceAbbr'), desc: t('manual.allianceAbbrDesc'), icon: 'flag-outline' },
@@ -275,51 +278,51 @@ export default function Home() {
                                     { title: t('auth.password'), desc: t('manual.passwordDesc'), icon: 'key-outline' }
                                 ].map((item, idx) => (
                                     <View key={idx} className="flex-row items-center">
-                                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-6 ${isDark ? 'bg-slate-900' : 'bg-white border border-slate-100 shadow-sm'}`}>
-                                            <Ionicons name={item.icon as any} size={28} color="#10b981" />
+                                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-6'} items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-white border border-slate-100 shadow-sm'}`}>
+                                            <Ionicons name={item.icon as any} size={isMobile ? 22 : 28} color="#10b981" />
                                         </View>
                                         <View className="flex-1">
-                                            <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</Text>
-                                            <Text className={`text-lg font-bold mt-1.5 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{item.desc}</Text>
+                                            <Text className={`${isMobile ? 'text-sm' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</Text>
+                                            <Text className={`${isMobile ? 'text-xs' : 'text-lg'} font-bold mt-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{item.desc}</Text>
                                         </View>
                                     </View>
                                 ))}
                             </View>
                         </View>
-                        <View className={`p-6 rounded-[32px] flex-row items-center ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
-                            <View className="w-12 h-12 rounded-full bg-sky-500/20 items-center justify-center mr-5">
-                                <Ionicons name="bulb-outline" size={24} color="#0ea5e9" />
+                        <View className={`${isMobile ? 'p-3 rounded-[16px]' : 'p-6 rounded-[32px]'} flex-row items-center ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
+                            <View className={`${isMobile ? 'w-8 h-8 mr-3' : 'w-12 h-12 mr-5'} rounded-full bg-sky-500/20 items-center justify-center`}>
+                                <Ionicons name="bulb-outline" size={isMobile ? 18 : 24} color="#0ea5e9" />
                             </View>
-                            <Text className={`flex-1 text-lg font-black leading-7 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>{t('manual.autoComplete')}</Text>
+                            <Text className={`flex-1 ${isMobile ? 'text-xs' : 'text-lg'} font-black leading-6 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>{t('manual.autoComplete')}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* 4. 역할(권한) 체계 */}
                 <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
-                            <Ionicons name="people-outline" size={32} color="#fb7185" />
+                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
+                            <Ionicons name="people-outline" size={isMobile ? 24 : 32} color="#fb7185" />
                         </View>
                         <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.roleSystem')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.roleSystem')}</Text>
                         </View>
                     </View>
-                    <View className="gap-6">
+                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
                         {[
                             { label: t('manual.sysMaster'), color: '#fb7185', desc: t('manual.sysMasterDesc'), badge: '🔴' },
                             { label: t('admin.allianceAdmin'), color: '#818cf8', desc: t('manual.allianceAdminDesc'), badge: '🔵' },
                             { label: t('admin.opAdmin'), color: '#22d3ee', desc: t('manual.opAdminDesc'), badge: '🟢' },
                             { label: t('manual.generalLord'), color: '#94a3b8', desc: t('manual.generalLordDesc'), badge: '⚪' }
                         ].map((role) => (
-                            <View key={role.label} className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`} style={{ borderLeftColor: role.color, borderLeftWidth: 8 }}>
-                                <Text style={{ color: role.color }} className="font-black text-2xl mb-3">{role.badge} {role.label}</Text>
-                                <Text className={`text-lg leading-8 font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{role.desc}</Text>
+                            <View key={role.label} className={`${isMobile ? 'p-4 rounded-[24px] border-l-4' : 'p-8 rounded-[40px] border-2 border-l-8'} ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`} style={{ borderLeftColor: role.color }}>
+                                <Text style={{ color: role.color }} className={`font-black ${isMobile ? 'text-base mb-1' : 'text-2xl mb-3'}`}>{role.badge} {role.label}</Text>
+                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{role.desc}</Text>
                             </View>
                         ))}
                     </View>
-                    <View className={`mt-8 p-6 rounded-[32px] border-2 border-dashed ${isDark ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
-                        <Text className={`text-lg font-black leading-8 text-center ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ {t('manual.roleWarning')}</Text>
+                    <View className={`${isMobile ? 'mt-4 p-4 rounded-[16px]' : 'mt-8 p-6 rounded-[32px]'} border-2 border-dashed ${isDark ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
+                        <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black text-center ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ {t('manual.roleWarning')}</Text>
                     </View>
                 </View>
 
@@ -360,28 +363,28 @@ export default function Home() {
 
                 {/* 6. 편리한 도구 및 기타 */}
                 <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-cyan-500/20' : 'bg-cyan-50'}`}>
-                            <Ionicons name="construct-outline" size={32} color="#06b6d4" />
+                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-6'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-cyan-500/20' : 'bg-cyan-50'}`}>
+                            <Ionicons name="construct-outline" size={isMobile ? 24 : 32} color="#06b6d4" />
                         </View>
                         <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.toolsAndEtc')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.toolsAndEtc')}</Text>
                         </View>
                     </View>
-                    <View className="gap-6">
+                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
                         {[
                             { icon: 'eye-off-outline', title: t('manual.anonymousLogin'), desc: t('manual.anonymousLoginDesc') },
                             { icon: 'color-palette-outline', title: t('manual.themeFont'), desc: t('manual.themeFontDesc') },
                             { icon: 'download-outline', title: t('manual.pwaInstall'), desc: t('manual.pwaInstallDesc') }
                         ].map((tool, idx) => (
-                            <View key={idx} className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
-                                <View className="flex-row items-center mb-4">
-                                    <View className="w-10 h-10 rounded-full bg-cyan-500/10 items-center justify-center mr-4">
-                                        <Ionicons name={tool.icon as any} size={24} color="#06b6d4" />
+                            <View key={idx} className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
+                                <View className={`flex-row items-center ${isMobile ? 'mb-2' : 'mb-4'}`}>
+                                    <View className={`${isMobile ? 'w-8 h-8 mr-3' : 'w-10 h-10 mr-4'} rounded-full bg-cyan-500/10 items-center justify-center`}>
+                                        <Ionicons name={tool.icon as any} size={isMobile ? 18 : 24} color="#06b6d4" />
                                     </View>
-                                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{tool.title}</Text>
+                                    <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{tool.title}</Text>
                                 </View>
-                                <Text className={`text-lg leading-8 font-black ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{tool.desc}</Text>
+                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{tool.desc}</Text>
                             </View>
                         ))}
                     </View>
@@ -389,25 +392,25 @@ export default function Home() {
 
                 {/* 7. 자주 묻는 질문 (FAQ) */}
                 <View>
-                    <View className="flex-row items-center mb-8">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                            <Ionicons name="help-buoy-outline" size={32} color="#f59e0b" />
+                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                            <Ionicons name="help-buoy-outline" size={isMobile ? 24 : 32} color="#f59e0b" />
                         </View>
                         <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.faq')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.faq')}</Text>
                         </View>
                     </View>
-                    <View className="gap-8">
+                    <View className={isMobile ? 'gap-4' : 'gap-8'}>
                         <View>
-                            <Text className={`text-xl font-black mb-4 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Q. {t('manual.qPw')}</Text>
-                            <View className={`p-8 rounded-[32px] border-2 ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                <Text className={`text-lg font-black leading-8 ${isDark ? 'text-white' : 'text-slate-700'}`}>A. {t('manual.aPw')}</Text>
+                            <Text className={`${isMobile ? 'text-base mb-2' : 'text-xl mb-4'} font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Q. {t('manual.qPw')}</Text>
+                            <View className={`${isMobile ? 'p-4 rounded-[20px]' : 'p-8 rounded-[32px]'} border-2 ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-white' : 'text-slate-700'}`}>A. {t('manual.aPw')}</Text>
                             </View>
                         </View>
                         <View>
-                            <Text className={`text-xl font-black mb-4 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Q. {t('manual.qUnreg')}</Text>
-                            <View className={`p-8 rounded-[32px] border-2 ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                <Text className={`text-lg font-black leading-8 ${isDark ? 'text-white' : 'text-slate-700'}`}>A. {t('manual.aUnreg')}</Text>
+                            <Text className={`${isMobile ? 'text-base mb-2' : 'text-xl mb-4'} font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Q. {t('manual.qUnreg')}</Text>
+                            <View className={`${isMobile ? 'p-4 rounded-[20px]' : 'p-8 rounded-[32px]'} border-2 ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-white' : 'text-slate-700'}`}>A. {t('manual.aUnreg')}</Text>
                             </View>
                         </View>
                     </View>
@@ -418,55 +421,54 @@ export default function Home() {
 
 
     const renderMainManualContent = () => (
-        <ScrollView className="flex-1 px-8 pt-8" showsVerticalScrollIndicator={false}>
-            <View className="gap-12 pb-10">
+        <ScrollView className={`flex-1 ${isMobile ? 'px-4 pt-4' : 'px-8 pt-8'}`} showsVerticalScrollIndicator={false}>
+            <View className={`${isMobile ? 'gap-6' : 'gap-12'} pb-10`}>
                 {/* 1. 권한 관리 시스템 */}
                 <View>
-                    <View className="flex-row items-center mb-8">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50 shadow-sm'}`}>
-                            <Text className="text-3xl">🔐</Text>
+                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-rose-500/20' : 'bg-rose-50 shadow-sm'}`}>
+                            <Text className={isMobile ? 'text-xl' : 'text-3xl'}>🔐</Text>
                         </View>
-                        <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.roleMgmtSystem')}</Text>
+                        <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.roleMgmtSystem')}</Text>
                     </View>
-                    <View className="gap-6">
+                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
                         {[
                             { label: `🔴 ${t('admin.superAdmin')}`, color: '#fb7185', desc: t('manual.roleMasterDesc') },
                             { label: `🔵 ${t('admin.allianceAdmin')}`, color: '#818cf8', desc: t('manual.roleAllianceAdminDesc') },
                             { label: `🟢 ${t('admin.opAdmin')}`, color: '#22d3ee', desc: t('manual.roleOpAdminDesc') },
                             { label: `⚪ ${t('manual.generalLord')}`, color: '#94a3b8', desc: t('manual.roleGeneralDesc') }
                         ].map((role) => (
-                            <View key={role.label} className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                                <Text style={{ color: role.color }} className="font-black text-2xl mb-2">{role.label}</Text>
-                                <Text className={`text-lg leading-8 font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{role.desc}</Text>
+                            <View key={role.label} className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
+                                <Text style={{ color: role.color }} className={`font-black ${isMobile ? 'text-lg mb-1' : 'text-2xl mb-2'}`}>{role.label}</Text>
+                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{role.desc}</Text>
                             </View>
                         ))}
                     </View>
-                    <View className={`mt-8 p-6 rounded-[32px] ${isDark ? 'bg-sky-500/10' : 'bg-sky-50 shadow-sm'}`}>
-                        <Text className={`text-lg font-bold leading-7 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 {t('manual.roleTip')}</Text>
+                    <View className={`${isMobile ? 'mt-4 p-4 rounded-[16px]' : 'mt-8 p-6 rounded-[32px]'} ${isDark ? 'bg-sky-500/10' : 'bg-sky-50 shadow-sm'}`}>
+                        <Text className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 {t('manual.roleTip')}</Text>
                     </View>
                 </View>
 
                 {/* 2. 헤더 버튼 가이드 */}
                 <View>
-                    <View className="flex-row items-center mb-8">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50 shadow-sm'}`}>
-                            <Text className="text-3xl">🔘</Text>
+                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
+                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-blue-500/20' : 'bg-blue-50 shadow-sm'}`}>
+                            <Text className={isMobile ? 'text-xl' : 'text-3xl'}>🔘</Text>
                         </View>
-                        <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.headerBtnGuide')}</Text>
+                        <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.headerBtnGuide')}</Text>
                     </View>
-                    <View className="gap-6">
-                        <View className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                            <Text className={`text-2xl font-black mb-3 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>☀️ {t('manual.themeSwitch')}</Text>
-                            <Text className={`text-lg leading-8 font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.themeSwitchDesc')}</Text>
-                        </View>
-                        <View className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                            <Text className={`text-2xl font-black mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📥 {t('manual.installBtn')}</Text>
-                            <Text className={`text-lg leading-8 font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.installBtnDesc')}</Text>
-                        </View>
-                        <View className={`p-8 rounded-[40px] border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                            <Text className={`text-2xl font-black mb-3 ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>👤 {t('manual.profileAdmin')}</Text>
-                            <Text className={`text-lg leading-8 font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.profileAdminDesc')}</Text>
-                        </View>
+                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
+                        {[
+                            { title: t('manual.themeSwitch'), icon: '☀️', desc: t('manual.themeSwitchDesc') },
+                            { title: t('manual.guideBtn'), icon: '📖', desc: t('manual.guideBtnDesc') },
+                            { title: t('manual.installBtn'), icon: '📥', desc: t('manual.installBtnDesc') },
+                            { title: t('manual.profileAdmin'), icon: '👤', desc: t('manual.profileAdminDesc') }
+                        ].map((btn, idx) => (
+                            <View key={idx} className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
+                                <Text className={`${isMobile ? 'text-lg mb-1' : 'text-2xl mb-3'} font-black ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>{btn.icon} {btn.title}</Text>
+                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{btn.desc}</Text>
+                            </View>
+                        ))}
                     </View>
                 </View>
 
@@ -624,6 +626,8 @@ export default function Home() {
     const [newAdminPassword, setNewAdminPassword] = useState('');
     const [newAdminRole, setNewAdminRole] = useState<'admin' | 'alliance_admin'>('admin');
     const [showAdminList, setShowAdminList] = useState(false);
+    const [superAdminsList, setSuperAdminsList] = useState<any[]>([]);
+    const [loadingSuperAdmins, setLoadingSuperAdmins] = useState(false);
     const isSuperAdmin = auth.isLoggedIn && (
         auth.role === 'master' ||
         auth.role === 'super_admin'
@@ -734,6 +738,21 @@ export default function Home() {
             return () => unsubscribe();
         }
     }, [isSuperAdmin, isSuperAdminDashboardVisible]);
+
+    useEffect(() => {
+        if (showAdminList) {
+            setLoadingSuperAdmins(true);
+            const q = query(collection(db, 'users'), where('role', '==', 'super_admin'));
+            getDocs(q).then(snapshot => {
+                const admins = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                setSuperAdminsList(admins);
+                setLoadingSuperAdmins(false);
+            }).catch(err => {
+                console.error(err);
+                setLoadingSuperAdmins(false);
+            });
+        }
+    }, [showAdminList]);
 
     const toggleSelectRequest = (id: string) => {
         setSelectedReqIds(prev => {
@@ -862,6 +881,60 @@ export default function Home() {
                 }
             }
         });
+    };
+
+    const handleDeleteSuperAdmin = async (adminId: string, name: string) => {
+        showCustomAlert(
+            '관리자 삭제',
+            `${name}님을 삭제하시겠습니까?`,
+            'confirm',
+            async () => {
+                try {
+                    await deleteDoc(doc(db, 'users', adminId));
+                    setSuperAdminsList(prev => prev.filter(a => a.id !== adminId));
+                    showCustomAlert(t('common.success'), '삭제되었습니다.', 'success');
+                } catch (e: any) {
+                    showCustomAlert(t('common.error_title'), e.message, 'error');
+                }
+            }
+        );
+    };
+
+    const handleAddSuperAdmin = async () => {
+        if (!newAdminName.trim() || !newAdminPassword.trim()) {
+            showCustomAlert(t('common.error_title'), '아이디와 비밀번호를 입력해주세요.', 'warning');
+            return;
+        }
+
+        try {
+            const userId = newAdminName.trim();
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                showCustomAlert(t('common.error_title'), '이미 존재하는 아이디입니다.', 'error');
+                return;
+            }
+
+            const hashed = await hashPassword(newAdminPassword.trim());
+            const newAdminData = {
+                uid: `super_admin_${userId}`,
+                username: userId,
+                password: hashed,
+                nickname: userId,
+                role: 'super_admin',
+                status: 'active',
+                createdAt: Date.now()
+            };
+
+            await setDoc(userRef, newAdminData);
+            setSuperAdminsList(prev => [...prev, { id: userId, ...newAdminData }]);
+            setNewAdminName('');
+            setNewAdminPassword('');
+            showCustomAlert(t('common.success'), '슈퍼 관리자가 추가되었습니다.', 'success');
+        } catch (e: any) {
+            showCustomAlert(t('common.error_title'), e.message, 'error');
+        }
     };
 
     const handleRejectRequest = async (req: any) => {
@@ -2719,9 +2792,6 @@ export default function Home() {
                         }
                     }
 
-                    if (event.isBearSplit) {
-                        console.log('[Display Debug]', { eventId: event.eventId, isBearSplit: event.isBearSplit, eventDay: event.day, scheduleDay: currentSchedule?.day, displayDay, displayTime, eventTime: event.time });
-                    }
 
                     return isActive ? (
                         <View className={`w-full rounded-[32px] border ${hovered ? 'border-blue-400' : 'border-blue-500/40'} overflow-hidden bg-slate-950 transition-all`} style={{
@@ -2977,7 +3047,7 @@ export default function Home() {
                 <View className="flex-1 w-full h-full justify-center items-center p-4">
                     <BlurView intensity={40} tint="dark" className="absolute inset-0" />
 
-                    <View className="w-full max-w-md p-6 rounded-[40px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden">
+                    <View className={`w-full max-w-md ${isMobile ? 'p-5' : 'p-6'} rounded-[40px] border border-white/10 bg-slate-900/60 shadow-2xl overflow-hidden`}>
                         <BlurView intensity={80} className="absolute inset-0" />
 
                         <View className="items-center mb-4 relative">
@@ -3094,8 +3164,8 @@ export default function Home() {
                             <View className={`w-12 h-12 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
                                 <Ionicons name="snow" size={28} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
                             </View>
-                            <Text className="text-2xl font-black text-white text-center tracking-tighter">{t('dashboard.title')}</Text>
-                            <Text className={`${isRegisterMode ? 'text-amber-400/80' : 'text-sky-400/80'} font-bold mt-0.5 tracking-[0.2em] uppercase text-[9px]`}>{t('dashboard.subtitle')}</Text>
+                            <Text className={`${isMobile ? 'text-xl' : 'text-2xl'} font-black text-white text-center tracking-tighter`}>{t('dashboard.title')}</Text>
+                            <Text className={`${isRegisterMode ? 'text-amber-400/80' : 'text-sky-400/80'} font-bold mt-0.5 tracking-[0.2em] uppercase ${isMobile ? 'text-[8px]' : 'text-[9px]'}`}>{t('dashboard.subtitle')}</Text>
                         </View>
 
                         <View className="flex-row bg-slate-950/40 p-1 rounded-2xl mb-5 border border-white/5 items-center">
@@ -3124,7 +3194,7 @@ export default function Home() {
                                 // @ts-ignore - Web-specific property
                                 tabIndex={-1}
                             >
-                                <Text className={`font-black text-xs ${!isRegisterMode ? 'text-sky-400' : 'text-white/90'}`}>{t('dashboard.dashboardEntrance')}</Text>
+                                <Text className={`font-black ${isMobile ? 'text-[11px]' : 'text-xs'} ${!isRegisterMode ? 'text-sky-400' : 'text-white/90'}`}>{t('dashboard.dashboardEntrance')}</Text>
                             </Pressable>
 
                             {/* Middle Divider */}
@@ -3155,7 +3225,7 @@ export default function Home() {
                                 // @ts-ignore
                                 tabIndex={-1}
                             >
-                                <Text className={`font-black text-xs ${isRegisterMode ? 'text-amber-400' : 'text-white/90'}`}>{t('dashboard.applyAdmin')}</Text>
+                                <Text className={`font-black ${isMobile ? 'text-[11px]' : 'text-xs'} ${isRegisterMode ? 'text-amber-400' : 'text-white/90'}`}>{t('dashboard.applyAdmin')}</Text>
                             </Pressable>
                         </View>
 
@@ -3179,7 +3249,7 @@ export default function Home() {
                                             onChangeText={setInputServer}
                                             onFocus={() => setActiveInput('server')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !inputServer.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
+                                            className={`bg-slate-950/50 ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl text-white font-black ${isMobile ? 'text-sm' : 'text-lg'} border-2 transition-all duration-200 ${(gateLoginError && !inputServer.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             keyboardType="number-pad"
                                             // @ts-ignore - Web-specific property
                                             tabIndex={1}
@@ -3205,7 +3275,7 @@ export default function Home() {
                                             onChangeText={setInputAlliance}
                                             onFocus={() => setActiveInput('alliance')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !inputAlliance.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
+                                            className={`bg-slate-950/50 ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl text-white font-black ${isMobile ? 'text-sm' : 'text-lg'} border-2 transition-all duration-200 ${(gateLoginError && !inputAlliance.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             autoCapitalize="characters"
                                             // @ts-ignore - Web-specific property
                                             tabIndex={2}
@@ -3237,7 +3307,7 @@ export default function Home() {
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                             onSubmitEditing={() => gatePasswordRef.current?.focus()}
                                             blurOnSubmit={false}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !!inputUserId.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
+                                            className={`bg-slate-950/50 ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl text-white font-black ${isMobile ? 'text-sm' : 'text-lg'} border-2 transition-all duration-200 ${(gateLoginError && !!inputUserId.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             // @ts-ignore - Web-specific property
                                             tabIndex={3}
                                         />
@@ -3270,7 +3340,7 @@ export default function Home() {
                                             onFocus={() => setActiveInput('password')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                             onSubmitEditing={handleEnterAlliance}
-                                            className={`bg-slate-950/50 p-2.5 pl-14 pr-12 rounded-2xl text-white font-black text-lg border-2 transition-all duration-200 ${(gateLoginError && !!inputPassword.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
+                                            className={`bg-slate-950/50 ${isMobile ? 'p-2' : 'p-2.5'} pl-14 pr-12 rounded-2xl text-white font-black ${isMobile ? 'text-sm' : 'text-lg'} border-2 transition-all duration-200 ${(gateLoginError && !!inputPassword.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : 'border-slate-800')}`}
                                             // @ts-ignore - Web-specific property
                                             tabIndex={4}
                                         />
@@ -3327,7 +3397,7 @@ export default function Home() {
                                     {isLoginLoading ? (
                                         <ActivityIndicator color="white" size="small" />
                                     ) : (
-                                        <Text className="text-white font-black text-lg tracking-tight relative z-10">
+                                        <Text className={`text-white font-black ${isMobile ? 'text-base' : 'text-lg'} tracking-tight relative z-10`}>
                                             {isRegisterMode
                                                 ? t('dashboard.apply')
                                                 : (!inputUserId.trim() && !inputPassword.trim())
@@ -3565,19 +3635,11 @@ export default function Home() {
                                         <Ionicons name={isDark ? "sunny" : "moon"} size={16} color={isDark ? "#fbbf24" : "#333333"} />
                                     </Pressable>
                                     <Pressable
-                                        onPress={() => openModalWithHistory(setIsGateManualVisible)}
+                                        onPress={() => auth.isLoggedIn ? openModalWithHistory(setIsManualVisible) : openModalWithHistory(setIsGateManualVisible)}
                                         className={`p-1.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
                                     >
                                         <Ionicons name="book-outline" size={16} color="#f59e0b" />
                                     </Pressable>
-                                    {auth.isLoggedIn && (auth.role === 'super_admin' || auth.role === 'master') && (
-                                        <Pressable
-                                            onPress={() => openModalWithHistory(setIsManualVisible)}
-                                            className={`p-1.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        >
-                                            <Ionicons name="lock-open-outline" size={10} color="#f59e0b" />
-                                        </Pressable>
-                                    )}
                                     <Pressable
                                         onPress={handleInstallClick}
                                         className={`p-1.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
@@ -4113,7 +4175,25 @@ export default function Home() {
                     <View className={`w-full max-w-sm overflow-hidden rounded-[32px] border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white/90 border-white/50'} shadow-2xl`}>
                         {/* Header with Close Button */}
                         <View className="flex-row items-center justify-between p-6 pb-2">
-                            <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.administration')}</Text>
+                            <View className="flex-row items-center gap-2">
+                                <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.administration')}</Text>
+                                {/* Role Badge */}
+                                <View className={`px-2 py-0.5 rounded-md border ${auth.role === 'master' ? 'bg-rose-500/20 border-rose-500/50' :
+                                    auth.role === 'super_admin' ? 'bg-purple-500/20 border-purple-500/50' :
+                                        auth.role === 'alliance_admin' ? 'bg-blue-500/20 border-blue-500/50' :
+                                            'bg-emerald-500/20 border-emerald-500/50'
+                                    }`}>
+                                    <Text className={`text-[10px] font-black uppercase ${auth.role === 'master' ? 'text-rose-500' :
+                                        auth.role === 'super_admin' ? 'text-purple-500' :
+                                            auth.role === 'alliance_admin' ? 'text-blue-500' :
+                                                'text-emerald-500'
+                                        }`}>
+                                        {auth.role === 'master' ? 'MASTER' :
+                                            auth.role === 'super_admin' ? 'SUPER ADMIN' :
+                                                auth.role === 'alliance_admin' ? 'ALLIANCE ADMIN' : 'OP ADMIN'}
+                                    </Text>
+                                </View>
+                            </View>
                             <TouchableOpacity
                                 onPress={() => setAdminMenuVisible(false)}
                                 className={`p-2 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
@@ -4125,26 +4205,29 @@ export default function Home() {
                         <ScrollView showsVerticalScrollIndicator={false} className="p-6 pt-2">
                             <View className="gap-3">
                                 {/* Admin Actions Grid */}
-                                <View className="flex-row gap-3">
+                                {/* Admin Actions List */}
+                                <View className="gap-2">
                                     <TouchableOpacity
                                         onPress={() => setAdminDashboardVisible(true)}
-                                        className={`flex-1 p-4 rounded-3xl border items-center justify-center aspect-square ${isDark ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-indigo-50 border-indigo-100'}`}
+                                        className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
                                     >
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-indigo-500/20' : 'bg-white shadow-sm'}`}>
-                                            <Ionicons name="people" size={24} color="#818cf8" />
+                                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                            <Ionicons name="people" size={20} color="#818cf8" />
                                         </View>
-                                        <Text className={`font-bold text-center text-xs ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>{t('admin.manage_members')}</Text>
+                                        <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_members')}</Text>
+                                        <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                                     </TouchableOpacity>
 
                                     {auth.isLoggedIn && auth.role !== 'master' && (
                                         <TouchableOpacity
                                             onPress={() => setIsUserPassChangeOpen(true)}
-                                            className={`flex-1 p-4 rounded-3xl border items-center justify-center aspect-square ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-100'}`}
+                                            className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
                                         >
-                                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-amber-500/20' : 'bg-white shadow-sm'}`}>
-                                                <Ionicons name="key" size={24} color="#fbbf24" />
+                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                                <Ionicons name="key" size={20} color="#fbbf24" />
                                             </View>
-                                            <Text className={`font-bold text-center text-xs ${isDark ? 'text-amber-300' : 'text-amber-900'}`}>{t('admin.change_pw')}</Text>
+                                            <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.change_pw')}</Text>
+                                            <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                                         </TouchableOpacity>
                                     )}
                                 </View>
@@ -4163,8 +4246,71 @@ export default function Home() {
                                                 <Ionicons name="ribbon" size={20} color="#a855f7" />
                                             </View>
                                             <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_staff')}</Text>
-                                            <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
+                                            <Ionicons name={showAdminList ? "chevron-up" : "chevron-forward"} size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                                         </TouchableOpacity>
+
+                                        {showAdminList && (
+                                            <View className={`mt-2 ml-4 pl-4 border-l-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                                                {loadingSuperAdmins ? (
+                                                    <ActivityIndicator size="small" color="#a855f7" className="py-4" />
+                                                ) : superAdminsList.filter(a => a.role === 'super_admin').length === 0 ? (
+                                                    <Text className={`text-xs py-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 슈퍼 관리자가 없습니다.</Text>
+                                                ) : (
+                                                    superAdminsList.filter(a => a.role === 'super_admin').map((admin, index) => (
+                                                        <View key={admin.id || index} className={`flex-row items-center justify-between py-3 pr-2 border-b last:border-0 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                                            <View className="flex-row items-center gap-3">
+                                                                <View className={`w-8 h-8 rounded-xl bg-purple-500/10 items-center justify-center`}>
+                                                                    <Text className="text-xs font-black text-purple-500">{admin.nickname?.[0] || 'A'}</Text>
+                                                                </View>
+                                                                <View>
+                                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{admin.nickname || 'Unknown'}</Text>
+                                                                    <Text className="text-[10px] text-slate-400">ID: {admin.username}</Text>
+                                                                </View>
+                                                            </View>
+                                                            {auth.role === 'master' && (
+                                                                <TouchableOpacity
+                                                                    onPress={() => handleDeleteSuperAdmin(admin.id, admin.nickname)}
+                                                                    className={`p-2 rounded-lg ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}
+                                                                >
+                                                                    <Ionicons name="trash-outline" size={14} color="#f43f5e" />
+                                                                </TouchableOpacity>
+                                                            )}
+                                                        </View>
+                                                    ))
+                                                )}
+
+                                                {/* Add Super Admin Form (Master Only) */}
+                                                {auth.role === 'master' && (
+                                                    <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
+                                                        <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>슈퍼 관리자 추가</Text>
+                                                        <View className="flex-row gap-2 mb-2">
+                                                            <TextInput
+                                                                className={`flex-1 p-2 rounded-lg border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+                                                                placeholder="ID / Nickname"
+                                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                                                value={newAdminName}
+                                                                onChangeText={setNewAdminName}
+                                                                autoCapitalize="none"
+                                                            />
+                                                            <TextInput
+                                                                className={`flex-1 p-2 rounded-lg border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
+                                                                placeholder="Password"
+                                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                                                value={newAdminPassword}
+                                                                onChangeText={setNewAdminPassword}
+                                                                secureTextEntry
+                                                            />
+                                                        </View>
+                                                        <TouchableOpacity
+                                                            onPress={handleAddSuperAdmin}
+                                                            className="w-full py-2 bg-purple-500 rounded-lg items-center justify-center active:scale-95 transition-all"
+                                                        >
+                                                            <Text className="text-white text-xs font-black">관리자 추가 (Add Staff)</Text>
+                                                        </TouchableOpacity>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
 
                                         <TouchableOpacity
                                             onPress={() => { setIsSuperAdminDashboardVisible(true); }}
@@ -4453,25 +4599,25 @@ export default function Home() {
 
             {/* Notice Popup Modal */}
             <Modal visible={noticePopupVisible} transparent animationType="fade" onRequestClose={() => dismissNoticePopup()}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                <View className={`flex-1 bg-black/80 items-center justify-center ${isMobile ? 'p-4' : 'p-6'}`}>
                     <BlurView intensity={40} className="absolute inset-0" />
                     <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
                         {/* Header */}
-                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-gradient-to-r from-amber-900/10 to-orange-900/10 border-amber-500/10' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'}`}>
+                        <View className={`${isMobile ? 'px-4 py-3' : 'px-5 py-4'} border-b ${isDark ? 'bg-gradient-to-r from-amber-900/10 to-orange-900/10 border-amber-500/10' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'}`}>
                             <View className="flex-row items-center">
-                                <View className={`w-12 h-12 rounded-xl items-center justify-center mr-4 ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                                    <Ionicons name="notifications" size={24} color="#f59e0b" />
+                                <View className={`${isMobile ? 'w-10 h-10 mr-3' : 'w-12 h-12 mr-4'} rounded-xl items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                                    <Ionicons name="notifications" size={isMobile ? 20 : 24} color="#f59e0b" />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('popup.announcement')}</Text>
+                                    <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('popup.announcement')}</Text>
                                 </View>
                             </View>
                         </View>
 
                         {/* Content */}
-                        <View className="px-5 py-5">
-                            <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
-                                <Text className={`text-lg font-bold leading-7 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                        <View className={`${isMobile ? 'px-4 py-4' : 'px-5 py-5'}`}>
+                            <ScrollView style={{ maxHeight: isMobile ? 250 : 300 }} showsVerticalScrollIndicator={false}>
+                                <Text className={`${isMobile ? 'text-base' : 'text-lg'} font-bold leading-7 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                                     {notice?.content || t('popup.noContent')}
                                 </Text>
                             </ScrollView>
@@ -4806,32 +4952,32 @@ export default function Home() {
 
             {/* Gate Manual (Login Guide) */}
             <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                <View className="flex-1 bg-black/80 items-center justify-center p-4">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                    <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                        <Ionicons name="help-circle" size={26} color="#f59e0b" />
+                                    <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="help-circle" size={isMobile ? 22 : 26} color="#f59e0b" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[9px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
+                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
+                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
                                     </View>
                                 </View>
-                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
                                 </TouchableOpacity>
                             </View>
                         </View>
                         {renderGateManualContent()}
-                        <View className="px-10 pb-10 pt-0 items-center justify-center">
+                        <View className={`${isMobile ? 'px-6 pb-6' : 'px-10 pb-10'} pt-0 items-center justify-center`}>
                             <Pressable
                                 onPress={() => setIsGateManualVisible(false)}
                                 style={({ hovered, pressed }: any) => [
                                     {
-                                        paddingHorizontal: 48,
+                                        paddingHorizontal: isMobile ? 32 : 48,
                                         paddingVertical: 5,
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                         opacity: pressed ? 0.8 : 1,
@@ -4841,7 +4987,7 @@ export default function Home() {
                                     }
                                 ]}
                             >
-                                <Text className="text-amber-500 font-black text-xl tracking-widest">{t('common.confirm')}</Text>
+                                <Text className={`text-amber-500 font-black ${isMobile ? 'text-lg' : 'text-xl'} tracking-widest`}>{t('common.confirm')}</Text>
                             </Pressable>
                         </View>
                     </View>
@@ -4850,32 +4996,32 @@ export default function Home() {
 
             {/* Main Manual (Dashboard Guide) */}
             <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                <View className="flex-1 bg-black/80 items-center justify-center p-4">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
+                    <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                        <Ionicons name="book" size={26} color="#f59e0b" />
+                                    <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="book" size={isMobile ? 22 : 26} color="#f59e0b" />
                                     </View>
                                     <View>
-                                        <Text className={`text-[9px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.mainManualTitle')}</Text>
+                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
+                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.mainManualTitle')}</Text>
                                     </View>
                                 </View>
-                                <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
                                 </TouchableOpacity>
                             </View>
                         </View>
                         {renderMainManualContent()}
-                        <View className="px-10 pb-10 pt-0 items-center justify-center">
+                        <View className={`${isMobile ? 'px-6 pb-6' : 'px-10 pb-10'} pt-0 items-center justify-center`}>
                             <Pressable
                                 onPress={() => setIsManualVisible(false)}
                                 style={({ hovered, pressed }: any) => [
                                     {
-                                        paddingHorizontal: 48,
+                                        paddingHorizontal: isMobile ? 32 : 48,
                                         paddingVertical: 5,
                                         transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                         opacity: pressed ? 0.8 : 1,
@@ -4885,7 +5031,7 @@ export default function Home() {
                                     }
                                 ]}
                             >
-                                <Text className="text-amber-500 font-black text-xl tracking-widest">{t('common.confirm')}</Text>
+                                <Text className={`text-amber-500 font-black ${isMobile ? 'text-lg' : 'text-xl'} tracking-widest`}>{t('common.confirm')}</Text>
                             </Pressable>
                         </View>
                     </View>

@@ -528,6 +528,7 @@
     "manual": {
         "gateTitle": "Gate Overview",
         "gateDesc": "This is the screen where you select your alliance and login when first accessing WOS Commander.",
+        "startTitle": "Getting Started",
         "enterDashboard": "Enter Dashboard",
         "applyAdmin": "Request Alliance Admin",
         "enterDashboardDesc": "Common login for members, officers, and alliance admins",

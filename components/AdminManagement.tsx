@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth, useTheme } from '../app/context';
@@ -10,7 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as XLSX from 'xlsx';
 import { hashPassword } from '../utils/crypto';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, query, writeBatch, doc } from 'firebase/firestore';
+import { collection, getDocs, query, writeBatch, doc, where } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface AdminManagementProps {
@@ -20,14 +21,18 @@ interface AdminManagementProps {
 }
 
 export default function AdminManagement({ serverId, allianceId, onBack }: AdminManagementProps) {
+    const { t } = useTranslation();
     const { auth } = useAuth();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
     const { width } = useWindowDimensions();
     const isMobile = width < 600;
 
-    const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember, updateMemberPassword } = useFirestoreMembers(serverId, allianceId);
-    const { sheetData, saveSheetUrl, uploadStrategyFile } = useFirestoreStrategySheet(serverId, allianceId);
+    const [targetServerId, setTargetServerId] = useState(serverId);
+    const [targetAllianceId, setTargetAllianceId] = useState(allianceId);
+
+    const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember, updateMemberPassword } = useFirestoreMembers(targetServerId, targetAllianceId);
+    const { sheetData, saveSheetUrl, uploadStrategyFile } = useFirestoreStrategySheet(targetServerId, targetAllianceId);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -65,6 +70,47 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
         message: '',
         type: 'error'
     });
+
+    const [allServers, setAllServers] = useState<string[]>([]);
+    const [allAlliances, setAllAlliances] = useState<{ id: string, serverId: string }[]>([]);
+
+    useEffect(() => {
+        if (auth.role === 'master' || auth.role === 'super_admin') {
+            const fetchAlliances = async () => {
+                const q = query(collection(db, 'alliance_requests'), where('status', '==', 'approved'));
+                const snapshot = await getDocs(q);
+                // Deduplicate alliances
+                const uniqueMap = new Map();
+                snapshot.docs.forEach(d => {
+                    const data = d.data();
+                    const key = `${data.serverId}_${data.allianceId}`;
+                    if (!uniqueMap.has(key)) {
+                        uniqueMap.set(key, { id: data.allianceId, serverId: data.serverId });
+                    }
+                });
+
+                const uniqueAlliances = Array.from(uniqueMap.values()) as { id: string, serverId: string }[];
+                const uniqueServers = Array.from(new Set(uniqueAlliances.map(a => a.serverId))).sort();
+
+                setAllServers(uniqueServers);
+                setAllAlliances(uniqueAlliances);
+
+                if (!serverId && uniqueServers.length > 0) {
+                    setTargetServerId(uniqueServers[0]);
+                }
+            };
+            fetchAlliances();
+        }
+    }, [auth.role]);
+
+    useEffect(() => {
+        if ((auth.role === 'master' || auth.role === 'super_admin') && targetServerId) {
+            const serverAlliances = allAlliances.filter(a => a.serverId === targetServerId);
+            if (serverAlliances.length > 0 && (!targetAllianceId || !serverAlliances.find(a => a.id === targetAllianceId))) {
+                setTargetAllianceId(serverAlliances[0].id);
+            }
+        }
+    }, [targetServerId, allAlliances]);
 
     const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
         setCustomAlert({ visible: true, title, message, type, onConfirm });
@@ -390,6 +436,59 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                     <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>관리자 대시보드</Text>
                 </View>
 
+                {/* Master Context Selector */}
+                {(auth.role === 'master' || auth.role === 'super_admin') && (
+                    <View className={`mb-6 p-4 rounded-3xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
+                        <View className="flex-row items-center mb-3">
+                            <Ionicons name="globe-outline" size={18} color="#38bdf8" className="mr-2" />
+                            <Text className={`font-black ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>관리 대상 선택 (Master Mode)</Text>
+                        </View>
+                        <View className="flex-row gap-3">
+                            <View className="flex-1 space-y-2">
+                                <Text className={`text-xs font-bold ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>서버 (Server)</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+                                    {allServers.map(s => (
+                                        <TouchableOpacity
+                                            key={s}
+                                            onPress={() => setTargetServerId(s)}
+                                            className={`px-4 py-2 rounded-xl border ${targetServerId === s ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}
+                                        >
+                                            <Text className={`font-bold text-xs ${targetServerId === s ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{s}</Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+                        </View>
+                        <View className="flex-row gap-3 mt-4">
+                            <View className="flex-1 space-y-2">
+                                <View className="flex-row items-center justify-between">
+                                    <Text className={`text-xs font-bold ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                        {targetServerId ? `[${targetServerId}] 소속 연맹 (${allAlliances.filter(a => a.serverId === targetServerId).length})` : '연맹 (Alliance)'}
+                                    </Text>
+                                </View>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
+                                    {allAlliances.filter(a => a.serverId === targetServerId).length > 0 ? (
+                                        allAlliances.filter(a => a.serverId === targetServerId).map(a => (
+                                            <TouchableOpacity
+                                                key={a.id}
+                                                onPress={() => setTargetAllianceId(a.id)}
+                                                className={`px-4 py-2 rounded-xl border flex-row items-center gap-2 ${targetAllianceId === a.id ? 'bg-indigo-500 border-indigo-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}
+                                            >
+                                                <Ionicons name="shield-half" size={12} color={targetAllianceId === a.id ? 'white' : (isDark ? '#cbd5e1' : '#64748b')} />
+                                                <Text className={`font-bold text-xs ${targetAllianceId === a.id ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{a.id}</Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    ) : (
+                                        <Text className={`text-xs p-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                                            해당 서버에 등록된 연맹이 없습니다.
+                                        </Text>
+                                    )}
+                                </ScrollView>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
                 {/* Modern Tab Bar */}
                 <View className={`flex-row p-1 rounded-[24px] ${isMobile ? 'mb-6' : 'mb-10'} border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
                     <TouchableOpacity
@@ -469,15 +568,15 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                     {activeTab === 'members' && (
                         <View className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                             {/* Member Management Section */}
-                            <View className={`${isMobile ? 'p-4' : 'p-6'} rounded-3xl border shadow-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                            <View className={`${isMobile ? 'p-3' : 'p-6'} rounded-3xl border shadow-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
                                 <View className={`flex-row items-center justify-between mb-4 border-b pb-2 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                                     <View className="flex-row items-center">
                                         <View className={`w-7 h-7 rounded-lg items-center justify-center mr-2 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
                                             <Ionicons name="people" size={16} color={isDark ? "#818cf8" : "#4f46e5"} />
                                         </View>
-                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>영주관리</Text>
+                                        <Text className={`${isMobile ? 'text-base' : 'text-xl'} font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>영주관리</Text>
                                     </View>
-                                    <Text className={`font-bold ${isMobile ? 'text-xs' : 'text-sm'} ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{members.length}명</Text>
+                                    <Text className={`font-bold ${isMobile ? 'text-[10px]' : 'text-sm'} ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{members.length}명</Text>
                                 </View>
 
                                 <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
@@ -519,16 +618,18 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <Text className={`font-bold ${isMobile ? 'text-xs' : 'text-sm'} ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>개별 등록</Text>
                                     </View>
                                     <View className="space-y-4">
-                                        <View className="flex-row gap-2">
+                                        <View className="flex-row gap-2 w-full">
                                             <TextInput
-                                                className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                style={{ flex: isMobile ? 1 : 1.5, minWidth: 0 }}
+                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                                                 placeholder="닉네임 *"
                                                 value={manualNick}
                                                 onChangeText={setManualNick}
                                             />
                                             <TextInput
-                                                className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
-                                                placeholder="ID (옵션)"
+                                                style={{ flex: 1, minWidth: 0 }}
+                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                placeholder="ID"
                                                 value={manualId}
                                                 onChangeText={setManualId}
                                                 keyboardType="numeric"
@@ -542,30 +643,47 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                 onChangeText={setManualPw}
                                                 secureTextEntry
                                             />
-                                            <TouchableOpacity onPress={handleManualAdd} className={`bg-indigo-600 ${isMobile ? 'px-5' : 'px-8'} h-11 rounded-xl items-center justify-center`}>
-                                                <Text className={`text-white font-black ${isMobile ? 'text-xs' : 'text-sm'}`}>등록</Text>
+                                            <TouchableOpacity onPress={handleManualAdd} className={`bg-indigo-600 ${isMobile ? 'w-16 h-11' : 'px-8 h-12'} rounded-xl items-center justify-center`}>
+                                                <Text className={`text-white font-black ${isMobile ? 'text-[10px]' : 'text-sm'}`}>등록</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
                                 </View>
 
-                                {/* Filter & Search */}
+                                {/* Filter & Search (Redesigned) */}
                                 <View className="mb-4">
-                                    <View className={`flex-row p-1 rounded-xl mb-3 border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                        {(['all', 'staff', 'general'] as const).map((filter) => (
-                                            <TouchableOpacity key={filter} onPress={() => setRoleFilter(filter)} className={`flex-1 py-1.5 rounded-lg items-center justify-center ${roleFilter === filter ? (isDark ? 'bg-indigo-600' : 'bg-white shadow-sm') : ''}`}>
-                                                <Text className={`${isMobile ? 'text-[9px]' : 'text-[10px]'} font-black ${roleFilter === filter ? (isDark ? 'text-white' : 'text-indigo-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{filter === 'all' ? '전체' : filter === 'staff' ? '운영' : '일반'}</Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
-                                    <View className={`flex-row items-center rounded-xl ${isMobile ? 'px-3 py-2.5' : 'px-4 py-3'} border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                                        <Ionicons name="search" size={14} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
-                                        <TextInput
-                                            placeholder="검색..."
-                                            value={searchTerm}
-                                            onChangeText={setSearchTerm}
-                                            className={`flex-1 font-bold ${isMobile ? 'text-[11px]' : 'text-xs'} ${isDark ? 'text-white' : 'text-slate-800'}`}
-                                        />
+                                    <View className={`flex-row items-center justify-between gap-3 ${isMobile ? 'flex-col items-stretch' : ''}`}>
+                                        {/* Search Input */}
+                                        <View className={`flex-1 flex-row items-center rounded-xl ${isMobile ? 'px-3 py-2.5 h-10' : 'px-4 py-2 h-10'} border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                            <Ionicons name="search" size={isMobile ? 14 : 16} color={isDark ? "#94a3b8" : "#64748b"} className="mr-2" />
+                                            <TextInput
+                                                placeholder={t('dashboard.search', '검색...')}
+                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
+                                                value={searchTerm}
+                                                onChangeText={setSearchTerm}
+                                                className={`flex-1 font-bold ${isMobile ? 'text-[11px]' : 'text-xs'} ${isDark ? 'text-white' : 'text-slate-800'}`}
+                                            />
+                                            {searchTerm.length > 0 && (
+                                                <TouchableOpacity onPress={() => setSearchTerm('')}>
+                                                    <Ionicons name="close-circle" size={16} color={isDark ? "#64748b" : "#94a3b8"} />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+
+                                        {/* Filter Tabs */}
+                                        <View className={`flex-row p-1 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                            {(['all', 'staff', 'general'] as const).map((filter) => (
+                                                <TouchableOpacity
+                                                    key={filter}
+                                                    onPress={() => setRoleFilter(filter)}
+                                                    className={`px-3 py-1.5 rounded-lg items-center justify-center ${roleFilter === filter ? (isDark ? 'bg-indigo-500' : 'bg-indigo-500 shadow-sm') : ''}`}
+                                                >
+                                                    <Text className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-black ${roleFilter === filter ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+                                                        {filter === 'all' ? '전체' : filter === 'staff' ? '운영' : '일반'}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
                                     </View>
                                 </View>
 
@@ -623,26 +741,28 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                 </ScrollView>
 
                 {/* Sticky Bottom Action Bar for Bulk Selection */}
-                {selectedIds.length > 0 && (
-                    <View className={`absolute ${isMobile ? 'bottom-4' : 'bottom-8'} left-4 right-4 animate-in slide-in-from-bottom-5 flex-row gap-2 ${isMobile ? 'p-2' : 'p-3'} rounded-2xl bg-slate-900 shadow-2xl items-center z-50`}>
-                        <View className="flex-1 px-2.5">
-                            <Text className="text-white font-black text-xs">{selectedIds.length}명</Text>
-                            <TouchableOpacity onPress={() => setSelectedIds([])}><Text className="text-indigo-400 font-bold text-[9px]">취소</Text></TouchableOpacity>
+                {
+                    selectedIds.length > 0 && (
+                        <View className={`absolute ${isMobile ? 'bottom-4' : 'bottom-8'} left-4 right-4 animate-in slide-in-from-bottom-5 flex-row gap-2 ${isMobile ? 'p-2' : 'p-3'} rounded-2xl bg-slate-900 shadow-2xl items-center z-50`}>
+                            <View className="flex-1 px-2.5">
+                                <Text className="text-white font-black text-xs">{selectedIds.length}명</Text>
+                                <TouchableOpacity onPress={() => setSelectedIds([])}><Text className="text-indigo-400 font-bold text-[9px]">취소</Text></TouchableOpacity>
+                            </View>
+                            <TouchableOpacity onPress={handleSelectedReset} className="bg-slate-800 px-4 py-2.5 rounded-xl flex-row items-center border border-slate-700 active:scale-95">
+                                <Ionicons name="key" size={14} color="#fbbf24" style={{ marginRight: 4 }} />
+                                <Text className="text-white font-black text-[10px]">초기화</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={handleSelectedDelete} className="bg-rose-600 px-4 py-2.5 rounded-xl flex-row items-center shadow-lg active:scale-95">
+                                <Ionicons name="trash" size={14} color="white" style={{ marginRight: 4 }} />
+                                <Text className="text-white font-black text-[10px]">삭제</Text>
+                            </TouchableOpacity>
                         </View>
-                        <TouchableOpacity onPress={handleSelectedReset} className="bg-slate-800 px-4 py-2.5 rounded-xl flex-row items-center border border-slate-700 active:scale-95">
-                            <Ionicons name="key" size={14} color="#fbbf24" style={{ marginRight: 4 }} />
-                            <Text className="text-white font-black text-[10px]">초기화</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={handleSelectedDelete} className="bg-rose-600 px-4 py-2.5 rounded-xl flex-row items-center shadow-lg active:scale-95">
-                            <Ionicons name="trash" size={14} color="white" style={{ marginRight: 4 }} />
-                            <Text className="text-white font-black text-[10px]">삭제</Text>
-                        </TouchableOpacity>
-                    </View>
-                )}
-            </View>
+                    )
+                }
+            </View >
 
             {/* Modals & Alerts */}
-            <Modal visible={customAlert.visible} transparent animationType="fade">
+            < Modal visible={customAlert.visible} transparent animationType="fade" >
                 <View className="flex-1 bg-black/60 items-center justify-center p-6 text-center">
                     <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                         <View className={`w-16 h-16 rounded-full items-center justify-center mb-5 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/20' : 'bg-emerald-50') :
@@ -689,7 +809,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                         </View>
                     </View>
                 </View>
-            </Modal>
-        </View>
+            </Modal >
+        </View >
     );
 }
