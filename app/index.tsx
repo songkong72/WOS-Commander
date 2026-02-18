@@ -4106,12 +4106,82 @@ export default function Home() {
                 </View>
             </Modal>
 
-            <Modal visible={adminMenuVisible} transparent animationType="slide" onRequestClose={() => setAdminMenuVisible(false)}>
-                <View className="flex-1 bg-black/70 items-center justify-center p-6">
-                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-950/95 border-slate-800' : 'bg-white border-slate-200'}`}>
-                        <View className="items-center justify-center mb-8 pt-2">
+            <Modal visible={adminMenuVisible} transparent animationType="fade" onRequestClose={() => setAdminMenuVisible(false)}>
+                <View className="flex-1 bg-black/60 items-center justify-center p-4">
+                    <BlurView intensity={40} tint="dark" className="absolute inset-0" />
 
-                            <ScrollView showsVerticalScrollIndicator={false} className="flex-none">
+                    <View className={`w-full max-w-sm overflow-hidden rounded-[32px] border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white/90 border-white/50'} shadow-2xl`}>
+                        {/* Header with Close Button */}
+                        <View className="flex-row items-center justify-between p-6 pb-2">
+                            <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.administration')}</Text>
+                            <TouchableOpacity
+                                onPress={() => setAdminMenuVisible(false)}
+                                className={`p-2 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
+                            >
+                                <Ionicons name="close" size={20} color={isDark ? '#94a3b8' : '#64748b'} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <ScrollView showsVerticalScrollIndicator={false} className="p-6 pt-2">
+                            <View className="gap-3">
+                                {/* Admin Actions Grid */}
+                                <View className="flex-row gap-3">
+                                    <TouchableOpacity
+                                        onPress={() => setAdminDashboardVisible(true)}
+                                        className={`flex-1 p-4 rounded-3xl border items-center justify-center aspect-square ${isDark ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-indigo-50 border-indigo-100'}`}
+                                    >
+                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-indigo-500/20' : 'bg-white shadow-sm'}`}>
+                                            <Ionicons name="people" size={24} color="#818cf8" />
+                                        </View>
+                                        <Text className={`font-bold text-center text-xs ${isDark ? 'text-indigo-300' : 'text-indigo-900'}`}>{t('admin.manage_members')}</Text>
+                                    </TouchableOpacity>
+
+                                    {auth.isLoggedIn && auth.role !== 'master' && (
+                                        <TouchableOpacity
+                                            onPress={() => setIsUserPassChangeOpen(true)}
+                                            className={`flex-1 p-4 rounded-3xl border items-center justify-center aspect-square ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-100'}`}
+                                        >
+                                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mb-3 ${isDark ? 'bg-amber-500/20' : 'bg-white shadow-sm'}`}>
+                                                <Ionicons name="key" size={24} color="#fbbf24" />
+                                            </View>
+                                            <Text className={`font-bold text-center text-xs ${isDark ? 'text-amber-300' : 'text-amber-900'}`}>{t('admin.change_pw')}</Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+
+                                {!!isSuperAdmin && (
+                                    <>
+                                        <View className={`h-[1px] w-full my-2 ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
+
+                                        <Text className={`text-[10px] font-black uppercase tracking-widest pl-1 mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.super_admin_manage')}</Text>
+
+                                        <TouchableOpacity
+                                            onPress={() => setShowAdminList(!showAdminList)}
+                                            className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
+                                        >
+                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-purple-500/20' : 'bg-purple-50'}`}>
+                                                <Ionicons name="ribbon" size={20} color="#a855f7" />
+                                            </View>
+                                            <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_staff')}</Text>
+                                            <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
+                                        </TouchableOpacity>
+
+                                        <TouchableOpacity
+                                            onPress={() => { setIsSuperAdminDashboardVisible(true); }}
+                                            className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
+                                        >
+                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
+                                                <Ionicons name="planet" size={20} color="#38bdf8" />
+                                            </View>
+                                            <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.super_dashboard_title')}</Text>
+                                            <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
+                                        </TouchableOpacity>
+                                    </>
+                                )}
+
+                                <View className={`h-[1px] w-full my-2 ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
+
+                                {/* Logout Button */}
                                 <TouchableOpacity
                                     onPress={async () => {
                                         await logout();
@@ -4123,68 +4193,13 @@ export default function Home() {
                                         setAllianceInfo(null, null);
                                         setIsGateOpen(true);
                                     }}
-                                    // @ts-ignore
-                                    onMouseEnter={() => setAdminMenuHover('logout')}
-                                    onMouseLeave={() => setAdminMenuHover(null)}
-                                    className={`p-6 rounded-[28px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'logout' ? 'bg-red-500/20 border-red-500/50' : (isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200')}`}
+                                    className="p-4 rounded-2xl flex-row items-center justify-center bg-red-500 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
                                 >
-                                    <Ionicons name="log-out-outline" size={28} color="#ef4444" style={{ marginRight: 12 }} />
-                                    <Text className={`font-black text-xl ${isDark ? 'text-red-400' : 'text-red-500'}`}>{t('admin.logout')}</Text>
+                                    <Ionicons name="log-out" size={20} color="white" style={{ marginRight: 8 }} />
+                                    <Text className="font-black text-white">{t('admin.logout')}</Text>
                                 </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => setAdminDashboardVisible(true)}
-                                    className={`p-6 rounded-[28px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'members' ? 'bg-sky-500/20 border-sky-500/50' : (isDark ? 'bg-sky-500/5 border-sky-500/15' : 'bg-sky-50 border-sky-200')}`}
-                                >
-                                    <Ionicons name="people-outline" size={28} color={isDark ? '#38bdf8' : '#0284c7'} style={{ marginRight: 12 }} />
-                                    <Text className={`font-black text-xl ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{t('admin.manage_members')}</Text>
-                                </TouchableOpacity>
-
-                                {!!isSuperAdmin && (
-                                    <View>
-                                        <TouchableOpacity
-                                            onPress={() => setShowAdminList(!showAdminList)}
-                                            className={`p-6 rounded-[28px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'staff' ? 'bg-indigo-600/10 border-indigo-500/40' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
-                                        >
-                                            <Ionicons name="people-outline" size={28} color={adminMenuHover === 'staff' ? '#818cf8' : '#818cf8'} style={{ marginRight: 12 }} />
-                                            <Text className={`font-black text-xl ${adminMenuHover === 'staff' ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-white' : 'text-slate-800')}`}>{t('admin.manage_staff')}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-
-                                {auth.isLoggedIn && auth.role !== 'master' && (
-                                    <TouchableOpacity
-                                        onPress={() => setIsUserPassChangeOpen(true)}
-                                        className={`p-6 rounded-[28px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'password' ? 'bg-amber-500/20 border-amber-500/50' : (isDark ? 'bg-amber-500/5 border-amber-500/15' : 'bg-amber-50 border-amber-200')}`}
-                                    >
-                                        <Ionicons name="key-outline" size={28} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 12 }} />
-                                        <Text className={`font-black text-xl ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('admin.change_pw')}</Text>
-                                    </TouchableOpacity>
-                                )}
-
-                                {!!isSuperAdmin && (
-                                    <View className={`mt-6 pt-8 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                        <Text className={`font-black mb-6 text-center text-xs uppercase tracking-[0.3em] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.super_admin_manage')}</Text>
-
-                                        <TouchableOpacity
-                                            onPress={() => { setIsSuperAdminDashboardVisible(true); }}
-                                            className={`p-6 rounded-[28px] mb-4 flex-row items-center justify-center border transition-all duration-300 ${adminMenuHover === 'super' ? 'bg-slate-800/50 border-slate-700' : (isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm')}`}
-                                        >
-                                            <Ionicons name="shield-checkmark-outline" size={28} color="#38bdf8" style={{ marginRight: 12 }} />
-                                            <Text className={`font-black text-xl ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.super_dashboard_title')}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                )}
-                            </ScrollView>
-
-                            <TouchableOpacity
-                                onPress={() => setAdminMenuVisible(false)}
-                                className={`w-full p-6 rounded-[32px] mt-8 flex-row items-center justify-center border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
-                            >
-                                <Ionicons name="close-circle-outline" size={28} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 10 }} />
-                                <Text className={`font-black text-xl ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('admin.close_btn')}</Text>
-                            </TouchableOpacity>
-                        </View>
+                            </View>
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
