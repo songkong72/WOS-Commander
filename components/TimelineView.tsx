@@ -562,23 +562,31 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
     return (
         <View style={{ flex: 1 }} className={isDark ? 'bg-[#0f172a]' : 'bg-[#f1f5f9]'}>
-            <LinearGradient colors={['#38bdf8', '#0284c7']} className="py-2.5 px-4 flex-row items-center justify-between shadow-md">
-                <View style={{ width: 80 }} />
-                <Text className="text-white font-black text-[11px] uppercase tracking-widest text-center shadow-lg">
-                    {`${timezone} : ${timezone === 'UTC' ? now.toISOString().replace('T', ' ').substring(0, 19).replace(/-/g, '.') : `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`}`}
-                </Text>
-                <View className={`${ongoingCount > 0 ? 'bg-emerald-500 border-emerald-400 shadow-emerald-900/40' : 'bg-white/20 border-white/30'} px-3 py-1 rounded-full border flex-row items-center shadow-lg`}>
+            <LinearGradient colors={['#38bdf8', '#0284c7']} className="py-3 px-5 flex-row items-center justify-between shadow-md relative">
+                <View />
+
+                {/* Centered Date/Time Display */}
+                <View className="absolute inset-0 items-center justify-center pointer-events-none">
+                    <Text className="text-white font-black text-[14px] uppercase tracking-widest shadow-lg">
+                        {timezone === 'UTC'
+                            ? now.toISOString().replace('T', ' ').substring(0, 19).replace(/-/g, '.')
+                            : `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+                        }
+                    </Text>
+                </View>
+
+                <View className={`${ongoingCount > 0 ? 'bg-emerald-500 border-emerald-400 shadow-emerald-900/40' : 'bg-white/20 border-white/30'} px-5 py-2 rounded-2xl border flex-row items-center shadow-lg transform scale-110`}>
                     <Animated.View
                         style={{
                             opacity: ongoingCount > 0 ? pulseAnim : 1,
                             backgroundColor: ongoingCount > 0 ? 'white' : 'white',
-                            width: 6,
-                            height: 6,
-                            borderRadius: 3,
-                            marginRight: 6
+                            width: 8,
+                            height: 8,
+                            borderRadius: 4,
+                            marginRight: 8
                         }}
                     />
-                    <Text className="text-white text-[10px] font-black tracking-tight">{t('events.modal.ongoing_count', { count: ongoingCount })}</Text>
+                    <Text className="text-white text-[14px] font-black tracking-tight">{t('events.modal.ongoing_count', { count: ongoingCount })}</Text>
                 </View>
             </LinearGradient>
 
@@ -590,11 +598,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     const mv = (timezone === 'UTC' ? d.getUTCMonth() : d.getMonth()) + 1;
                     return (
                         <View key={`day-header-${i}`} className="flex-1 items-center">
-                            <View className={`items-center px-3 py-1.5 rounded-2xl ${isToday ? 'bg-[#f97316] shadow-md scale-105' : ''}`}>
-                                <Text className={`text-[9px] font-bold ${isToday ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{dayNames[dIdx].substring(0, 3)}</Text>
-                                <Text className={`text-[12px] font-black ${isToday ? 'text-white' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{mv}/{dv}</Text>
+                            <View className={`items-center px-4 py-2 rounded-2xl ${isToday ? 'bg-[#f97316] shadow-lg scale-110' : ''}`}>
+                                <Text className={`text-[13px] font-black mb-0.5 ${isToday ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                    {dayNames[dIdx]}
+                                </Text>
+                                <Text className={`text-[16px] font-black ${isToday ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
+                                    {mv}/{dv}
+                                </Text>
                             </View>
-                            {isToday && <View className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1 shadow-sm" />}
+                            {isToday && <View className="w-2 h-2 rounded-full bg-orange-500 mt-2 shadow-sm" />}
                         </View>
                     );
                 })}
@@ -602,7 +614,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
             <ScrollView
                 className="flex-1"
-                contentContainerStyle={{ paddingBottom: 60 }}
+                contentContainerStyle={{ paddingBottom: 60, paddingTop: 50 }}
                 onScroll={() => setSelectedBarId(null)}
                 scrollEventThrottle={16}
             >
@@ -845,16 +857,36 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
                 {/* Current Time Indicator */}
                 <View key="indicator" className="absolute top-0 bottom-0 w-[4px] bg-orange-500 z-50 pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
-                    <View key="indicator-label" className="absolute -top-6 -left-6 bg-orange-600 px-2 py-1 rounded-lg shadow-lg">
-                        <Text className="text-white text-[10px] font-black tracking-tighter">
-                            {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
+                    <View key="indicator-label" className="absolute -top-12 -left-12 bg-orange-600 px-3 py-1.5 rounded-xl shadow-2xl flex-row items-center border border-white/30">
+                        {/* Live Dot */}
+                        <View className="w-2 h-2 rounded-full bg-white animate-pulse mr-2" />
+                        <Text className="text-white text-[11px] font-black tracking-tighter">
+                            NOW {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
                         </Text>
-                        <View className="absolute -bottom-1 left-1.2 w-2 h-2 bg-orange-600 rotate-45 self-center" />
+                        {/* Pointer Arrow */}
+                        <View className="absolute -bottom-1.5 left-[44px] w-3 h-3 bg-orange-600 rotate-45 border-b border-r border-white/20" />
                     </View>
-                    <View key="indicator-dot" className="w-5 h-5 rounded-full bg-orange-500 -ml-[8px] -mt-2.5 border-2 border-white shadow-2xl items-center justify-center">
-                        <View key="indicator-inner" className="w-2.5 h-2.5 rounded-full bg-white" />
+
+                    {/* Pulse Effect Dot */}
+                    <View key="indicator-dot-wrap" className="absolute top-0 -left-[10px] items-center justify-center">
+                        <Animated.View
+                            style={{
+                                position: 'absolute',
+                                width: 24,
+                                height: 24,
+                                borderRadius: 12,
+                                backgroundColor: 'rgba(249, 115, 22, 0.4)',
+                                transform: [{ scale: pulseAnim.interpolate({ inputRange: [0.4, 1], outputRange: [1, 2.5] }) }],
+                                opacity: pulseAnim.interpolate({ inputRange: [0.4, 1], outputRange: [0.6, 0] })
+                            }}
+                        />
+                        <View key="indicator-dot" className="w-6 h-6 rounded-full bg-orange-500 border-4 border-white shadow-2xl items-center justify-center">
+                            <View key="indicator-inner" className="w-2 h-2 rounded-full bg-white" />
+                        </View>
                     </View>
-                    <View key="indicator-glow" className="absolute h-full w-[12px] -left-[4px] bg-orange-500/20" />
+
+                    {/* Vertical Glow */}
+                    <View key="indicator-glow" className="absolute h-full w-[20px] -left-[8px] bg-orange-500/15" />
                 </View>
             </ScrollView>
         </View>
