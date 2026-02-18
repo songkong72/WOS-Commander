@@ -352,12 +352,13 @@
         "set_time": "Set Time",
         "total_duration": "Total {{duration}}",
         "day_unit": "d",
+        "week_unit": "w",
         "hour_unit": "h",
         "min_unit": "m",
         "recurrence": "Recurrence Settings",
         "recurrence_days": "Days",
         "recurrence_weeks": "Weeks",
-        "recurrence_guide": "Event repeats every {{value}} {{unit}}.",
+        "recurrence_guide": "Repeat every {{value}}{{unit}}",
         "no_ongoing_events": "No ongoing events found",
         "select_another_category": "Please select another category filter",
         "notification": {
@@ -418,7 +419,8 @@
             "penalty_notice": "⚠️ Pre-announced (Excused)",
             "penalty_no_show": "⛔ Unannounced (Penalty)",
             "reset_status": "Reset Status",
-            "ongoing_count": "Ongoing: {{count}}"
+            "ongoing_count": "Ongoing: {{count}}",
+            "tap_for_details": "Tap for details"
         },
         "categories": {
             "alliance": "Alliance Events",

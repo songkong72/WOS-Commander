@@ -75,16 +75,20 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     // Fixed Korean day names for internal parsing logic (since data source uses Korean)
     const KR_DAYS_PARSER = ['일', '월', '화', '수', '목', '금', '토'];
 
-    const formatTs = (ts: number) => {
+    const formatTs = (ts: number, timeOnly = false) => {
         const d = new Date(ts);
         if (timezone === 'UTC') {
             const dw = d.getUTCDay();
             const dy = dayNames[dw];
-            return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${dy}) ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+            const timeStr = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+            if (timeOnly) return timeStr;
+            return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${dy}) ${timeStr}`;
         }
         const dw = d.getDay();
         const dy = dayNames[dw];
-        return `${d.getMonth() + 1}/${d.getDate()}(${dy}) ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        if (timeOnly) return timeStr;
+        return `${d.getMonth() + 1}/${d.getDate()}(${dy}) ${timeStr}`;
     };
 
     // Core positioning logic used for EVERY bar
@@ -155,88 +159,82 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
         const fullComb = ((ev.day || '') + ' ' + (ev.time || '')).trim();
         if (!fullComb || fullComb === '.') return [];
 
-        // Bear Hunt weekly rotation logic
-        // User registers ONE day/time (e.g., "월 22:00")
-        // System generates 4 events per week at +0, +2, +4, +6 days from base
-        // Each week, the base shifts by +1 day
-        // Week 0: Mon(+0), Wed(+2), Fri(+4), Sun(+6) → Week 1: Tue(+0), Thu(+2), Sat(+4), Mon(+6)
-        let processedComb = fullComb;
-        const eventId = ev.id || ev.eventId || '';
-        const isBearHunt = eventId.includes('bear') || eventId.includes('Bear');
+        const eventIdString = ev.id || ev.eventId || '';
+        const isBearHunt = eventIdString.toLowerCase().includes('bear');
 
-        if (isBearHunt) {
-            const updatedAt = ev.updatedAt || ev._original?.updatedAt;
-            if (updatedAt) {
-                // Extract the registered time
-                const timeMatch = fullComb.match(/(\d{1,2}):(\d{2})/);
+        const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean, label?: string }[] = [];
+        const localStart = winStart;
 
-                if (timeMatch) {
-                    const time = timeMatch[0];
+        // Split by '/' to handle multiple distinct time slots (Team 1 / Team 2)
+        const parts = fullComb.split(/\s*\/\s*/).filter(p => p.trim());
 
-                    // Get the saved date (when the schedule was registered)
-                    const savedDate = new Date(updatedAt);
-                    savedDate.setHours(0, 0, 0, 0);
+        parts.forEach(part => {
+            let handledByRecurrence = false;
 
-                    // Get dynamic recurrence settings
-                    const isRecurring = ev.isRecurring ?? ev._original?.isRecurring ?? true;
-                    const rawRecurrenceValue = ev.recurrenceValue || ev._original?.recurrenceValue;
+            // Recurrence logic: Apply per-part to handle Team 1 and Team 2 independently
+            const isRecurring = ev.isRecurring ?? ev._original?.isRecurring;
+            const rawRecValue = ev.recurrenceValue || ev._original?.recurrenceValue;
 
-                    // If not recurring or no recurrence value provided, treat as one-time event
-                    if (!isRecurring || !rawRecurrenceValue) {
-                        // Skip the multi-day generation loop
-                    } else {
-                        const recurrenceValue = parseInt(rawRecurrenceValue);
-                        const recurrenceUnit = ev.recurrenceUnit || ev._original?.recurrenceUnit || 'day';
-                        const intervalMs = (recurrenceUnit === 'week' ? recurrenceValue * 7 : recurrenceValue) * dayMs;
+            if (isRecurring && rawRecValue) {
+                // IMPORTANT: Part might look like "1군: 수(00:00)" or just "수(00:00)"
+                // Find all days and times within this part
+                const match = part.match(/([일월화수목금토])\s*\(?(\d{1,2}:\d{2})\)?/);
 
-                        // Generate all dates within timeline range at the specified intervals
-                        const dayNames = [];
-                        let currentDate = savedDate.getTime();
-                        const rangeStart = winStart - dayMs; // Include 1 day before
-                        const rangeEnd = winEnd + dayMs; // Include 1 day after
+                if (match) {
+                    const registeredDay = match[1];
+                    const timeStr = match[2];
+                    const [sh, sm] = timeStr.split(':').map(Number);
+                    const recurrenceValue = parseInt(rawRecValue);
+                    const recurrenceUnit = ev.recurrenceUnit || ev._original?.recurrenceUnit || 'day';
+                    const intervalMs = (recurrenceUnit === 'week' ? recurrenceValue * 7 : recurrenceValue) * dayMs;
 
-                        // Jump to rangeStart while maintaining the cycle alignment
-                        if (currentDate < rangeStart) {
-                            const skipIntervals = Math.floor((rangeStart - currentDate) / intervalMs);
-                            currentDate += skipIntervals * intervalMs;
+                    const targetIdx = KR_DAYS_PARSER.indexOf(registeredDay);
+                    const anchorDate = new Date(winStart);
+                    anchorDate.setHours(0, 0, 0, 0);
+
+                    const startIdx = anchorDate.getDay();
+                    const diffDays = (targetIdx - startIdx + 7) % 7;
+                    anchorDate.setDate(anchorDate.getDate() + diffDays);
+
+                    let label = part.split(/[월화수목금토일\d]/)[0].replace(':', '').trim();
+                    const anchorTs = anchorDate.getTime();
+
+                    // Stabilize currentDate sequence
+                    let currentDate = anchorTs;
+                    while (currentDate > winStart - intervalMs) {
+                        currentDate -= intervalMs;
+                    }
+
+                    const rangeEnd = winEnd + (2 * dayMs);
+
+                    while (currentDate < rangeEnd) {
+                        const st = currentDate + sh * 3600000 + sm * 60000;
+                        const duration = isBearHunt ? 1800000 : 3600000;
+                        const et = st + duration;
+
+                        const s = Math.max(st, winStart);
+                        const e = Math.min(et, winEnd);
+
+                        if (s < e) {
+                            handledByRecurrence = true;
+                            const leftPct = (s - winStart) / totalMs * 100;
+                            const widthPct = et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
+                            res.push({
+                                st, et, isR: true, isWeekly: true,
+                                left: `${leftPct.toFixed(4)}%`,
+                                width: `${widthPct.toFixed(4)}%`,
+                                timeText: `${formatTs(st)} ~ ${formatTs(et)}`,
+                                label: label || undefined
+                            });
                         }
-
-                        // Iterate with specified intervals
-                        while (currentDate < rangeEnd) {
-                            if (currentDate >= rangeStart && currentDate <= rangeEnd) {
-                                const d = new Date(currentDate);
-                                const dIdx = timezone === 'UTC' ? d.getUTCDay() : d.getDay();
-                                const krDay = ['일', '월', '화', '수', '목', '금', '토'][dIdx];
-                                dayNames.push(krDay);
-                            }
-                            currentDate += intervalMs;
-                        }
-
-                        // Reconstruct as comma-separated days with single time
-                        // e.g., "금, 일, 화, 목 22:00" → will be parsed by Multi-Day Single Time logic
-                        if (dayNames.length > 0) {
-                            processedComb = `${dayNames.join(', ')} ${time}`;
-                        }
+                        currentDate += intervalMs;
                     }
                 }
             }
-        }
 
-        const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean, label?: string }[] = [];
+            if (handledByRecurrence) return; // Skip generic parsers if handled
 
-        const getLocalStart = () => {
-            // Use winStart instead of calculating week start
-            // to ensure bars are generated within the timeline range
-            return winStart;
-        };
-        const localStart = getLocalStart();
-
-        // Split by '/' to handle multiple distinct time slots in one line
-        const parts = processedComb.split(/\s*\/\s*/).filter(p => p.trim());
-
-        parts.forEach(part => {
             const partBars: { st: number, et: number, isR: boolean, isWeekly: boolean, matchedStr: string }[] = [];
-
             const add = (st: number, et: number, isR: boolean, matchedStr: string, isWeekly = false) => {
                 const s = Math.max(st, winStart);
                 const e = Math.min(et, winEnd);
@@ -255,28 +253,25 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 else if (dp.length === 2) { y = cy; m = dp[0]; d = dp[1]; }
                 else return null;
 
-                // Ensure 2-digit years are handled (e.g., 26.02.15)
                 if (y < 100) y += 2000;
-
                 const hh = tp[0], mm = tp[1] || 0;
                 return new Date(y, m - 1, d, hh, mm, 0).getTime();
             };
 
-            // 0. Explicit Comma-Separated List (Priority for Fortress/Citadel)
-            // e.g., "요새전: 요새7 금 23:00, 요새10 금 23:00"
+            // 0. Explicit Comma-Separated List
             if (part.includes(',') && /[월화수목금토일]\s*\d{1,2}:\d{2}/.test(part)) {
                 const subParts = part.split(',');
                 let specificHandled = false;
 
                 subParts.forEach(sp => {
                     const cleanSp = sp.trim().replace(/^.*(요새전|성채전|Fortress|Citadel)[:\s：]*/, '').trim();
-                    const match = cleanSp.match(/(.+?)\s+([월화수목금토일])\s*(\d{1,2}:\d{2})/);
+                    const match = cleanSp.match(/(.+?)\s+([월화수목금토일])\s*(\d{1,2}:\d{2})/) || cleanSp.match(/([월화수목금토일])\s*(\d{1,2}:\d{2})/);
 
                     if (match) {
                         specificHandled = true;
-                        const label = match[1].trim();
-                        const dayStr = match[2];
-                        const timeStr = match[3];
+                        const label = match.length === 4 ? match[1].trim() : '';
+                        const dayStr = match.length === 4 ? match[2] : match[1];
+                        const timeStr = match.length === 4 ? match[3] : match[2];
 
                         const targetIdx = KR_DAYS_PARSER.indexOf(dayStr);
                         if (targetIdx !== -1) {
@@ -445,6 +440,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 const leftPct = (s - winStart) / totalMs * 100;
                 const widthPct = b.et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
 
+                const isSameDay = timezone === 'UTC'
+                    ? (new Date(b.st).getUTCDate() === new Date(b.et).getUTCDate())
+                    : (new Date(b.st).getDate() === new Date(b.et).getDate());
+
                 res.push({
                     st: b.st,
                     et: b.et,
@@ -452,7 +451,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     isWeekly: b.isWeekly,
                     left: `${leftPct.toFixed(4)}%`,
                     width: `${widthPct.toFixed(4)}%`,
-                    timeText: b.isR ? `${formatTs(b.st)} ~ ${formatTs(b.et)}` : formatTs(b.st),
+                    timeText: b.isR
+                        ? (isSameDay ? `${formatTs(b.st)} ~ ${formatTs(b.et, true)}` : `${formatTs(b.st)} ~ ${formatTs(b.et)}`)
+                        : formatTs(b.st),
                     label: label || undefined
                 });
             });
@@ -490,42 +491,45 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
             }
 
             const isBearOrFoundry = baseId === 'a_bear' || baseId === 'alliance_bear' || baseId === 'a_foundry' || baseId === 'alliance_foundry';
-            const parts = comb.split(/\s*\/\s*/).filter(p => p.trim());
+            if (isBearOrFoundry || comb.includes('1군:') || comb.includes('Team1:')) {
+                const rawDay = ev.day || '';
+                const rawTime = ev.time || '';
 
-            if ((isBearOrFoundry && parts.length > 1) || (comb.includes('1군:') && comb.includes('2군:')) || (comb.includes('Team1:') && comb.includes('Team2:'))) {
-                parts.forEach((p, i) => {
-                    const trimmed = p.trim();
-                    const colonIdx = trimmed.indexOf(':');
+                // Extract discrete parts by splitting both day and time by '/'
+                const dayParts = rawDay.split(/\s*\/\s*/).map(d => d.trim()).filter(Boolean);
+                const timeParts = rawTime.split(/\s*\/\s*/).map(t => t.trim()).filter(Boolean);
+
+                const maxParts = Math.max(dayParts.length, timeParts.length);
+                for (let i = 0; i < maxParts; i++) {
+                    const dPart = dayParts[i] || dayParts[0] || '';
+                    const tPart = timeParts[i] || timeParts[0] || '';
+
                     let label = i === 0 ? t('events.team1') : t('events.team2');
-                    let timePart = trimmed;
-
-                    // Parse label if exists (e.g., "1군: ...")
-                    if (colonIdx > -1) {
-                        const before = trimmed.substring(0, colonIdx).trim();
-                        const after = trimmed.substring(colonIdx + 1).trim();
-                        // Check if it's NOT a time colon (like 22:00)
-                        const isTimeColon = /\d$/.test(before) && /^\d/.test(after);
-                        if (!isTimeColon) {
-                            label = before
-                                .replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`)
-                                .replace(/성채\s*(\d+)/, `${t('events.citadel')} $1`)
-                                .replace(/곰\s*(\d+)/, `${t('events.bear1').replace(/1|1군|Team\s*1/i, '')} $1`)
-                                .replaceAll('1군', t('events.team1'))
-                                .replaceAll('2군', t('events.team2'));
-                            timePart = after;
-                        }
-                    }
-
-                    if (baseId.includes('bear')) {
-                        label = i === 0 ? t('events.bear1') : t('events.bear2');
-                    }
+                    if (baseId.includes('bear')) label = i === 0 ? t('events.bear1') : t('events.bear2');
 
                     const subId = `${baseId}_t${i}_${globalIdx}`;
                     const translatedTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
-                    const sub = { ...ev, category, _original: ev, _teamIdx: i, id: subId, title: `${translatedTitle} (${label})`, time: timePart, day: ev.day };
+
+                    // Create a sub-event with normalized day and time for this specific part
+                    const sub = {
+                        ...ev,
+                        category,
+                        _original: ev,
+                        _teamIdx: i,
+                        id: subId,
+                        title: `${translatedTitle} (${label})`,
+                        time: tPart,
+                        day: dPart,
+                        // Override recurrence fields for Team 2 (idx 1)
+                        isRecurring: i === 0 ? ev.isRecurring : ev.isRecurring2,
+                        recurrenceValue: i === 0 ? ev.recurrenceValue : ev.recurrenceValue2,
+                        recurrenceUnit: i === 0 ? ev.recurrenceUnit : ev.recurrenceUnit2,
+                        startDate: i === 0 ? ev.startDate : ev.startDate2
+                    };
+
                     const bars = getPosList(sub);
                     if (bars.length > 0) r.push({ ...sub, _bars: bars });
-                });
+                }
             } else {
                 const bars = getPosList(ev);
                 if (bars.length > 0) {
@@ -603,7 +607,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 scrollEventThrottle={16}
             >
                 <Pressable
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, minHeight: 1200 }}
                     onPress={() => setSelectedBarId(null)}
                 />
                 <View className="absolute inset-x-0 top-0 bottom-0 flex-row pointer-events-none">
@@ -626,12 +630,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     })();
                     return (
                         <View key={`cat-${ck}-${idx}`} className="mb-8">
-                            <View className={`flex-row items-center px-4 mb-3`}>
+                            <Pressable
+                                onPress={() => setSelectedBarId(null)}
+                                className={`flex-row items-center px-4 mb-3`}
+                            >
                                 <View className={`p-1.5 rounded-lg mr-2 ${cfg.bg} border ${cfg.border}`}>
                                     <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
                                 </View>
                                 <Text className={`text-[13px] font-black uppercase tracking-wide ${isDark ? cfg.darkText : cfg.text}`}>{cfg.label}</Text>
-                            </View>
+                            </Pressable>
                             {evs.map((ev: any, evIdx: number) => {
                                 const isTopRow = ck === '연맹' && evIdx < 2;
                                 const isRowHovered = hoveredBarId?.startsWith(`bar-${ev.id}-`);
@@ -641,7 +648,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                         className="h-14 relative mb-3 justify-center"
                                         style={{ zIndex: isRowHovered ? 1000 : 1 }}
                                     >
-                                        <View key={`rail-${ev.id}`} className={`absolute inset-x-0 h-11 rounded-2xl ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/40'}`} />
+                                        <Pressable
+                                            key={`rail-${ev.id}`}
+                                            onPress={() => setSelectedBarId(null)}
+                                            className={`absolute inset-x-0 h-11 rounded-2xl ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/40'}`}
+                                        />
                                         {ev._bars.map((p: any, bi: number) => {
                                             const barKey = `bar-${ev.id}-${bi}`;
                                             const isHovered = hoveredBarId === barKey;
@@ -755,7 +766,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                             onPress={() => onEventPress(ev)}
                                                                             className={`absolute ${isTopRow ? 'top-12' : '-top-32'} border p-5 rounded-[28px] shadow-2xl z-[200]`}
                                                                             style={{
-                                                                                minWidth: 260,
+                                                                                minWidth: 280,
                                                                                 pointerEvents: 'auto',
                                                                                 backgroundColor: isDark ? '#1e293b' : '#ffffff',
                                                                                 borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
@@ -794,7 +805,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
                                                                             <View className={`flex-row items-center p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
                                                                                 <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
-                                                                                <Text className={`font-mono text-[12px] font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
+                                                                                <Text
+                                                                                    className={`font-mono text-[12px] font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
+                                                                                    numberOfLines={1}
+                                                                                >
                                                                                     {p.timeText}
                                                                                 </Text>
                                                                             </View>

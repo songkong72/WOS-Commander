@@ -34,7 +34,7 @@ export default function Layout() {
     const [allianceId, setAllianceId] = useState<string | null>(null);
     const [dashboardScrollY, setDashboardScrollY] = useState(0);
     const [language, setLanguage] = useState<Language>(detectSystemLanguage());
-    const [fontSizeScale, setFontSizeScale] = useState(1.0);
+    const [fontSizeScale, setFontSizeScale] = useState(1.1);
     const [isLayoutReady, setIsLayoutReady] = useState(false);
     const [isGateOpen, setIsGateOpen] = useState(true);
     const mainScrollRef = useRef<ScrollView>(null);

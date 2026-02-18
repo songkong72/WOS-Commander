@@ -41,7 +41,7 @@
         "all": "전체",
         "none": "없음",
         "member_only_title": "연맹원 전용",
-        "member_only_alert": "연맹원 전용 기능입니다. 연맹원 로그인이 필요합니다.",
+        "member_only_alert": "연맹원 전용 기능입니다.\n연맹원 로그인이 필요합니다.",
         "start": "시작",
         "end": "종료",
         "am": "오전",
@@ -346,12 +346,13 @@
         "set_time": "시간 설정",
         "total_duration": "총 {{duration}}",
         "day_unit": "일",
+        "week_unit": "주",
         "hour_unit": "시간",
         "min_unit": "분",
         "recurrence": "반복 주기 설정",
         "recurrence_days": "일 (Days)",
         "recurrence_weeks": "주 (Weeks)",
-        "recurrence_guide": "{{value}}{{unit}} 마다 이벤트가 반복됩니다.",
+        "recurrence_guide": "{{value}}{{unit}} 마다 반복",
         "no_ongoing_events": "현재 진행 중인 이벤트가 없습니다",
         "select_another_category": "다른 카테고리를 선택해보세요",
         "notification": {
@@ -413,7 +414,8 @@
             "penalty_notice": "⚠️ 사전 통보 (참작)",
             "penalty_no_show": "⛔ 무단 불참 (페널티)",
             "reset_status": "상태 초기화",
-            "ongoing_count": "진행중: {{count}}개"
+            "ongoing_count": "진행중: {{count}}개",
+            "tap_for_details": "상세를 보려면 탭하세요"
         },
         "categories": {
             "alliance": "연맹 이벤트",

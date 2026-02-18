@@ -238,21 +238,22 @@ interface EventCardProps {
     onLayout: (y: number) => void;
 }
 
-const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = true }: any) => {
+const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = true, syncKey }: any) => {
     const itemHeight = 44;
     const flatListRef = useRef<FlatList>(null);
     const [localActiveValue, setLocalActiveValue] = useState(value);
+    const lastSyncedKey = useRef(syncKey);
+    const isFirstRun = useRef(true);
+    const isLayoutReady = useRef(false);
+
+
 
     const getLabel = (opt: any) => (typeof opt === 'object' ? opt.label : opt);
     const getValue = (opt: any) => (typeof opt === 'object' ? opt.value : opt);
 
-    // Use a large pool for truly endless wheel scrolling (100x)
-    const infiniteOptions = useMemo(() => {
-        const arr = [];
-        for (let i = 0; i < 100; i++) arr.push(...options);
-        return arr;
-    }, [options]);
-    const centerOffset = options.length * 50;
+    // Simplified to 3 blocks for better stability and predictable math
+    const infiniteOptions = useMemo(() => [...options, ...options, ...options], [options]);
+    const centerOffset = options.length; // Start at the second block
 
     const scrollToIndex = (index: number, animated = true) => {
         if (!flatListRef.current) return;
@@ -262,15 +263,37 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
         });
     };
 
-    // Sync local state when external value changes
+    // Robust Sync Logic
     useEffect(() => {
-        setLocalActiveValue(value);
-        const realIndex = options.findIndex((o: any) => getValue(o) === value);
-        if (realIndex !== -1) {
-            // Initial or external: snap to middle block (50th)
-            scrollToIndex(realIndex + centerOffset, false);
+        const valStr = String(value || '').trim();
+        const localStr = String(localActiveValue || '').trim();
+
+        const forceSync = syncKey !== undefined && syncKey !== lastSyncedKey.current;
+        const valueChanged = valStr !== localStr;
+        const shouldSync = isFirstRun.current || forceSync || valueChanged;
+
+        if (shouldSync) {
+            isFirstRun.current = false;
+            lastSyncedKey.current = syncKey;
+            setLocalActiveValue(value);
+
+            const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
+            if (realIndex !== -1) {
+                const performScroll = () => {
+                    if (flatListRef.current) {
+                        scrollToIndex(realIndex + centerOffset, false);
+                    }
+                };
+
+                const timers = [
+                    setTimeout(performScroll, 50),
+                    setTimeout(performScroll, 150),
+                    setTimeout(performScroll, 300),
+                ];
+                return () => timers.forEach(clearTimeout);
+            }
         }
-    }, [value, options.length]);
+    }, [value, syncKey, options]);
 
     const handleScroll = (e: any) => {
         const offset = e.nativeEvent.contentOffset.y;
@@ -298,7 +321,7 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
             onChange(selectedVal);
         }
 
-        // Snap back to the 50th block to maintain infinite illusion
+        // Always snap back to the middle block
         const targetIndex = realIndex + centerOffset;
         if (index !== targetIndex) {
             setTimeout(() => scrollToIndex(targetIndex, false), 10);
@@ -335,7 +358,16 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                 scrollEventThrottle={16}
                 onMomentumScrollEnd={handleScrollEnd}
                 onScrollEndDrag={handleScrollEnd}
+                onLayout={() => {
+                    isLayoutReady.current = true;
+                    const valStr = String(value || '').trim();
+                    const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
+                    if (realIndex !== -1) {
+                        setTimeout(() => scrollToIndex(realIndex + centerOffset, false), 50);
+                    }
+                }}
                 renderItem={({ item, index }) => {
+
                     const isSelected = localActiveValue === getValue(item);
                     return (
                         <TouchableOpacity
@@ -1264,8 +1296,21 @@ export default function EventTracker() {
 
     // Refs for scrolling
     const scrollViewRef = useRef<ScrollView>(null);
+    const categoryScrollViewRef = useRef<ScrollView>(null);
     const itemLayouts = useRef<{ [key: string]: number }>({});
+    const categoryItemLayouts = useRef<{ [key: string]: { x: number, width: number } }>({});
     const [highlightId, setHighlightId] = useState<string | null>(null);
+
+    // Auto-centering for mobile category filter
+    useEffect(() => {
+        if (!isDesktop && categoryScrollViewRef.current && categoryItemLayouts.current[selectedCategory]) {
+            const { x, width: itemWidth } = categoryItemLayouts.current[selectedCategory];
+            const screenWidth = width;
+            // Calculate center offset: item position + half width - screen center
+            const scrollX = x + (itemWidth / 2) - (screenWidth / 2);
+            categoryScrollViewRef.current.scrollTo({ x: Math.max(0, scrollX), animated: true });
+        }
+    }, [selectedCategory, isDesktop, width]);
     const hourScrollRef = useRef<ScrollView>(null);
     const minuteScrollRef = useRef<ScrollView>(null);
     const [fortressList, setFortressList] = useState<{ id: string, name: string, day?: string, h: string, m: string }[]>([]);
@@ -1318,7 +1363,11 @@ export default function EventTracker() {
                         startDate: savedSchedule.startDate, // For one-time weekly events
                         isRecurring: savedSchedule.isRecurring,
                         recurrenceValue: savedSchedule.recurrenceValue,
-                        recurrenceUnit: savedSchedule.recurrenceUnit
+                        recurrenceUnit: savedSchedule.recurrenceUnit,
+                        isRecurring2: (savedSchedule as any).isRecurring2,
+                        recurrenceValue2: (savedSchedule as any).recurrenceValue2,
+                        recurrenceUnit2: (savedSchedule as any).recurrenceUnit2,
+                        startDate2: (savedSchedule as any).startDate2
                     };
                 }
                 return { ...event, day: '', time: '' };
@@ -1458,10 +1507,21 @@ export default function EventTracker() {
     const [editHour, setEditHour] = useState(new Date().getHours().toString().padStart(2, '0'));
     const [editMinute, setEditMinute] = useState('00');
     const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+    const [pickerSyncKey, setPickerSyncKey] = useState(0);
 
-    // startDate for one-time weekly events
-    const [enableStartDate, setEnableStartDate] = useState(false);
-    const [eventStartDate, setEventStartDate] = useState('');
+
+    // Recurrence & Date States (Separated for Team 1 and Team 2)
+    const [isRecurring1, setIsRecurring1] = useState(false);
+    const [recValue1, setRecValue1] = useState('1');
+    const [recUnit1, setRecUnit1] = useState<'day' | 'week'>('week');
+    const [enableSD1, setEnableSD1] = useState(false);
+    const [eventSD1, setEventSD1] = useState('');
+
+    const [isRecurring2, setIsRecurring2] = useState(false);
+    const [recValue2, setRecValue2] = useState('1');
+    const [recUnit2, setRecUnit2] = useState<'day' | 'week'>('week');
+    const [enableSD2, setEnableSD2] = useState(false);
+    const [eventSD2, setEventSD2] = useState('');
 
     const [isPermanent, setIsPermanent] = useState(false);
     const [hourDropdownVisible, setHourDropdownVisible] = useState(false);
@@ -1471,10 +1531,16 @@ export default function EventTracker() {
         type: 'fortress' | 'citadel' | 'h' | 'm' | 'd'
     } | null>(null);
 
-    // Recurrence states
+    // Legacy/Common states for UI binding compatibility
     const [isRecurring, setIsRecurring] = useState(false);
     const [recurrenceValue, setRecurrenceValue] = useState('1');
     const [recurrenceUnit, setRecurrenceUnit] = useState<'day' | 'week'>('week');
+    const [enableStartDate, setEnableStartDate] = useState(false);
+    const [eventStartDate, setEventStartDate] = useState('');
+
+
+
+
 
     // Mobilization States
     const [mStart, setMStart] = useState('');
@@ -1586,6 +1652,16 @@ export default function EventTracker() {
     // Scheduling Logic
     const [selectedDayForSlot, setSelectedDayForSlot] = useState<string>('월');
 
+    // Memoized options moved to top level to comply with Rules of Hooks
+    const dayOptionsForPicker = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'].map(d => ({
+        label: t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(d)]}`),
+        value: d
+    })), [t]);
+
+    const hourOptionsForPicker = useMemo(() => Array.from({ length: 24 }, (_, i) => pad(i)), []);
+    const minuteOptionsForPicker = useMemo(() => ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'], []);
+
+
     const isAdmin = auth.isLoggedIn && (
         SUPER_ADMINS.includes(auth.adminName || '') ||
         dynamicAdmins.some(a => a.name === auth.adminName)
@@ -1663,7 +1739,8 @@ export default function EventTracker() {
 
     const checkIsOngoing = useCallback((event: WikiEvent) => {
         try {
-            // Handle Recurrence Logic
+            // Event Expiration & Recurrence Logic (Comprehensive)
+            // 1. Team 1 Recurrence
             if (event.isRecurring && event.updatedAt) {
                 const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
                 const refDate = new Date(event.updatedAt);
@@ -1679,12 +1756,29 @@ export default function EventTracker() {
                     if (weeksDiff % interval !== 0) return false;
                 }
             }
+            // 2. Team 2 Recurrence (if applicable)
+            if ((event as any).isRecurring2 && event.updatedAt) {
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                const refDate = new Date(event.updatedAt);
+                const startOfRef = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate()).getTime();
+                const daysDiff = Math.floor((startOfToday - startOfRef) / (24 * 60 * 60 * 1000));
+
+                if ((event as any).recurrenceUnit2 === 'day') {
+                    const interval = parseInt((event as any).recurrenceValue2 || '1');
+                    if (daysDiff % interval !== 0) return false;
+                } else if ((event as any).recurrenceUnit2 === 'week') {
+                    const interval = parseInt((event as any).recurrenceValue2 || '1');
+                    const weeksDiff = Math.floor(daysDiff / 7);
+                    if (weeksDiff % interval !== 0) return false;
+                }
+            }
 
             return checkItemOngoing(event.day || '') || checkItemOngoing(event.time || '');
         } catch (err) {
             return false;
         }
     }, [checkItemOngoing, now]);
+
 
     const checkIsExpired = useCallback((event: WikiEvent) => {
         try {
@@ -1705,12 +1799,40 @@ export default function EventTracker() {
                     if (weeksDiff % interval !== 0) return false; // Not even an event week
                 }
             }
+            // Check for Team 2 recurrence (if applicable)
+            if ((event as any).isRecurring2 && event.updatedAt) {
+                const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                const refDate = new Date(event.updatedAt);
+                const startOfRef = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate()).getTime();
+                const daysDiff = Math.floor((startOfToday - startOfRef) / (24 * 60 * 60 * 1000));
+
+                if ((event as any).recurrenceUnit2 === 'day') {
+                    const interval = parseInt((event as any).recurrenceValue2 || '1');
+                    if (daysDiff % interval !== 0) return false;
+                } else if ((event as any).recurrenceUnit2 === 'week') {
+                    const interval = parseInt((event as any).recurrenceValue2 || '1');
+                    const weeksDiff = Math.floor(daysDiff / 7);
+                    if (weeksDiff % interval !== 0) return false;
+                }
+            }
 
             // 1. startDate가 있으면 날짜 기준 판단 (우선순위 높음)
             const startDate = (event as any).startDate;
             if (startDate) {
                 const timeStr = event.time || '00:00';
                 const dateTimeStr = `${startDate}T${timeStr}:00`;
+                const eventDateTime = new Date(dateTimeStr);
+                if (!isNaN(eventDateTime.getTime())) {
+                    // 이벤트 시작 후 1시간이 지나면 만료
+                    const expireTime = new Date(eventDateTime.getTime() + 3600000);
+                    return now > expireTime;
+                }
+            }
+            // 1. startDate2가 있으면 날짜 기준 판단 (우선순위 높음)
+            const startDate2 = (event as any).startDate2;
+            if (startDate2) {
+                const timeStr = event.time || '00:00'; // Assuming time is common or handled differently for team2
+                const dateTimeStr = `${startDate2}T${timeStr}:00`;
                 const eventDateTime = new Date(dateTimeStr);
                 if (!isNaN(eventDateTime.getTime())) {
                     // 이벤트 시작 후 1시간이 지나면 만료
@@ -1829,7 +1951,12 @@ export default function EventTracker() {
                             time: simplifiedTime,
                             isBearSplit: true,
                             teamLabel: cleanLabel,
-                            teamIcon: '🐻'
+                            teamIcon: '🐻',
+                            // Ensure the recurrence fields reflect the specific team
+                            isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
+                            recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
+                            recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
+                            startDate: idx === 0 ? e.startDate : e.startDate2
                         });
                     });
                 } else {
@@ -1907,7 +2034,12 @@ export default function EventTracker() {
                             time: simplifiedTime,
                             isCanyonSplit: true,
                             teamLabel: cleanLabel,
-                            teamIcon: '⛰️'
+                            teamIcon: '⛰️',
+                            // Ensure the recurrence fields reflect the specific team
+                            isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
+                            recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
+                            recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
+                            startDate: idx === 0 ? e.startDate : e.startDate2
                         });
                     });
                 } else {
@@ -1939,7 +2071,12 @@ export default function EventTracker() {
                             time: simplifiedTime,
                             isFoundrySplit: true,
                             teamLabel: cleanLabel,
-                            teamIcon: '🏭'
+                            teamIcon: '🏭',
+                            // Ensure the recurrence fields reflect the specific team
+                            isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
+                            recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
+                            recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
+                            startDate: idx === 0 ? e.startDate : e.startDate2
                         });
                     });
                 } else {
@@ -2101,6 +2238,9 @@ export default function EventTracker() {
 
         const newS = currentSlots.filter(s => s.id !== id);
         setSlots(newS);
+        if (editingSlotId === id) {
+            setEditingSlotId(null);
+        }
     };
 
     const addFortressSlot = () => {
@@ -2192,25 +2332,48 @@ export default function EventTracker() {
                 });
             }
         });
+
         return slots;
     };
 
     const handleTabSwitch = (targetTab: 1 | 2) => {
         if (activeTab === targetTab) return;
 
-        const currentSlots = activeTab === 1 ? slots1 : slots2;
-        const initialSlots = activeTab === 1 ? initialSlots1 : initialSlots2;
-
-        const currentSimple = currentSlots.map(s => ({ day: s.day, time: s.time }));
-        const isDirty = JSON.stringify(currentSimple) !== JSON.stringify(initialSlots);
-
-        if (isDirty) {
-            setPendingTab(targetTab);
-            setWarningModalVisible(true);
+        // Save current UI state to team-specific backing store before switching
+        if (activeTab === 1) {
+            setIsRecurring1(isRecurring);
+            setRecValue1(recurrenceValue);
+            setRecUnit1(recurrenceUnit);
+            setEnableSD1(enableStartDate);
+            setEventSD1(eventStartDate);
         } else {
-            setActiveTab(targetTab);
+            setIsRecurring2(isRecurring);
+            setRecValue2(recurrenceValue);
+            setRecUnit2(recurrenceUnit);
+            setEnableSD2(enableStartDate);
+            setEventSD2(eventStartDate);
+        }
+
+        // Change the active tab
+        setActiveTab(targetTab);
+
+        // Load the target team's states into common UI variables
+        if (targetTab === 1) {
+            setIsRecurring(isRecurring1);
+            setRecurrenceValue(recValue1);
+            setRecurrenceUnit(recUnit1);
+            setEnableStartDate(enableSD1);
+            setEventStartDate(eventSD1);
+        } else {
+            setIsRecurring(isRecurring2);
+            setRecurrenceValue(recValue2);
+            setRecurrenceUnit(recUnit2);
+            setEnableStartDate(enableSD2);
+            setEventStartDate(eventSD2);
         }
     };
+
+
 
     const openScheduleModal = useCallback((event: WikiEvent) => {
         setEditingEvent(event);
@@ -2231,16 +2394,28 @@ export default function EventTracker() {
 
             setMStart(s || defaultStr);
             setMEnd(e || defaultStr);
+
+            // For date range events, use the common recurrence states
+            setIsRecurring(!!event.isRecurring);
+            setRecurrenceValue(event.recurrenceValue || '1');
+            setRecurrenceUnit(event.recurrenceUnit || 'week');
+            setEnableStartDate(!!event.startDate);
+            setEventStartDate(event.startDate || '');
         }
 
-        // Initialize recurrence states
-        setIsRecurring(!!event.isRecurring);
-        setRecurrenceValue(event.recurrenceValue || '1');
-        setRecurrenceUnit(event.recurrenceUnit || 'week');
+        // Initialize recurrence states for Fortress/Citadel
+        if (event.id === 'a_fortress' || event.id === 'a_citadel') {
+            setIsRecurring(!!event.isRecurring);
+            setRecurrenceValue(event.recurrenceValue || '1');
+            setRecurrenceUnit(event.recurrenceUnit || 'week');
+            setEnableStartDate(!!event.startDate);
+            setEventStartDate(event.startDate || '');
+        }
+
 
         if (event.id === 'a_fortress' || event.id === 'a_citadel') {
-            const fParsed: any[] = [];
-            const cParsed: any[] = [];
+            let fParsed: any[] = [];
+            let cParsed: any[] = [];
 
             // 공통 파싱 로직 (기존 데이터 유지 호환성)
             if (event.time) {
@@ -2356,21 +2531,37 @@ export default function EventTracker() {
         setInitialSlots1(s1.map(s => ({ day: s.day, time: s.time })));
         setInitialSlots2(s2.map(s => ({ day: s.day, time: s.time })));
 
-        const nowTime = new Date();
-        setSelectedDayForSlot(t('events.days.mon'));
-        setEditHour(nowTime.getHours().toString().padStart(2, '0'));
-        setEditMinute('00');
-        setEditingSlotId(null);
+        // Initialize Common/Team 1 UI states
+        setIsRecurring(!!event.isRecurring);
+        setRecurrenceValue(event.recurrenceValue || '1');
+        setRecurrenceUnit(event.recurrenceUnit || 'week');
+        setEnableStartDate(!!(event as any).startDate);
+        setEventStartDate((event as any).startDate || '');
 
-        // Load startDate if exists
-        const storedStartDate = (event as any).startDate;
-        if (storedStartDate) {
-            setEnableStartDate(true);
-            setEventStartDate(storedStartDate);
-        } else {
-            setEnableStartDate(false);
-            setEventStartDate('');
+        // Initialize Team 1 backing stores
+        setIsRecurring1(!!event.isRecurring);
+        setRecValue1(event.recurrenceValue || '1');
+        setRecUnit1(event.recurrenceUnit || 'week');
+        setEnableSD1(!!(event as any).startDate);
+        setEventSD1((event as any).startDate || '');
+
+        // Initialize Team 2 backing stores
+        setIsRecurring2(!!((event as any).isRecurring2));
+        setRecValue2(((event as any).recurrenceValue2) || '1');
+        setRecUnit2(((event as any).recurrenceUnit2) || 'week');
+        setEnableSD2(!!((event as any).startDate2));
+        setEventSD2((event as any).startDate2 || '');
+
+        // If starting on Team 2 tab, load those into UI states instead
+        if (currentTabIdx === 1) {
+            setIsRecurring(!!((event as any).isRecurring2));
+            setRecurrenceValue(((event as any).recurrenceValue2) || '1');
+            setRecurrenceUnit(((event as any).recurrenceUnit2) || 'week');
+            setEnableStartDate(!!((event as any).startDate2));
+            setEventStartDate((event as any).startDate2 || '');
         }
+
+
 
         setScheduleModalVisible(true);
     }, [parseScheduleStr, selectedTeamTabs]);
@@ -2480,7 +2671,8 @@ export default function EventTracker() {
                     startDate: enableStartDate ? eventStartDate : e.startDate, // Preserve existing startDate
                     isRecurring,
                     recurrenceValue,
-                    recurrenceUnit
+                    recurrenceUnit,
+                    updatedAt: Date.now()
                 } : e));
 
                 await updateSchedule({
@@ -2529,7 +2721,8 @@ export default function EventTracker() {
                     startDate: enableStartDate ? eventStartDate : undefined,
                     isRecurring,
                     recurrenceValue,
-                    recurrenceUnit
+                    recurrenceUnit,
+                    updatedAt: Date.now()
                 } : e));
 
                 await updateSchedule({
@@ -2569,7 +2762,7 @@ export default function EventTracker() {
         }
 
         let finalDay = '';
-        let finalTime = '';
+        // let finalTime = ''; // This was commented out, but the user's diff re-introduces it.
 
         const buildStr = (slots: { day: string, time: string }[]) => {
             if (slots.length === 0) return '';
@@ -2588,26 +2781,23 @@ export default function EventTracker() {
         // DEBUGGING: Check what is being saved
         // Alert.alert('Debug', `ID: ${editingEvent?.id}, S2 Len: ${slots2.length}, IsMulti: ${isMultiSlot}`);
 
-        if (isMultiSlot) {
-            const str1 = buildStr(slots1);
-            const str2 = buildStr(slots2);
+        // New buildStr function for the finalTime string, considering both teams
+        const buildFinalTimeStr = (s1: { day: string, time: string }[], s2: { day: string, time: string }[]) => {
+            const hasS1 = s1.length > 0;
+            const hasS2 = s2.length > 0;
 
-            const parts = [];
-            if (str1) parts.push(`${t('events.team1')}: ${str1}`);
-            if (str2) parts.push(`${t('events.team2')}: ${str2}`);
-            finalTime = parts.join(' / ');
+            const makePart = (prefix: string, list: { day: string, time: string }[]) => {
+                if (list.length === 0) return '';
+                return prefix + ': ' + list.map(s => `${s.day}${s.time ? `(${s.time})` : ''}`).join(', ');
+            };
 
-            // DEBUG
-            // Alert.alert('Saving Multi', finalTime);
+            if (hasS1 && hasS2) return `${makePart('1군', s1)} / ${makePart('2군', s2)}`;
+            if (hasS1) return makePart('1군', s1);
+            if (hasS2) return makePart('2군', s2);
+            return '.';
+        };
 
-            const allDays = Array.from(new Set([...getAllDays(slots1), ...getAllDays(slots2)]));
-            const dayOrder = ['월', '화', '수', '목', '금', '토', '일', '매일', '상시'];
-            finalDay = allDays.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b)).join(', ');
-        } else {
-            // General Event
-            finalTime = buildStr(slots1);
-            finalDay = getAllDays(slots1).join(', ');
-        }
+        const finalTime = buildFinalTimeStr(slots1, slots2);
 
         // FORCE ALERT TO DEBUG
         // Alert.alert('Debug Saving', `Event: ${editingEvent?.id}\nSlots2: ${slots2.length}\nFinal: ${finalTime}`);
@@ -2615,17 +2805,39 @@ export default function EventTracker() {
         // Optimistic update handled by hook
 
 
+        // Final sync of current tab's states to independent variables based on activeTab
+        let finalIsR1 = isRecurring1, finalVal1 = recValue1, finalUnit1 = recUnit1, finalEnSD1 = enableSD1, finalSD1 = eventSD1;
+        let finalIsR2 = isRecurring2, finalVal2 = recValue2, finalUnit2 = recUnit2, finalEnSD2 = enableSD2, finalSD2 = eventSD2;
+
+        if (activeTab === 1) {
+            finalIsR1 = isRecurring;
+            finalVal1 = recurrenceValue;
+            finalUnit1 = recurrenceUnit;
+            finalEnSD1 = enableStartDate;
+            finalSD1 = eventStartDate;
+        } else {
+            finalIsR2 = isRecurring;
+            finalVal2 = recurrenceValue;
+            finalUnit2 = recurrenceUnit;
+            finalEnSD2 = enableStartDate;
+            finalSD2 = eventStartDate;
+        }
 
         try {
-            console.log(`[Save] General: ${editingEvent.id}, day: ${finalDay}, time: ${finalTime}, startDate: ${enableStartDate ? eventStartDate : 'none'}`);
+            console.log(`[Save] ${editingEvent.id}, T1: ${finalVal1}, T2: ${finalVal2}`);
             setEvents(prev => prev.map(e => e.id === editingEvent.id ? {
                 ...e,
                 day: finalDay || '',
                 time: finalTime || '',
-                startDate: enableStartDate ? eventStartDate : undefined,
-                isRecurring,
-                recurrenceValue,
-                recurrenceUnit
+                startDate: finalEnSD1 ? finalSD1 : undefined,
+                isRecurring: finalIsR1,
+                recurrenceValue: finalVal1,
+                recurrenceUnit: finalUnit1,
+                startDate2: finalEnSD2 ? finalSD2 : undefined,
+                isRecurring2: finalIsR2,
+                recurrenceValue2: finalVal2,
+                recurrenceUnit2: finalUnit2,
+                updatedAt: Date.now()
             } : e));
 
             await updateSchedule({
@@ -2633,11 +2845,16 @@ export default function EventTracker() {
                 day: finalDay || '',
                 time: finalTime || '',
                 strategy: editingEvent.strategy || '',
-                startDate: enableStartDate ? eventStartDate : undefined,
-                isRecurring,
-                recurrenceValue,
-                recurrenceUnit
+                isRecurring: finalIsR1,
+                recurrenceValue: finalVal1,
+                recurrenceUnit: finalUnit1,
+                startDate: finalEnSD1 ? finalSD1 : undefined,
+                isRecurring2: finalIsR2,
+                recurrenceValue2: finalVal2,
+                recurrenceUnit2: finalUnit2,
+                startDate2: finalEnSD2 ? finalSD2 : undefined,
             });
+
 
             // Schedule Notifications for Weekly Events (Day + Time)
             if (Platform.OS !== 'web' && (finalDay && finalTime && !finalDay.includes('.'))) {
@@ -2679,7 +2896,14 @@ export default function EventTracker() {
                         day: '',
                         time: '',
                         strategy: editingEvent.strategy || '',
-                        startDate: undefined
+                        startDate: undefined,
+                        isRecurring: false,
+                        recurrenceValue: '1',
+                        recurrenceUnit: 'week',
+                        startDate2: undefined,
+                        isRecurring2: false,
+                        recurrenceValue2: '1',
+                        recurrenceUnit2: 'week',
                     });
 
                     if (Platform.OS !== 'web') {
@@ -2878,22 +3102,37 @@ export default function EventTracker() {
                         {/* Mobile Category Filter (Hidden on Desktop) */}
                         {!isDesktop && (
                             <View>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                                <ScrollView
+                                    ref={categoryScrollViewRef}
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    decelerationRate="fast"
+                                    bounces={true}
+                                    contentContainerStyle={{
+                                        paddingHorizontal: 20,
+                                        paddingBottom: 4
+                                    }}
+                                    className="flex-row"
+                                >
                                     {(['전체', '서버', '연맹', '개인', '초보자'] as EventCategory[]).map((cat) => (
                                         <Pressable
                                             key={cat}
                                             onPress={() => setSelectedCategory(cat)}
-                                            className="px-4 py-3 mr-2 relative flex-row items-center"
+                                            onLayout={(e) => {
+                                                const { x, width } = e.nativeEvent.layout;
+                                                categoryItemLayouts.current[cat] = { x, width };
+                                            }}
+                                            className="px-4 py-3 mr-1 relative flex-row items-center"
                                         >
                                             {({ hovered }: any) => (
                                                 <>
                                                     <Ionicons
                                                         name={cat === '연맹' ? 'flag-outline' : cat === '개인' ? 'person-outline' : cat === '서버' ? 'earth-outline' : cat === '초보자' ? 'star-outline' : 'apps-outline'}
-                                                        size={16}
+                                                        size={15}
                                                         color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
                                                         className="mr-2"
                                                     />
-                                                    <Text className={`text-sm font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}>
+                                                    <Text className={`text-[13px] font-black transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}>
                                                         {cat === '전체' ? t('common.all')
                                                             : cat === '연맹' ? t('events.category.alliance')
                                                                 : cat === '개인' ? t('events.category.individual')
@@ -2903,7 +3142,7 @@ export default function EventTracker() {
                                                     </Text>
                                                     {(selectedCategory === cat || hovered) && (
                                                         <View
-                                                            className="absolute bottom-0 left-4 right-4 h-0.5 rounded-t-full transition-all"
+                                                            className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-t-full transition-all"
                                                             style={{
                                                                 backgroundColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
                                                                 opacity: selectedCategory === cat ? 1 : 0.8,
@@ -3211,6 +3450,7 @@ export default function EventTracker() {
                                                                 setSelectedDayForSlot(slot.day || '토');
                                                                 setEditHour(slot.h);
                                                                 setEditMinute(slot.m);
+                                                                setPickerSyncKey(prev => prev + 1); // Force picker sync
                                                             }
                                                         }} className={`border px-2 py-1.5 rounded-xl flex-row items-center justify-between w-[155px] ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}>
                                                             <Text className="text-white text-[10px] font-bold flex-1 mr-1" numberOfLines={1} ellipsizeMode="tail">
@@ -3242,7 +3482,8 @@ export default function EventTracker() {
                                                         value={enableStartDate}
                                                         onValueChange={setEnableStartDate}
                                                         trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#0ea5e9' }}
-                                                        thumbColor={enableStartDate ? '#ffffff' : '#94a3b8'}
+                                                        thumbColor={'white'}
+                                                        style={{ transform: [{ scale: 0.8 }] }}
                                                     />
                                                 </View>
                                                 {enableStartDate && (
@@ -3349,6 +3590,7 @@ export default function EventTracker() {
                                                             isDark={isDark}
                                                             width={80}
                                                             showHighlight={false}
+                                                            syncKey={pickerSyncKey}
                                                         />
                                                         <View className="w-[1px] h-12 bg-slate-700/20" />
                                                         <WheelPicker
@@ -3358,6 +3600,7 @@ export default function EventTracker() {
                                                             isDark={isDark}
                                                             width={70}
                                                             showHighlight={false}
+                                                            syncKey={pickerSyncKey}
                                                         />
                                                         <Text className={`text-lg font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>:</Text>
                                                         <WheelPicker
@@ -3367,6 +3610,7 @@ export default function EventTracker() {
                                                             isDark={isDark}
                                                             width={70}
                                                             showHighlight={false}
+                                                            syncKey={pickerSyncKey}
                                                         />
                                                     </View>
                                                 </View>
@@ -3469,144 +3713,164 @@ export default function EventTracker() {
 
                                         <ScrollView contentContainerStyle={{ flexGrow: 1, paddingBottom: 150 }} showsVerticalScrollIndicator={false} className="flex-1">
                                             <View className="flex-1 justify-between pb-4">
-                                                {/* Registered Slots List */}
+                                                {/* Input Form - Conditional by Tab */}
                                                 {editingEvent?.id !== 'a_center' && (
-                                                    <View className="mb-2">
-                                                        <View className="flex-row items-center mb-2">
-                                                            <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">{t('events.modal.registered_schedule')}</Text>
-                                                        </View>
-                                                        <View className="flex-row flex-wrap gap-2">
-                                                            {(activeTab === 1 ? slots1 : slots2).map(slot => {
-                                                                if (slot.isNew) {
-                                                                    const backgroundColor = newSlotPulse.interpolate({
-                                                                        inputRange: [0, 1],
-                                                                        outputRange: ['rgba(251, 191, 36, 0.1)', 'rgba(251, 191, 36, 0.4)']
-                                                                    });
-                                                                    const borderColor = newSlotPulse.interpolate({
-                                                                        inputRange: [0, 1],
-                                                                        outputRange: ['rgba(251, 191, 36, 0.3)', 'rgba(251, 191, 36, 0.8)']
-                                                                    });
+                                                    <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
 
-                                                                    return (
-                                                                        <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }}>
-                                                                            <Animated.View style={{ backgroundColor, borderColor, borderWidth: 1 }} className={`px-3 py-1.5 rounded-xl flex-row items-center border`}>
-                                                                                <Text className={`text-amber-400 text-xs font-bold mr-2`}>{t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'daily', 'always'][['일', '월', '화', '수', '목', '금', '토', '매일', '상시'].indexOf(slot.day)]}`)}{slot.time ? `(${formatTime12h(slot.time, t)})` : ''}</Text>
-                                                                                <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#fbbf24" /></TouchableOpacity>
-                                                                            </Animated.View>
-                                                                        </TouchableOpacity>
-                                                                    );
-                                                                }
-                                                                return (
-                                                                    <TouchableOpacity key={slot.id} onPress={() => { const [h, m] = slot.time.split(':'); setEditHour(h || '22'); setEditMinute(m || '00'); setSelectedDayForSlot(slot.day); if (editingSlotId === slot.id) { setEditingSlotId(null); setEditHour('22'); setEditMinute('00'); } else { setEditingSlotId(slot.id); } }} className={`border px-3 py-1.5 rounded-xl flex-row items-center ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}><Text className="text-white text-xs font-bold mr-2">{t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'daily', 'always'][['일', '월', '화', '수', '목', '금', '토', '매일', '상시'].indexOf(slot.day)]}`)}{slot.time ? `(${formatTime12h(slot.time, t)})` : ''}</Text><TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeTimeSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity></TouchableOpacity>
-                                                                );
-                                                            })}
+
+                                                        {/* Team Overall Settings (Date & Recurrence) - NOW AT VERY TOP */}
+                                                        {(() => {
+                                                            const isT1 = activeTab === 1;
+                                                            const curIsR = isRecurring;
+                                                            const setCurIsR = setIsRecurring;
+                                                            const curRecV = recurrenceValue;
+                                                            const setCurRecV = setRecurrenceValue;
+                                                            const curRecU = recurrenceUnit;
+                                                            const setCurRecU = setRecurrenceUnit;
+                                                            const curEnableSD = enableStartDate;
+                                                            const setCurEnableSD = setEnableStartDate;
+                                                            const curSD = eventStartDate;
+
+                                                            return (
+                                                                <>
+                                                                    <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                                        <View className="flex-row items-center justify-between">
+                                                                            <View className="flex-row items-center flex-1">
+                                                                                <Ionicons name="calendar-number-outline" size={16} color="#0ea5e9" style={{ marginRight: 8 }} />
+                                                                                <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('events.specify_date')}</Text>
+                                                                            </View>
+                                                                            <Switch
+                                                                                value={curEnableSD}
+                                                                                onValueChange={setCurEnableSD}
+                                                                                trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#0ea5e9' }}
+                                                                                thumbColor={'white'}
+                                                                                style={{ transform: [{ scale: 0.8 }] }}
+                                                                            />
+                                                                        </View>
+                                                                        {curEnableSD && (
+                                                                            <TouchableOpacity
+                                                                                onPress={() => setShowDatePicker('startDate')}
+                                                                                className={`mt-3 p-2.5 rounded-lg border ${isDark ? 'bg-slate-900/40 border-slate-600' : 'bg-white border-slate-300'}`}
+                                                                            >
+                                                                                <View className="flex-row items-center justify-between">
+                                                                                    <Text className={`font-mono text-base ${curSD ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                                                                        {curSD || 'YYYY-MM-DD'}
+                                                                                    </Text>
+                                                                                    <Ionicons name="calendar" size={18} color="#0ea5e9" />
+                                                                                </View>
+                                                                            </TouchableOpacity>
+                                                                        )}
+                                                                    </View>
+
+                                                                    <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                                                        <View className="flex-row items-center justify-between">
+                                                                            <View className="flex-row items-center flex-1">
+                                                                                <Ionicons name="repeat-outline" size={16} color="#8b5cf6" style={{ marginRight: 8 }} />
+                                                                                <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('events.recurrence')}</Text>
+                                                                                {curIsR && (
+                                                                                    <Text className={`text-[10px] ml-2 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                                        ({t('events.recurrence_guide', {
+                                                                                            value: curRecV,
+                                                                                            unit: curRecU === 'day' ? t('events.day_unit') : t('events.week_unit')
+                                                                                        })})
+                                                                                    </Text>
+                                                                                )}
+                                                                            </View>
+                                                                            <Switch
+                                                                                value={curIsR}
+                                                                                onValueChange={setCurIsR}
+                                                                                trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#8b5cf6' }}
+                                                                                thumbColor={'white'}
+                                                                                style={{ transform: [{ scale: 0.8 }] }}
+                                                                            />
+                                                                        </View>
+                                                                        {curIsR && (
+                                                                            <View className="mt-3">
+                                                                                <View className="flex-row items-center gap-2">
+                                                                                    <TextInput
+                                                                                        value={curRecV}
+                                                                                        onChangeText={setCurRecV}
+                                                                                        keyboardType="numeric"
+                                                                                        placeholder="1"
+                                                                                        placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
+                                                                                        className={`w-16 p-2 rounded-lg border text-center font-bold ${isDark ? 'bg-slate-900/60 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                                                                    />
+                                                                                    <View className={`flex-row p-1 rounded-xl items-center flex-1 ${isDark ? 'bg-slate-900/40' : 'bg-slate-200/30'}`}>
+                                                                                        <TouchableOpacity
+                                                                                            onPress={() => setCurRecU('day')}
+                                                                                            className={`flex-1 py-2 items-center rounded-lg ${curRecU === 'day' ? 'bg-indigo-600 shadow-sm' : ''}`}
+                                                                                        >
+                                                                                            <Text className={`text-[10px] sm:text-xs font-bold ${curRecU === 'day' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1}>{t('events.recurrence_days')}</Text>
+                                                                                        </TouchableOpacity>
+                                                                                        <TouchableOpacity
+                                                                                            onPress={() => setCurRecU('week')}
+                                                                                            className={`flex-1 py-2 items-center rounded-lg ${curRecU === 'week' ? 'bg-indigo-600 shadow-sm' : ''}`}
+                                                                                        >
+                                                                                            <Text className={`text-[10px] sm:text-xs font-bold ${curRecU === 'week' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1}>{t('events.recurrence_weeks')}</Text>
+                                                                                        </TouchableOpacity>
+                                                                                    </View>
+                                                                                </View>
+                                                                            </View>
+                                                                        )}
+                                                                    </View>
+                                                                </>
+                                                            );
+                                                        })()}
+
+                                                        {/* Registered Slots Section */}
+                                                        <View className="flex-row items-center justify-between mb-2 px-1">
+                                                            <Text className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                {t('events.modal.registered_schedule')}
+                                                            </Text>
+                                                        </View>
+
+                                                        <ScrollView
+                                                            horizontal
+                                                            showsHorizontalScrollIndicator={false}
+                                                            className="flex-none mb-4"
+                                                            contentContainerStyle={{ paddingVertical: 4 }}
+                                                        >
+                                                            {(activeTab === 1 ? slots1 : slots2).map((slot, index) => (
+                                                                <TouchableOpacity
+                                                                    key={slot.id || index}
+                                                                    onPress={() => {
+                                                                        if (editingSlotId === slot.id) {
+                                                                            setEditingSlotId(null);
+                                                                        } else {
+                                                                            setEditingSlotId(slot.id);
+                                                                            setSelectedDayForSlot(slot.day);
+                                                                            if (slot.time && slot.time.includes(':')) {
+                                                                                const [h, m] = slot.time.split(':');
+                                                                                setEditHour(h);
+                                                                                setEditMinute(m);
+                                                                            }
+                                                                            setPickerSyncKey(prev => prev + 1);
+                                                                        }
+                                                                    }}
+                                                                    className={`flex-row items-center mr-2 px-3 py-1.5 rounded-full border ${editingSlotId === slot.id ? (isDark ? 'bg-sky-500/20 border-sky-500/50' : 'bg-sky-50 border-sky-500/50') : (isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200')} shadow-sm`}
+                                                                >
+                                                                    <Text className={`text-xs font-bold mr-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                                        {t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'daily', 'always'][['일', '월', '화', '수', '목', '금', '토', '매일', '상시'].indexOf(slot.day)]}`)}{slot.time ? `(${slot.time})` : ''}
+                                                                    </Text>
+                                                                    <TouchableOpacity
+                                                                        onPress={() => removeTimeSlot(slot.id)}
+                                                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                                                    >
+                                                                        <Ionicons name="close-circle" size={16} color="#ef4444" />
+                                                                    </TouchableOpacity>
+                                                                </TouchableOpacity>
+                                                            ))}
                                                             {(activeTab === 1 ? slots1 : slots2).length === 0 && (
                                                                 <View
-                                                                    className={`flex-1 h-10 mx-1 flex-row items-center justify-center border rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}
+                                                                    className={`flex-1 h-10 flex-row items-center justify-center border rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}
                                                                     style={{ borderStyle: 'dashed', borderWidth: 1 }}
                                                                 >
                                                                     <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
                                                                     <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('events.modal.no_schedule')}</Text>
                                                                 </View>
                                                             )}
-                                                        </View>
-                                                    </View>
-                                                )}
+                                                        </ScrollView>
 
-                                                {/* Input Form */}
-                                                {editingEvent?.id !== 'a_center' && (
-                                                    <View className={`flex-1 rounded-2xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'} justify-between`}>
-                                                        {/* StartDate Option */}
-                                                        {/* Specify Date Card */}
-                                                        <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <View className="flex-row items-center justify-between">
-                                                                <View className="flex-row items-center flex-1">
-                                                                    <Ionicons name="calendar-number-outline" size={16} color="#0ea5e9" style={{ marginRight: 8 }} />
-                                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('events.specify_date')}</Text>
-                                                                </View>
-                                                                <Switch
-                                                                    value={enableStartDate}
-                                                                    onValueChange={setEnableStartDate}
-                                                                    trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#0ea5e9' }}
-                                                                    thumbColor={'white'}
-                                                                    style={{ transform: [{ scale: 0.8 }] }}
-                                                                />
-                                                            </View>
-                                                            {enableStartDate && (
-                                                                <TouchableOpacity
-                                                                    onPress={() => setShowDatePicker('startDate')}
-                                                                    className={`mt-3 p-2.5 rounded-lg border ${isDark ? 'bg-slate-900/40 border-slate-600' : 'bg-white border-slate-300'}`}
-                                                                >
-                                                                    <View className="flex-row items-center justify-between">
-                                                                        <Text className={`font-mono text-base ${eventStartDate ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
-                                                                            {eventStartDate || 'YYYY-MM-DD'}
-                                                                        </Text>
-                                                                        <Ionicons name="calendar" size={18} color="#0ea5e9" />
-                                                                    </View>
-                                                                </TouchableOpacity>
-                                                            )}
-                                                        </View>
-
-                                                        {/* Recurrence Option Card */}
-                                                        <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                                            <View className="flex-row items-center justify-between">
-                                                                <View className="flex-row items-center flex-1">
-                                                                    <Ionicons name="repeat-outline" size={16} color="#8b5cf6" style={{ marginRight: 8 }} />
-                                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('events.recurrence')}</Text>
-                                                                </View>
-                                                                <Switch
-                                                                    value={isRecurring}
-                                                                    onValueChange={setIsRecurring}
-                                                                    trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#8b5cf6' }}
-                                                                    thumbColor={'white'}
-                                                                    style={{ transform: [{ scale: 0.8 }] }}
-                                                                />
-                                                            </View>
-                                                            {isRecurring && (
-                                                                <View className="mt-3">
-                                                                    <View className="flex-row items-center gap-2">
-                                                                        <TextInput
-                                                                            value={recurrenceValue}
-                                                                            onChangeText={setRecurrenceValue}
-                                                                            keyboardType="numeric"
-                                                                            placeholder="1"
-                                                                            placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-                                                                            className={`w-16 p-2 rounded-lg border text-center font-bold ${isDark ? 'bg-slate-900/60 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
-                                                                        />
-                                                                        <View className={`flex-row p-1 rounded-xl items-center flex-1 ${isDark ? 'bg-slate-900/40' : 'bg-slate-200/30'}`}>
-                                                                            <TouchableOpacity
-                                                                                onPress={() => setRecurrenceUnit('day')}
-                                                                                className={`flex-1 py-2 items-center rounded-lg ${recurrenceUnit === 'day' ? 'bg-indigo-600 shadow-sm' : ''}`}
-                                                                            >
-                                                                                <Text
-                                                                                    className={`text-[10px] sm:text-xs font-bold ${recurrenceUnit === 'day' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}
-                                                                                    numberOfLines={1}
-                                                                                >
-                                                                                    {t('events.recurrence_days')}
-                                                                                </Text>
-                                                                            </TouchableOpacity>
-                                                                            <TouchableOpacity
-                                                                                onPress={() => setRecurrenceUnit('week')}
-                                                                                className={`flex-1 py-2 items-center rounded-lg ${recurrenceUnit === 'week' ? 'bg-indigo-600 shadow-sm' : ''}`}
-                                                                            >
-                                                                                <Text
-                                                                                    className={`text-[10px] sm:text-xs font-bold ${recurrenceUnit === 'week' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}
-                                                                                    numberOfLines={1}
-                                                                                >
-                                                                                    {t('events.recurrence_weeks')}
-                                                                                </Text>
-                                                                            </TouchableOpacity>
-                                                                        </View>
-                                                                    </View>
-                                                                    <Text className={`text-[11px] font-medium mt-2 px-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                                        {t('events.recurrence_guide', {
-                                                                            value: recurrenceValue,
-                                                                            unit: recurrenceUnit === 'day' ? t('common.day') : t('common.week')
-                                                                        })}
-                                                                    </Text>
-                                                                </View>
-                                                            )}
-                                                        </View>
 
                                                         {selectedDayForSlot !== '상시' ? (
                                                             <>
@@ -3622,15 +3886,13 @@ export default function EventTracker() {
 
                                                                         <View style={{ height: 132, justifyContent: 'center' }}>
                                                                             <WheelPicker
-                                                                                options={['월', '화', '수', '목', '금', '토', '일'].map(d => ({
-                                                                                    label: t(`events.days.${['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][['월', '화', '수', '목', '금', '토', '일'].indexOf(d)]}`),
-                                                                                    value: d
-                                                                                }))}
+                                                                                options={dayOptionsForPicker}
                                                                                 value={selectedDayForSlot}
                                                                                 onChange={setSelectedDayForSlot}
                                                                                 isDark={isDark}
                                                                                 width={80}
                                                                                 showHighlight={false}
+                                                                                syncKey={pickerSyncKey}
                                                                             />
                                                                         </View>
 
@@ -3639,27 +3901,32 @@ export default function EventTracker() {
                                                                         <View className="flex-row items-center">
                                                                             <View style={{ height: 132, justifyContent: 'center' }}>
                                                                                 <WheelPicker
-                                                                                    options={Array.from({ length: 24 }, (_, i) => pad(i))}
+                                                                                    options={hourOptionsForPicker}
                                                                                     value={editHour}
                                                                                     onChange={setEditHour}
                                                                                     isDark={isDark}
                                                                                     width={70}
                                                                                     showHighlight={false}
+                                                                                    syncKey={pickerSyncKey}
                                                                                 />
                                                                             </View>
                                                                             <Text className={`text-lg font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`} style={{ marginHorizontal: -2, paddingBottom: 4 }}>:</Text>
                                                                             <View style={{ height: 132, justifyContent: 'center' }}>
                                                                                 <WheelPicker
-                                                                                    options={['00', '10', '20', '30', '40', '50']}
+                                                                                    options={minuteOptionsForPicker}
                                                                                     value={editMinute}
                                                                                     onChange={setEditMinute}
                                                                                     isDark={isDark}
                                                                                     width={70}
                                                                                     showHighlight={false}
+                                                                                    syncKey={pickerSyncKey}
                                                                                 />
                                                                             </View>
+
                                                                         </View>
+
                                                                     </View>
+
                                                                 </View>
 
                                                                 {/* Bear Hunt: Only allow one time slot (but allow editing) */}

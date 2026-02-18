@@ -12,6 +12,10 @@ export interface EventSchedule {
     recurrenceValue?: string;
     recurrenceUnit?: 'day' | 'week';
     isRecurring?: boolean;
+    startDate2?: string;
+    recurrenceValue2?: string;
+    recurrenceUnit2?: 'day' | 'week';
+    isRecurring2?: boolean;
 }
 
 const ID_MAP: { [key: string]: string } = {

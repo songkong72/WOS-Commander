@@ -352,28 +352,28 @@ export default function StrategySheet() {
                     </View>
                 )}
 
-                {/* Floating Zoom Controls */}
-                <View className="absolute bottom-12 left-0 right-0 items-center justify-center pointer-events-none z-10">
-                    <View className={`flex-row backdrop-blur-md p-2 rounded-full border shadow-2xl pointer-events-auto items-center ${isDark ? 'bg-[#0f172a]/90 border-slate-700' : 'bg-white/90 border-slate-200 shadow-slate-200'}`}>
+                {/* Floating Zoom Controls - More compact */}
+                <View className="absolute bottom-16 left-0 right-0 items-center justify-center pointer-events-none z-10">
+                    <View className={`flex-row backdrop-blur-md p-1.5 rounded-full border shadow-2xl pointer-events-auto items-center ${isDark ? 'bg-[#0f172a]/90 border-slate-700' : 'bg-white/90 border-slate-200 shadow-slate-200'}`}>
                         <TouchableOpacity
                             onPress={() => handleZoom(-0.1)}
-                            className={`w-12 h-12 items-center justify-center rounded-full mr-2 active:bg-slate-700 border ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-200'}`}
+                            className={`w-9 h-9 items-center justify-center rounded-full mr-2 active:bg-slate-700 border ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-200'}`}
                         >
-                            <Ionicons name="remove" size={24} color={isDark ? "white" : "#1e293b"} />
+                            <Ionicons name="remove" size={18} color={isDark ? "white" : "#1e293b"} />
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={handleResetZoom}
-                            className={`h-12 px-6 items-center justify-center rounded-full mr-2 active:bg-slate-700 border min-w-[80px] ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-200'}`}
+                            className={`h-9 px-4 items-center justify-center rounded-full mr-2 active:bg-slate-700 border min-w-[70px] ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-200'}`}
                         >
-                            <Text className={`font-black text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(zoom * 100)}%</Text>
+                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(zoom * 100)}%</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                             onPress={() => handleZoom(0.1)}
-                            className="w-12 h-12 items-center justify-center bg-[#38bdf8] rounded-full active:bg-[#0ea5e9] shadow-lg shadow-blue-500/30"
+                            className="w-9 h-9 items-center justify-center bg-[#38bdf8] rounded-full active:bg-[#0ea5e9] shadow-lg shadow-blue-500/30"
                         >
-                            <Ionicons name="add" size={24} color="#0f172a" />
+                            <Ionicons name="add" size={18} color="#0f172a" />
                         </TouchableOpacity>
                     </View>
                 </View>

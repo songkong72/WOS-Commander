@@ -51,7 +51,7 @@ export default function Home() {
     const { t } = useTranslation();
     const params = useLocalSearchParams();
     const { auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen } = useAuth();
-    const { theme, toggleTheme, fontSizeScale, changeFontSize } = useTheme();
+    const { theme, toggleTheme, fontSizeScale } = useTheme();
     const { language, changeLanguage } = useLanguage();
     const isDark = theme === 'dark';
     const [isLoading, setIsLoading] = useState(false);
@@ -2980,30 +2980,51 @@ export default function Home() {
                         <BlurView intensity={80} className="absolute inset-0" />
 
                         <View className="items-center mb-4 relative">
-                            {/* Help Button */}
-                            <Pressable
-                                onPress={() => openModalWithHistory(setIsGateManualVisible)}
-                                style={({ pressed, hovered }: any) => [
-                                    {
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 0,
-                                        padding: 8,
-                                        borderRadius: 9999,
-                                        backgroundColor: hovered ? 'rgba(71, 85, 105, 0.6)' : 'rgba(30, 41, 59, 0.6)',
-                                        borderWidth: 1,
-                                        borderColor: hovered ? 'rgba(148, 163, 184, 0.5)' : 'rgba(51, 65, 85, 0.5)',
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                        transition: 'all 0.2s',
-                                        zIndex: 10,
-                                        cursor: 'pointer'
-                                    }
-                                ]}
-                                // @ts-ignore - Web-specific property
-                                tabIndex={-1}
-                            >
-                                <Ionicons name="book-outline" size={20} color="#f59e0b" />
-                            </Pressable>
+                            {/* Top Right Controls: Help & Reset */}
+                            <View className="absolute top-0 right-0 flex-row p-1 rounded-2xl border bg-slate-800/50 border-slate-600" style={{ zIndex: 10 }}>
+                                <Pressable
+                                    onPress={() => openModalWithHistory(setIsGateManualVisible)}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: hovered ? 'rgba(71, 85, 105, 0.4)' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                    // @ts-ignore
+                                    tabIndex={-1}
+                                >
+                                    <Ionicons name="book-outline" size={20} color="#f59e0b" />
+                                </Pressable>
+
+                                <Pressable
+                                    onPress={handleResetSettings}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: hovered ? 'rgba(167, 139, 250, 0.2)' : 'transparent',
+                                            marginLeft: 4,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                    // @ts-ignore
+                                    tabIndex={-1}
+                                >
+                                    <Ionicons name="refresh-outline" size={20} color="#a78bfa" />
+                                </Pressable>
+                            </View>
 
                             {/* Language Toggle Switch (Icon Only) */}
                             <View className="absolute top-0 left-0 flex-row p-1 rounded-2xl border bg-slate-800/50 border-slate-600" style={{ zIndex: 10 }}>
@@ -3067,29 +3088,7 @@ export default function Home() {
                                 </Pressable>
                             </View>
 
-                            {/* Clear Data (Eraser / Trash) Button */}
-                            <Pressable
-                                onPress={handleResetSettings}
-                                style={({ pressed, hovered }: any) => [
-                                    {
-                                        position: 'absolute',
-                                        top: 48,
-                                        right: 0,
-                                        padding: 8,
-                                        borderRadius: 9999,
-                                        backgroundColor: hovered ? 'rgba(71, 85, 105, 0.6)' : 'rgba(30, 41, 59, 0.6)',
-                                        borderWidth: 1,
-                                        borderColor: hovered ? 'rgba(148, 163, 184, 0.5)' : 'rgba(51, 65, 85, 0.5)',
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                        transition: 'all 0.2s',
-                                        zIndex: 10,
-                                    }
-                                ]}
-                                // @ts-ignore - Web-specific property
-                                tabIndex={-1}
-                            >
-                                <Ionicons name="trash-outline" size={20} color="#a78bfa" />
-                            </Pressable>
+
 
                             <View className={`w-12 h-12 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
                                 <Ionicons name="snow" size={28} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
@@ -3626,33 +3625,6 @@ export default function Home() {
                         )}
                     </View>
 
-                    {/* Floating Font Size Controls - Slim & Minimal */}
-                    <View
-                        className="absolute bottom-6 right-6 flex-row items-center gap-2 z-[1000]"
-                        style={{ pointerEvents: 'box-none' }}
-                    >
-                        <TouchableOpacity
-                            onPress={() => changeFontSize(Math.max(0.8, fontSizeScale - 0.1))}
-                            className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-slate-900/40 border-slate-700/50' : 'bg-white/60 border-slate-200/50 shadow-sm'}`}
-                            style={{ backdropFilter: 'blur(8px)' } as any}
-                        >
-                            <Ionicons name="remove" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                        </TouchableOpacity>
-
-                        <View className={`px-3 py-1.5 rounded-full border ${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white/80 border-slate-200/50 shadow-sm'}`}>
-                            <Text className={`text-[11px] font-black ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                {Math.round(fontSizeScale * 100)}%
-                            </Text>
-                        </View>
-
-                        <TouchableOpacity
-                            onPress={() => changeFontSize(Math.min(1.5, fontSizeScale + 0.1))}
-                            className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-sky-500/20 border-sky-500/30' : 'bg-sky-500/10 border-sky-500/20 shadow-sm'}`}
-                            style={{ backdropFilter: 'blur(8px)' } as any}
-                        >
-                            <Ionicons name="add" size={20} color={isDark ? "#38bdf8" : "#0284c7"} />
-                        </TouchableOpacity>
-                    </View>
 
                     {/* Notice Section */}
                     {!!notice && (!!notice.visible || !!auth.isLoggedIn) && (
@@ -4647,8 +4619,8 @@ export default function Home() {
             <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
                                     <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
@@ -4663,14 +4635,14 @@ export default function Home() {
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <View className={`m-5 p-6 rounded-[32px] ${isDark ? 'bg-emerald-500/5 border border-emerald-500/10' : 'bg-emerald-50 border border-emerald-100'}`}>
-                            <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
+                        <View className={`mx-5 mt-5 mb-2 p-6 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-emerald-50 border border-emerald-100'}`}>
+                            <ScrollView style={{ maxHeight: 550 }} showsVerticalScrollIndicator={false}>
                                 <Text className={`text-base font-normal leading-7 ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
                                     {notice?.content || t('popup.noContent')}
                                 </Text>
                             </ScrollView>
                         </View>
-                        <View className="px-5 pb-6 items-center">
+                        <View className="px-5 pb-4 items-center">
                             <TouchableOpacity
                                 onPress={() => setNoticeDetailVisible(false)}
                                 className="py-2"
@@ -4691,61 +4663,60 @@ export default function Home() {
             >
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-5 py-6 border-b ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
-                                    <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
-                                        <Ionicons name="create" size={32} color="#3b82f6" />
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                                        <Ionicons name="create" size={24} color="#3b82f6" />
                                     </View>
                                     <View>
-                                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.noticeSetting')}</Text>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.noticeSetting')}</Text>
                                     </View>
                                 </View>
-                                <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={28} color={isDark ? "#94a3b8" : "#64748b"} />
+                                <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <View className="p-5">
-                            <Text className={`text-lg font-black mb-3 ml-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.noticeContent')}</Text>
+                        <View className={`mx-5 mt-5 mb-1 p-5 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-slate-50 border border-slate-200'}`}>
                             <TextInput
                                 multiline
-                                numberOfLines={8}
+                                numberOfLines={12}
                                 value={editNoticeContent}
                                 onChangeText={setEditNoticeContent}
-                                className={`w-full p-5 rounded-3xl border font-bold text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500' : 'bg-slate-50 text-slate-900 border-slate-200 focus:border-blue-500'}`}
+                                className={`w-full font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
                                 placeholder={t('admin.noticePlaceholder')}
                                 placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                style={{ textAlignVertical: 'top' }}
+                                style={{ textAlignVertical: 'top', minHeight: 400 }}
                             />
-
-                            <View className="flex-row items-center justify-between mt-8 px-1">
-                                <View className="flex-1 mr-4">
-                                    <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.dashboardExposure')}</Text>
-                                    <Text className={`text-sm font-bold mt-1 ${isDark ? 'text-slate-200' : 'text-slate-500'}`}>{t('admin.noticeActiveDesc')}</Text>
-                                </View>
-                                <Switch
-                                    value={editNoticeVisible}
-                                    onValueChange={setEditNoticeVisible}
-                                    trackColor={{ false: '#334155', true: '#3b82f6' }}
-                                    thumbColor={isDark ? '#fff' : '#fff'}
-                                    style={{ transform: [{ scale: 1.2 }] }}
-                                />
-                            </View>
                         </View>
-                        <View className="flex-row gap-4 px-5 pb-10">
+
+                        <View className="flex-row items-center justify-between mt-4 px-6">
+                            <View className="flex-1 mr-4">
+                                <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.dashboardExposure')}</Text>
+                                <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('admin.noticeActiveDesc')}</Text>
+                            </View>
+                            <Switch
+                                value={editNoticeVisible}
+                                onValueChange={setEditNoticeVisible}
+                                trackColor={{ false: '#334155', true: '#3b82f6' }}
+                                thumbColor={isDark ? '#fff' : '#fff'}
+                                style={{ transform: [{ scale: 1.0 }] }}
+                            />
+                        </View>
+                        <View className="flex-row gap-4 px-5 pb-6 mt-4">
                             <TouchableOpacity
                                 onPress={() => setNoticeModalVisible(false)}
-                                className={`flex-1 py-5 rounded-[24px] border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                className={`flex-1 py-4 rounded-[20px] border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                             >
-                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
+                                <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleSaveNotice}
-                                className="flex-[2] bg-blue-500 py-5 rounded-[24px] shadow-lg shadow-blue-500/40 items-center justify-center"
+                                className="flex-[2] bg-blue-500 py-4 rounded-[20px] shadow-lg shadow-blue-500/40 items-center justify-center"
                             >
-                                <Text className="text-center font-black text-white text-xl">{t('common.save')}</Text>
+                                <Text className="text-center font-black text-white text-lg">{t('common.save')}</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -4821,7 +4792,7 @@ export default function Home() {
             <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl h-[70%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                         <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
@@ -4865,7 +4836,7 @@ export default function Home() {
             <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
                 <View className="flex-1 bg-black/80 items-center justify-center p-6">
                     <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl h-[70%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                    <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                         <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
                             <View className="flex-row items-center justify-between">
                                 <View className="flex-row items-center">
@@ -4906,7 +4877,7 @@ export default function Home() {
             </Modal>
 
             {/* Custom Alert Modal */}
-            <Modal visible={customAlert.visible} transparent animationType="fade">
+            <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
                 <View className="flex-1 bg-black/60 items-center justify-center p-6">
                     <BlurView intensity={20} className="absolute inset-0" />
                     <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
@@ -4929,8 +4900,8 @@ export default function Home() {
                                     }
                                 />
                             </View>
-                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                            <Text className={`mt-4 text-center text-lg font-bold leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                            <Text className={`mt-4 text-center text-lg font-medium leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
                         </View>
 
                         {customAlert.type === 'confirm' ? (
@@ -4948,7 +4919,7 @@ export default function Home() {
                                     }}
                                     className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
                                 >
-                                    <Text className="text-center font-black text-white">{t('common.confirm')}</Text>
+                                    <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
                                 </TouchableOpacity>
                             </View>
                         ) : (
@@ -4956,7 +4927,7 @@ export default function Home() {
                                 onPress={() => setCustomAlert({ ...customAlert, visible: false })}
                                 className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
                             >
-                                <Text className="text-center font-black text-white">{t('common.confirm')}</Text>
+                                <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
                             </TouchableOpacity>
                         )}
                     </View>
