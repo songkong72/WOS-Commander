@@ -133,27 +133,28 @@ export default function GlobalNavigationBar() {
         );
     }
 
-    // Mobile Bottom Menu - Premium Bottom Strip Style
+    // Mobile Bottom Menu - Improved Visibility & Interaction
     return (
         <View
-            className={`z-[9999] ${isDark ? 'bg-slate-900/90' : 'bg-white/90'}`}
+            className={`z-[9999] ${isDark ? 'bg-slate-900' : 'bg-slate-800'}`}
             style={{
                 borderTopWidth: 1,
-                borderTopColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.8)',
-                paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-                paddingTop: 8,
+                borderTopColor: 'rgba(255, 255, 255, 0.1)',
+                paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+                paddingTop: 12,
+                height: Platform.OS === 'ios' ? 100 : 80,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: -10 },
-                shadowOpacity: isDark ? 0.3 : 0.05,
+                shadowOpacity: 0.3,
                 shadowRadius: 20,
                 elevation: 20,
             }}
         >
             {Platform.OS !== 'android' && (
-                <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} className="absolute inset-0" />
+                <BlurView intensity={isDark ? 30 : 50} tint="dark" className="absolute inset-0" />
             )}
 
-            <View className="flex-row items-center justify-around px-4">
+            <View className="flex-row items-center justify-around px-2">
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
 
@@ -161,60 +162,56 @@ export default function GlobalNavigationBar() {
                         <Pressable
                             key={item.id}
                             onPress={() => handleNavPress(item)}
-                            style={({ pressed, hovered }: any) => [
+                            style={({ pressed }: any) => [
                                 {
                                     flex: 1,
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    paddingVertical: 8,
-                                    borderRadius: 16,
-                                    marginHorizontal: 4,
-                                    backgroundColor: pressed ? (isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(37, 99, 235, 0.05)') : 'transparent',
-                                    transform: [{ scale: pressed ? 0.92 : (hovered ? 1.05 : 1) }],
+                                    height: 50,
+                                    transform: [{ scale: pressed ? 0.92 : 1 }],
                                     // @ts-ignore
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                 }
                             ]}
                         >
-                            <View className="items-center justify-center">
+                            <View className="items-center justify-center w-full">
                                 <View
-                                    className={`items-center justify-center mb-1 rounded-xl w-10 h-10 ${isActive ? (isDark ? 'bg-sky-500/10' : 'bg-blue-500/10') : ''}`}
-                                    style={isActive ? {
-                                        shadowColor: isDark ? '#38bdf8' : '#2563eb',
-                                        shadowOffset: { width: 0, height: 0 },
-                                        shadowOpacity: 0.2,
-                                        shadowRadius: 10,
-                                    } : {}}
+                                    className="items-center justify-center h-8"
                                 >
                                     <Ionicons
                                         name={isActive ? item.activeIcon : item.icon}
-                                        size={24}
-                                        color={isActive ? (isDark ? '#38bdf8' : '#2563eb') : (isDark ? 'rgba(148, 163, 184, 0.5)' : 'rgba(100, 116, 139, 0.5)')}
+                                        size={isActive ? 22 : 30}
+                                        color="#FFFFFF"
+                                        style={isActive ? {
+                                            textShadowColor: 'rgba(56, 189, 248, 0.8)',
+                                            textShadowOffset: { width: 0, height: 0 },
+                                            textShadowRadius: 10,
+                                        } : {
+                                            opacity: 0.8
+                                        }}
                                     />
                                 </View>
 
-                                {isActive && (
+                                {isActive ? (
                                     <Text
-                                        className={`text-[10px] font-black tracking-tighter ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
+                                        className="text-[10px] font-black tracking-widest text-sky-400 mt-1"
                                         numberOfLines={1}
                                         style={{
                                             textTransform: 'uppercase',
-                                            letterSpacing: 0.5,
-                                            marginTop: 2
                                         }}
                                     >
                                         {t(item.labelKey)}
                                     </Text>
-                                )}
+                                ) : null}
 
                                 {isActive && (
                                     <View
-                                        className={`absolute -top-1 w-1 h-1 rounded-full ${isDark ? 'bg-sky-400' : 'bg-blue-500'}`}
+                                        className="absolute -top-3 w-1.5 h-1.5 rounded-full bg-sky-400"
                                         style={{
-                                            shadowColor: isDark ? '#38bdf8' : '#2563eb',
+                                            shadowColor: '#38bdf8',
                                             shadowOffset: { width: 0, height: 0 },
-                                            shadowOpacity: 0.8,
-                                            shadowRadius: 4,
+                                            shadowOpacity: 1,
+                                            shadowRadius: 6,
                                         }}
                                     />
                                 )}

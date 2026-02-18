@@ -2362,13 +2362,13 @@ export default function Home() {
                 return (
                     <Text key={i} style={{
                         fontWeight: '900',
-                        color: isUpcomingSoon ? (isDark ? '#34d399' : '#059669') : (isDark ? '#38bdf8' : '#2563eb')
+                        color: isUpcomingSoon ? (isDark ? '#4ade80' : '#16a34a') : (isDark ? '#60a5fa' : '#2563eb')
                     }}>
                         {hasParens ? `(${translatedDay})` : translatedDay}
                     </Text>
                 );
             }
-            return <Text key={i}>{part}</Text>;
+            return <Text key={i} style={{ color: isDark ? '#f8fafc' : '#1e293b' }}>{part}</Text>;
         });
     };
 
@@ -2404,7 +2404,7 @@ export default function Home() {
                     adjustsFontSizeToFit
                     numberOfLines={2}
                     minimumFontScale={0.7}
-                    style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
+                    style={{ color: isDark ? '#f8fafc' : '#1e293b', fontSize: 18 * fontSizeScale, fontWeight: '800', letterSpacing: -0.5 }}
                 >
                     {renderWithHighlightedDays(cleanStart, isUpcomingSoon)}{"\u00A0"}~ {renderWithHighlightedDays(cleanEnd, isUpcomingSoon)}
                 </Text>
@@ -2496,20 +2496,21 @@ export default function Home() {
                                 style={{ marginRight: 6 }}
                             />
                             <Text style={{
-                                color: isDark ? '#cbd5e1' : '#475569',
+                                color: isDark ? '#f8fafc' : '#1e293b',
                                 fontSize: 18 * fontSizeScale,
-                                fontWeight: '700',
-                                textDecorationLine: 'none'
+                                fontWeight: '800',
+                                textDecorationLine: 'none',
+                                letterSpacing: -0.5
                             }}>
                                 {renderWithHighlightedDays(part.days.join('·'), isUpcomingSoon)} {part.time}
                             </Text>
 
                             {part.label ? (
-                                <View className={`ml-2 px-2 py-0.5 rounded ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                <View className={`ml-2 px-2 py-0.5 rounded-lg ${isDark ? 'bg-slate-800/80 border border-slate-700' : 'bg-slate-200/80 border border-slate-300'}`}>
                                     <Text style={{
                                         fontSize: 13 * fontSizeScale,
-                                        fontWeight: '700',
-                                        color: isDark ? '#94a3b8' : '#64748b',
+                                        fontWeight: '800',
+                                        color: isDark ? '#cbd5e1' : '#475569',
                                         textDecorationLine: 'none'
                                     }}>
                                         {translateLabel(part.label).replace(/\s+/g, ' ')}
@@ -2534,7 +2535,7 @@ export default function Home() {
             const day = getKoreanDayOfWeek(dateObj);
             const formatted = `${m}/${d}(${day}) ${pad(parseInt(t))}:${pad(parseInt(min))}`;
             return (
-                <Text style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}>
+                <Text style={{ color: isDark ? '#f8fafc' : '#1e293b', fontSize: 18 * fontSizeScale, fontWeight: '800', letterSpacing: -0.5 }}>
                     {renderWithHighlightedDays(formatted, isUpcomingSoon)}
                 </Text>
             );
@@ -2587,7 +2588,7 @@ export default function Home() {
                 adjustsFontSizeToFit
                 numberOfLines={2}
                 minimumFontScale={0.7}
-                style={{ color: isDark ? '#cbd5e1' : '#475569', fontSize: 18 * fontSizeScale, fontWeight: '700' }}
+                style={{ color: isDark ? '#f8fafc' : '#1e293b', fontSize: 18 * fontSizeScale, fontWeight: '800', letterSpacing: -0.5 }}
             >
                 {renderWithHighlightedDays(timeStr, isUpcomingSoon)}
             </Text>
@@ -2793,7 +2794,7 @@ export default function Home() {
                                                 return formatEventTimeCompact(convertTime(activeStr), checkIsSoon(toLocal(activeStr)));
                                             })()}
                                         </View>
-                                        <Text className={`text-[11px] font-bold leading-4 transition-all ${hovered ? 'text-slate-300' : 'text-slate-400'}`} numberOfLines={1}>
+                                        <Text className={`text-[12px] font-extrabold leading-4 transition-all ${hovered ? 'text-slate-200' : 'text-slate-300'}`} numberOfLines={1}>
                                             {event.eventId.includes('total') || event.eventId.includes('operation')
                                                 ? t('dashboard.hero_combination_desc')
                                                 : t('dashboard.winning_strategy_desc')}
@@ -3628,7 +3629,7 @@ export default function Home() {
 
                     {/* Notice Section */}
                     {!!notice && (!!notice.visible || !!auth.isLoggedIn) && (
-                        <View className="w-full px-1">
+                        <View className="w-full max-w-6xl px-4 md:px-8">
                             <Pressable
                                 onPress={() => auth.isLoggedIn ? setNoticeDetailVisible(true) : showCustomAlert(t('common.member_only_title'), t('common.member_only_alert'), 'error')}
                                 className={`mb-6 p-4 rounded-[28px] border-2 flex-row items-center ${notice.visible ? (isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200 shadow-md') : (isDark ? 'bg-slate-800/40 border-slate-700 border-dashed' : 'bg-slate-50 border-slate-200 border-dashed')}`}
@@ -3649,7 +3650,7 @@ export default function Home() {
                     )}
 
                     {/* Feature Cards Grid */}
-                    <View className="flex-row flex-wrap gap-4 mb-10">
+                    <View className="w-full max-w-6xl px-4 md:px-8 flex-col sm:flex-row gap-4 mb-10">
                         {[
                             { id: 'events', label: t('dashboard.menu_events'), desc: t('dashboard.menu_events_desc'), icon: 'calendar', path: '/growth/events', color: '#38bdf8' },
                             { id: 'strategy', label: t('dashboard.menu_strategy'), desc: t('dashboard.menu_strategy_desc'), icon: 'map', path: '/strategy-sheet', color: '#10b981' },
@@ -3658,7 +3659,7 @@ export default function Home() {
                             <Pressable
                                 key={card.id}
                                 onPress={() => auth.isLoggedIn ? router.push(card.path as any) : showCustomAlert(t('common.member_only_title'), t('common.member_only_alert'), 'error')}
-                                className={`flex-1 min-w-[260px] p-4 md:p-6 rounded-3xl border-2 flex-row items-center ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}
+                                className={`w-full sm:flex-1 p-4 md:p-6 rounded-3xl border-2 flex-row items-center ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}
                             >
                                 <View className={`w-11 h-11 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} style={{ borderColor: card.color, borderLeftWidth: 3 }}>
                                     <Ionicons name={!auth.isLoggedIn ? 'lock-closed' : card.icon as any} size={22} color={card.color} />
