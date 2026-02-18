@@ -133,23 +133,27 @@ export default function GlobalNavigationBar() {
         );
     }
 
-    // Mobile Bottom Menu - Floating Glassmorphism Style
+    // Mobile Bottom Menu - Premium Bottom Strip Style
     return (
-        <View className="absolute bottom-6 left-6 right-6 z-[9999]">
-            <View
-                className={`flex-row items-center px-4 py-3 rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white/95 border-slate-100'}`}
-                style={{
-                    shadowColor: isDark ? '#000' : '#64748b',
-                    shadowOffset: { width: 0, height: 10 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 20,
-                    elevation: 10
-                }}
-            >
-                {Platform.OS !== 'android' && (
-                    <BlurView intensity={30} className="absolute inset-0" />
-                )}
+        <View
+            className={`z-[9999] ${isDark ? 'bg-slate-900/90' : 'bg-white/90'}`}
+            style={{
+                borderTopWidth: 1,
+                borderTopColor: isDark ? 'rgba(51, 65, 85, 0.5)' : 'rgba(226, 232, 240, 0.8)',
+                paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+                paddingTop: 8,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -10 },
+                shadowOpacity: isDark ? 0.3 : 0.05,
+                shadowRadius: 20,
+                elevation: 20,
+            }}
+        >
+            {Platform.OS !== 'android' && (
+                <BlurView intensity={isDark ? 40 : 60} tint={isDark ? 'dark' : 'light'} className="absolute inset-0" />
+            )}
 
+            <View className="flex-row items-center justify-around px-4">
                 {NAV_ITEMS.map((item) => {
                     const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path));
 
@@ -157,27 +161,35 @@ export default function GlobalNavigationBar() {
                         <Pressable
                             key={item.id}
                             onPress={() => handleNavPress(item)}
-                            style={({ pressed }: any) => [
+                            style={({ pressed, hovered }: any) => [
                                 {
                                     flex: 1,
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    transform: [{ scale: pressed ? 0.92 : 1 }],
+                                    paddingVertical: 8,
+                                    borderRadius: 16,
+                                    marginHorizontal: 4,
+                                    backgroundColor: pressed ? (isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(37, 99, 235, 0.05)') : 'transparent',
+                                    transform: [{ scale: pressed ? 0.92 : (hovered ? 1.05 : 1) }],
+                                    // @ts-ignore
                                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                 }
                             ]}
                         >
                             <View className="items-center justify-center">
-                                <View className={`items-center justify-center mb-0.5`}>
+                                <View
+                                    className={`items-center justify-center mb-1 rounded-xl w-10 h-10 ${isActive ? (isDark ? 'bg-sky-500/10' : 'bg-blue-500/10') : ''}`}
+                                    style={isActive ? {
+                                        shadowColor: isDark ? '#38bdf8' : '#2563eb',
+                                        shadowOffset: { width: 0, height: 0 },
+                                        shadowOpacity: 0.2,
+                                        shadowRadius: 10,
+                                    } : {}}
+                                >
                                     <Ionicons
                                         name={isActive ? item.activeIcon : item.icon}
-                                        size={isActive ? 22 : 20}
-                                        color={isActive ? (isDark ? '#38bdf8' : '#2563eb') : (isDark ? 'rgba(148, 163, 184, 0.6)' : 'rgba(100, 116, 139, 0.6)')}
-                                        style={isActive ? {
-                                            textShadowColor: isDark ? 'rgba(56, 189, 248, 0.3)' : 'rgba(37, 99, 235, 0.2)',
-                                            textShadowOffset: { width: 0, height: 0 },
-                                            textShadowRadius: 8
-                                        } : {}}
+                                        size={24}
+                                        color={isActive ? (isDark ? '#38bdf8' : '#2563eb') : (isDark ? 'rgba(148, 163, 184, 0.5)' : 'rgba(100, 116, 139, 0.5)')}
                                     />
                                 </View>
 
@@ -185,9 +197,26 @@ export default function GlobalNavigationBar() {
                                     <Text
                                         className={`text-[10px] font-black tracking-tighter ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
                                         numberOfLines={1}
+                                        style={{
+                                            textTransform: 'uppercase',
+                                            letterSpacing: 0.5,
+                                            marginTop: 2
+                                        }}
                                     >
                                         {t(item.labelKey)}
                                     </Text>
+                                )}
+
+                                {isActive && (
+                                    <View
+                                        className={`absolute -top-1 w-1 h-1 rounded-full ${isDark ? 'bg-sky-400' : 'bg-blue-500'}`}
+                                        style={{
+                                            shadowColor: isDark ? '#38bdf8' : '#2563eb',
+                                            shadowOffset: { width: 0, height: 0 },
+                                            shadowOpacity: 0.8,
+                                            shadowRadius: 4,
+                                        }}
+                                    />
                                 )}
                             </View>
                         </Pressable>

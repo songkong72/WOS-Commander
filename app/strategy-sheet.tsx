@@ -42,7 +42,6 @@ export default function StrategySheet() {
     const [inputUrl, setInputUrl] = useState('');
     const [showTooltip, setShowTooltip] = useState(false);
     const [accessError, setAccessError] = useState(false);
-    const [viewMode, setViewMode] = useState<'sheet' | 'guide'>('sheet');
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
 
@@ -81,7 +80,7 @@ export default function StrategySheet() {
             <View className="items-center mt-8">
                 <View className="flex-row items-center">
                     <Ionicons name="document-text" size={18} color={isDark ? '#38bdf8' : '#3b82f6'} style={{ marginRight: 8 }} />
-                    <Text className={`font-bold text-sm ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>문서를 불러오는 중...</Text>
+                    <Text className={`font-bold text-sm ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>{t('strategy.loading')}</Text>
                 </View>
             </View>
         </View>
@@ -94,16 +93,16 @@ export default function StrategySheet() {
                 <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${isDark ? 'bg-rose-500/15' : 'bg-rose-50'}`}>
                     <Ionicons name="cloud-offline" size={40} color={isDark ? '#fb7185' : '#e11d48'} />
                 </View>
-                <Text className={`text-2xl font-black text-center mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>문서 로드 실패</Text>
+                <Text className={`text-2xl font-black text-center mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.load_failed')}</Text>
                 <Text className={`text-center text-sm font-medium mb-8 leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                    네트워크 연결을 확인하거나{"\n"}잠시 후 다시 시도해주세요.
+                    {t('strategy.network_error')}
                 </Text>
                 <View className="flex-row gap-3 w-full">
                     <TouchableOpacity
                         onPress={() => Platform.OS === 'web' ? window.open(targetUrl, '_blank') : null}
                         className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                     >
-                        <Text className={`text-center font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>새 창으로 열기</Text>
+                        <Text className={`text-center font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('strategy.open_new_window')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={handleRetry}
@@ -111,7 +110,7 @@ export default function StrategySheet() {
                     >
                         <View className="flex-row items-center justify-center">
                             <Ionicons name="refresh" size={16} color="white" style={{ marginRight: 6 }} />
-                            <Text className="text-white font-bold">다시 시도</Text>
+                            <Text className="text-white font-bold">{t('strategy.retry')}</Text>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -219,46 +218,20 @@ export default function StrategySheet() {
                 )}
             </View>
 
-            {/* View Mode Toggle Tabs */}
-            <View className={`flex-row h-10 border-b ${isDark ? 'bg-[#0f172a] border-black' : 'bg-white border-slate-100'}`}>
-                <TouchableOpacity
-                    onPress={() => setViewMode('sheet')}
-                    className={`flex-1 items-center justify-center border-b-2 ${viewMode === 'sheet' ? 'border-[#38bdf8] bg-[#38bdf8]/5' : 'border-transparent'}`}
-                >
-                    <View className="flex-row items-center">
-                        <Ionicons name="document-text" size={16} color={viewMode === 'sheet' ? (isDark ? "#38bdf8" : "#0284c7") : "#64748b"} className="mr-2" />
-                        <Text className={`font-black text-sm ${viewMode === 'sheet' ? (isDark ? 'text-white' : 'text-slate-800') : 'text-slate-500'}`}>
-                            {isFile ? t('strategy.view_doc') : t('strategy.title')}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => setViewMode('guide')}
-                    className={`flex-1 items-center justify-center border-b-2 ${viewMode === 'guide' ? 'border-amber-500 bg-amber-500/5' : 'border-transparent'}`}
-                >
-                    <View className="flex-row items-center">
-                        <Ionicons name="help-circle" size={16} color={viewMode === 'guide' ? (isDark ? "#f59e0b" : "#d97706") : "#64748b"} className="mr-2" />
-                        <Text className={`font-black text-sm ${viewMode === 'guide' ? (isDark ? 'text-white' : 'text-slate-800') : 'text-slate-500'}`}>{t('strategy.guide')}</Text>
-                    </View>
-                </TouchableOpacity>
-            </View>
-
             {/* Content Container */}
             <View className="flex-1 relative">
-                {(accessError || viewMode === 'guide') ? (
-                    <View className={`flex-1 items-center justify-center p-8 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
-                        <View className="max-w-md w-full">
-                            <View className={`w-24 h-24 rounded-[32px] items-center justify-center mb-8 mx-auto border rotate-3 ${isDark ? 'bg-amber-500/20 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
+                {(accessError || loadError) ? (
+                    <View className={`flex-1 items-start justify-center p-8 pt-16 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+                        <View className="max-w-md w-full mx-auto">
+                            <View className={`w-24 h-24 rounded-[32px] items-center justify-center mb-10 mx-auto border rotate-3 ${isDark ? 'bg-amber-500/20 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
                                 <Ionicons name="lock-closed" size={48} color={isDark ? "#f59e0b" : "#d97706"} />
                             </View>
-                            <Text className={`text-4xl font-black text-center mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>접근 제한됨</Text>
+                            <Text className={`text-4xl font-black text-center mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.access_denied')}</Text>
                             <Text className="text-slate-400 text-center text-lg leading-relaxed mb-12 font-medium">
                                 {isFile ? (
-                                    "파일을 불러오는 중 문제가 발생했습니다. 관리자에게 문의하세요."
+                                    t('strategy.access_denied_file')
                                 ) : (
-                                    <>
-                                        해당 문서는 외부 보호 영역에 있습니다.{"\n"}권한이 있는 <Text className="text-amber-500 font-bold">구글 계정</Text>으로 로그인이 필요합니다.
-                                    </>
+                                    t('strategy.access_denied_google')
                                 )}
                             </Text>
 
@@ -268,8 +241,8 @@ export default function StrategySheet() {
                                         <Ionicons name="person-add" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className={`font-black text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>권한 요청</Text>
-                                        <Text className={`text-xs font-bold leading-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>관리자에게 본인의 이메일을 알려주고 '뷰어' 권한을 요청하세요.</Text>
+                                        <Text className={`font-black text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.request_permission')}</Text>
+                                        <Text className={`text-xs font-bold leading-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('strategy.request_permission_desc')}</Text>
                                     </View>
                                 </View>
                                 <View className={`flex-row items-center p-5 rounded-3xl border shadow-sm ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-100 shadow-slate-200'}`}>
@@ -277,24 +250,24 @@ export default function StrategySheet() {
                                         <Ionicons name="log-in" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className={`font-black text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>계정 전환</Text>
-                                        <Text className={`text-xs font-bold leading-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>현재 브라우저가 다른 계정으로 로그인되어 있는지 확인해보세요.</Text>
+                                        <Text className={`font-black text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.switch_account')}</Text>
+                                        <Text className={`text-xs font-bold leading-5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('strategy.switch_account_desc')}</Text>
                                     </View>
                                 </View>
                             </View>
 
-                            <View className="flex-row gap-4">
+                            <View className="flex-row gap-4 mt-4">
                                 <TouchableOpacity
                                     onPress={() => Platform.OS === 'web' ? window.open(targetUrl, '_blank') : null}
-                                    className={`flex-1 py-5 rounded-[24px] border active:scale-95 transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                    className={`flex-1 py-3.5 rounded-2xl border active:scale-95 transition-all ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
                                 >
-                                    <Text className={`text-center font-black text-lg ${isDark ? 'text-white' : 'text-slate-800'}`}>새 창에서 열기</Text>
+                                    <Text className={`text-center font-black text-base ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.open_new_window')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    onPress={() => { setAccessError(false); setViewMode('sheet'); }}
-                                    className={`flex-1 py-5 rounded-[24px] shadow-xl active:scale-95 transition-all ${isDark ? 'bg-[#38bdf8] shadow-blue-500/30' : 'bg-blue-600 shadow-blue-200'}`}
+                                    onPress={() => { setAccessError(false); setLoadError(false); setIsLoading(true); }}
+                                    className={`flex-1 py-3.5 rounded-2xl shadow-xl active:scale-95 transition-all ${isDark ? 'bg-[#38bdf8] shadow-blue-500/30' : 'bg-blue-600 shadow-blue-200'}`}
                                 >
-                                    <Text className={`text-center font-black text-lg ${isDark ? 'text-[#0f172a]' : 'text-white'}`}>재시도</Text>
+                                    <Text className={`text-center font-black text-base ${isDark ? 'text-[#0f172a]' : 'text-white'}`}>{t('strategy.retry')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -352,31 +325,33 @@ export default function StrategySheet() {
                     </View>
                 )}
 
-                {/* Floating Zoom Controls - More compact */}
-                <View className="absolute bottom-16 left-0 right-0 items-center justify-center pointer-events-none z-10">
-                    <View className={`flex-row backdrop-blur-md p-1.5 rounded-full border shadow-2xl pointer-events-auto items-center ${isDark ? 'bg-[#0f172a]/90 border-slate-700' : 'bg-white/90 border-slate-200 shadow-slate-200'}`}>
-                        <TouchableOpacity
-                            onPress={() => handleZoom(-0.1)}
-                            className={`w-9 h-9 items-center justify-center rounded-full mr-2 active:bg-slate-700 border ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-200'}`}
-                        >
-                            <Ionicons name="remove" size={18} color={isDark ? "white" : "#1e293b"} />
-                        </TouchableOpacity>
+                {/* Floating Zoom Controls - Minimal & Transparent - Bottom Center */}
+                {!accessError && !loadError && !isLoading && (
+                    <View className="absolute bottom-4 left-0 right-0 items-center justify-center pointer-events-none z-10">
+                        <View className={`flex-row backdrop-blur-[2px] p-1 rounded-full border pointer-events-auto items-center ${isDark ? 'bg-slate-900/30 border-slate-700/30' : 'bg-white/30 border-slate-200/30'}`}>
+                            <TouchableOpacity
+                                onPress={() => handleZoom(-0.1)}
+                                className={`w-7 h-7 items-center justify-center rounded-full mr-1.5 active:bg-slate-700/50 border ${isDark ? 'bg-slate-800/40 border-slate-600/30' : 'bg-slate-100/40 border-slate-200/30'}`}
+                            >
+                                <Ionicons name="remove" size={14} color={isDark ? "white" : "#1e293b"} />
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            onPress={handleResetZoom}
-                            className={`h-9 px-4 items-center justify-center rounded-full mr-2 active:bg-slate-700 border min-w-[70px] ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-slate-100 border-slate-200'}`}
-                        >
-                            <Text className={`font-black text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(zoom * 100)}%</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleResetZoom}
+                                className={`h-7 px-2.5 items-center justify-center rounded-full mr-1.5 active:bg-slate-700/50 border min-w-[50px] ${isDark ? 'bg-slate-800/40 border-slate-600/30' : 'bg-slate-100/40 border-slate-200/30'}`}
+                            >
+                                <Text className={`font-black text-[11px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{Math.round(zoom * 100)}%</Text>
+                            </TouchableOpacity>
 
-                        <TouchableOpacity
-                            onPress={() => handleZoom(0.1)}
-                            className="w-9 h-9 items-center justify-center bg-[#38bdf8] rounded-full active:bg-[#0ea5e9] shadow-lg shadow-blue-500/30"
-                        >
-                            <Ionicons name="add" size={18} color="#0f172a" />
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => handleZoom(0.1)}
+                                className="w-7 h-7 items-center justify-center bg-[#38bdf8]/60 rounded-full active:bg-[#0ea5e9]/80 shadow-sm"
+                            >
+                                <Ionicons name="add" size={14} color="#0f172a" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                </View>
+                )}
             </View>
 
             {/* Admin Config Modal - Kept for legacy but ideally redirected to Admin Page */}

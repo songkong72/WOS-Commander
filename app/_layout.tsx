@@ -151,7 +151,9 @@ export default function Layout() {
                     )}
 
                     <View style={[styles.container, { backgroundColor: isDark ? '#020617' : '#fafaf9', paddingLeft: isPC ? 256 : 0 }]}>
-                        <Slot />
+                        <View style={{ flex: 1 }}>
+                            <Slot />
+                        </View>
                         {!isGateOpen && <GlobalNavigationBar />}
                     </View>
                 </LanguageContext.Provider>

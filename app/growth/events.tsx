@@ -232,7 +232,7 @@ interface EventCardProps {
     checkItemOngoing: (str: string) => boolean;
     openScheduleModal: (event: WikiEvent) => void;
     openGuideModal: (event: WikiEvent) => void;
-    openAttendeeModal: (event: WikiEvent) => void;
+    openAttendeeModal: (event: WikiEvent, groupIndex?: number) => void;
     openWikiLink: (url: string) => void;
     onSetSelectedTeamTab: (idx: number) => void;
     onLayout: (y: number) => void;
@@ -847,7 +847,7 @@ const EventCard = memo(({
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
-                                onPress={() => openAttendeeModal(event)}
+                                onPress={() => openAttendeeModal(event, selectedTeamTab || 0)}
                                 onHoverIn={() => setAttendHover(true)}
                                 onHoverOut={() => setAttendHover(false)}
                                 className={`flex-1 py-2.5 rounded-2xl flex-row items-center justify-center border ${attendHover ? 'bg-emerald-600 border-emerald-500' : (isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200')}`}
@@ -1646,7 +1646,20 @@ export default function EventTracker() {
     // Attendee Modal
     const [attendeeModalVisible, setAttendeeModalVisible] = useState(false);
     const [managedEvent, setManagedEvent] = useState<WikiEvent | null>(null);
-    const { attendees: firestoreAttendees, loading: firestoreLoading, saveAttendeesToFirestore } = useFirestoreAttendees(managedEvent?.id, serverId, allianceId);
+    const [managedGroupIndex, setManagedGroupIndex] = useState<number>(0);
+
+    // Grouped event IDs for identification
+    const getGroupedId = (event: WikiEvent | null, index: number) => {
+        if (!event) return undefined;
+        // Check if event has multiple teams/slots in its time string
+        const hasMultipleTeams = event.time && (event.time.includes('/') || event.time.includes('1군') || event.time.includes('2군'));
+        const isKnownMultiTeam = event.id.includes('bear') || event.id.includes('foundry') || event.id.includes('canyon');
+
+        if (!hasMultipleTeams && !isKnownMultiTeam) return event.id;
+        return `${event.id}_team${index}`;
+    };
+
+    const { attendees: firestoreAttendees, loading: firestoreLoading, saveAttendeesToFirestore } = useFirestoreAttendees(getGroupedId(managedEvent, managedGroupIndex), serverId, allianceId);
     const [bulkAttendees, setBulkAttendees] = useState<Partial<Attendee>[]>([]);
 
     // Scheduling Logic
@@ -2577,8 +2590,9 @@ export default function EventTracker() {
         setGuideModalVisible(true);
     }, []);
 
-    const openAttendeeModal = useCallback((event: WikiEvent) => {
+    const openAttendeeModal = useCallback((event: WikiEvent, groupIndex?: number) => {
         setManagedEvent(event);
+        setManagedGroupIndex(groupIndex || 0);
         setAttendeeModalVisible(true);
     }, []);
 
@@ -2633,18 +2647,26 @@ export default function EventTracker() {
             `- ${a.name}: ${[a.hero1, a.hero2, a.hero3].filter(Boolean).join(', ') || t('events.no_hero')}`
         ).join('\n');
 
+        const isBearOrFoundry = managedEvent?.id === 'a_bear' || managedEvent?.id === 'alliance_bear' || managedEvent?.id === 'a_foundry' || managedEvent?.id === 'alliance_foundry' || managedEvent?.id === 'alliance_canyon';
+        const isBear = managedEvent?.id.includes('bear');
+        const teamLabel = isBear ? t(`events.bear${managedGroupIndex + 1}`) : `${t('events.team_unit')}${managedGroupIndex + 1}`;
+        const displayTitle = isBearOrFoundry ? `${managedEvent?.title} (${teamLabel})` : managedEvent?.title;
+
         setAttendeeModalVisible(false);
         setIsSaving(true);
         showCustomAlert(
             t('events.save_attendees_title'),
-            t('events.save_attendees_success_desc', { title: managedEvent?.title, count: validAttendees.length }) + `\n\n${summary}`,
+            t('events.save_attendees_success_desc', { title: displayTitle, count: validAttendees.length }) + `\n\n${summary}`,
             'success'
         );
 
         if (managedEvent) {
             saveAttendeesToFirestore(validAttendees.length > 0 ? validAttendees : [], managedEvent.title)
                 .then(() => showCustomAlert(t('common.success'), t('events.save_success'), 'success'))
-                .catch((e) => showCustomAlert(t('common.error'), t('events.save_error', { error: e.message }), 'error'));
+                .catch((e) => showCustomAlert(t('common.error'), t('events.save_error', { error: e.message }), 'error'))
+                .finally(() => setIsSaving(false));
+        } else {
+            setIsSaving(false);
         }
     }, [bulkAttendees, managedEvent, showCustomAlert, saveAttendeesToFirestore, t]);
 
@@ -4132,7 +4154,11 @@ export default function EventTracker() {
                         <Pressable className="flex-1 justify-end" onPress={() => { }}>
                             <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
                                 <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                                    <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{managedEvent?.title} {t('events.modal.manage_attendees')}</Text>
+                                    <View className="flex-row items-center flex-1 mr-2">
+                                        <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>
+                                            {managedEvent?.title}
+                                        </Text>
+                                    </View>
                                     <View className="flex-row items-center">
                                         {isAdmin && (
                                             <TouchableOpacity
@@ -4227,8 +4253,28 @@ export default function EventTracker() {
 
                                 <View className={`p-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                     {isAdmin ? (
-                                        <TouchableOpacity onPress={saveAttendees} className="bg-blue-600 w-full py-4 rounded-2xl items-center shadow-lg shadow-blue-600/20">
-                                            <Text className="text-white font-bold text-lg">{t('events.modal.save_attendees')} ({bulkAttendees.filter(a => a.name?.trim()).length}{t('events.person_unit')})</Text>
+                                        <TouchableOpacity
+                                            onPress={saveAttendees}
+                                            disabled={isSaving}
+                                            className={`mt-4 w-full h-14 rounded-2xl flex-row items-center justify-center shadow-lg ${isSaving ? (isDark ? 'bg-slate-800' : 'bg-slate-200') : 'bg-blue-600'}`}
+                                        >
+                                            {isSaving ? (
+                                                <ActivityIndicator color={isDark ? "#94a3b8" : "#64748b"} />
+                                            ) : (
+                                                <>
+                                                    <Ionicons name="save-outline" size={20} color="white" style={{ marginRight: 8 }} />
+                                                    <Text className="text-white text-base font-bold">
+                                                        {(() => {
+                                                            const isBearOrFoundry = managedEvent?.id.includes('bear') || managedEvent?.id.includes('foundry') || managedEvent?.id.includes('canyon');
+                                                            const isBear = managedEvent?.id.includes('bear');
+                                                            const teamLabel = isBear ? t(`events.bear${managedGroupIndex + 1}`) : `${t('events.team_unit')}${managedGroupIndex + 1}`;
+                                                            const label = isBearOrFoundry ? `[${teamLabel}] ` : '';
+                                                            const count = bulkAttendees.filter(a => a.name?.trim()).length;
+                                                            return `${label}${t('events.modal.save_attendees')} (${count}${t('events.person_unit')})`;
+                                                        })()}
+                                                    </Text>
+                                                </>
+                                            )}
                                         </TouchableOpacity>
                                     ) : (
                                         <View className="w-full py-4 items-center">
