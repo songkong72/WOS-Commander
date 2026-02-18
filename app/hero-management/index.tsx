@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, ImageBackground, Image, Dimen
 import { Stack, Link, useRouter, useLocalSearchParams } from 'expo-router';
 import { BlurView } from 'expo-blur';
 import { useAuth, useTheme } from '../context';
+import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
 
@@ -53,11 +54,12 @@ const roleIcons: { [key: string]: any } = {
 };
 
 export default function HeroManagement() {
+    const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams();
     const { theme } = useTheme();
     const isDark = theme === 'dark';
-    const [selectedCategory, setSelectedCategory] = useState('레어'); // Default first tab
+    const [selectedCategory, setSelectedCategory] = useState('레어'); // Default first tab (Internal ID stays Korean for filtering)
 
     // Update category from URL parameter if provided
     React.useEffect(() => {
@@ -67,9 +69,9 @@ export default function HeroManagement() {
     }, [params.category]);
 
     const categories = [
-        { id: '레어', label: '레어' },
-        { id: '에픽', label: '에픽' },
-        ...Array.from({ length: 15 }, (_, i) => ({ id: `S${i + 1}`, label: `S${i + 1}` })),
+        { id: '레어', label: t('heroes.categories.rare') },
+        { id: '에픽', label: t('heroes.categories.epic') },
+        ...Array.from({ length: 15 }, (_, i) => ({ id: `S${i + 1}`, label: t('heroes.categories.gen_format', { gen: i + 1 }) })),
     ];
 
     const filteredHeroes = heroesData
@@ -143,10 +145,14 @@ export default function HeroManagement() {
                                 <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
                             </Pressable>
                             <View className="flex-1">
-                                <Text className={`font-black text-[9px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>Hero Archive</Text>
+                                <Text className={`font-black text-[9px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>{t('heroes.archive_title')}</Text>
                                 <View className="flex-row items-baseline">
-                                    <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{selectedCategory}</Text>
-                                    <Text className={`ml-1 text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>영웅 목록</Text>
+                                    <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                        {selectedCategory.startsWith('S')
+                                            ? t('heroes.categories.gen_format', { gen: selectedCategory.substring(1) })
+                                            : t(`heroes.categories.${selectedCategory === '레어' ? 'rare' : 'epic'}`)}
+                                    </Text>
+                                    <Text className={`ml-1 text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('heroes.list_title')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -194,7 +200,7 @@ export default function HeroManagement() {
                                                     {/* Name Bar */}
                                                     <View className={`py-2 items-center justify-center border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
                                                         <Text className={`font-bold text-[10px] md:text-xs tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>
-                                                            {hero.name}
+                                                            {t(`heroes.names.${hero.id.toLowerCase()}`, { defaultValue: hero.name })}
                                                         </Text>
                                                     </View>
                                                 </Pressable>
@@ -203,7 +209,7 @@ export default function HeroManagement() {
                                     ))
                                 ) : (
                                     <View className="w-full py-20 items-center justify-center">
-                                        <Text className="text-slate-600 font-semibold text-lg">해당 세대의 영웅 정보가 아직 준비 중입니다.</Text>
+                                        <Text className="text-slate-600 font-semibold text-lg">{t('heroes.empty_msg')}</Text>
                                     </View>
                                 )}
                             </View>

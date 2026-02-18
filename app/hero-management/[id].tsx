@@ -51,9 +51,11 @@ const SkillImage = ({ icon, className, style }: { icon: string, className?: stri
     );
 };
 
+import { useTranslation } from 'react-i18next';
+
 export default function HeroDetail() {
     const { id } = useLocalSearchParams();
-
+    const { t } = useTranslation();
     const router = useRouter();
     const navigation = useNavigation();
     const hero = heroesData.find(h => h.id === id);
@@ -122,10 +124,53 @@ export default function HeroDetail() {
         '천재': 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/construction.png',
     };
 
+    const rarityMap: Record<string, string> = {
+        '전설': 'legendary',
+        '에픽': 'epic',
+        '레어': 'rare',
+        'SSR 전설': 'ssr',
+        'SR 에픽': 'sr',
+        'R 레어': 'r'
+    };
+
+    const classMap: Record<string, string> = {
+        '보병': 'infantry',
+        '창병': 'lancer',
+        '궁병': 'marksman',
+        '방패병': 'shield'
+    };
+
+    const roleMap: Record<string, string> = {
+        '전투': 'combat',
+        '건설': 'construction',
+        '수호': 'guard',
+        '암살': 'assassin',
+        '지휘': 'command',
+        '점술': 'divination',
+        '수집': 'collection',
+        '생존자': 'survivor',
+        '음유시인': 'bard',
+        '추적': 'tracking',
+        '기계': 'mechanic',
+        '독약': 'poison',
+        '공학': 'engineering',
+        '협객': 'mercenary',
+        '환술': 'illusion',
+        '학자': 'scholar',
+        '용병단장': 'captain',
+        '대장장이': 'smith',
+        '벌목공': 'lumberjack',
+        '척탄병': 'grenadier',
+        '음악가': 'musician',
+        '노병': 'veteran',
+        '엔지니어': 'engineer',
+        '천재': 'genius'
+    };
+
     if (!hero) {
         return (
             <View className="flex-1 bg-brand-dark items-center justify-center">
-                <Text className="text-white">영웅 정보를 찾을 수 없습니다.</Text>
+                <Text className="text-white">{t('heroes.detail.not_found')}</Text>
             </View>
         );
     }
@@ -156,7 +201,7 @@ export default function HeroDetail() {
             >
                 <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
             </Pressable>
-            <Text className={`font-bold text-lg tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{hero.name}</Text>
+            <Text className={`font-bold text-lg tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{t(`heroes.names.${hero.id}`, { defaultValue: hero.name })}</Text>
             <View className="w-9 h-9" />
         </View>
     );
@@ -198,39 +243,39 @@ export default function HeroDetail() {
                                 resizeMode="contain"
                             />
                             <View className={`py-3 items-center ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`}>
-                                <Text className={`font-bold text-lg ${isDark ? 'text-black' : 'text-white'}`}>{hero.name}</Text>
+                                <Text className={`font-bold text-lg ${isDark ? 'text-black' : 'text-white'}`}>{t(`heroes.names.${hero.id}`, { defaultValue: hero.name })}</Text>
                             </View>
                             <View className="p-4 space-y-1">
                                 <AttributeItem
-                                    label="희귀도"
-                                    value={hero.displayInfo?.rarity || hero.rarity}
+                                    label={t('heroes.detail.rarity')}
+                                    value={t(`heroes.detail.rarities.${rarityMap[hero.displayInfo?.rarity || hero.rarity] || 'legendary'}`)}
                                     icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/hero_bg_021.png"
                                 />
                                 <AttributeItem
-                                    label="등급"
-                                    value={hero.displayInfo?.class || hero.type}
+                                    label={t('heroes.detail.class')}
+                                    value={t(`heroes.detail.classes.${classMap[hero.displayInfo?.class || hero.type] || 'infantry'}`)}
                                     icon={typeIcons[hero.type] || typeIcons['보병']}
                                 />
                                 <AttributeItem
-                                    label="하위 등급"
-                                    value={hero.displayInfo?.subClass || "전투"}
+                                    label={t('heroes.detail.sub_class')}
+                                    value={t(`heroes.detail.roles.${roleMap[hero.displayInfo?.subClass || "전투"] || 'combat'}`)}
                                     icon={roleIcons[hero.displayInfo?.subClass || "전투"] || roleIcons['전투']}
                                 />
                             </View>
                         </View>
 
                         <View className={`rounded-3xl p-5 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                            <Text className={`font-bold text-sm mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>영웅 스텟</Text>
+                            <Text className={`font-bold text-sm mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('heroes.detail.stats_title')}</Text>
                             <View className="mb-4">
-                                <Text className="text-brand-accent text-[10px] font-bold uppercase mb-2">탐험 (Exploration)</Text>
-                                <StatRow label="공격" value={stats.atk.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
-                                <StatRow label="방어" value={stats.def.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
-                                <StatRow label="체력" value={stats.hp.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
+                                <Text className="text-brand-accent text-[10px] font-bold uppercase mb-2">{t('heroes.detail.exploration')}</Text>
+                                <StatRow label={t('heroes.detail.atk')} value={stats.atk.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
+                                <StatRow label={t('heroes.detail.def')} value={stats.def.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
+                                <StatRow label={t('heroes.detail.hp')} value={stats.hp.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
                             </View>
                             <View>
-                                <Text className="text-brand-accent text-[10px] font-bold uppercase mb-2">원정 (Expedition)</Text>
-                                <StatRow label="공격력" value={stats.expAtk} />
-                                <StatRow label="방어력" value={stats.expDef} />
+                                <Text className="text-brand-accent text-[10px] font-bold uppercase mb-2">{t('heroes.detail.expedition')}</Text>
+                                <StatRow label={t('heroes.detail.power')} value={stats.expAtk} />
+                                <StatRow label={t('heroes.detail.def')} value={stats.expDef} />
                             </View>
                         </View>
                     </View>
@@ -238,11 +283,11 @@ export default function HeroDetail() {
                     {/* Main Content Area */}
                     <View className="flex-1">
                         {/* Tab Buttons */}
-                        <View className="flex-row flex-wrap gap-2.5 mb-6">
+                        <View className="flex-row gap-2 mb-6">
                             {[
-                                { id: 'story', label: '스토리', icon: 'book-outline', color: '#fbbf24', tooltip: '영웅의 배경 이야기와 설정을 확인합니다.' },
-                                { id: 'shards', label: '조각', icon: 'diamond-outline', color: '#f8fafc', tooltip: '영웅 성급 진화에 필요한 조각 정보를 확인합니다.' },
-                                { id: 'skills', label: '스킬', icon: 'flash-outline', color: '#22d3ee', tooltip: '영웅의 탐험, 원정, 특수 스킬 정보를 확인합니다.' }
+                                { id: 'story', label: t('heroes.detail.tabs.story'), icon: 'book-outline', color: '#fbbf24', tooltip: t('heroes.detail.tooltips.story') },
+                                { id: 'shards', label: t('heroes.detail.tabs.shards'), icon: 'diamond-outline', color: '#f8fafc', tooltip: t('heroes.detail.tooltips.shards') },
+                                { id: 'skills', label: t('heroes.detail.tabs.skills'), icon: 'flash-outline', color: '#22d3ee', tooltip: t('heroes.detail.tooltips.skills') }
                             ].map((tab) => (
                                 <View key={tab.id} className="relative">
                                     <Pressable
@@ -256,7 +301,7 @@ export default function HeroDetail() {
                                                 cursor: 'pointer'
                                             }
                                         ]}
-                                        className={`flex-row items-center px-5 py-3 rounded-2xl border transition-all ${activeTab === tab.id
+                                        className={`flex-row items-center px-4 py-3 rounded-2xl border transition-all ${activeTab === tab.id
                                             ? (isDark ? 'bg-slate-800 border-white/20 shadow-lg' : 'bg-white border-slate-200 shadow-md')
                                             : (isDark ? 'bg-slate-900/40 border-transparent opacity-60' : 'bg-slate-100/50 border-transparent opacity-50')}`}
                                     >
@@ -301,9 +346,9 @@ export default function HeroDetail() {
                         {/* Story Content */}
                         {activeTab === 'story' && (
                             <View className={`rounded-3xl p-6 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <Text className={`font-bold text-lg mb-4 ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`}>Hero Story</Text>
+                                <Text className={`font-bold text-lg mb-4 ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`}>{t('heroes.detail.story_title')}</Text>
                                 <Text className={`leading-7 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-                                    {hero.description || `${hero.name}의 상세 정보가 아직 업데이트되지 않았습니다.`}
+                                    {t(`heroes.descriptions.${hero.id.toLowerCase()}`, { defaultValue: hero.description || `${t(`heroes.names.${hero.id.toLowerCase()}`, { defaultValue: hero.name })} ${t('heroes.detail.not_available')}` })}
                                 </Text>
                             </View>
                         )}
@@ -312,14 +357,14 @@ export default function HeroDetail() {
                         {activeTab === 'shards' && (
                             <View className={`rounded-3xl p-6 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                 <View className="flex-row items-center justify-between mb-6">
-                                    <Text className={`font-bold text-lg ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`}>성급 진화 (Shards)</Text>
+                                    <Text className={`font-bold text-lg ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`}>{t('heroes.detail.shards_title')}</Text>
                                     <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/item_icon_500220.png' }} className="w-8 h-8" />
                                 </View>
                                 <View className={`border rounded-2xl overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                                     {/* ... table content remains same ... */}
                                     <View className={`py-3 px-4 border-b ${isDark ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                                        <Text className="flex-1 text-slate-400 text-[10px] font-bold uppercase">성급 | 티어</Text>
-                                        <Text className="w-12 text-center text-slate-400 text-[10px] font-bold uppercase">Total</Text>
+                                        <Text className="flex-1 text-slate-400 text-[10px] font-bold uppercase">{t('heroes.detail.tier')}</Text>
+                                        <Text className="w-12 text-center text-slate-400 text-[10px] font-bold uppercase">{t('heroes.detail.total')}</Text>
                                     </View>
                                     {[
                                         { star: 1, total: 30 },
@@ -345,16 +390,16 @@ export default function HeroDetail() {
                         {activeTab === 'skills' && (
                             <View className={`rounded-3xl p-6 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                 <View className="flex-row gap-2 mb-6 justify-center">
-                                    {['exploration', 'expedition', 'special'].filter(t => {
-                                        if (t === 'special') {
+                                    {['exploration', 'expedition', 'special'].filter(type => {
+                                        if (type === 'special') {
                                             return !!((hero as any).equipment || (hero.skills as any)?.special?.length > 0);
                                         }
-                                        return (hero.skills as any)?.[t]?.length > 0;
-                                    }).map((t) => (
+                                        return (hero.skills as any)?.[type]?.length > 0;
+                                    }).map((type) => (
                                         <Pressable
-                                            key={t}
-                                            onPress={() => setSkillType(t)}
-                                            className={`px-5 py-2.5 rounded-full border transition-all ${skillType === t
+                                            key={type}
+                                            onPress={() => setSkillType(type)}
+                                            className={`px-5 py-2.5 rounded-full border transition-all ${skillType === type
                                                 ? (isDark ? 'bg-white border-white shadow-lg shadow-white/10' : 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20')
                                                 : (isDark ? 'bg-transparent border-slate-700' : 'bg-slate-50 border-slate-200')}`}
                                             style={({ pressed, hovered }: any) => [
@@ -365,8 +410,8 @@ export default function HeroDetail() {
                                                 }
                                             ]}
                                         >
-                                            <Text className={`text-[11px] font-bold uppercase tracking-widest ${skillType === t ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
-                                                {t === 'exploration' ? '탐험' : t === 'expedition' ? '원정' : '특성'}
+                                            <Text className={`text-[11px] font-bold uppercase tracking-widest ${skillType === type ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+                                                {t(`heroes.detail.${type}`)}
                                             </Text>
                                         </Pressable>
                                     ))}
@@ -374,29 +419,29 @@ export default function HeroDetail() {
 
                                 {skillType === 'special' ? (
                                     <View>
-                                        <Text className="text-[#22d3ee] font-bold text-lg mb-6">전용 장비 & 스텟</Text>
+                                        <Text className="text-[#22d3ee] font-bold text-lg mb-6">{t('heroes.detail.equipment_title')}</Text>
 
                                         {(() => {
                                             const stats = (hero as any).skills?.special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
                                             if (stats) {
                                                 return (
                                                     <View className="mb-8">
-                                                        <Text className="text-white font-bold text-sm mb-3 pl-1">스텟</Text>
+                                                        <Text className="text-white font-bold text-sm mb-3 pl-1">{t('heroes.detail.stats_title')}</Text>
                                                         <View className="flex-col md:flex-row gap-4">
                                                             <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                                                                 <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
-                                                                    <Text className={`text-[11px] font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>탐험</Text>
+                                                                    <Text className={`text-[11px] font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('heroes.detail.exploration')}</Text>
                                                                 </View>
-                                                                <StatRow label="공격" value={stats.exploration.atk?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
-                                                                <StatRow label="방어" value={stats.exploration.def?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
-                                                                <StatRow label="체력" value={stats.exploration.hp?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
+                                                                <StatRow label={t('heroes.detail.atk')} value={stats.exploration.atk?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
+                                                                <StatRow label={t('heroes.detail.def')} value={stats.exploration.def?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
+                                                                <StatRow label={t('heroes.detail.hp')} value={stats.exploration.hp?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
                                                             </View>
                                                             <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                                                                 <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
-                                                                    <Text className={`text-[11px] font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>원정</Text>
+                                                                    <Text className={`text-[11px] font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('heroes.detail.expedition')}</Text>
                                                                 </View>
-                                                                <StatRow label="파괴력" value={stats.expedition.power} />
-                                                                <StatRow label="HP" value={stats.expedition.hp} />
+                                                                <StatRow label={t('heroes.detail.power')} value={stats.expedition.power} />
+                                                                <StatRow label={t('heroes.detail.hp')} value={stats.expedition.hp} />
                                                             </View>
                                                         </View>
                                                     </View>
@@ -409,7 +454,7 @@ export default function HeroDetail() {
                                             const equipmentData = (hero as any).equipment || (hero as any).skills?.special?.[0]?.equipment;
 
                                             if (!equipmentData) return (
-                                                <Text className="text-slate-500 text-center py-10">전용 장비 정보가 아직 등록되지 않았습니다.</Text>
+                                                <Text className="text-slate-500 text-center py-10">{t('heroes.detail.not_available')}</Text>
                                             );
 
                                             const displayPower = equipmentData.power
@@ -467,7 +512,7 @@ export default function HeroDetail() {
                                             </View>
                                         ))}
                                         {(!(hero.skills as any)?.[skillType] || (hero.skills as any)[skillType].length === 0) && (
-                                            <Text className="text-slate-500 text-center py-10">정보가 아직 등록되지 않았습니다.</Text>
+                                            <Text className="text-slate-500 text-center py-10">{t('heroes.detail.not_available')}</Text>
                                         )}
                                     </View>
                                 )}

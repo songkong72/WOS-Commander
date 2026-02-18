@@ -798,7 +798,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                         })()}
                                                                                     </Text>
                                                                                     <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                                                                                        {ck} Event
+                                                                                        {cfg.label} Event
                                                                                     </Text>
                                                                                 </View>
                                                                             </View>
