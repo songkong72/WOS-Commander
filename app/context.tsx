@@ -29,6 +29,7 @@ type Theme = 'dark' | 'light';
 
 interface ThemeContextType {
     theme: Theme;
+    setTheme: (theme: Theme) => void;
     toggleTheme: () => void;
     fontSizeScale: number;
     changeFontSize: (scale: number) => void;

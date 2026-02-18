@@ -10,6 +10,8 @@ import "../global.css";
 import GlobalNavigationBar from '../components/GlobalNavigationBar';
 import '../services/i18n';
 import i18next from '../services/i18n';
+import { db } from '../firebaseConfig';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 NativeWindStyleSheet.setOutput({
     default: "native",
@@ -54,15 +56,16 @@ export default function Layout() {
                 if (savedAdminId) {
                     setAuth({ isLoggedIn: true, adminName: savedAdminId, role: savedRole as any });
                 }
+
+                // Prioritize saved theme
                 if (savedTheme) {
                     setTheme(savedTheme as 'dark' | 'light');
                 }
+
                 if (savedLanguage) {
-                    // Saved language takes priority
                     setLanguage(savedLanguage as Language);
                     i18next.changeLanguage(savedLanguage);
                 } else {
-                    // No saved language, use detected system language
                     const systemLang = detectSystemLanguage();
                     setLanguage(systemLang);
                     i18next.changeLanguage(systemLang);
@@ -80,6 +83,38 @@ export default function Layout() {
         };
         restoreSession();
     }, []);
+
+    // Reactive Theme Listener
+    useEffect(() => {
+        let unsubscribe: (() => void) | undefined;
+
+        const setupThemeListener = async () => {
+            const savedTheme = await AsyncStorage.getItem('theme');
+            // If user has manually set a theme, don't override it with global default
+            if (savedTheme) return;
+
+            let configRef = doc(db, 'config', 'themeConfig');
+            if (serverId && allianceId) {
+                configRef = doc(db, "servers", serverId, "alliances", allianceId, "settings", "themeConfig");
+            }
+
+            unsubscribe = onSnapshot(configRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const defaultMode = docSnap.data().defaultMode;
+                    if (defaultMode && (defaultMode === 'dark' || defaultMode === 'light')) {
+                        setTheme(defaultMode);
+                    }
+                }
+            }, (err) => {
+                console.error('Theme listener error:', err);
+            });
+        };
+
+        setupThemeListener();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [serverId, allianceId]);
 
     const login = (name: string, role?: AdminStatus['role']) => {
         setAuth({ isLoggedIn: true, adminName: name, role: role || null });
@@ -100,10 +135,14 @@ export default function Layout() {
         if (a) AsyncStorage.setItem('allianceId', a); else AsyncStorage.removeItem('allianceId');
     };
 
-    const toggleTheme = () => {
-        const newTheme = theme === 'dark' ? 'light' : 'dark';
+    const handleSetTheme = (newTheme: 'dark' | 'light') => {
         setTheme(newTheme);
         AsyncStorage.setItem('theme', newTheme);
+    };
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        handleSetTheme(newTheme);
     };
 
     const changeLanguage = (lang: Language) => {
@@ -124,7 +163,7 @@ export default function Layout() {
 
     return (
         <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen }}>
-            <ThemeContext.Provider value={{ theme, toggleTheme, fontSizeScale, changeFontSize }}>
+            <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, toggleTheme, fontSizeScale, changeFontSize }}>
                 <LanguageContext.Provider value={{ language, changeLanguage }}>
                     {Platform.OS === 'web' && (
                         <Head>

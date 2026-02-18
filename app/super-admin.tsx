@@ -395,17 +395,17 @@ export default function SuperAdminDashboard() {
                                             </TouchableOpacity>
                                         )}
                                         <View style={{ flex: 1 }}>
-                                            <View className="flex-row justify-between mb-4">
-                                                <View style={{ flex: 1 }}>
-                                                    <View className="flex-row items-center mb-1">
-                                                        <Text className={`text-xs font-black px-2 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2`}>{req.serverId}</Text>
-                                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{req.allianceId}</Text>
+                                            <View className="flex-row justify-between items-start mb-4">
+                                                <View style={{ flex: 1, marginRight: 8 }}>
+                                                    <View className="flex-row flex-wrap items-center">
+                                                        <Text className={`text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1`}>{req.serverId}</Text>
+                                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail">{req.allianceId}</Text>
                                                     </View>
-                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{req.allianceName}</Text>
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>{req.allianceName}</Text>
                                                 </View>
 
                                                 {activeTab === 'pending' && (
-                                                    <View className="flex-row gap-2">
+                                                    <View className="flex-row gap-2 shrink-0">
                                                         <TouchableOpacity
                                                             onPress={() => handleReject(req)}
                                                             activeOpacity={0.7}
@@ -427,12 +427,12 @@ export default function SuperAdminDashboard() {
                                             </View>
 
                                             <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
-                                                <View>
-                                                    <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Admin ID: <Text className={`text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
-                                                    <Text className={`text-xs font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Contact: <Text className={`text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
+                                                <View style={{ flex: 1, marginRight: 10 }}>
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Admin ID: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
+                                                    <Text className={`text-[10px] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Contact: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
                                                 </View>
                                                 <View className="items-end">
-                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                                                         {new Date(req.requestedAt).toLocaleDateString()}
                                                     </Text>
                                                 </View>
