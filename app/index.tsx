@@ -144,9 +144,42 @@ export default function Home() {
     const [showGatePw, setShowGatePw] = useState(false);
     const [showModalPw, setShowModalPw] = useState(false);
     const [showPass1, setShowPass1] = useState(false);
-    const [showPass1, setShowPass1] = useState(false);
     const [showPass2, setShowPass2] = useState(false);
     const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+
+    // -- Font Size Persistence --
+    useEffect(() => {
+        AsyncStorage.getItem('settings_fontSize').then(val => {
+            if (val && ['small', 'medium', 'large'].includes(val)) {
+                setFontSize(val as any);
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        AsyncStorage.setItem('settings_fontSize', fontSize);
+    }, [fontSize]);
+
+    // -- Dynamic Font Size Helper --
+    const dfs = (baseClass: string) => {
+        if (fontSize === 'medium') return baseClass;
+
+        const sizeMap: Record<string, { small: string, medium: string, large: string }> = {
+            'text-[8px]': { small: 'text-[7px]', medium: 'text-[8px]', large: 'text-[9px]' },
+            'text-[9px]': { small: 'text-[8px]', medium: 'text-[9px]', large: 'text-[10px]' },
+            'text-[10px]': { small: 'text-[9px]', medium: 'text-[10px]', large: 'text-xs' },
+            'text-xs': { small: 'text-[10px]', medium: 'text-xs', large: 'text-sm' },
+            'text-sm': { small: 'text-xs', medium: 'text-sm', large: 'text-base' },
+            'text-base': { small: 'text-sm', medium: 'text-base', large: 'text-lg' },
+            'text-lg': { small: 'text-base', medium: 'text-lg', large: 'text-xl' },
+            'text-xl': { small: 'text-lg', medium: 'text-xl', large: 'text-2xl' },
+            'text-2xl': { small: 'text-xl', medium: 'text-2xl', large: 'text-3xl' },
+            'text-3xl': { small: 'text-2xl', medium: 'text-3xl', large: 'text-4xl' },
+            'text-4xl': { small: 'text-3xl', medium: 'text-4xl', large: 'text-5xl' },
+        };
+
+        return sizeMap[baseClass]?.[fontSize] || baseClass;
+    };
 
     const saveToHistory = async (key: string, value: string) => {
         if (!value || value.trim() === '') return;
@@ -4573,49 +4606,6 @@ export default function Home() {
                                                     </View>
                                                 </View>
 
-                                                {/* Font Size Settings Section */}
-                                                <View className={`mt-4 p-3 rounded-[24px] border shadow-xl ${isDark ? 'bg-slate-900/40 border-slate-800/50' : 'bg-white border-slate-100 shadow-slate-100/50'}`}>
-                                                    <BlurView intensity={isDark ? 6 : 12} className="absolute inset-0 rounded-[24px]" />
-
-                                                    <View className="flex-row items-center mb-3">
-                                                        <View className={`w-8 h-8 rounded-lg items-center justify-center mr-2.5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                                            <Ionicons name="text" size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
-                                                        </View>
-                                                        <View>
-                                                            <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.fontSettings')}</Text>
-                                                            <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Accessibility</Text>
-                                                        </View>
-                                                    </View>
-
-                                                    <View className={`p-2.5 rounded-lg border mb-3 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-100'}`}>
-                                                        <Text className={`text-[11px] font-medium leading-4 ${isDark ? 'text-indigo-300/80' : 'text-indigo-700/80'}`}>
-                                                            {t('admin.fontSettingsDesc')}
-                                                        </Text>
-                                                    </View>
-
-                                                    <View className={`p-2 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/50' : 'bg-slate-50 border-slate-200/50'}`}>
-                                                        <View className="flex-row gap-2">
-                                                            {(['small', 'medium', 'large'] as const).map((size) => (
-                                                                <TouchableOpacity
-                                                                    key={size}
-                                                                    onPress={() => setFontSize(size)}
-                                                                    className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${fontSize === size ?
-                                                                        'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' :
-                                                                        (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}
-                                                                >
-                                                                    <Text className={`font-black text-[11px] ${fontSize === size ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1}>
-                                                                        {size === 'small' ? t('admin.fontSmall') : size === 'medium' ? t('admin.fontMedium') : t('admin.fontLarge')}
-                                                                    </Text>
-                                                                    {fontSize === size && (
-                                                                        <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-white">
-                                                                            <Ionicons name="checkmark" size={10} color="white" />
-                                                                        </View>
-                                                                    )}
-                                                                </TouchableOpacity>
-                                                            ))}
-                                                        </View>
-                                                    </View>
-                                                </View>
 
                                                 {/* Font Size Settings Section */}
                                                 <View className={`mt-4 p-3 rounded-[24px] border shadow-xl ${isDark ? 'bg-slate-900/40 border-slate-800/50' : 'bg-white border-slate-100 shadow-slate-100/50'}`}>
@@ -4660,621 +4650,622 @@ export default function Home() {
                                                         </View>
                                                     </View>
                                                 </View>
+                                            </View>
+                                            ) : (
+                                            <>
+                                                {allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').length === 0 ? (
+                                                    <View className="items-center justify-center py-20">
+                                                        <Ionicons name="documents-outline" size={64} color={isDark ? '#334155' : '#cbd5e1'} />
+                                                        <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                            {superAdminTab === 'pending' ? t('admin.no_pending') : t('admin.no_registered')}
+                                                        </Text>
+                                                    </View>
                                                 ) : (
-                                                <>
-                                                    {allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').length === 0 ? (
-                                                        <View className="items-center justify-center py-20">
-                                                            <Ionicons name="documents-outline" size={64} color={isDark ? '#334155' : '#cbd5e1'} />
-                                                            <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
-                                                                {superAdminTab === 'pending' ? t('admin.no_pending') : t('admin.no_registered')}
-                                                            </Text>
-                                                        </View>
-                                                    ) : (
-                                                        allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').map((req) => (
-                                                            <View key={req.id} className={`p-4 rounded-[24px] border mb-3 shadow-md ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                                                <View className="flex-row">
-                                                                    {superAdminTab === 'pending' && (
-                                                                        <TouchableOpacity
-                                                                            onPress={() => toggleSelectRequest(req.id)}
-                                                                            className="mr-6 justify-center"
-                                                                        >
-                                                                            <View className={`w-10 h-10 rounded-2xl items-center justify-center border-2 ${selectedReqIds.has(req.id) ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200')}`}>
-                                                                                {selectedReqIds.has(req.id) && <Ionicons name="checkmark" size={24} color="white" />}
+                                                    allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').map((req) => (
+                                                        <View key={req.id} className={`p-4 rounded-[24px] border mb-3 shadow-md ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                                            <View className="flex-row">
+                                                                {superAdminTab === 'pending' && (
+                                                                    <TouchableOpacity
+                                                                        onPress={() => toggleSelectRequest(req.id)}
+                                                                        className="mr-6 justify-center"
+                                                                    >
+                                                                        <View className={`w-10 h-10 rounded-2xl items-center justify-center border-2 ${selectedReqIds.has(req.id) ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200')}`}>
+                                                                            {selectedReqIds.has(req.id) && <Ionicons name="checkmark" size={24} color="white" />}
+                                                                        </View>
+                                                                    </TouchableOpacity>
+                                                                )}
+                                                                <View style={{ flex: 1 }}>
+                                                                    <View className="flex-row justify-between items-start mb-4">
+                                                                        <View style={{ flex: 1, marginRight: 8 }}>
+                                                                            <View className="flex-row flex-wrap items-center">
+                                                                                <Text className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1">{req.serverId}</Text>
+                                                                                <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail">{req.allianceId}</Text>
                                                                             </View>
-                                                                        </TouchableOpacity>
-                                                                    )}
-                                                                    <View style={{ flex: 1 }}>
-                                                                        <View className="flex-row justify-between items-start mb-4">
-                                                                            <View style={{ flex: 1, marginRight: 8 }}>
-                                                                                <View className="flex-row flex-wrap items-center">
-                                                                                    <Text className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1">{req.serverId}</Text>
-                                                                                    <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail">{req.allianceId}</Text>
-                                                                                </View>
-                                                                                {req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>{req.allianceName}</Text>}
-                                                                            </View>
-
-                                                                            {superAdminTab === 'pending' ? (
-                                                                                <View className="flex-row gap-2 shrink-0">
-                                                                                    <TouchableOpacity
-                                                                                        onPress={() => handleRejectRequest(req)}
-                                                                                        activeOpacity={0.7}
-                                                                                        className={`px-3 py-2 rounded-xl border flex-row items-center ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
-                                                                                    >
-                                                                                        <Ionicons name="close-circle-outline" size={16} color="#ef4444" />
-                                                                                        <Text className="text-xs font-bold text-red-500 ml-1">{t('admin.reject_short')}</Text>
-                                                                                    </TouchableOpacity>
-                                                                                    <TouchableOpacity
-                                                                                        onPress={() => handleApproveRequest(req)}
-                                                                                        activeOpacity={0.7}
-                                                                                        className="px-4 py-2 bg-sky-500 rounded-xl shadow-sm flex-row items-center"
-                                                                                    >
-                                                                                        <Ionicons name="checkmark-circle" size={16} color="white" />
-                                                                                        <Text className="text-xs font-black text-white ml-1">{t('admin.approve_short')}</Text>
-                                                                                    </TouchableOpacity>
-                                                                                </View>
-                                                                            ) : (
-                                                                                <View className="flex-row gap-2 shrink-0">
-                                                                                    <TouchableOpacity
-                                                                                        onPress={() => handleResetPasswordAdmin(req)}
-                                                                                        activeOpacity={0.7}
-                                                                                        className={`px-2 py-1.5 rounded-xl border flex-row items-center ${isDark ? 'border-amber-500/30 bg-amber-500/10' : 'border-amber-100 bg-amber-50'}`}
-                                                                                    >
-                                                                                        <Ionicons name="key-outline" size={12} color="#f59e0b" />
-                                                                                        <Text className="text-[10px] font-bold text-amber-500 ml-1">{t('admin.reset_pw_short')}</Text>
-                                                                                    </TouchableOpacity>
-                                                                                    <TouchableOpacity
-                                                                                        onPress={() => handleDeleteAlliance(req)}
-                                                                                        activeOpacity={0.7}
-                                                                                        className={`px-2 py-1.5 rounded-xl border flex-row items-center ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
-                                                                                    >
-                                                                                        <Ionicons name="trash-outline" size={12} color="#ef4444" />
-                                                                                        <Text className="text-[10px] font-bold text-red-500 ml-1">{t('admin.delete_short')}</Text>
-                                                                                    </TouchableOpacity>
-                                                                                </View>
-                                                                            )}
+                                                                            {req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>{req.allianceName}</Text>}
                                                                         </View>
 
-                                                                        <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
-                                                                            <View style={{ flex: 1, marginRight: 10 }}>
-                                                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Admin ID: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
-                                                                                <Text className={`text-[10px] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Contact: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
+                                                                        {superAdminTab === 'pending' ? (
+                                                                            <View className="flex-row gap-2 shrink-0">
+                                                                                <TouchableOpacity
+                                                                                    onPress={() => handleRejectRequest(req)}
+                                                                                    activeOpacity={0.7}
+                                                                                    className={`px-3 py-2 rounded-xl border flex-row items-center ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
+                                                                                >
+                                                                                    <Ionicons name="close-circle-outline" size={16} color="#ef4444" />
+                                                                                    <Text className="text-xs font-bold text-red-500 ml-1">{t('admin.reject_short')}</Text>
+                                                                                </TouchableOpacity>
+                                                                                <TouchableOpacity
+                                                                                    onPress={() => handleApproveRequest(req)}
+                                                                                    activeOpacity={0.7}
+                                                                                    className="px-4 py-2 bg-sky-500 rounded-xl shadow-sm flex-row items-center"
+                                                                                >
+                                                                                    <Ionicons name="checkmark-circle" size={16} color="white" />
+                                                                                    <Text className="text-xs font-black text-white ml-1">{t('admin.approve_short')}</Text>
+                                                                                </TouchableOpacity>
                                                                             </View>
-                                                                            <View className="items-end">
-                                                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
+                                                                        ) : (
+                                                                            <View className="flex-row gap-2 shrink-0">
+                                                                                <TouchableOpacity
+                                                                                    onPress={() => handleResetPasswordAdmin(req)}
+                                                                                    activeOpacity={0.7}
+                                                                                    className={`px-2 py-1.5 rounded-xl border flex-row items-center ${isDark ? 'border-amber-500/30 bg-amber-500/10' : 'border-amber-100 bg-amber-50'}`}
+                                                                                >
+                                                                                    <Ionicons name="key-outline" size={12} color="#f59e0b" />
+                                                                                    <Text className="text-[10px] font-bold text-amber-500 ml-1">{t('admin.reset_pw_short')}</Text>
+                                                                                </TouchableOpacity>
+                                                                                <TouchableOpacity
+                                                                                    onPress={() => handleDeleteAlliance(req)}
+                                                                                    activeOpacity={0.7}
+                                                                                    className={`px-2 py-1.5 rounded-xl border flex-row items-center ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
+                                                                                >
+                                                                                    <Ionicons name="trash-outline" size={12} color="#ef4444" />
+                                                                                    <Text className="text-[10px] font-bold text-red-500 ml-1">{t('admin.delete_short')}</Text>
+                                                                                </TouchableOpacity>
                                                                             </View>
+                                                                        )}
+                                                                    </View>
+
+                                                                    <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
+                                                                        <View style={{ flex: 1, marginRight: 10 }}>
+                                                                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Admin ID: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
+                                                                            <Text className={`text-[10px] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Contact: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
+                                                                        </View>
+                                                                        <View className="items-end">
+                                                                            <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
                                                                         </View>
                                                                     </View>
                                                                 </View>
                                                             </View>
-                                                        ))
-                                                    )}
-                                                </>
-                                    )}
-                                            </View>
+                                                        </View>
+                                                    ))
+                                                )}
+                                            </>
                                     )}
                                         </View>
+                                    )}
+                                </View>
                     </ScrollView>
 
                     {/* Floating Close Button */}
+                    <TouchableOpacity
+                        onPress={() => setIsSuperAdminDashboardVisible(false)}
+                        className="absolute top-6 right-6 w-14 h-14 rounded-full bg-sky-500 items-center justify-center shadow-2xl border-2 border-white/20"
+                        style={{ zIndex: 100 }}
+                    >
+                        <Ionicons name="close" size={32} color="white" />
+                    </TouchableOpacity>
+                </View>
+            </Modal>
+
+            <Modal visible={adminDashboardVisible} animationType="slide" onRequestClose={() => setAdminDashboardVisible(false)}>
+                <AdminManagement
+                    serverId={serverId}
+                    allianceId={allianceId}
+                    onBack={() => {
+                        setAdminDashboardVisible(false);
+                        setAdminMenuVisible(false);
+                    }}
+                />
+            </Modal>
+
+            {/* Notice Popup Modal */}
+            <Modal visible={noticePopupVisible} transparent animationType="fade" onRequestClose={() => dismissNoticePopup()}>
+                <View className={`flex-1 bg-black/80 items-center justify-center ${isMobile ? 'p-4' : 'p-6'}`}>
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                        {/* Header */}
+                        <View className={`${isMobile ? 'px-4 py-3' : 'px-5 py-4'} border-b ${isDark ? 'bg-gradient-to-r from-amber-900/10 to-orange-900/10 border-amber-500/10' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'}`}>
+                            <View className="flex-row items-center">
+                                <View className={`${isMobile ? 'w-10 h-10 mr-3' : 'w-12 h-12 mr-4'} rounded-xl items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                                    <Ionicons name="notifications" size={isMobile ? 20 : 24} color="#f59e0b" />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('popup.announcement')}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Content */}
+                        <View className={`${isMobile ? 'px-4 py-4' : 'px-5 py-5'}`}>
+                            <ScrollView style={{ maxHeight: isMobile ? 250 : 300 }} showsVerticalScrollIndicator={false}>
+                                <Text className={`${isMobile ? dfs('text-base') : dfs('text-lg')} font-bold leading-7 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                    {notice?.content || t('popup.noContent')}
+                                </Text>
+                            </ScrollView>
+                        </View>
+
+                        {/* Options */}
+                        <View className={`px-6 py-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                             <TouchableOpacity
-                                onPress={() => setIsSuperAdminDashboardVisible(false)}
-                                className="absolute top-6 right-6 w-14 h-14 rounded-full bg-sky-500 items-center justify-center shadow-2xl border-2 border-white/20"
-                                style={{ zIndex: 100 }}
+                                onPress={() => setNoticePopupDontShow(!noticePopupDontShow)}
+                                className="flex-row items-center mb-2"
                             >
-                                <Ionicons name="close" size={32} color="white" />
+                                <View className={`w-5 h-5 rounded-lg border-2 mr-3 items-center justify-center ${noticePopupDontShow ? 'bg-amber-500 border-amber-500' : (isDark ? 'border-slate-600' : 'border-slate-300')}`}>
+                                    {noticePopupDontShow && <Ionicons name="checkmark" size={12} color="white" />}
+                                </View>
+                                <Text className={`font-semibold text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('popup.dontShowAgain')}</Text>
                             </TouchableOpacity>
                         </View>
-                    </Modal>
 
-                    <Modal visible={adminDashboardVisible} animationType="slide" onRequestClose={() => setAdminDashboardVisible(false)}>
-                        <AdminManagement
-                            serverId={serverId}
-                            allianceId={allianceId}
-                            onBack={() => {
-                                setAdminDashboardVisible(false);
-                                setAdminMenuVisible(false);
-                            }}
-                        />
-                    </Modal>
-
-                    {/* Notice Popup Modal */}
-                    <Modal visible={noticePopupVisible} transparent animationType="fade" onRequestClose={() => dismissNoticePopup()}>
-                        <View className={`flex-1 bg-black/80 items-center justify-center ${isMobile ? 'p-4' : 'p-6'}`}>
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                                {/* Header */}
-                                <View className={`${isMobile ? 'px-4 py-3' : 'px-5 py-4'} border-b ${isDark ? 'bg-gradient-to-r from-amber-900/10 to-orange-900/10 border-amber-500/10' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'}`}>
-                                    <View className="flex-row items-center">
-                                        <View className={`${isMobile ? 'w-10 h-10 mr-3' : 'w-12 h-12 mr-4'} rounded-xl items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                                            <Ionicons name="notifications" size={isMobile ? 20 : 24} color="#f59e0b" />
-                                        </View>
-                                        <View className="flex-1">
-                                            <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('popup.announcement')}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                {/* Content */}
-                                <View className={`${isMobile ? 'px-4 py-4' : 'px-5 py-5'}`}>
-                                    <ScrollView style={{ maxHeight: isMobile ? 250 : 300 }} showsVerticalScrollIndicator={false}>
-                                        <Text className={`${isMobile ? 'text-base' : 'text-lg'} font-bold leading-7 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                                            {notice?.content || t('popup.noContent')}
-                                        </Text>
-                                    </ScrollView>
-                                </View>
-
-                                {/* Options */}
-                                <View className={`px-6 py-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                    <TouchableOpacity
-                                        onPress={() => setNoticePopupDontShow(!noticePopupDontShow)}
-                                        className="flex-row items-center mb-2"
-                                    >
-                                        <View className={`w-5 h-5 rounded-lg border-2 mr-3 items-center justify-center ${noticePopupDontShow ? 'bg-amber-500 border-amber-500' : (isDark ? 'border-slate-600' : 'border-slate-300')}`}>
-                                            {noticePopupDontShow && <Ionicons name="checkmark" size={12} color="white" />}
-                                        </View>
-                                        <Text className={`font-semibold text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('popup.dontShowAgain')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-
-                                {/* Buttons */}
-                                <View className="flex-row gap-3 px-6 pb-6">
-                                    <TouchableOpacity
-                                        onPress={() => dismissNoticePopup(false, true)}
-                                        className={`flex-1 py-3 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
-                                    >
-                                        <Text className={`text-center font-bold text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('popup.dontShowToday')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => dismissNoticePopup(noticePopupDontShow, false)}
-                                        className={`flex-[1.5] py-3 rounded-2xl ${isDark ? 'bg-amber-500' : 'bg-amber-500'}`}
-                                    >
-                                        <Text className="text-center font-black text-white text-base">{t('common.confirm')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
+                        {/* Buttons */}
+                        <View className="flex-row gap-3 px-6 pb-6">
+                            <TouchableOpacity
+                                onPress={() => dismissNoticePopup(false, true)}
+                                className={`flex-1 py-3 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                            >
+                                <Text className={`text-center font-bold text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('popup.dontShowToday')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => dismissNoticePopup(noticePopupDontShow, false)}
+                                className={`flex-[1.5] py-3 rounded-2xl ${isDark ? 'bg-amber-500' : 'bg-amber-500'}`}
+                            >
+                                <Text className="text-center font-black text-white text-base">{t('common.confirm')}</Text>
+                            </TouchableOpacity>
                         </View>
-                    </Modal>
-
-                    {/* Password Change Modal */}
-                    <Modal visible={isUserPassChangeOpen} transparent animationType="fade">
-                        <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                                <View className="items-center mb-8">
-                                    <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
-                                        <Ionicons name="key" size={40} color="#f59e0b" />
-                                    </View>
-                                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('auth.changePassword')}</Text>
-                                    <Text className={`mt-2 text-center text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('auth.newPasswordDesc')}</Text>
-                                </View>
-
-                                <View className="flex-col gap-4 mb-8">
-                                    <View>
-                                        <Text className={`text-[10px] font-black mb-2 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>New Password</Text>
-                                        <View className="relative">
-                                            <TextInput
-                                                className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
-                                                placeholder={t('auth.enterNewPassword')}
-                                                placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                                value={newPassword}
-                                                onChangeText={setNewPassword}
-                                                secureTextEntry={!showPass1}
-                                            />
-                                            <TouchableOpacity
-                                                onPressIn={() => setShowPass1(true)}
-                                                onPressOut={() => setShowPass1(false)}
-                                                activeOpacity={0.5}
-                                                className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
-                                            >
-                                                <Ionicons name={showPass1 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                    <View>
-                                        <Text className={`text-[10px] font-black mb-2 mt-4 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Confirm Password</Text>
-                                        <View className="relative">
-                                            <TextInput
-                                                className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
-                                                placeholder={t('auth.confirmPasswordLabel')}
-                                                placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                                value={confirmPassword}
-                                                onChangeText={setConfirmPassword}
-                                                secureTextEntry={!showPass2}
-                                            />
-                                            <TouchableOpacity
-                                                onPressIn={() => setShowPass2(true)}
-                                                onPressOut={() => setShowPass2(false)}
-                                                activeOpacity={0.5}
-                                                className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
-                                            >
-                                                <Ionicons name={showPass2 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View className="flex-row gap-4">
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setIsUserPassChangeOpen(false);
-                                            setNewPassword('');
-                                            setConfirmPassword('');
-                                        }}
-                                        className={`flex-1 h-16 rounded-2xl items-center justify-center border ${isDark ? 'border-slate-800 bg-slate-800/30' : 'border-slate-50 bg-slate-50'}`}
-                                    >
-                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={async () => {
-                                            if (!auth.adminName) {
-                                                showCustomAlert(t('common.error'), t('auth.loginRequired'), 'error');
-                                                return;
-                                            }
-                                            if (!newPassword || !confirmPassword) {
-                                                showCustomAlert(t('common.warning'), t('common.required'), 'warning');
-                                                return;
-                                            }
-                                            if (newPassword !== confirmPassword) {
-                                                showCustomAlert(t('common.warning'), t('auth.passwordMismatch'), 'warning');
-                                                return;
-                                            }
-                                            if (newPassword.length < 4) {
-                                                showCustomAlert(t('common.warning'), t('auth.passwordLength'), 'warning');
-                                                return;
-                                            }
-
-                                            try {
-                                                setIsChangingPassword(true);
-                                                const hashed = await hashPassword(newPassword);
-                                                const userRef = doc(db, 'users', auth.adminName!);
-                                                await updateDoc(userRef, {
-                                                    password: hashed,
-                                                    updatedAt: Date.now()
-                                                });
-
-                                                showCustomAlert(t('common.success'), t('auth.changeSuccess'), 'success');
-                                                setIsUserPassChangeOpen(false);
-                                                setNewPassword('');
-                                                setConfirmPassword('');
-                                                setAdminMenuVisible(false);
-                                            } catch (err: any) {
-                                                showCustomAlert(t('common.error'), t('auth.changeError') + ' ' + err.message, 'error');
-                                            } finally {
-                                                setIsChangingPassword(false);
-                                            }
-                                        }}
-                                        disabled={isChangingPassword}
-                                        className="flex-[2] h-16 bg-amber-500 rounded-2xl items-center justify-center shadow-lg shadow-amber-500/30"
-                                    >
-                                        {isChangingPassword ? (
-                                            <ActivityIndicator color="white" />
-                                        ) : (
-                                            <Text className="text-white font-black text-lg">{t('auth.change')}</Text>
-                                        )}
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Notice Detail Modal */}
-                    <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
-                        <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                    <View className="flex-row items-center justify-between">
-                                        <View className="flex-row items-center">
-                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
-                                                <Ionicons name="notifications" size={24} color="#f59e0b" />
-                                            </View>
-                                            <View>
-                                                <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.noticeDetail')}</Text>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => setNoticeDetailVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                            <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                <View className={`mx-5 mt-5 mb-2 p-6 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-emerald-50 border border-emerald-100'}`}>
-                                    <ScrollView style={{ maxHeight: 550 }} showsVerticalScrollIndicator={false}>
-                                        <Text className={`text-base font-normal leading-7 ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                                            {notice?.content || t('popup.noContent')}
-                                        </Text>
-                                    </ScrollView>
-                                </View>
-                                <View className="px-5 pb-4 items-center">
-                                    <TouchableOpacity
-                                        onPress={() => setNoticeDetailVisible(false)}
-                                        className="py-2"
-                                    >
-                                        <Text className={`font-black text-lg ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>{t('common.close')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Notice Edit Modal */}
-                    <Modal
-                        visible={noticeModalVisible}
-                        transparent
-                        animationType="fade"
-                        onRequestClose={() => setNoticeModalVisible(false)}
-                    >
-                        <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                                <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                    <View className="flex-row items-center justify-between">
-                                        <View className="flex-row items-center">
-                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
-                                                <Ionicons name="create" size={24} color="#3b82f6" />
-                                            </View>
-                                            <View>
-                                                <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.noticeSetting')}</Text>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                            <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                <View className={`mx-5 mt-5 mb-1 p-5 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-slate-50 border border-slate-200'}`}>
-                                    <TextInput
-                                        multiline
-                                        numberOfLines={12}
-                                        value={editNoticeContent}
-                                        onChangeText={setEditNoticeContent}
-                                        className={`w-full font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
-                                        placeholder={t('admin.noticePlaceholder')}
-                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                        style={{ textAlignVertical: 'top', minHeight: 400 }}
-                                    />
-                                </View>
-
-                                <View className="flex-row items-center justify-between mt-4 px-6">
-                                    <View className="flex-1 mr-4">
-                                        <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.dashboardExposure')}</Text>
-                                        <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('admin.noticeActiveDesc')}</Text>
-                                    </View>
-                                    <Switch
-                                        value={editNoticeVisible}
-                                        onValueChange={setEditNoticeVisible}
-                                        trackColor={{ false: '#334155', true: '#3b82f6' }}
-                                        thumbColor={isDark ? '#fff' : '#fff'}
-                                        style={{ transform: [{ scale: 1.0 }] }}
-                                    />
-                                </View>
-                                <View className="flex-row gap-4 px-5 pb-6 mt-4">
-                                    <TouchableOpacity
-                                        onPress={() => setNoticeModalVisible(false)}
-                                        className={`flex-1 py-4 rounded-[20px] border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
-                                    >
-                                        <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={handleSaveNotice}
-                                        className="flex-[2] bg-blue-500 py-4 rounded-[20px] shadow-lg shadow-blue-500/40 items-center justify-center"
-                                    >
-                                        <Text className="text-center font-black text-white text-lg">{t('common.save')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Install Guide Modal */}
-                    <Modal visible={installModalVisible} transparent animationType="fade" onRequestClose={() => setInstallModalVisible(false)}>
-                        <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-md rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'}`}>
-                                    <View className="flex-row items-center justify-between">
-                                        <View className="flex-row items-center">
-                                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                                                <Ionicons name="download" size={24} color="#3b82f6" />
-                                            </View>
-                                            <View>
-                                                <Text className={`text-[8px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
-                                                <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('install.title')}</Text>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => setInstallModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                            <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                <View className="p-8 pb-4">
-                                    <View className="gap-6">
-                                        <View className="flex-row items-center">
-                                            <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                                <Text className="text-lg font-black text-blue-500">1</Text>
-                                            </View>
-                                            <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step1')}</Text>
-                                        </View>
-                                        <View className="flex-row items-center">
-                                            <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                                <Text className="text-lg font-black text-blue-500">2</Text>
-                                            </View>
-                                            <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step2')}</Text>
-                                        </View>
-                                        <View className="flex-row items-center">
-                                            <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                                <Text className="text-lg font-black text-blue-500">3</Text>
-                                            </View>
-                                            <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step3')}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                                <View className="px-10 pb-10 pt-0 items-center justify-center">
-                                    <Pressable
-                                        onPress={() => setInstallModalVisible(false)}
-                                        style={({ hovered, pressed }: any) => [
-                                            {
-                                                paddingHorizontal: 48,
-                                                paddingVertical: 5,
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                opacity: pressed ? 0.8 : 1,
-                                                transition: 'all 0.2s',
-                                                // @ts-ignore
-                                                textShadow: hovered ? '0 0 12px rgba(59, 130, 246, 0.4)' : 'none'
-                                            }
-                                        ]}
-                                    >
-                                        <Text className="text-blue-500 font-black text-lg tracking-widest">{t('common.confirm')}</Text>
-                                    </Pressable>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Gate Manual (Login Guide) */}
-                    <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
-                        <View className="flex-1 bg-black/80 items-center justify-center p-4">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
-                                    <View className="flex-row items-center justify-between">
-                                        <View className="flex-row items-center">
-                                            <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                                <Ionicons name="help-circle" size={isMobile ? 22 : 26} color="#f59e0b" />
-                                            </View>
-                                            <View>
-                                                <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
-                                                <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                            <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                {renderGateManualContent()}
-                                <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
-                                    <Pressable
-                                        onPress={() => setIsGateManualVisible(false)}
-                                        style={({ hovered, pressed }: any) => [
-                                            {
-                                                paddingHorizontal: isMobile ? 32 : 48,
-                                                paddingVertical: 5,
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                opacity: pressed ? 0.8 : 1,
-                                                transition: 'all 0.2s',
-                                                // @ts-ignore
-                                                textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
-                                            }
-                                        ]}
-                                    >
-                                        <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
-                                    </Pressable>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Main Manual (Dashboard Guide) */}
-                    <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
-                        <View className="flex-1 bg-black/80 items-center justify-center p-4">
-                            <BlurView intensity={40} className="absolute inset-0" />
-                            <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
-                                    <View className="flex-row items-center justify-between">
-                                        <View className="flex-row items-center">
-                                            <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                                <Ionicons name="book" size={isMobile ? 22 : 26} color="#f59e0b" />
-                                            </View>
-                                            <View>
-                                                <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
-                                                <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.mainManualTitle')}</Text>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                            <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                                {renderMainManualContent()}
-                                <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
-                                    <Pressable
-                                        onPress={() => setIsManualVisible(false)}
-                                        style={({ hovered, pressed }: any) => [
-                                            {
-                                                paddingHorizontal: isMobile ? 32 : 48,
-                                                paddingVertical: 5,
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                opacity: pressed ? 0.8 : 1,
-                                                transition: 'all 0.2s',
-                                                // @ts-ignore
-                                                textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
-                                            }
-                                        ]}
-                                    >
-                                        <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
-                                    </Pressable>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal>
-
-                    {/* Custom Alert Modal */}
-                    <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                        <View className="flex-1 bg-black/60 items-center justify-center p-6">
-                            <BlurView intensity={20} className="absolute inset-0" />
-                            <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <View className="items-center mb-6">
-                                    <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${customAlert.type === 'success' ? 'bg-emerald-500/20' :
-                                        customAlert.type === 'error' ? 'bg-red-500/20' :
-                                            customAlert.type === 'warning' ? 'bg-amber-500/20' : 'bg-sky-500/20'
-                                        }`}>
-                                        <Ionicons
-                                            name={
-                                                customAlert.type === 'success' ? 'checkmark-circle' :
-                                                    customAlert.type === 'error' ? 'alert-circle' :
-                                                        customAlert.type === 'warning' ? 'warning' : 'help-circle'
-                                            }
-                                            size={32}
-                                            color={
-                                                customAlert.type === 'success' ? '#10b981' :
-                                                    customAlert.type === 'error' ? '#ef4444' :
-                                                        customAlert.type === 'warning' ? '#f59e0b' : '#0ea5e9'
-                                            }
-                                        />
-                                    </View>
-                                    <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                                    <Text className={`mt-4 text-center text-lg font-medium leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
-                                </View>
-
-                                {customAlert.type === 'confirm' ? (
-                                    <View className="flex-row gap-3">
-                                        <TouchableOpacity
-                                            onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                            className={`flex-1 py-4 rounded-3xl border ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
-                                        >
-                                            <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setCustomAlert({ ...customAlert, visible: false });
-                                                if (customAlert.onConfirm) customAlert.onConfirm();
-                                            }}
-                                            className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
-                                        >
-                                            <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    <TouchableOpacity
-                                        onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                        className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
-                                    >
-                                        <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    </Modal>
+                    </View>
                 </View>
-                );
+            </Modal>
+
+            {/* Password Change Modal */}
+            <Modal visible={isUserPassChangeOpen} transparent animationType="fade">
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                        <View className="items-center mb-8">
+                            <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+                                <Ionicons name="key" size={40} color="#f59e0b" />
+                            </View>
+                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('auth.changePassword')}</Text>
+                            <Text className={`mt-2 text-center text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('auth.newPasswordDesc')}</Text>
+                        </View>
+
+                        <View className="flex-col gap-4 mb-8">
+                            <View>
+                                <Text className={`text-[10px] font-black mb-2 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>New Password</Text>
+                                <View className="relative">
+                                    <TextInput
+                                        className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
+                                        placeholder={t('auth.enterNewPassword')}
+                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
+                                        value={newPassword}
+                                        onChangeText={setNewPassword}
+                                        secureTextEntry={!showPass1}
+                                    />
+                                    <TouchableOpacity
+                                        onPressIn={() => setShowPass1(true)}
+                                        onPressOut={() => setShowPass1(false)}
+                                        activeOpacity={0.5}
+                                        className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
+                                    >
+                                        <Ionicons name={showPass1 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                            <View>
+                                <Text className={`text-[10px] font-black mb-2 mt-4 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Confirm Password</Text>
+                                <View className="relative">
+                                    <TextInput
+                                        className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
+                                        placeholder={t('auth.confirmPasswordLabel')}
+                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
+                                        value={confirmPassword}
+                                        onChangeText={setConfirmPassword}
+                                        secureTextEntry={!showPass2}
+                                    />
+                                    <TouchableOpacity
+                                        onPressIn={() => setShowPass2(true)}
+                                        onPressOut={() => setShowPass2(false)}
+                                        activeOpacity={0.5}
+                                        className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
+                                    >
+                                        <Ionicons name={showPass2 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View className="flex-row gap-4">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    setIsUserPassChangeOpen(false);
+                                    setNewPassword('');
+                                    setConfirmPassword('');
+                                }}
+                                className={`flex-1 h-16 rounded-2xl items-center justify-center border ${isDark ? 'border-slate-800 bg-slate-800/30' : 'border-slate-50 bg-slate-50'}`}
+                            >
+                                <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    if (!auth.adminName) {
+                                        showCustomAlert(t('common.error'), t('auth.loginRequired'), 'error');
+                                        return;
+                                    }
+                                    if (!newPassword || !confirmPassword) {
+                                        showCustomAlert(t('common.warning'), t('common.required'), 'warning');
+                                        return;
+                                    }
+                                    if (newPassword !== confirmPassword) {
+                                        showCustomAlert(t('common.warning'), t('auth.passwordMismatch'), 'warning');
+                                        return;
+                                    }
+                                    if (newPassword.length < 4) {
+                                        showCustomAlert(t('common.warning'), t('auth.passwordLength'), 'warning');
+                                        return;
+                                    }
+
+                                    try {
+                                        setIsChangingPassword(true);
+                                        const hashed = await hashPassword(newPassword);
+                                        const userRef = doc(db, 'users', auth.adminName!);
+                                        await updateDoc(userRef, {
+                                            password: hashed,
+                                            updatedAt: Date.now()
+                                        });
+
+                                        showCustomAlert(t('common.success'), t('auth.changeSuccess'), 'success');
+                                        setIsUserPassChangeOpen(false);
+                                        setNewPassword('');
+                                        setConfirmPassword('');
+                                        setAdminMenuVisible(false);
+                                    } catch (err: any) {
+                                        showCustomAlert(t('common.error'), t('auth.changeError') + ' ' + err.message, 'error');
+                                    } finally {
+                                        setIsChangingPassword(false);
+                                    }
+                                }}
+                                disabled={isChangingPassword}
+                                className="flex-[2] h-16 bg-amber-500 rounded-2xl items-center justify-center shadow-lg shadow-amber-500/30"
+                            >
+                                {isChangingPassword ? (
+                                    <ActivityIndicator color="white" />
+                                ) : (
+                                    <Text className="text-white font-black text-lg">{t('auth.change')}</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Notice Detail Modal */}
+            <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
+                                        <Ionicons name="notifications" size={24} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.noticeDetail')}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setNoticeDetailVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View className={`mx-5 mt-5 mb-2 p-6 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-emerald-50 border border-emerald-100'}`}>
+                            <ScrollView style={{ maxHeight: 550 }} showsVerticalScrollIndicator={false}>
+                                <Text className={`text-base font-normal leading-7 ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                                    {notice?.content || t('popup.noContent')}
+                                </Text>
+                            </ScrollView>
+                        </View>
+                        <View className="px-5 pb-4 items-center">
+                            <TouchableOpacity
+                                onPress={() => setNoticeDetailVisible(false)}
+                                className="py-2"
+                            >
+                                <Text className={`font-black text-lg ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>{t('common.close')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Notice Edit Modal */}
+            <Modal
+                visible={noticeModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setNoticeModalVisible(false)}
+            >
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
+                                        <Ionicons name="create" size={24} color="#3b82f6" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.noticeSetting')}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View className={`mx-5 mt-5 mb-1 p-5 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-slate-50 border border-slate-200'}`}>
+                            <TextInput
+                                multiline
+                                numberOfLines={12}
+                                value={editNoticeContent}
+                                onChangeText={setEditNoticeContent}
+                                className={`w-full font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
+                                placeholder={t('admin.noticePlaceholder')}
+                                placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
+                                style={{ textAlignVertical: 'top', minHeight: 400 }}
+                            />
+                        </View>
+
+                        <View className="flex-row items-center justify-between mt-4 px-6">
+                            <View className="flex-1 mr-4">
+                                <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.dashboardExposure')}</Text>
+                                <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('admin.noticeActiveDesc')}</Text>
+                            </View>
+                            <Switch
+                                value={editNoticeVisible}
+                                onValueChange={setEditNoticeVisible}
+                                trackColor={{ false: '#334155', true: '#3b82f6' }}
+                                thumbColor={isDark ? '#fff' : '#fff'}
+                                style={{ transform: [{ scale: 1.0 }] }}
+                            />
+                        </View>
+                        <View className="flex-row gap-4 px-5 pb-6 mt-4">
+                            <TouchableOpacity
+                                onPress={() => setNoticeModalVisible(false)}
+                                className={`flex-1 py-4 rounded-[20px] border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                            >
+                                <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={handleSaveNotice}
+                                className="flex-[2] bg-blue-500 py-4 rounded-[20px] shadow-lg shadow-blue-500/40 items-center justify-center"
+                            >
+                                <Text className="text-center font-black text-white text-lg">{t('common.save')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Install Guide Modal */}
+            <Modal visible={installModalVisible} transparent animationType="fade" onRequestClose={() => setInstallModalVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-md rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
+                                        <Ionicons name="download" size={24} color="#3b82f6" />
+                                    </View>
+                                    <View>
+                                        <Text className={`text-[8px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
+                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('install.title')}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setInstallModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        <View className="p-8 pb-4">
+                            <View className="gap-6">
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
+                                        <Text className="text-lg font-black text-blue-500">1</Text>
+                                    </View>
+                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step1')}</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
+                                        <Text className="text-lg font-black text-blue-500">2</Text>
+                                    </View>
+                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step2')}</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
+                                        <Text className="text-lg font-black text-blue-500">3</Text>
+                                    </View>
+                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step3')}</Text>
+                                </View>
+                            </View>
+                        </View>
+                        <View className="px-10 pb-10 pt-0 items-center justify-center">
+                            <Pressable
+                                onPress={() => setInstallModalVisible(false)}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: 48,
+                                        paddingVertical: 5,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        transition: 'all 0.2s',
+                                        // @ts-ignore
+                                        textShadow: hovered ? '0 0 12px rgba(59, 130, 246, 0.4)' : 'none'
+                                    }
+                                ]}
+                            >
+                                <Text className="text-blue-500 font-black text-lg tracking-widest">{t('common.confirm')}</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Gate Manual (Login Guide) */}
+            <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-4">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="help-circle" size={isMobile ? 22 : 26} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
+                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        {renderGateManualContent()}
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
+                            <Pressable
+                                onPress={() => setIsGateManualVisible(false)}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: isMobile ? 32 : 48,
+                                        paddingVertical: 5,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        transition: 'all 0.2s',
+                                        // @ts-ignore
+                                        textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
+                                    }
+                                ]}
+                            >
+                                <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Main Manual (Dashboard Guide) */}
+            <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
+                <View className="flex-1 bg-black/80 items-center justify-center p-4">
+                    <BlurView intensity={40} className="absolute inset-0" />
+                    <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center">
+                                    <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                        <Ionicons name="book" size={isMobile ? 22 : 26} color="#f59e0b" />
+                                    </View>
+                                    <View>
+                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
+                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.mainManualTitle')}</Text>
+                                    </View>
+                                </View>
+                                <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                        {renderMainManualContent()}
+                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
+                            <Pressable
+                                onPress={() => setIsManualVisible(false)}
+                                style={({ hovered, pressed }: any) => [
+                                    {
+                                        paddingHorizontal: isMobile ? 32 : 48,
+                                        paddingVertical: 5,
+                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        transition: 'all 0.2s',
+                                        // @ts-ignore
+                                        textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
+                                    }
+                                ]}
+                            >
+                                <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Custom Alert Modal */}
+            <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                <View className="flex-1 bg-black/60 items-center justify-center p-6">
+                    <BlurView intensity={20} className="absolute inset-0" />
+                    <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                        <View className="items-center mb-6">
+                            <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${customAlert.type === 'success' ? 'bg-emerald-500/20' :
+                                customAlert.type === 'error' ? 'bg-red-500/20' :
+                                    customAlert.type === 'warning' ? 'bg-amber-500/20' : 'bg-sky-500/20'
+                                }`}>
+                                <Ionicons
+                                    name={
+                                        customAlert.type === 'success' ? 'checkmark-circle' :
+                                            customAlert.type === 'error' ? 'alert-circle' :
+                                                customAlert.type === 'warning' ? 'warning' : 'help-circle'
+                                    }
+                                    size={32}
+                                    color={
+                                        customAlert.type === 'success' ? '#10b981' :
+                                            customAlert.type === 'error' ? '#ef4444' :
+                                                customAlert.type === 'warning' ? '#f59e0b' : '#0ea5e9'
+                                    }
+                                />
+                            </View>
+                            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                            <Text className={`mt-4 text-center text-lg font-medium leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                        </View>
+
+                        {customAlert.type === 'confirm' ? (
+                            <View className="flex-row gap-3">
+                                <TouchableOpacity
+                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                    className={`flex-1 py-4 rounded-3xl border ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
+                                >
+                                    <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setCustomAlert({ ...customAlert, visible: false });
+                                        if (customAlert.onConfirm) customAlert.onConfirm();
+                                    }}
+                                    className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                >
+                                    <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                            >
+                                <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            </Modal>
+        </View>
+    );
 }
