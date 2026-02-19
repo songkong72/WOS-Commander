@@ -2377,6 +2377,22 @@ export default function Home() {
         }
     }, []);
 
+    // Badge API Support (PWA) - Show ongoing events count on app icon
+    useEffect(() => {
+        if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
+            try {
+                const ongoingCount = displayEvents.filter(e => isEventActive(e)).length;
+                if (ongoingCount > 0) {
+                    (navigator as any).setAppBadge(ongoingCount).catch(() => { });
+                } else {
+                    (navigator as any).clearAppBadge().catch(() => { });
+                }
+            } catch (err) {
+                console.error('Badge API Error:', err);
+            }
+        }
+    }, [displayEvents]);
+
     const handleInstallClick = () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
@@ -3024,7 +3040,9 @@ export default function Home() {
                                         )}
                                         <Text
                                             className={`text-lg font-bold tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
-                                            numberOfLines={2}
+                                            numberOfLines={1}
+                                            adjustsFontSizeToFit={true}
+                                            minimumFontScale={0.7}
                                             style={{ fontFamily: 'Pretendard-Bold', fontSize: 18 * fontSizeScale }}
                                         >
                                             {(() => {
@@ -3963,15 +3981,13 @@ export default function Home() {
                                                 backgroundColor: timezone === 'LOCAL'
                                                     ? '#3b82f6'
                                                     : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                                borderColor: timezone === 'LOCAL' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
-                                                borderWidth: 1,
                                                 transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                 cursor: 'pointer'
                                             }
                                         ]}
                                     >
-                                        <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
+                                        <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : 'text-[#3b82f6]'}`}>Local</Text>
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setTimezone('UTC')}
@@ -3983,15 +3999,13 @@ export default function Home() {
                                                 backgroundColor: timezone === 'UTC'
                                                     ? '#3b82f6'
                                                     : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                                borderColor: timezone === 'UTC' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
-                                                borderWidth: 1,
                                                 transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                 cursor: 'pointer'
                                             }
                                         ]}
                                     >
-                                        <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                        <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : 'text-[#3b82f6]'}`}>UTC</Text>
                                     </Pressable>
                                 </View>
 

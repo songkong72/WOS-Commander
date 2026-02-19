@@ -70,7 +70,7 @@
     },
     "settings": {
         "language": "언어 설정",
-        "theme": "테마 설정",
+        "theme": "테마 고정",
         "fontSize": "글자 크기",
         "server": "서버 설정",
         "alliance": "연맹 설정",
@@ -130,7 +130,7 @@
         "loading_schedule": "일정을 불러오는 중...",
         "attendance": "출석 체크",
         "myAttendance": "나의 출석 현황",
-        "noticeDetail": "공지사항 상세",
+        "noticeDetail": "공지사항",
         "notice_empty": "현재 등록된 공지사항이 없습니다.",
         "notice_label": "공지사항",
         "content": "내용",

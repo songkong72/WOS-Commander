@@ -7,9 +7,9 @@ import { useTheme, useLanguage, useAuth } from './context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Settings() {
-    const router = useRouter();
+    const router = useRouter(); // Use correct router hook
     const { t } = useTranslation();
-    const { theme, toggleTheme, fontSizeScale } = useTheme();
+    const { theme, toggleTheme, fontSizeScale, changeFontSize } = useTheme();
     const { language, changeLanguage } = useLanguage();
     const { auth, logout } = useAuth();
     const isDark = theme === 'dark';
@@ -26,10 +26,17 @@ export default function Settings() {
             >
                 <View className="flex-row items-center">
                     <TouchableOpacity
-                        onPress={() => router.back()}
-                        className={`mr-2 w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-slate-800/60' : 'bg-white border border-slate-100 shadow-sm'}`}
+                        onPress={() => {
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                router.replace('/');
+                            }
+                        }}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        className={`mr-3 w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800/60' : 'bg-white border border-slate-100 shadow-sm'}`}
                     >
-                        <Ionicons name="arrow-back" size={14} color={isDark ? 'white' : '#0f172a'} />
+                        <Ionicons name="arrow-back" size={20} color={isDark ? 'white' : '#0f172a'} />
                     </TouchableOpacity>
                     <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
                         {t('navigation.settings')}
@@ -55,14 +62,14 @@ export default function Settings() {
                         >
                             <View className="flex-row items-center">
                                 <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${language === 'ko' ? (isDark ? 'bg-blue-500/20' : 'bg-blue-100') : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
-                                    <Ionicons name="language" size={20} color={language === 'ko' ? '#3b82f6' : (isDark ? '#475569' : '#94a3b8')} />
+                                    <Ionicons name="language" size={20} color={language === 'ko' ? '#3b82f6' : (isDark ? '#94a3b8' : '#64748b')} />
                                 </View>
                                 <View>
                                     <Text className={`font-black ${language === 'ko' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 16 * fontSizeScale }}>한국어</Text>
                                     <Text className={`font-bold uppercase tracking-widest ${language === 'ko' ? 'text-blue-500/60' : 'text-slate-500/40'}`} style={{ fontSize: 9 * fontSizeScale }}>Korean</Text>
                                 </View>
                             </View>
-                            {language === 'ko' && <Ionicons name="checkmark-circle" size={18} color="#3b82f6" />}
+                            <Ionicons name={language === 'ko' ? "checkmark-circle" : "ellipse-outline"} size={22} color={language === 'ko' ? "#3b82f6" : (isDark ? "#334155" : "#cbd5e1")} />
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -71,14 +78,14 @@ export default function Settings() {
                         >
                             <View className="flex-row items-center">
                                 <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${language === 'en' ? (isDark ? 'bg-blue-500/20' : 'bg-blue-100') : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}>
-                                    <Ionicons name="globe-outline" size={20} color={language === 'en' ? '#3b82f6' : (isDark ? '#475569' : '#94a3b8')} />
+                                    <Ionicons name="globe-outline" size={20} color={language === 'en' ? '#3b82f6' : (isDark ? '#94a3b8' : '#64748b')} />
                                 </View>
                                 <View>
                                     <Text className={`font-black ${language === 'en' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 16 * fontSizeScale }}>English</Text>
                                     <Text className={`font-bold uppercase tracking-widest ${language === 'en' ? 'text-blue-500/60' : 'text-slate-500/40'}`} style={{ fontSize: 9 * fontSizeScale }}>International</Text>
                                 </View>
                             </View>
-                            {language === 'en' && <Ionicons name="checkmark-circle" size={18} color="#3b82f6" />}
+                            <Ionicons name={language === 'en' ? "checkmark-circle" : "ellipse-outline"} size={22} color={language === 'en' ? "#3b82f6" : (isDark ? "#334155" : "#cbd5e1")} />
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -109,6 +116,38 @@ export default function Settings() {
                             thumbColor={'white'}
                             style={{ transform: [{ scale: 0.9 }] }}
                         />
+                    </View>
+                </View>
+
+                {/* Font Size Settings */}
+                <View className="mb-8">
+                    <Text className={`font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
+                        {t('settings.fontSize', '글자 크기')}
+                    </Text>
+
+                    <View className="flex-row gap-2">
+                        {(['small', 'medium', 'large'] as const).map((size) => {
+                            const scale = size === 'small' ? 0.95 : size === 'large' ? 1.25 : 1.1;
+                            const isActive = Math.abs(fontSizeScale - scale) < 0.01; // fuzzy check
+
+                            return (
+                                <TouchableOpacity
+                                    key={size}
+                                    onPress={() => changeFontSize(scale)}
+                                    className={`flex-1 py-4 rounded-2xl border items-center justify-center transition-all ${isActive ?
+                                        (isDark ? 'bg-indigo-600 border-indigo-500 shadow-md shadow-indigo-500/20' : 'bg-indigo-500 border-indigo-500 shadow-md shadow-indigo-500/20') :
+                                        (isDark ? 'bg-slate-900/60 border-slate-800/60' : 'bg-white border-slate-200')
+                                        }`}
+                                >
+                                    <View className="items-center">
+                                        <Ionicons name="text" size={size === 'small' ? 16 : size === 'medium' ? 20 : 24} color={isActive ? "white" : (isDark ? "#94a3b8" : "#64748b")} style={{ marginBottom: 4 }} />
+                                        <Text className={`font-black ${isActive ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} style={{ fontSize: 12 * fontSizeScale }}>
+                                            {size === 'small' ? t('admin.fontSmall', '작게') : size === 'medium' ? t('admin.fontMedium', '보통') : t('admin.fontLarge', '크게')}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })}
                     </View>
                 </View>
 

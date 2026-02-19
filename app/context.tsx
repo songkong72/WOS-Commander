@@ -14,6 +14,7 @@ interface AuthContextType {
     mainScrollRef: React.RefObject<any>;
     isGateOpen: boolean;
     setIsGateOpen: (open: boolean) => void;
+    showCustomAlert: (title: string, message: string, type?: 'success' | 'error' | 'warning' | 'confirm', onConfirm?: () => void) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,6 +32,8 @@ interface ThemeContextType {
     theme: Theme;
     setTheme: (theme: Theme) => void;
     toggleTheme: () => void;
+    setTemporaryTheme: (theme: Theme) => void;
+    toggleTemporaryTheme: () => void;
     fontSizeScale: number;
     changeFontSize: (scale: number) => void;
 }

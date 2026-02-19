@@ -117,7 +117,7 @@ export default function HeroManagement() {
                                     }
                                 ]}
                             >
-                                <Text className={`font-bold md:text-xs ${selectedCategory === cat.id ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 10 * fontSizeScale }}>
+                                <Text className={`font-black ${selectedCategory === cat.id ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 13 * fontSizeScale }}>
                                     {cat.label}
                                 </Text>
                             </Pressable>
@@ -145,7 +145,7 @@ export default function HeroManagement() {
                                 <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
                             </Pressable>
                             <View className="flex-1">
-                                <Text className={`font-black tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`} style={{ fontSize: 9 * fontSizeScale }}>{t('heroes.archive_title')}</Text>
+                                <Text className={`font-black tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.archive_title')}</Text>
                                 <View className="flex-row items-baseline">
                                     <Text className={`font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 20 * fontSizeScale }}>
                                         {selectedCategory.startsWith('S')
@@ -199,7 +199,7 @@ export default function HeroManagement() {
 
                                                     {/* Name Bar */}
                                                     <View className={`py-2 items-center justify-center border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
-                                                        <Text className={`font-bold md:text-xs tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
+                                                        <Text className={`font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1} style={{ fontSize: 12 * fontSizeScale }}>
                                                             {t(`heroes.names.${hero.id.toLowerCase()}`, { defaultValue: hero.name })}
                                                         </Text>
                                                     </View>

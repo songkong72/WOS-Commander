@@ -28,18 +28,14 @@ export default function GlobalNavigationBar() {
     const router = useRouter();
     const pathname = usePathname();
     const { theme, fontSizeScale } = useTheme();
-    const { auth, serverId, allianceId, mainScrollRef } = useAuth();
+    const { auth, serverId, allianceId, mainScrollRef, showCustomAlert } = useAuth();
     const { t } = useTranslation();
     const isDark = theme === 'dark';
 
     const handleNavPress = (item: NavItemProps) => {
-        // Only allow Home or Settings for non-logged-in users
-        if (!auth.isLoggedIn && item.id !== 'home' && item.id !== 'settings') {
-            // Check if showCustomAlert exists in context or use windows alert for simple feedback
-            // Since this component is outside main context's local state, we'll suggest login via router or alert
-            if (Platform.OS === 'web') {
-                alert(t('common.member_only_alert'));
-            }
+        // Only allow Home, Heroes, or Settings for non-logged-in users
+        if (!auth.isLoggedIn && item.id !== 'home' && item.id !== 'settings' && item.id !== 'heroes') {
+            showCustomAlert(t('common.member_only_title'), t('common.member_only_alert'), 'error');
             return;
         }
 
