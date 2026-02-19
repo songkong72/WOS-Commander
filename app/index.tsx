@@ -208,6 +208,27 @@ export default function Home() {
     const [noticePopupDontShow, setNoticePopupDontShow] = useState(false);
     const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
+
+    // -- Persistence for Timezone & ViewMode --
+    useEffect(() => {
+        AsyncStorage.getItem('settings_timezone').then(val => {
+            if (val === 'LOCAL' || val === 'UTC') setTimezone(val);
+        });
+        AsyncStorage.getItem('settings_viewMode').then(val => {
+            if (val === 'list' || val === 'timeline') setViewMode(val);
+        });
+    }, []);
+
+    const changeTimezone = (tz: 'LOCAL' | 'UTC') => {
+        setTimezone(tz);
+        AsyncStorage.setItem('settings_timezone', tz);
+    };
+
+    const changeViewMode = (mode: 'list' | 'timeline') => {
+        setViewMode(mode);
+        AsyncStorage.setItem('settings_viewMode', mode);
+    };
+
     const [isManualVisible, setIsManualVisible] = useState(false);
     const [isGateManualVisible, setIsGateManualVisible] = useState(false);
 
@@ -659,6 +680,13 @@ export default function Home() {
         auth.role === 'master' ||
         auth.role === 'super_admin'
     );
+
+    const [hoveredTimeKey, setHoveredTimeKey] = useState<string | null>(null);
+
+    const getAlternativeTime = (kstStr: string) => {
+        if (!kstStr) return kstStr;
+        return timezone === 'LOCAL' ? toUTC(kstStr) : toLocal(kstStr);
+    };
 
     const [hoveredHeaderBtn, setHoveredHeaderBtn] = useState<string | null>(null);
 
@@ -1752,23 +1780,33 @@ export default function Home() {
     const processConversion = (str: string, diffMinutes: number) => {
         if (!str || diffMinutes === 0) return str;
 
-        // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
-        let processed = str.replace(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
+        // 1. Full Date Range Case (e.g., 2026.02.13 09:00 or 02-13 09:00)
+        // More robust regex to handle variations in separators and labels between date and time
+        const dateRegex = /(?:(\d{4})[.\-/])?(\d{1,2})[.\-/](\d{1,2})[^0-9~]*(\d{1,2}):(\d{2})/g;
+
+        let processed = str.replace(dateRegex, (match, y, m, d, h, min) => {
             const currentYear = now.getFullYear();
-            const date = new Date(parseInt(y || currentYear.toString()), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+            const yearVal = parseInt(y || currentYear.toString());
+            const monthVal = parseInt(m) - 1;
+            const dayVal = parseInt(d);
+            const hourVal = parseInt(h);
+            const minVal = parseInt(min);
+
+            const date = new Date(yearVal, monthVal, dayVal, hourVal, minVal);
             if (isNaN(date.getTime())) return match;
+
             const converted = new Date(date.getTime() + diffMinutes * 60000);
             return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
         });
 
-        // 2. Weekly Day Case (화(22:00))
+        // 2. Weekly Day Case (e.g., 화(22:00) or 매일(09:00))
         processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {
             const hour = parseInt(h);
             const min = parseInt(m);
             const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
             let dayIdx = days.indexOf(day);
 
-            if (dayIdx === -1) { // '매일'
+            if (dayIdx === -1) { // '매일' or '상시'
                 let totalMin = hour * 60 + min + diffMinutes;
                 while (totalMin < 0) totalMin += 1440;
                 totalMin %= 1440;
@@ -2488,8 +2526,9 @@ export default function Home() {
         });
     };
 
-    const formatEventTimeCompact = (timeStr: string, isUpcomingSoon: boolean) => {
-        if (!timeStr) return null;
+    const formatEventTimeCompact = (rawTimeStr: string, isUpcomingSoon: boolean) => {
+        if (!rawTimeStr) return null;
+        const timeStr = convertTime(rawTimeStr);
 
         // 1. Date Range Case: "2026.02.13 09:00 ~ 2026.02.15 09:00"
         // Supports flexible separators and markers like '월' directly after date.
@@ -2839,36 +2878,54 @@ export default function Home() {
                         const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
                         const currentDay = (now.getDay() + 6) % 7;
 
-                        // Extract day and time
-                        let targetDayStr = displayDay;
-                        let targetTimeStr = displayTime;
+                        // Use combined convertTime for consistent behavior
+                        const combinedStr = `${displayDay} ${displayTime}`.trim();
+                        const convertedCombined = convertTime(combinedStr);
 
-                        // Try to handle specific date format first if available in displayDay
-                        // Simple heuristic: if it contains a month/day pattern
+                        // Try to parse converted string back if it contains a range
+                        // Use a more inclusive regex for the detection part
+                        const mIsoRange = convertedCombined.match(/(?:\d{2,4}[.\-/])?\d{1,2}[.\-/]\d{1,2}.*~.*/);
+                        if (mIsoRange) {
+                            return convertedCombined;
+                        }
 
-                        // Fallback to weekly logic
-                        let dIdx = dayMapObj[targetDayStr];
+                        // Fallback to weekly logic if original was weekly
+                        let dIdx = dayMapObj[displayDay];
                         if (dIdx !== undefined) {
-                            const [h, m] = (targetTimeStr.match(/(\d{1,2}):(\d{2})/) || []).slice(1).map(Number);
+                            const [h, m] = (displayTime.match(/(\d{1,2}):(\d{2})/) || []).slice(1).map(Number);
                             if (!isNaN(h)) {
-                                // Calculate target date
+                                // Calculate target dates in KST first, then convert
                                 let diffDays = dIdx - currentDay;
-
                                 const targetDate = new Date(now);
                                 targetDate.setDate(now.getDate() + diffDays);
                                 targetDate.setHours(h, m, 0, 0);
 
                                 const endDate = new Date(targetDate);
-                                endDate.setMinutes(endDate.getMinutes() + 30); // Default 30 min duration
+                                endDate.setMinutes(endDate.getMinutes() + 30);
 
-                                const format = (d: Date) => `${d.getFullYear().toString().slice(-2)}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                                const format = (d: Date) => {
+                                    const y = d.getFullYear().toString().slice(-2);
+                                    const mon = (d.getMonth() + 1).toString().padStart(2, '0');
+                                    const day = d.getDate().toString().padStart(2, '0');
+                                    const hh = d.getHours().toString().padStart(2, '0');
+                                    const mm = d.getMinutes().toString().padStart(2, '0');
+                                    const uhh = d.getUTCHours().toString().padStart(2, '0');
+                                    const umm = d.getUTCMinutes().toString().padStart(2, '0');
+
+                                    if (timezone === 'UTC') {
+                                        const uy = d.getUTCFullYear().toString().slice(-2);
+                                        const umon = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+                                        const uday = d.getUTCDate().toString().padStart(2, '0');
+                                        return `${uy}.${umon}.${uday} ${uhh}:${umm}`;
+                                    }
+                                    return `${y}.${mon}.${day} ${hh}:${mm}`;
+                                };
 
                                 return `${format(targetDate)} ~ ${format(endDate)}`;
                             }
                         }
 
-                        // If regex match failed or complex string, return original but simplified (YY.MM.DD)
-                        let finalStr = `${displayDay} ${displayTime}`;
+                        let finalStr = convertedCombined;
                         return finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.');
                     };
 
@@ -2972,38 +3029,66 @@ export default function Home() {
                                     </View>
 
                                     {/* Date Range Display - Bottom Full Width */}
-                                    <View className="flex-row flex-wrap items-center pt-2">
-                                        <View className="flex-row items-center mr-2 py-0.5">
-                                            <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
+                                    <View className="pt-2 relative">
+                                        <Pressable
+                                            onHoverIn={() => setHoveredTimeKey(key)}
+                                            onHoverOut={() => setHoveredTimeKey(null)}
+                                            className="flex-row flex-wrap items-center"
+                                        >
+                                            <View className="flex-row items-center mr-2 py-0.5">
+                                                <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
+                                                {(() => {
+                                                    const parts = formattedDateRange.split(' ~ ');
+                                                    if (parts.length === 2 && parts[0].includes(' ')) {
+                                                        const [date1, time1] = parts[0].split(' ');
+                                                        return (
+                                                            <View className="flex-row items-center">
+                                                                <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date1}</Text>
+                                                                <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time1}</Text>
+                                                            </View>
+                                                        );
+                                                    }
+                                                    return <Text className="font-medium text-slate-300" style={{ fontSize: 18 * fontSizeScale }}>{formattedDateRange}</Text>;
+                                                })()}
+                                            </View>
+
                                             {(() => {
                                                 const parts = formattedDateRange.split(' ~ ');
-                                                if (parts.length === 2 && parts[0].includes(' ') && parts[1].includes(' ')) {
-                                                    const [date1, time1] = parts[0].split(' ');
+                                                if (parts.length === 2 && parts[1].includes(' ')) {
+                                                    const [date2, time2] = parts[1].split(' ');
                                                     return (
-                                                        <View className="flex-row items-center">
-                                                            <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date1}</Text>
-                                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time1}</Text>
+                                                        <View className="flex-row items-center py-0.5">
+                                                            <Text className="text-white mx-1" style={{ fontSize: 18 * fontSizeScale }}>~</Text>
+                                                            <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date2}</Text>
+                                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time2}</Text>
                                                         </View>
                                                     );
                                                 }
-                                                return <Text className="font-medium text-slate-300" style={{ fontSize: 18 * fontSizeScale }}>{formattedDateRange}</Text>;
+                                                return null;
                                             })()}
-                                        </View>
+                                        </Pressable>
 
-                                        {(() => {
-                                            const parts = formattedDateRange.split(' ~ ');
-                                            if (parts.length === 2 && parts[1].includes(' ')) {
-                                                const [date2, time2] = parts[1].split(' ');
-                                                return (
-                                                    <View className="flex-row items-center py-0.5">
-                                                        <Text className="text-white mx-1" style={{ fontSize: 18 * fontSizeScale }}>~</Text>
-                                                        <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date2}</Text>
-                                                        <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time2}</Text>
-                                                    </View>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
+                                        {/* UTC/Local Tooltip */}
+                                        {hoveredTimeKey === key && (
+                                            <View
+                                                className={`absolute -top-12 left-0 items-center z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200`}
+                                                style={{ pointerEvents: 'none' }}
+                                            >
+                                                <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border px-3 py-2 rounded-xl shadow-xl flex-row items-center`}>
+                                                    <View className={`w-2 h-2 rounded-full mr-2 ${timezone === 'LOCAL' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                                                    <Text className={`${isDark ? 'text-slate-200' : 'text-slate-700'} font-bold whitespace-nowrap mr-2`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                        {timezone === 'LOCAL' ? 'UTC' : 'Local'}:
+                                                    </Text>
+                                                    <Text className={`${isDark ? 'text-sky-400' : 'text-blue-600'} font-mono font-black`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                        {getAlternativeTime(`${displayDay} ${displayTime}`.trim()).replace(/20(\d{2})[\.\/-]/g, '$1.')}
+                                                    </Text>
+                                                    {/* Tooltip Arrow */}
+                                                    <View
+                                                        className={`absolute -bottom-1.5 left-6 w-3 h-3 rotate-45 border-b border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                                                    />
+                                                </View>
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
                             </ImageBackground>
@@ -3065,45 +3150,32 @@ export default function Home() {
                                     </View>
 
                                     {/* Time Display */}
-                                    <View>
-                                        {(!displayDay && !displayTime) ? (
-                                            <Text className="text-slate-400 text-sm">{t('dashboard.unassigned')}</Text>
-                                        ) : (
-                                            (() => {
-                                                let finalStr = displayTime || displayDay || '-';
-                                                // Combine Day and Time if separate and valid
-                                                if (displayDay && displayTime && !/[일월화수목금토]/.test(displayTime)) {
-                                                    if (!event.isFortressSplit) finalStr = `${displayDay} ${displayTime}`;
-                                                }
+                                    <View className="relative">
+                                        <Pressable
+                                            onHoverIn={() => setHoveredTimeKey(key)}
+                                            onHoverOut={() => setHoveredTimeKey(null)}
+                                        >
+                                            {(!displayDay && !displayTime) ? (
+                                                <Text className="text-slate-400 text-sm">{t('dashboard.unassigned')}</Text>
+                                            ) : (() => {
+                                                const combined = (displayDay && displayTime && !/[일월화수목금토]/.test(displayTime))
+                                                    ? `${displayDay} ${displayTime}`
+                                                    : (displayTime || displayDay || '-');
 
-                                                // Clean up string
-                                                finalStr = finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.'); // Shorten year
-                                                finalStr = finalStr.replace(/성채전\s*:\s*/g, ''); // Remove prefix
-                                                finalStr = finalStr.replace(/,\s*/g, '\n'); // Split by comma
-
-                                                const lines = finalStr.split('\n');
+                                                const finalStr = convertTime(combined.trim());
+                                                const lines = finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.').replace(/성채전\s*:\s*/g, '').replace(/,\s*/g, '\n').split('\n');
 
                                                 return (
                                                     <View>
                                                         {lines.map((line, idx) => {
-                                                            // Format: "Mon 22:00" -> "Mon(22:00)"
-                                                            let formattedLine = line.replace(/([월화수목금토일])\s+(\d{2}:\d{2})/, '$1($2)');
-
-                                                            // Check for Fortress/Citadel keywords to style separately
+                                                            const formattedLine = line.replace(/([월화수목금토일])\s+(\d{2}:\d{2})/, '$1($2)');
                                                             const parts = formattedLine.split(' ');
-
                                                             return (
                                                                 <Text key={idx} className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale }}>
                                                                     {parts.map((part, pIdx) => {
-                                                                        // Identify keywords (FortressN, CitadelN)
                                                                         const isKeyword = /^(요새|성채)\d+/.test(part);
-                                                                        // Identify Time pattern Day(HH:MM)
                                                                         const isTimePattern = /[월화수목금토일]\(\d{2}:\d{2}\)/.test(part);
-
-                                                                        const styleClass = isKeyword
-                                                                            ? (isDark ? 'text-sky-300 font-bold' : 'text-blue-600 font-bold')
-                                                                            : (isTimePattern ? (isDark ? 'text-slate-300' : 'text-slate-600') : '');
-
+                                                                        const styleClass = isKeyword ? (isDark ? 'text-sky-300 font-bold' : 'text-blue-600 font-bold') : (isTimePattern ? (isDark ? 'text-slate-300' : 'text-slate-600') : '');
                                                                         return (
                                                                             <Text key={pIdx} className={styleClass}>
                                                                                 {isKeyword ? translateLabel(part) : (isTimePattern ? part.replace(/[월화수목금토일]/g, m => translateDay(m)) : translateDay(part))}{pIdx < parts.length - 1 ? ' ' : ''}
@@ -3115,7 +3187,29 @@ export default function Home() {
                                                         })}
                                                     </View>
                                                 );
-                                            })()
+                                            })()}
+                                        </Pressable>
+
+                                        {/* UTC/Local Tooltip for non-active cards */}
+                                        {hoveredTimeKey === key && (
+                                            <View
+                                                className={`absolute -top-12 left-0 items-center z-[100] animate-in fade-in slide-in-from-bottom-2 duration-200`}
+                                                style={{ pointerEvents: 'none' }}
+                                            >
+                                                <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border px-3 py-2 rounded-xl shadow-xl flex-row items-center`}>
+                                                    <View className={`w-2 h-2 rounded-full mr-2 ${timezone === 'LOCAL' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                                                    <Text className={`${isDark ? 'text-slate-200' : 'text-slate-700'} font-bold whitespace-nowrap mr-2`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                        {timezone === 'LOCAL' ? 'UTC' : 'Local'}:
+                                                    </Text>
+                                                    <Text className={`${isDark ? 'text-sky-400' : 'text-blue-600'} font-mono font-black`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                        {getAlternativeTime(`${displayDay} ${displayTime}`.trim()).replace(/20(\d{2})[\.\/-]/g, '$1.')}
+                                                    </Text>
+                                                    {/* Tooltip Arrow */}
+                                                    <View
+                                                        className={`absolute -bottom-1.5 left-6 w-3 h-3 rotate-45 border-b border-r ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
+                                                    />
+                                                </View>
+                                            </View>
                                         )}
                                     </View>
                                 </View>
@@ -3718,55 +3812,6 @@ export default function Home() {
                         </View>
                     </View>
                 </Modal>
-
-                {/* Custom Alert Modal (Shared with Gate ) */}
-                <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                        <BlurView intensity={40} className="absolute inset-0" />
-                        <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                            {/* Icon Area */}
-                            <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-slate-800' : 'bg-slate-100')}`}>
-                                <View className={`w-14 h-14 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error') ? 'bg-red-500' : 'bg-slate-600'}`}>
-                                    <Ionicons
-                                        name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error') ? 'close' : 'trash-outline'}
-                                        size={28}
-                                        color="white"
-                                    />
-                                </View>
-                            </View>
-
-                            <Text className={`text-2xl font-black mb-3 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                            <Text className={`text-center mb-8 text-base leading-6 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
-
-                            {customAlert.type === 'confirm' ? (
-                                <View className="flex-row w-full gap-3">
-                                    <TouchableOpacity
-                                        onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                        className={`flex-1 py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
-                                    >
-                                        <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            setCustomAlert({ ...customAlert, visible: false });
-                                            customAlert.onConfirm?.();
-                                        }}
-                                        className={`flex-[1.5] py-4 rounded-2xl ${isDark ? 'bg-sky-500' : 'bg-sky-600'}`}
-                                    >
-                                        <Text className="text-center font-bold text-base text-white">{t('common.confirm')}</Text>
-                                    </TouchableOpacity>
-                                </View>
-                            ) : (
-                                <TouchableOpacity
-                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                    className={`w-full py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
-                                >
-                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.ok')}</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                </Modal>
             </View>
         );
     }
@@ -3972,7 +4017,7 @@ export default function Home() {
                                 {/* Timezone Group */}
                                 <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
                                     <Pressable
-                                        onPress={() => setTimezone('LOCAL')}
+                                        onPress={() => changeTimezone('LOCAL')}
                                         style={({ pressed, hovered }: any) => [
                                             {
                                                 paddingHorizontal: isMobile ? 12 : 24,
@@ -3990,7 +4035,7 @@ export default function Home() {
                                         <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : 'text-[#3b82f6]'}`}>Local</Text>
                                     </Pressable>
                                     <Pressable
-                                        onPress={() => setTimezone('UTC')}
+                                        onPress={() => changeTimezone('UTC')}
                                         style={({ pressed, hovered }: any) => [
                                             {
                                                 paddingHorizontal: isMobile ? 12 : 24,
@@ -4012,7 +4057,7 @@ export default function Home() {
                                 {/* View Mode Group */}
                                 <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                                     <Pressable
-                                        onPress={() => setViewMode('timeline')}
+                                        onPress={() => changeViewMode('timeline')}
                                         style={({ pressed, hovered }: any) => [
                                             {
                                                 paddingHorizontal: isMobile ? 12 : 20,
@@ -4027,7 +4072,7 @@ export default function Home() {
                                         <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
                                     </Pressable>
                                     <Pressable
-                                        onPress={() => setViewMode('list')}
+                                        onPress={() => changeViewMode('list')}
                                         style={({ pressed, hovered }: any) => [
                                             {
                                                 paddingHorizontal: isMobile ? 12 : 20,
