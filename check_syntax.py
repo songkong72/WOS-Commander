@@ -1,7 +1,7 @@
 
 import re
 
-file_path = r'e:\project\workspace\WOS-Commander\app\growth\events.tsx'
+file_path = r'e:\project\workspace\WOS-Commander\app\index.tsx'
 
 with open(file_path, 'r', encoding='utf-8') as f:
     content = f.read()
