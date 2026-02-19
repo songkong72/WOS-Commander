@@ -57,7 +57,7 @@ export default function HeroManagement() {
     const { t } = useTranslation();
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { theme } = useTheme();
+    const { theme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
     const [selectedCategory, setSelectedCategory] = useState('레어'); // Default first tab (Internal ID stays Korean for filtering)
 
@@ -117,7 +117,7 @@ export default function HeroManagement() {
                                     }
                                 ]}
                             >
-                                <Text className={`font-bold text-[10px] md:text-xs ${selectedCategory === cat.id ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+                                <Text className={`font-bold md:text-xs ${selectedCategory === cat.id ? (isDark ? 'text-[#38bdf8]' : 'text-blue-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 10 * fontSizeScale }}>
                                     {cat.label}
                                 </Text>
                             </Pressable>
@@ -145,14 +145,14 @@ export default function HeroManagement() {
                                 <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
                             </Pressable>
                             <View className="flex-1">
-                                <Text className={`font-black text-[9px] tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>{t('heroes.archive_title')}</Text>
+                                <Text className={`font-black tracking-widest mb-0.5 uppercase ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`} style={{ fontSize: 9 * fontSizeScale }}>{t('heroes.archive_title')}</Text>
                                 <View className="flex-row items-baseline">
-                                    <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                                    <Text className={`font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 20 * fontSizeScale }}>
                                         {selectedCategory.startsWith('S')
                                             ? t('heroes.categories.gen_format', { gen: selectedCategory.substring(1) })
                                             : t(`heroes.categories.${selectedCategory === '레어' ? 'rare' : 'epic'}`)}
                                     </Text>
-                                    <Text className={`ml-1 text-sm font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('heroes.list_title')}</Text>
+                                    <Text className={`ml-1 font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('heroes.list_title')}</Text>
                                 </View>
                             </View>
                         </View>
@@ -199,7 +199,7 @@ export default function HeroManagement() {
 
                                                     {/* Name Bar */}
                                                     <View className={`py-2 items-center justify-center border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-50'}`}>
-                                                        <Text className={`font-bold text-[10px] md:text-xs tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>
+                                                        <Text className={`font-bold md:text-xs tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
                                                             {t(`heroes.names.${hero.id.toLowerCase()}`, { defaultValue: hero.name })}
                                                         </Text>
                                                     </View>
@@ -209,7 +209,7 @@ export default function HeroManagement() {
                                     ))
                                 ) : (
                                     <View className="w-full py-20 items-center justify-center">
-                                        <Text className="text-slate-600 font-semibold text-lg">{t('heroes.empty_msg')}</Text>
+                                        <Text className="text-slate-600 font-semibold" style={{ fontSize: 18 * fontSizeScale }}>{t('heroes.empty_msg')}</Text>
                                     </View>
                                 )}
                             </View>

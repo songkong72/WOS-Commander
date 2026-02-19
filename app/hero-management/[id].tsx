@@ -59,7 +59,7 @@ export default function HeroDetail() {
     const router = useRouter();
     const navigation = useNavigation();
     const hero = heroesData.find(h => h.id === id);
-    const { theme } = useTheme();
+    const { theme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
     const [activeTab, setActiveTab] = useState('story');
     const [skillType, setSkillType] = useState('exploration');
@@ -201,17 +201,17 @@ export default function HeroDetail() {
             >
                 <Ionicons name="arrow-back" size={20} color={isDark ? "white" : "#1e293b"} />
             </Pressable>
-            <Text className={`font-bold text-lg tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{t(`heroes.names.${hero.id}`, { defaultValue: hero.name })}</Text>
+            <Text className={`font-bold tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 18 * fontSizeScale }}>{t(`heroes.names.${hero.id}`, { defaultValue: hero.name })}</Text>
             <View className="w-9 h-9" />
         </View>
     );
 
     const AttributeItem = ({ label, value, icon }: { label: string, value: string, icon: string }) => (
         <View className={`flex-row items-center py-2 border-b gap-4 ${isDark ? 'border-white/5' : 'border-slate-100'}`}>
-            <Text className="text-slate-400 text-xs font-semibold w-16">{label}</Text>
+            <Text className="text-slate-400 font-semibold w-16" style={{ fontSize: 12 * fontSizeScale }}>{label}</Text>
             <View className="flex-row items-center flex-1 justify-end gap-2">
                 <Image source={{ uri: icon }} className="w-5 h-5" />
-                <Text className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{value}</Text>
+                <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1} style={{ fontSize: 12 * fontSizeScale }}>{value}</Text>
             </View>
         </View>
     );
@@ -220,9 +220,9 @@ export default function HeroDetail() {
         <View className="flex-row items-center justify-between py-1.5">
             <View className="flex-row items-center gap-2">
                 {icon && <Image source={{ uri: icon }} className="w-4 h-4" />}
-                <Text className="text-slate-400 text-[11px] font-semibold">{label}</Text>
+                <Text className="text-slate-400 font-semibold" style={{ fontSize: 11 * fontSizeScale }}>{label}</Text>
             </View>
-            <Text className={`text-[11px] font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{value}</Text>
+            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 11 * fontSizeScale }}>{value}</Text>
         </View>
     );
 
@@ -243,7 +243,7 @@ export default function HeroDetail() {
                                 resizeMode="contain"
                             />
                             <View className={`py-3 items-center ${isDark ? 'bg-[#38bdf8]' : 'bg-blue-600'}`}>
-                                <Text className={`font-bold text-lg ${isDark ? 'text-black' : 'text-white'}`}>{t(`heroes.names.${hero.id}`, { defaultValue: hero.name })}</Text>
+                                <Text className={`font-bold ${isDark ? 'text-black' : 'text-white'}`} style={{ fontSize: 18 * fontSizeScale }}>{t(`heroes.names.${hero.id}`, { defaultValue: hero.name })}</Text>
                             </View>
                             <View className="p-4 space-y-1">
                                 <AttributeItem
@@ -265,15 +265,15 @@ export default function HeroDetail() {
                         </View>
 
                         <View className={`rounded-3xl p-5 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                            <Text className={`font-bold text-sm mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('heroes.detail.stats_title')}</Text>
+                            <Text className={`font-bold mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('heroes.detail.stats_title')}</Text>
                             <View className="mb-4">
-                                <Text className="text-brand-accent text-[10px] font-bold uppercase mb-2">{t('heroes.detail.exploration')}</Text>
+                                <Text className="text-brand-accent font-bold uppercase mb-2" style={{ fontSize: 10 * fontSizeScale }}>{t('heroes.detail.exploration')}</Text>
                                 <StatRow label={t('heroes.detail.atk')} value={stats.atk.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
                                 <StatRow label={t('heroes.detail.def')} value={stats.def.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
                                 <StatRow label={t('heroes.detail.hp')} value={stats.hp.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
                             </View>
                             <View>
-                                <Text className="text-brand-accent text-[10px] font-bold uppercase mb-2">{t('heroes.detail.expedition')}</Text>
+                                <Text className="text-brand-accent font-bold uppercase mb-2" style={{ fontSize: 10 * fontSizeScale }}>{t('heroes.detail.expedition')}</Text>
                                 <StatRow label={t('heroes.detail.power')} value={stats.expAtk} />
                                 <StatRow label={t('heroes.detail.def')} value={stats.expDef} />
                             </View>
@@ -311,7 +311,7 @@ export default function HeroDetail() {
                                             color={activeTab === tab.id ? tab.color : (isDark ? '#94a3b8' : '#64748b')}
                                             style={{ marginRight: 8 }}
                                         />
-                                        <Text className={`font-bold text-[14px] ${activeTab === tab.id ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                        <Text className={`font-bold ${activeTab === tab.id ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 14 * fontSizeScale }}>
                                             {tab.label}
                                         </Text>
                                         {activeTab === tab.id && (
@@ -329,7 +329,7 @@ export default function HeroDetail() {
                                             style={{ pointerEvents: 'none' }}
                                         >
                                             <View className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'} border px-3 py-2 rounded-xl shadow-xl`}>
-                                                <Text className={`${isDark ? 'text-slate-200' : 'text-slate-700'} text-[11px] font-medium whitespace-nowrap`}>
+                                                <Text className={`${isDark ? 'text-slate-200' : 'text-slate-700'} font-medium whitespace-nowrap`} style={{ fontSize: 11 * fontSizeScale }}>
                                                     {tab.tooltip}
                                                 </Text>
                                                 {/* Tooltip Arrow */}
@@ -346,8 +346,8 @@ export default function HeroDetail() {
                         {/* Story Content */}
                         {activeTab === 'story' && (
                             <View className={`rounded-3xl p-6 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <Text className={`font-bold text-lg mb-4 ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`}>{t('heroes.detail.story_title')}</Text>
-                                <Text className={`leading-7 text-sm ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                <Text className={`font-bold mb-4 ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('heroes.detail.story_title')}</Text>
+                                <Text className={`leading-7 ${isDark ? 'text-slate-300' : 'text-slate-500'}`} style={{ fontSize: 14 * fontSizeScale }}>
                                     {t(`heroes.descriptions.${hero.id.toLowerCase()}`, { defaultValue: hero.description || `${t(`heroes.names.${hero.id.toLowerCase()}`, { defaultValue: hero.name })} ${t('heroes.detail.not_available')}` })}
                                 </Text>
                             </View>
@@ -357,14 +357,14 @@ export default function HeroDetail() {
                         {activeTab === 'shards' && (
                             <View className={`rounded-3xl p-6 border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                 <View className="flex-row items-center justify-between mb-6">
-                                    <Text className={`font-bold text-lg ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`}>{t('heroes.detail.shards_title')}</Text>
+                                    <Text className={`font-bold ${isDark ? 'text-[#22d3ee]' : 'text-blue-600'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('heroes.detail.shards_title')}</Text>
                                     <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/item_icon_500220.png' }} className="w-8 h-8" />
                                 </View>
                                 <View className={`border rounded-2xl overflow-hidden ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                                     {/* ... table content remains same ... */}
                                     <View className={`py-3 px-4 border-b ${isDark ? 'bg-slate-800/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                                        <Text className="flex-1 text-slate-400 text-[10px] font-bold uppercase">{t('heroes.detail.tier')}</Text>
-                                        <Text className="w-12 text-center text-slate-400 text-[10px] font-bold uppercase">{t('heroes.detail.total')}</Text>
+                                        <Text className="flex-1 text-slate-400 font-bold uppercase" style={{ fontSize: 10 * fontSizeScale }}>{t('heroes.detail.tier')}</Text>
+                                        <Text className="w-12 text-center text-slate-400 font-bold uppercase" style={{ fontSize: 10 * fontSizeScale }}>{t('heroes.detail.total')}</Text>
                                     </View>
                                     {[
                                         { star: 1, total: 30 },
@@ -379,7 +379,7 @@ export default function HeroDetail() {
                                                     <Image key={j} source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/star.png' }} className="w-4 h-4 mr-0.5" />
                                                 ))}
                                             </View>
-                                            <Text className={`w-12 text-center text-xs font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{row.total}</Text>
+                                            <Text className={`w-12 text-center font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 12 * fontSizeScale }}>{row.total}</Text>
                                         </View>
                                     ))}
                                 </View>
@@ -410,7 +410,7 @@ export default function HeroDetail() {
                                                 }
                                             ]}
                                         >
-                                            <Text className={`text-[11px] font-bold uppercase tracking-widest ${skillType === type ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+                                            <Text className={`font-bold uppercase tracking-widest ${skillType === type ? (isDark ? 'text-slate-900' : 'text-white') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 11 * fontSizeScale }}>
                                                 {t(`heroes.detail.${type}`)}
                                             </Text>
                                         </Pressable>
@@ -419,18 +419,18 @@ export default function HeroDetail() {
 
                                 {skillType === 'special' ? (
                                     <View>
-                                        <Text className="text-[#22d3ee] font-bold text-lg mb-6">{t('heroes.detail.equipment_title')}</Text>
+                                        <Text className="text-[#22d3ee] font-bold mb-6" style={{ fontSize: 18 * fontSizeScale }}>{t('heroes.detail.equipment_title')}</Text>
 
                                         {(() => {
                                             const stats = (hero as any).skills?.special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
                                             if (stats) {
                                                 return (
                                                     <View className="mb-8">
-                                                        <Text className="text-white font-bold text-sm mb-3 pl-1">{t('heroes.detail.stats_title')}</Text>
+                                                        <Text className="text-white font-bold mb-3 pl-1" style={{ fontSize: 14 * fontSizeScale }}>{t('heroes.detail.stats_title')}</Text>
                                                         <View className="flex-col md:flex-row gap-4">
                                                             <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                                                                 <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
-                                                                    <Text className={`text-[11px] font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('heroes.detail.exploration')}</Text>
+                                                                    <Text className={`font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.detail.exploration')}</Text>
                                                                 </View>
                                                                 <StatRow label={t('heroes.detail.atk')} value={stats.exploration.atk?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
                                                                 <StatRow label={t('heroes.detail.def')} value={stats.exploration.def?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
@@ -438,7 +438,7 @@ export default function HeroDetail() {
                                                             </View>
                                                             <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
                                                                 <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
-                                                                    <Text className={`text-[11px] font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('heroes.detail.expedition')}</Text>
+                                                                    <Text className={`font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.detail.expedition')}</Text>
                                                                 </View>
                                                                 <StatRow label={t('heroes.detail.power')} value={stats.expedition.power} />
                                                                 <StatRow label={t('heroes.detail.hp')} value={stats.expedition.hp} />
@@ -449,52 +449,44 @@ export default function HeroDetail() {
                                             }
                                             return null;
                                         })()}
+                                        const displayPower = equipmentData.power
+                                        ? (typeof equipmentData.power === 'number'
+                                        ? equipmentData.power.toLocaleString()
+                                        : equipmentData.power)
+                                        : '';
 
-                                        {(() => {
-                                            const equipmentData = (hero as any).equipment || (hero as any).skills?.special?.[0]?.equipment;
-
-                                            if (!equipmentData) return (
-                                                <Text className="text-slate-500 text-center py-10">{t('heroes.detail.not_available')}</Text>
-                                            );
-
-                                            const displayPower = equipmentData.power
-                                                ? (typeof equipmentData.power === 'number'
-                                                    ? equipmentData.power.toLocaleString()
-                                                    : equipmentData.power)
-                                                : '';
-
-                                            return (
-                                                <View className={`rounded-3xl p-6 border mb-6 ${isDark ? 'bg-slate-800/30 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                                    <View className="flex-row items-center gap-6 mb-8">
-                                                        <SkillImage
-                                                            icon={equipmentData.icon}
-                                                            className="w-20 h-20 rounded-2xl"
-                                                        />
-                                                        <View>
-                                                            <Text className={`font-bold text-lg mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{equipmentData.name}</Text>
-                                                            <View className="flex-row items-center gap-2">
-                                                                <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/power-e1711159096981.png' }} className="w-5 h-5" />
-                                                                <Text className="text-brand-accent font-bold">{displayPower}</Text>
-                                                            </View>
-                                                        </View>
-                                                    </View>
-
-                                                    <View className="space-y-4">
-                                                        {equipmentData.skills.map((skill: any, idx: number) => (
-                                                            <View key={idx} className="flex-row gap-4 items-center">
-                                                                <SkillImage
-                                                                    icon={skill.icon}
-                                                                    className="w-12 h-12 rounded-lg"
-                                                                />
-                                                                <View className="flex-1">
-                                                                    <Text className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-800'}`}>{skill.name}</Text>
-                                                                    <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{skill.desc}</Text>
-                                                                </View>
-                                                            </View>
-                                                        ))}
+                                        return (
+                                        <View className={`rounded-3xl p-6 border mb-6 ${isDark ? 'bg-slate-800/30 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                            <View className="flex-row items-center gap-6 mb-8">
+                                                <SkillImage
+                                                    icon={equipmentData.icon}
+                                                    className="w-20 h-20 rounded-2xl"
+                                                />
+                                                <View>
+                                                    <Text className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 18 * fontSizeScale }}>{equipmentData.name}</Text>
+                                                    <View className="flex-row items-center gap-2">
+                                                        <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/power-e1711159096981.png' }} className="w-5 h-5" />
+                                                        <Text className="text-brand-accent font-bold">{displayPower}</Text>
                                                     </View>
                                                 </View>
-                                            );
+                                            </View>
+
+                                            <View className="space-y-4">
+                                                {equipmentData.skills.map((skill: any, idx: number) => (
+                                                    <View key={idx} className="flex-row gap-4 items-center">
+                                                        <SkillImage
+                                                            icon={skill.icon}
+                                                            className="w-12 h-12 rounded-lg"
+                                                        />
+                                                        <View className="flex-1">
+                                                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 14 * fontSizeScale }}>{skill.name}</Text>
+                                                            <Text className={`leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`} style={{ fontSize: 12 * fontSizeScale }}>{skill.desc}</Text>
+                                                        </View>
+                                                    </View>
+                                                ))}
+                                            </View>
+                                        </View>
+                                        );
                                         })()}
                                     </View>
                                 ) : (
@@ -506,13 +498,13 @@ export default function HeroDetail() {
                                                     className="w-16 h-16 rounded-xl"
                                                 />
                                                 <View className="flex-1">
-                                                    <Text className={`font-bold text-sm mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`}>{skill.name}</Text>
-                                                    <Text className={`text-xs leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{skill.desc}</Text>
+                                                    <Text className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 14 * fontSizeScale }}>{skill.name}</Text>
+                                                    <Text className={`leading-5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 12 * fontSizeScale }}>{skill.desc}</Text>
                                                 </View>
                                             </View>
                                         ))}
                                         {(!(hero.skills as any)?.[skillType] || (hero.skills as any)[skillType].length === 0) && (
-                                            <Text className="text-slate-500 text-center py-10">{t('heroes.detail.not_available')}</Text>
+                                            <Text className="text-slate-500 text-center py-10" style={{ fontSize: 14 * fontSizeScale }}>{t('heroes.detail.not_available')}</Text>
                                         )}
                                     </View>
                                 )}

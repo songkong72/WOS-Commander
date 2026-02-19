@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function Settings() {
     const router = useRouter();
     const { t } = useTranslation();
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme, fontSizeScale } = useTheme();
     const { language, changeLanguage } = useLanguage();
     const { auth, logout } = useAuth();
     const isDark = theme === 'dark';
@@ -31,7 +31,7 @@ export default function Settings() {
                     >
                         <Ionicons name="arrow-back" size={14} color={isDark ? 'white' : '#0f172a'} />
                     </TouchableOpacity>
-                    <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
                         {t('navigation.settings')}
                     </Text>
                 </View>
@@ -44,7 +44,7 @@ export default function Settings() {
             >
                 {/* Language Settings */}
                 <View className="mb-8">
-                    <Text className={`text-[10px] font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <Text className={`font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
                         {t('settings.language')}
                     </Text>
 
@@ -58,8 +58,8 @@ export default function Settings() {
                                     <Ionicons name="language" size={20} color={language === 'ko' ? '#3b82f6' : (isDark ? '#475569' : '#94a3b8')} />
                                 </View>
                                 <View>
-                                    <Text className={`text-base font-black ${language === 'ko' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>한국어</Text>
-                                    <Text className={`text-[9px] font-bold uppercase tracking-widest ${language === 'ko' ? 'text-blue-500/60' : 'text-slate-500/40'}`}>Korean</Text>
+                                    <Text className={`font-black ${language === 'ko' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 16 * fontSizeScale }}>한국어</Text>
+                                    <Text className={`font-bold uppercase tracking-widest ${language === 'ko' ? 'text-blue-500/60' : 'text-slate-500/40'}`} style={{ fontSize: 9 * fontSizeScale }}>Korean</Text>
                                 </View>
                             </View>
                             {language === 'ko' && <Ionicons name="checkmark-circle" size={18} color="#3b82f6" />}
@@ -74,8 +74,8 @@ export default function Settings() {
                                     <Ionicons name="globe-outline" size={20} color={language === 'en' ? '#3b82f6' : (isDark ? '#475569' : '#94a3b8')} />
                                 </View>
                                 <View>
-                                    <Text className={`text-base font-black ${language === 'en' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>English</Text>
-                                    <Text className={`text-[9px] font-bold uppercase tracking-widest ${language === 'en' ? 'text-blue-500/60' : 'text-slate-500/40'}`}>International</Text>
+                                    <Text className={`font-black ${language === 'en' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 16 * fontSizeScale }}>English</Text>
+                                    <Text className={`font-bold uppercase tracking-widest ${language === 'en' ? 'text-blue-500/60' : 'text-slate-500/40'}`} style={{ fontSize: 9 * fontSizeScale }}>International</Text>
                                 </View>
                             </View>
                             {language === 'en' && <Ionicons name="checkmark-circle" size={18} color="#3b82f6" />}
@@ -85,7 +85,7 @@ export default function Settings() {
 
                 {/* Theme Settings */}
                 <View className="mb-8">
-                    <Text className={`text-[10px] font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <Text className={`font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
                         {t('settings.theme')}
                     </Text>
 
@@ -97,7 +97,7 @@ export default function Settings() {
                                 <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={isDark ? "#818cf8" : "#f59e0b"} />
                             </View>
                             <View className="flex-1">
-                                <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
                                     {isDark ? 'Dark Mode' : 'Light Mode'}
                                 </Text>
                             </View>
@@ -115,7 +115,7 @@ export default function Settings() {
                 {/* Administration */}
                 {auth.isLoggedIn && (
                     <View className="mb-10">
-                        <Text className={`text-[10px] font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <Text className={`font-black mb-4 uppercase tracking-[2px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
                             {t('settings.administration')}
                         </Text>
 
@@ -129,7 +129,7 @@ export default function Settings() {
                                         <Ionicons name="shield-checkmark" size={20} color={isDark ? "#38bdf8" : "#0284c7"} />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                        <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
                                             {t('settings.openAdminMenu')}
                                         </Text>
                                     </View>
@@ -144,7 +144,7 @@ export default function Settings() {
                                 <View className={`w-10 h-10 rounded-xl items-center justify-center mr-4 ${isDark ? 'bg-red-500/15' : 'bg-red-100'}`}>
                                     <Ionicons name="log-out" size={20} color="#ef4444" />
                                 </View>
-                                <Text className="text-base font-bold text-red-500">
+                                <Text className="font-bold text-red-500" style={{ fontSize: 16 * fontSizeScale }}>
                                     {t('settings.logout')}
                                 </Text>
                             </TouchableOpacity>

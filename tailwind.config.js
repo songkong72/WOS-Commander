@@ -3,38 +3,51 @@ module.exports = {
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontSize: {
+        // Base / Body (16px) - TDS Body
+        base: ['16px', { lineHeight: '1.5', letterSpacing: '-0.02em' }],
+        // Small Labels (13-14px)
+        sm: ['14px', { lineHeight: '1.45', letterSpacing: '-0.01em' }],
+        xs: ['13px', { lineHeight: '1.4', letterSpacing: '-0.01em' }],
+        // Titles
+        lg: ['18px', { lineHeight: '1.4', letterSpacing: '-0.02em', fontWeight: '700' }],
+        xl: ['22px', { lineHeight: '1.35', letterSpacing: '-0.02em', fontWeight: '700' }],
+        '2xl': ['26px', { lineHeight: '1.3', letterSpacing: '-0.025em', fontWeight: '800' }],
+        '3xl': ['32px', { lineHeight: '1.25', letterSpacing: '-0.03em', fontWeight: '800' }],
+      },
       colors: {
-        ice: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
-          950: "#082f49",
-        },
-        brand: {
-          dark: "#020617", // Deep night background
-          accent: "#38bdf8", // Clear ice blue
-          header: "#0f172a", // Dark header
-        },
-        txt: {
-          primary: "#ffffff",
-          secondary: "#94a3b8",
-          accent: "#7dd3fc",
-        },
-        frost: {
-          500: 'rgba(255, 255, 255, 0.1)',
-          600: 'rgba(255, 255, 255, 0.2)',
+        // Toss Bank / TDS Colors (Approximate)
+        toss: {
+          bg: "#F2F4F6", // Background Grey
+          white: "#FFFFFF",
+          blue: "#3182F6", // Tess Blue
+          blueLight: "#E8F3FF",
+          grey900: "#191F28", // Primary Text
+          grey800: "#333D4B",
+          grey700: "#4E5968",
+          grey600: "#6B7684", // Secondary Text
+          grey500: "#8B95A1", // Label Text
+          grey400: "#B0B8C1",
+          grey300: "#D1D6DB", // Borders
+          grey200: "#E5E8EB",
+          grey100: "#F2F4F6",
+          red: "#F04452",
+          redLight: "#FFDEDF",
         }
       },
-      fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+      spacing: {
+        '4.5': '1.125rem', // 18px
+        '13': '3.25rem',   // 52px (Optimal Touch Target)
       },
+      borderRadius: {
+        'xl': '16px',
+        '2xl': '20px',
+        '3xl': '24px',
+      },
+      boxShadow: {
+        'toss': '0 4px 20px rgba(0, 0, 0, 0.08)',
+        'toss-sm': '0 2px 8px rgba(0, 0, 0, 0.06)',
+      }
     },
   },
   plugins: [],

@@ -19,7 +19,7 @@ export default function EventDetail() {
     const params = useLocalSearchParams();
     const router = useRouter();
     const { auth } = useAuth();
-    const { theme } = useTheme();
+    const { theme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
     const [activeTab, setActiveTab] = useState<'guide' | 'attendees'>('guide');
     const [attendees, setAttendees] = useState(INITIAL_ATTENDEES);
@@ -124,9 +124,9 @@ export default function EventDetail() {
 
                         <View className="mt-auto px-6 pb-8">
                             <View className="px-3 py-1 bg-brand-accent rounded-lg self-start mb-3">
-                                <Text className="text-[10px] font-black text-brand-dark">{category}</Text>
+                                <Text className="font-black text-brand-dark" style={{ fontSize: 10 * fontSizeScale }}>{category}</Text>
                             </View>
-                            <Text className="text-white text-4xl font-black tracking-tighter shadow-lg">{title}</Text>
+                            <Text className="text-white font-black tracking-tighter shadow-lg" style={{ fontSize: 36 * fontSizeScale }}>{title}</Text>
                         </View>
                     </ImageBackground>
                 ) : (
@@ -142,9 +142,9 @@ export default function EventDetail() {
 
                         <View className="mt-auto px-6 pb-8">
                             <View className="px-3 py-1 bg-brand-accent rounded-lg self-start mb-3">
-                                <Text className="text-[10px] font-black text-brand-dark">{category}</Text>
+                                <Text className="font-black text-brand-dark" style={{ fontSize: 10 * fontSizeScale }}>{category}</Text>
                             </View>
-                            <Text className="text-white text-4xl font-black tracking-tighter shadow-lg">{title}</Text>
+                            <Text className="text-white font-black tracking-tighter shadow-lg" style={{ fontSize: 36 * fontSizeScale }}>{title}</Text>
                         </View>
                     </View>
                 )}
@@ -157,29 +157,29 @@ export default function EventDetail() {
                                 onPress={() => setActiveTab('guide')}
                                 className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'guide' ? (isDark ? 'bg-[#38bdf8]' : 'bg-blue-600') : ''}`}
                             >
-                                <Text className={`font-black text-xs ${activeTab === 'guide' ? (isDark ? 'text-brand-dark' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-500')}`}>공략 가이드</Text>
+                                <Text className={`font-black ${activeTab === 'guide' ? (isDark ? 'text-brand-dark' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-500')}`} style={{ fontSize: 12 * fontSizeScale }}>공략 가이드</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setActiveTab('attendees')}
                                 className={`flex-1 py-3 rounded-xl items-center ${activeTab === 'attendees' ? (isDark ? 'bg-[#38bdf8]' : 'bg-blue-600') : ''}`}
                             >
-                                <Text className={`font-black text-xs ${activeTab === 'attendees' ? (isDark ? 'text-brand-dark' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-500')}`}>참석 영주 ({attendees.length})</Text>
+                                <Text className={`font-black ${activeTab === 'attendees' ? (isDark ? 'text-brand-dark' : 'text-white') : (isDark ? 'text-slate-300' : 'text-slate-500')}`} style={{ fontSize: 12 * fontSizeScale }}>참석 영주 ({attendees.length})</Text>
                             </TouchableOpacity>
                         </View>
                     )}
 
                     {activeTab === 'guide' ? (
                         <View>
-                            <Text className="text-brand-accent text-sm font-black mb-3 ml-1 uppercase tracking-widest">Description</Text>
+                            <Text className="text-brand-accent font-black mb-3 ml-1 uppercase tracking-widest" style={{ fontSize: 14 * fontSizeScale }}>Description</Text>
                             <View className="bg-slate-900/60 p-6 rounded-[32px] border border-slate-800 mb-10">
-                                <Text className="text-slate-300 text-base font-bold leading-7">{content.overview}</Text>
+                                <Text className="text-slate-300 font-bold leading-7" style={{ fontSize: 16 * fontSizeScale }}>{content.overview}</Text>
                             </View>
 
-                            <Text className="text-brand-accent text-sm font-black mb-3 ml-1 uppercase tracking-widest">How to Play</Text>
+                            <Text className="text-brand-accent font-black mb-3 ml-1 uppercase tracking-widest" style={{ fontSize: 14 * fontSizeScale }}>How to Play</Text>
                             <View className="space-y-6 mb-10">
                                 {content.howToPlay.map((item, index) => (
                                     <View key={index} className="bg-slate-900/40 p-5 rounded-[24px] border border-slate-800/50">
-                                        <Text className="text-slate-200 text-sm font-bold leading-6 mb-3">{index + 1}. {item.text}</Text>
+                                        <Text className="text-slate-200 font-bold leading-6 mb-3" style={{ fontSize: 14 * fontSizeScale }}>{index + 1}. {item.text}</Text>
                                         {item.images && (
                                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                                 {item.images.map((img, i) => (
@@ -191,21 +191,21 @@ export default function EventDetail() {
                                 ))}
                             </View>
 
-                            <Text className="text-brand-accent text-sm font-black mb-3 ml-1 uppercase tracking-widest">Pro Tips</Text>
+                            <Text className="text-brand-accent font-black mb-3 ml-1 uppercase tracking-widest" style={{ fontSize: 14 * fontSizeScale }}>Pro Tips</Text>
                             <View className="bg-slate-900/60 p-6 rounded-[32px] border border-slate-800">
                                 {content.tips.map((tip, i) => (
-                                    <Text key={i} className="text-slate-300 text-sm font-bold leading-6 mb-2">❄️ {tip}</Text>
+                                    <Text key={i} className="text-slate-300 font-bold leading-6 mb-2" style={{ fontSize: 14 * fontSizeScale }}>❄️ {tip}</Text>
                                 ))}
                             </View>
                         </View>
                     ) : (
                         <View className="space-y-4">
                             <View className="flex-row justify-between items-center mb-4">
-                                <Text className="text-brand-accent text-sm font-black ml-1 uppercase tracking-widest">Alliance Participants</Text>
+                                <Text className="text-brand-accent font-black ml-1 uppercase tracking-widest" style={{ fontSize: 14 * fontSizeScale }}>Alliance Participants</Text>
                                 {auth.isLoggedIn && (
                                     <View className="flex-row space-x-2">
                                         <TouchableOpacity onPress={() => openEditModal()} className="bg-brand-accent px-4 py-2 rounded-xl">
-                                            <Text className="text-brand-dark font-black text-xs">영주 추가</Text>
+                                            <Text className="text-brand-dark font-black" style={{ fontSize: 12 * fontSizeScale }}>영주 추가</Text>
                                         </TouchableOpacity>
                                     </View>
                                 )}
@@ -218,27 +218,27 @@ export default function EventDetail() {
                                     </View>
                                     <View className="flex-1">
                                         <View className="flex-row justify-between items-center mb-1">
-                                            <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{attendee.name}</Text>
+                                            <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 18 * fontSizeScale }}>{attendee.name}</Text>
                                             <View className={`px-2 py-0.5 rounded ${isDark ? 'bg-[#38bdf8]/20' : 'bg-blue-50'}`}>
-                                                <Text className={`text-[10px] font-black ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>{attendee.role}</Text>
+                                                <Text className={`font-black ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{attendee.role}</Text>
                                             </View>
                                         </View>
                                         <View className="flex-row items-center">
-                                            <Text className="text-slate-500 text-[10px] font-bold mr-1">전투력</Text>
-                                            <Text className={`text-xs font-black mr-4 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{attendee.power}</Text>
-                                            <Text className="text-slate-500 text-[10px] font-bold mr-1">용광로</Text>
-                                            <Text className={`text-xs font-black mr-4 ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{attendee.furnace}</Text>
-                                            <Text className={`text-[10px] font-black mr-1 ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`}>조합</Text>
-                                            <Text className={`text-[10px] font-bold ${isDark ? 'text-[#38bdf8]/80' : 'text-blue-400'}`}>{attendee.heroCombo}</Text>
+                                            <Text className="text-slate-500 font-bold mr-1" style={{ fontSize: 10 * fontSizeScale }}>전투력</Text>
+                                            <Text className={`font-black mr-4 ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontSize: 12 * fontSizeScale }}>{attendee.power}</Text>
+                                            <Text className="text-slate-500 font-bold mr-1" style={{ fontSize: 10 * fontSizeScale }}>용광로</Text>
+                                            <Text className={`font-black mr-4 ${isDark ? 'text-slate-200' : 'text-slate-700'}`} style={{ fontSize: 12 * fontSizeScale }}>{attendee.furnace}</Text>
+                                            <Text className={`font-black mr-1 ${isDark ? 'text-[#38bdf8]' : 'text-blue-600'}`} style={{ fontSize: 10 * fontSizeScale }}>조합</Text>
+                                            <Text className={`font-bold ${isDark ? 'text-[#38bdf8]/80' : 'text-blue-400'}`} style={{ fontSize: 10 * fontSizeScale }}>{attendee.heroCombo}</Text>
                                         </View>
                                     </View>
                                     {auth.isLoggedIn && (
                                         <View className="flex-row ml-2 space-x-2">
                                             <TouchableOpacity onPress={() => openEditModal(attendee)} className={`p-2 rounded-lg ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
-                                                <Text className={`font-black text-[10px] ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>편집</Text>
+                                                <Text className={`font-black ${isDark ? 'text-blue-400' : 'text-blue-600'}`} style={{ fontSize: 10 * fontSizeScale }}>편집</Text>
                                             </TouchableOpacity>
                                             <TouchableOpacity onPress={() => deleteAttendee(attendee.id)} className={`p-2 rounded-lg ${isDark ? 'bg-red-500/20' : 'bg-red-50'}`}>
-                                                <Text className={`font-black text-[10px] ${isDark ? 'text-red-400' : 'text-red-600'}`}>삭제</Text>
+                                                <Text className={`font-black ${isDark ? 'text-red-400' : 'text-red-600'}`} style={{ fontSize: 10 * fontSizeScale }}>삭제</Text>
                                             </TouchableOpacity>
                                         </View>
                                     )}
@@ -254,8 +254,8 @@ export default function EventDetail() {
                                 onPress={() => router.replace('/')} // Redirect to home for login
                                 className="bg-slate-800/40 px-8 py-4 rounded-2xl border border-slate-700 flex-row items-center"
                             >
-                                <Text className="text-slate-400 font-black text-sm mr-2">🔒 관리자 모드로 전환하기</Text>
-                                <Text className="text-slate-600 text-[10px] font-bold">(첫 화면에서 로그인하세요)</Text>
+                                <Text className="text-slate-400 font-black mr-2" style={{ fontSize: 14 * fontSizeScale }}>🔒 관리자 모드로 전환하기</Text>
+                                <Text className="text-slate-600 font-bold" style={{ fontSize: 10 * fontSizeScale }}>(첫 화면에서 로그인하세요)</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -268,27 +268,32 @@ export default function EventDetail() {
             <Modal visible={editModalVisible} transparent animationType="slide">
                 <View className="flex-1 bg-black/80 items-center justify-end">
                     <View className="bg-slate-900 w-full p-8 rounded-t-[40px] border-t border-slate-800">
-                        <Text className="text-white text-2xl font-black mb-6">{editingAttendee ? '영주 정보 수정' : '새 영주 등록'}</Text>
+                        <Text className="text-white font-black mb-6" style={{ fontSize: 24 * fontSizeScale }}>{editingAttendee ? '영주 정보 수정' : '새 영주 등록'}</Text>
                         <View className="space-y-4 mb-8">
+
                             <TextInput
                                 placeholder="영주 이름" placeholderTextColor="#64748b" value={formData.name}
                                 onChangeText={(t) => setFormData({ ...formData, name: t })}
                                 className="bg-slate-800 p-5 rounded-2xl text-white font-bold border border-slate-700"
+                                style={{ fontSize: 14 * fontSizeScale }}
                             />
                             <TextInput
                                 placeholder="전투력 (예: 250.5M)" placeholderTextColor="#64748b" value={formData.power}
                                 onChangeText={(t) => setFormData({ ...formData, power: t })}
                                 className="bg-slate-800 p-5 rounded-2xl text-white font-bold border border-slate-700"
+                                style={{ fontSize: 14 * fontSizeScale }}
                             />
                             <TextInput
                                 placeholder="용광로 레벨 (예: Lv.30)" placeholderTextColor="#64748b" value={formData.furnace}
                                 onChangeText={(t) => setFormData({ ...formData, furnace: t })}
                                 className="bg-slate-800 p-5 rounded-2xl text-white font-bold border border-slate-700"
+                                style={{ fontSize: 14 * fontSizeScale }}
                             />
                             <TextInput
                                 placeholder="영웅 조합 (예: 플린트/몰리/재시)" placeholderTextColor="#64748b" value={formData.heroCombo}
                                 onChangeText={(t) => setFormData({ ...formData, heroCombo: t })}
                                 className="bg-slate-800 p-5 rounded-2xl text-white font-bold border border-slate-700"
+                                style={{ fontSize: 14 * fontSizeScale }}
                             />
                             <View className="flex-row space-x-2">
                                 {['전사', '지휘관', '장로', '부맹주', '맹주'].map((r) => (
@@ -296,17 +301,17 @@ export default function EventDetail() {
                                         key={r} onPress={() => setFormData({ ...formData, role: r })}
                                         className={`px-3 py-2 rounded-lg border ${formData.role === r ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800 border-slate-700'}`}
                                     >
-                                        <Text className={`text-[10px] font-black ${formData.role === r ? 'text-brand-dark' : 'text-slate-300'}`}>{r}</Text>
+                                        <Text className={`font-black ${formData.role === r ? 'text-brand-dark' : 'text-slate-300'}`} style={{ fontSize: 10 * fontSizeScale }}>{r}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
                         </View>
                         <View className="flex-row space-x-3">
                             <TouchableOpacity onPress={() => setEditModalVisible(false)} className="flex-1 bg-slate-800 py-4 rounded-2xl">
-                                <Text className="text-slate-400 text-center font-black">취소</Text>
+                                <Text className="text-slate-400 text-center font-black" style={{ fontSize: 14 * fontSizeScale }}>취소</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={saveAttendee} className="flex-1 bg-brand-accent py-4 rounded-2xl">
-                                <Text className="text-brand-dark text-center font-black">저장</Text>
+                                <Text className="text-brand-dark text-center font-black" style={{ fontSize: 14 * fontSizeScale }}>저장</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

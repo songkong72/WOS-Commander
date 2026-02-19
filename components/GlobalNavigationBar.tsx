@@ -27,7 +27,7 @@ export default function GlobalNavigationBar() {
     const isWide = width >= 1024;
     const router = useRouter();
     const pathname = usePathname();
-    const { theme } = useTheme();
+    const { theme, fontSizeScale } = useTheme();
     const { auth, serverId, allianceId, mainScrollRef } = useAuth();
     const { t } = useTranslation();
     const isDark = theme === 'dark';
@@ -64,8 +64,8 @@ export default function GlobalNavigationBar() {
                             <Ionicons name="flash" size={28} color="#10b981" />
                         </View>
                         <View className="flex-1">
-                            <Text className={`text-xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{auth.adminName || t('dashboard.title')}</Text>
-                            <Text className={`text-[10px] font-bold tracking-tight ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                            <Text className={`font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 20 * fontSizeScale }}>{auth.adminName || t('dashboard.title')}</Text>
+                            <Text className={`font-bold tracking-tight ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} style={{ fontSize: 10 * fontSizeScale }}>
                                 {serverId && allianceId ? `#${serverId} - ${allianceId}` : t('common.welcome')}
                             </Text>
                         </View>
@@ -110,7 +110,8 @@ export default function GlobalNavigationBar() {
                                             style={{ marginRight: 16 }}
                                         />
                                         <Text
-                                            className={`text-base font-black tracking-tight ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}
+                                            className={`font-black tracking-tight ${isActive ? (isDark ? 'text-white' : 'text-slate-900') : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}
+                                            style={{ fontSize: 16 * fontSizeScale }}
                                         >
                                             {t(item.labelKey)}
                                         </Text>
@@ -126,8 +127,8 @@ export default function GlobalNavigationBar() {
 
                 {/* Footer Section */}
                 <View className={`mx-4 mb-8 p-6 rounded-3xl border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                    <Text className={`text-[10px] font-black tracking-widest uppercase mb-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{t('dashboard.footer_copyright_simple')}</Text>
-                    <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-700' : 'text-slate-400'}`}>{t('dashboard.footer_rights')}</Text>
+                    <Text className={`font-black tracking-widest uppercase mb-1 ${isDark ? 'text-slate-600' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.footer_copyright_simple')}</Text>
+                    <Text className={`font-bold ${isDark ? 'text-slate-700' : 'text-slate-400'}`} style={{ fontSize: 9 * fontSizeScale }}>{t('dashboard.footer_rights')}</Text>
                 </View>
             </View>
         );
@@ -175,43 +176,40 @@ export default function GlobalNavigationBar() {
                             ]}
                         >
                             <View className="items-center justify-center w-full">
-                                <View
-                                    className="items-center justify-center h-8"
-                                >
+                                <View className="items-center justify-center h-7 mb-0.5">
                                     <Ionicons
                                         name={isActive ? item.activeIcon : item.icon}
-                                        size={isActive ? 22 : 30}
-                                        color="#FFFFFF"
+                                        size={24}
+                                        color={isActive ? "#38bdf8" : "#94a3b8"}
                                         style={isActive ? {
-                                            textShadowColor: 'rgba(56, 189, 248, 0.8)',
+                                            textShadowColor: 'rgba(56, 189, 248, 0.5)',
                                             textShadowOffset: { width: 0, height: 0 },
-                                            textShadowRadius: 10,
+                                            textShadowRadius: 8,
                                         } : {
                                             opacity: 0.8
                                         }}
                                     />
                                 </View>
 
-                                {isActive ? (
-                                    <Text
-                                        className="text-[10px] font-black tracking-widest text-sky-400 mt-1"
-                                        numberOfLines={1}
-                                        style={{
-                                            textTransform: 'uppercase',
-                                        }}
-                                    >
-                                        {t(item.labelKey)}
-                                    </Text>
-                                ) : null}
+                                <Text
+                                    className={`font-bold tracking-tight mt-0.5 ${isActive ? 'text-sky-400' : 'text-slate-400'}`}
+                                    numberOfLines={1}
+                                    style={{
+                                        fontSize: 12 * fontSizeScale, // User requested ~12px
+                                        lineHeight: 14 * fontSizeScale
+                                    }}
+                                >
+                                    {t(item.labelKey)}
+                                </Text>
 
                                 {isActive && (
                                     <View
-                                        className="absolute -top-3 w-1.5 h-1.5 rounded-full bg-sky-400"
+                                        className="absolute -top-2 w-1 h-1 rounded-full bg-sky-400"
                                         style={{
                                             shadowColor: '#38bdf8',
                                             shadowOffset: { width: 0, height: 0 },
                                             shadowOpacity: 1,
-                                            shadowRadius: 6,
+                                            shadowRadius: 4,
                                         }}
                                     />
                                 )}

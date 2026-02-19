@@ -34,7 +34,7 @@ interface AllianceRequest {
 export default function SuperAdminDashboard() {
     const router = useRouter();
     const { auth } = useAuth();
-    const { theme } = useTheme();
+    const { theme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
 
     const [activeTab, setActiveTab] = useState<'pending' | 'alliances'>('pending');
@@ -270,8 +270,8 @@ export default function SuperAdminDashboard() {
 
             <ScrollView className={`flex-1`} contentContainerStyle={{ paddingTop: 40 }}>
                 <View style={{ marginBottom: 20, paddingHorizontal: 40 }}>
-                    <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>System Administration</Text>
-                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>시스템관리자 대시보드</Text>
+                    <Text className={`font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 10 * fontSizeScale }}>System Administration</Text>
+                    <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>시스템관리자 대시보드</Text>
                     <View className="w-10 h-1 bg-sky-500 rounded-full mt-2" />
                 </View>
 
@@ -282,8 +282,8 @@ export default function SuperAdminDashboard() {
                         activeOpacity={0.7}
                         className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${activeTab === 'pending' ? 'border-sky-500 bg-sky-500/10 shadow-lg shadow-sky-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
                     >
-                        <Text className={`text-lg font-black uppercase tracking-widest mb-2 ${activeTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인대기중 건수</Text>
-                        <Text className={`text-4xl font-black ${activeTab === 'pending' ? (isDark ? 'text-sky-400' : 'text-sky-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
+                        <Text className={`font-black uppercase tracking-widest mb-2 ${activeTab === 'pending' ? 'text-sky-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 18 * fontSizeScale }}>승인대기중 건수</Text>
+                        <Text className={`font-black ${activeTab === 'pending' ? (isDark ? 'text-sky-400' : 'text-sky-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`} style={{ fontSize: 36 * fontSizeScale }}>
                             {requests.filter(r => r.status === 'pending').length}
                         </Text>
                     </TouchableOpacity>
@@ -292,8 +292,8 @@ export default function SuperAdminDashboard() {
                         activeOpacity={0.7}
                         className={`flex-1 p-6 rounded-[32px] border transition-all duration-200 ${activeTab === 'alliances' ? 'border-emerald-500 bg-emerald-500/10 shadow-lg shadow-emerald-500/20' : (isDark ? 'bg-slate-900 border-slate-800 hover:bg-slate-800/50' : 'bg-white border-slate-100 shadow-sm hover:bg-slate-50')}`}
                     >
-                        <Text className={`text-lg font-black uppercase tracking-widest mb-2 ${activeTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>승인완료 건수</Text>
-                        <Text className={`text-4xl font-black ${activeTab === 'alliances' ? (isDark ? 'text-emerald-400' : 'text-emerald-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
+                        <Text className={`font-black uppercase tracking-widest mb-2 ${activeTab === 'alliances' ? 'text-emerald-500' : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 18 * fontSizeScale }}>승인완료 건수</Text>
+                        <Text className={`font-black ${activeTab === 'alliances' ? (isDark ? 'text-emerald-400' : 'text-emerald-500') : (isDark ? 'text-slate-700' : 'text-slate-300')}`} style={{ fontSize: 36 * fontSizeScale }}>
                             {requests.filter(r => r.status === 'approved').length}
                         </Text>
                     </TouchableOpacity>
@@ -303,11 +303,11 @@ export default function SuperAdminDashboard() {
                     <View>
                         <View className="flex-row items-center gap-3 mb-1">
                             <View className="w-1.5 h-6 bg-sky-500 rounded-full" />
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 30 * fontSizeScale }}>
                                 {activeTab === 'pending' ? '신청 대기열' : '등록된 연맹'}
                             </Text>
                         </View>
-                        <Text className={`text-xs font-bold pl-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        <Text className={`font-bold pl-4 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 12 * fontSizeScale }}>
                             {activeTab === 'pending' ? '새로운 연맹 가입 신청 내역입니다.' : '현재 시스템에 등록된 활성 연맹 목록입니다.'}
                         </Text>
                     </View>
@@ -330,7 +330,7 @@ export default function SuperAdminDashboard() {
                                 size={20}
                                 color={selectedReqIds.size > 0 ? "#38bdf8" : (isDark ? "#475569" : "#94a3b8")}
                             />
-                            <Text className={`ml-2 font-black text-xs ${selectedReqIds.size > 0 ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>
+                            <Text className={`ml-2 font-black ${selectedReqIds.size > 0 ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`} style={{ fontSize: 12 * fontSizeScale }}>
                                 전체 선택
                             </Text>
                         </TouchableOpacity>
@@ -342,8 +342,8 @@ export default function SuperAdminDashboard() {
                     <View className={`flex-row gap-3 mb-8 mx-10 p-4 rounded-[24px] border shadow-xl transition-all ${isDark ? 'bg-slate-900/95 border-sky-500/20' : 'bg-white border-sky-100 shadow-sky-200/40'}`}>
                         <View className="flex-1 flex-row items-center bg-sky-500/10 px-4 py-2 rounded-xl">
                             <Ionicons name="checkbox" size={18} color="#38bdf8" />
-                            <Text className={`ml-2 font-black text-base ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                                {selectedReqIds.size}개 <Text className="text-xs font-bold opacity-60">선택</Text>
+                            <Text className={`ml-2 font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 16 * fontSizeScale }}>
+                                {selectedReqIds.size}개 <Text className="font-bold opacity-60" style={{ fontSize: 12 * fontSizeScale }}>선택</Text>
                             </Text>
                         </View>
                         <View className="flex-row gap-2">
@@ -352,7 +352,7 @@ export default function SuperAdminDashboard() {
                                 activeOpacity={0.7}
                                 className={`px-4 py-3 rounded-xl border ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
                             >
-                                <Text className="text-xs font-bold text-red-500">선택 거절</Text>
+                                <Text className="font-bold text-red-500" style={{ fontSize: 12 * fontSizeScale }}>선택 거절</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={handleBulkApprove}
@@ -360,7 +360,7 @@ export default function SuperAdminDashboard() {
                                 className="px-6 py-3 bg-sky-500 rounded-xl shadow-lg shadow-sky-500/20 flex-row items-center"
                             >
                                 <Ionicons name="checkmark-circle" size={16} color="white" style={{ marginRight: 6 }} />
-                                <Text className="font-black text-white text-sm">선택 승인</Text>
+                                <Text className="font-black text-white" style={{ fontSize: 14 * fontSizeScale }}>선택 승인</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -373,7 +373,7 @@ export default function SuperAdminDashboard() {
                         {requests.filter(r => activeTab === 'pending' ? r.status === 'pending' : r.status === 'approved').length === 0 ? (
                             <View className="items-center justify-center py-20">
                                 <Ionicons name="documents-outline" size={64} color={isDark ? '#334155' : '#cbd5e1'} />
-                                <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                <Text className={`mt-4 font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 14 * fontSizeScale }}>
                                     {activeTab === 'pending' ? '대기 중인 신청이 없습니다.' : '등록된 연맹이 없습니다.'}
                                 </Text>
                             </View>
@@ -398,10 +398,10 @@ export default function SuperAdminDashboard() {
                                             <View className="flex-row justify-between items-start mb-4">
                                                 <View style={{ flex: 1, marginRight: 8 }}>
                                                     <View className="flex-row flex-wrap items-center">
-                                                        <Text className={`text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1`}>{req.serverId}</Text>
-                                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail">{req.allianceId}</Text>
+                                                        <Text className={`font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1`} style={{ fontSize: 10 * fontSizeScale }}>{req.serverId}</Text>
+                                                        <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 18 * fontSizeScale }}>{req.allianceId}</Text>
                                                     </View>
-                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1}>{req.allianceName}</Text>
+                                                    <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>{req.allianceName}</Text>
                                                 </View>
 
                                                 {activeTab === 'pending' && (
@@ -428,11 +428,11 @@ export default function SuperAdminDashboard() {
 
                                             <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
                                                 <View style={{ flex: 1, marginRight: 10 }}>
-                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Admin ID: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
-                                                    <Text className={`text-[10px] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Contact: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
+                                                    <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>Admin ID: <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontSize: 12 * fontSizeScale }}>{req.adminId}</Text></Text>
+                                                    <Text className={`font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>Contact: <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontSize: 12 * fontSizeScale }}>{req.contact || '-'}</Text></Text>
                                                 </View>
                                                 <View className="items-end">
-                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                                                    <Text className={`font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
                                                         {new Date(req.requestedAt).toLocaleDateString()}
                                                     </Text>
                                                 </View>
@@ -470,8 +470,8 @@ export default function SuperAdminDashboard() {
                                     }
                                 />
                             </View>
-                            <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                            <Text className={`mt-2 text-center font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{customAlert.message}</Text>
+                            <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 20 * fontSizeScale }}>{customAlert.title}</Text>
+                            <Text className={`mt-2 text-center font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 16 * fontSizeScale }}>{customAlert.message}</Text>
                         </View>
 
                         {customAlert.type === 'confirm' ? (

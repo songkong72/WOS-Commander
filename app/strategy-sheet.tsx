@@ -16,7 +16,7 @@ const DEFAULT_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEE
 export default function StrategySheet() {
     const router = useRouter();
     const { auth } = useAuth();
-    const { theme, toggleTheme } = useTheme();
+    const { theme, toggleTheme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
     const { t } = useTranslation();
     const [zoom, setZoom] = useState(1.0);
@@ -192,8 +192,8 @@ export default function StrategySheet() {
                         <Ionicons name="arrow-back" size={16} color={isDark ? "white" : "#1e293b"} />
                     </TouchableOpacity>
                     <View>
-                        <Text className={`text-base font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.title')}</Text>
-                        <Text className={`text-[9px] font-bold mt-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                        <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 16 * fontSizeScale }}>{t('strategy.title')}</Text>
+                        <Text className={`font-bold mt-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 9 * fontSizeScale }}>
                             {isFile ? (sheetData?.fileName || t('strategy.uploaded_file')) : t('strategy.subtitle')}
                         </Text>
                     </View>
@@ -226,8 +226,8 @@ export default function StrategySheet() {
                             <View className={`w-24 h-24 rounded-[32px] items-center justify-center mb-10 mx-auto border rotate-3 ${isDark ? 'bg-amber-500/20 border-amber-500/30' : 'bg-amber-50 border-amber-200'}`}>
                                 <Ionicons name="lock-closed" size={48} color={isDark ? "#f59e0b" : "#d97706"} />
                             </View>
-                            <Text className={`text-4xl font-black text-center mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('strategy.access_denied')}</Text>
-                            <Text className="text-slate-400 text-center text-lg leading-relaxed mb-12 font-medium">
+                            <Text className={`font-black text-center mb-4 tracking-tighter ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 36 * fontSizeScale }}>{t('strategy.access_denied')}</Text>
+                            <Text className="text-slate-400 text-center leading-relaxed mb-12 font-medium" style={{ fontSize: 18 * fontSizeScale }}>
                                 {isFile ? (
                                     t('strategy.access_denied_file')
                                 ) : (

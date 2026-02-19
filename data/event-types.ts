@@ -14,6 +14,10 @@ export interface WikiEvent {
     recurrenceValue?: string; // Recurrence value (e.g., '1')
     recurrenceUnit?: 'day' | 'week'; // Recurrence unit (day or week)
     isRecurring?: boolean;
+    isRecurring2?: boolean;
+    recurrenceValue2?: string;
+    recurrenceUnit2?: 'day' | 'week';
+    startDate2?: string;
     isBearSplit?: boolean;
     isFoundrySplit?: boolean;
     updatedAt?: number;

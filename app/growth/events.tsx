@@ -406,6 +406,7 @@ const EventCard = memo(({
     onSetSelectedTeamTab, onLayout
 }: EventCardProps) => {
     const { t } = useTranslation();
+    const { fontSizeScale } = useTheme();
     const [guideHover, setGuideHover] = useState(false);
     const [attendHover, setAttendHover] = useState(false);
     const [wikiHover, setWikiHover] = useState(false);
@@ -423,13 +424,13 @@ const EventCard = memo(({
                 const [_, datePart, dayPart, timePart] = match;
                 return (
                     <View className="flex-row items-center">
-                        <Text className={`${textClass} text-base font-bold`}>{datePart}</Text>
-                        <Text className={`mx-0.5 text-sm font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>({dayPart})</Text>
-                        <Text className={`${textClass} text-base font-bold ml-1`}>{timePart}</Text>
+                        <Text className={`${textClass} font-bold`} style={{ fontSize: 16 * fontSizeScale }}>{datePart}</Text>
+                        <Text className={`mx-0.5 font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 14 * fontSizeScale }}>({dayPart})</Text>
+                        <Text className={`${textClass} font-bold ml-1`} style={{ fontSize: 16 * fontSizeScale }}>{timePart}</Text>
                     </View>
                 );
             }
-            return <Text className={`${textClass} text-base font-medium`}>{dateStr}</Text>;
+            return <Text className={`${textClass} font-medium`} style={{ fontSize: 16 * fontSizeScale }}>{dateStr}</Text>;
         };
 
         if (!str.includes('~')) return (
@@ -451,13 +452,13 @@ const EventCard = memo(({
             <View className="gap-3">
                 <View className="flex-row items-center">
                     <View className={`px-2.5 py-1.5 rounded-xl border mr-3 items-center justify-center shadow-sm ${isDark ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-50 border-emerald-100'}`} style={{ shadowColor: '#10b981', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 4, elevation: 2 }}>
-                        <Text className={`text-[10px] font-black ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`}>{t('common.start')}</Text>
+                        <Text className={`font-black ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('common.start')}</Text>
                     </View>
                     {renderStyledDate(startFormatted)}
                 </View>
                 <View className="flex-row items-center">
                     <View className={`px-2.5 py-1.5 rounded-xl border mr-3 items-center justify-center shadow-sm ${isDark ? 'bg-rose-500/20 border-rose-500/40' : 'bg-rose-50 border-rose-100'}`} style={{ shadowColor: '#f43f5e', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 4, elevation: 2 }}>
-                        <Text className={`text-[10px] font-black ${isDark ? 'text-rose-300' : 'text-rose-600'}`}>{t('common.end')}</Text>
+                        <Text className={`font-black ${isDark ? 'text-rose-300' : 'text-rose-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('common.end')}</Text>
                     </View>
                     {renderStyledDate(endFormatted)}
                 </View>
@@ -487,21 +488,21 @@ const EventCard = memo(({
                         elevation: hovered ? 10 : 0
                     }
                 ]}
-                className={`rounded-3xl border shadow-lg transition-all overflow-hidden ${isOngoing ? (isDark ? 'bg-slate-900 border-blue-500/40 shadow-blue-500/10' : 'bg-white border-blue-200 shadow-blue-200/30') : (isUpcoming ? (isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-slate-200/40') : (isDark ? 'bg-slate-900/60 border-slate-800/40' : 'bg-slate-50/80 border-slate-100'))}`}
+                className={`rounded-[24px] mb-4 overflow-hidden transition-all ${isOngoing ? (isDark ? 'bg-[#191F28] border border-blue-500/30' : 'bg-white shadow-lg shadow-blue-500/10 border border-blue-100') : (isUpcoming ? (isDark ? 'bg-[#191F28] border border-[#333D4B]' : 'bg-white border border-[#E5E8EB] shadow-sm') : (isDark ? 'bg-[#191F28]/60 border border-[#333D4B]' : 'bg-[#F9FAFB] border border-[#E5E8EB]'))}`}
             >
                 {/* Strikethrough overlay removed per request */}
                 <View className={`px-3 py-2 flex-col border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
                     <View className="flex-row items-center mb-2">
                         {event.imageUrl ? (
-                            <View className={`w-9 h-9 rounded-xl border overflow-hidden mr-3 ${isDark ? 'border-slate-800 bg-slate-950' : 'border-slate-100 bg-slate-50'}`}>
+                            <View className={`w-10 h-10 rounded-[14px] border overflow-hidden mr-3 ${isDark ? 'border-[#333D4B] bg-[#191F28]' : 'border-[#E5E8EB] bg-[#F2F4F6]'}`}>
                                 <Image source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl} className="w-full h-full" resizeMode="cover" />
                             </View>
                         ) : (
-                            <View className={`w-9 h-9 rounded-xl items-center justify-center border mr-3 ${isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
-                                <Ionicons name="calendar-outline" size={16} color={isDark ? '#475569' : '#94a3b8'} />
+                            <View className={`w-10 h-10 rounded-[14px] items-center justify-center border mr-3 ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-[#F2F4F6] border-[#E5E8EB]'}`}>
+                                <Ionicons name="calendar-outline" size={20} color={isDark ? '#B0B8C1' : '#8B95A1'} />
                             </View>
                         )}
-                        <Text className={`text-base font-bold flex-1 ${textColor}`} numberOfLines={1}>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
+                        <Text className={`font-bold flex-1 ${textColor}`} numberOfLines={1} style={{ letterSpacing: -0.5, fontSize: 20 * fontSizeScale }}>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
                         {event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
@@ -527,14 +528,14 @@ const EventCard = memo(({
                     </View>
                     {/* Event Description (Added for cleaner design) */}
                     {!!event.description && (
-                        <Text className={`text-[13px] mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'} ${isOngoing ? (isDark ? 'text-slate-200 font-medium' : 'text-slate-700 font-medium') : ''}`} numberOfLines={isOngoing ? undefined : 1}>
+                        <Text className={`mb-3 leading-6 ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'} ${isOngoing ? (isDark ? 'text-white' : 'text-[#333D4B]') : ''}`} numberOfLines={isOngoing ? undefined : 1} style={{ fontSize: 15 * fontSizeScale }}>
                             {t(`events.${event.id}_description`, { defaultValue: event.description })}
                         </Text>
                     )}
-                    <View className="flex-row items-center flex-wrap gap-1.5">
-                        <View className={`flex-row items-center px-2 py-0.5 rounded-md border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                            <Ionicons name={event.category === '연맹' ? 'flag-outline' : event.category === '개인' ? 'person-outline' : event.category === '서버' ? 'earth-outline' : event.category === '초보자' ? 'star-outline' : 'apps-outline'} size={10} color={isDark ? '#94a3b8' : '#64748b'} />
-                            <Text className={`text-[9px] font-bold ml-1 uppercase ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    <View className="flex-row items-center flex-wrap gap-2">
+                        <View className={`flex-row items-center px-2 py-1 rounded-[6px] ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
+                            <Ionicons name={event.category === '연맹' ? 'flag' : event.category === '개인' ? 'person' : event.category === '서버' ? 'earth' : event.category === '초보자' ? 'star' : 'apps'} size={12} color={isDark ? '#B0B8C1' : '#6B7684'} />
+                            <Text className={`font-bold ml-1 ${isDark ? 'text-[#B0B8C1]' : 'text-[#6B7684]'}`} style={{ fontSize: 11 * fontSizeScale }}>
                                 {event.category === '연맹' ? t('events.category.alliance')
                                     : event.category === '개인' ? t('events.category.individual')
                                         : event.category === '서버' ? t('events.category.server')
@@ -543,19 +544,16 @@ const EventCard = memo(({
                             </Text>
                         </View>
                         {isOngoing ? (
-                            <View className="bg-[#00ff88] px-2.5 py-1 rounded-full flex-row items-center border border-[#00cc6a] shadow-[0_0_15px_rgba(0,255,136,0.6)]" style={{ shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 5 }}>
-                                <Ionicons name="flash" size={10} color="#0f172a" style={{ marginRight: 2 }} />
-                                <Text className="text-slate-900 text-[10px] font-black ml-0.5" style={{ textShadowColor: 'rgba(255, 255, 255, 0.5)', textShadowRadius: 2 }}>{t('events.status.ongoing')}</Text>
+                            <View className="bg-[#E8F3FF] px-2 py-1 rounded-[6px] flex-row items-center dark:bg-[#1C2539]">
+                                <Text className="text-[#3182F6] font-bold dark:text-[#4F93F7]" style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ongoing')}</Text>
                             </View>
                         ) : isExpired ? (
-                            <View className="bg-slate-500 px-2 py-0.5 rounded-md flex-row items-center">
-                                <Ionicons name="checkmark-circle" size={9} color="white" />
-                                <Text className="text-white text-[8px] font-black ml-0.5">{t('events.status.ended')}</Text>
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#2C3544]' : 'bg-[#EFF1F3]'}`}>
+                                <Text className={`font-bold ${isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ended')}</Text>
                             </View>
                         ) : (
-                            <View className={`px-2.5 py-1 rounded-full flex-row items-center border ${isDark ? 'bg-amber-500/20 border-amber-500/40' : 'bg-amber-50 border-amber-200'}`}>
-                                <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
-                                <Text className={`text-[10px] font-black ml-0.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('events.status.upcoming')}</Text>
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#FFF8DD]/10' : 'bg-[#FFF8DD]'}`}>
+                                <Text className={`font-bold ${isDark ? 'text-[#F2B308]' : 'text-[#9B6F03]'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.upcoming')}</Text>
                             </View>
                         )}
                         {isAdmin && (
@@ -567,7 +565,7 @@ const EventCard = memo(({
                     <View className="mb-4">
                         {(!event.day && (!event.time || !event.time.trim())) ? (
                             <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
-                                <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.schedule_empty')}</Text>
+                                <Text className={`font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('events.schedule_empty')}</Text>
                             </View>
                         ) : (
                             event.day && (!event.time || !event.time.trim() || DATE_RANGE_IDS.includes(event.id)) && event.day !== '상설' && event.day !== '상시' ? (
@@ -662,14 +660,14 @@ const EventCard = memo(({
                                                 </Pressable>
                                             ))}
                                         </View>
-                                        <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                        <View className={`rounded-[16px] overflow-hidden ${isDark ? 'bg-black/20' : 'bg-[#F9FAFB]'}`}>
                                             <View className="flex-col">
                                                 {selectedContent ? selectedContent.split(/[,|]/).map((item: string, iIdx: number) => {
                                                     const trimmedItem = item.trim();
                                                     const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                     const isSlotOngoing = checkItemOngoing(trimmedItem);
                                                     return (
-                                                        <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-blue-600/20' : 'bg-blue-50') : ''}`}>
+                                                        <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-[#1C2539]' : 'bg-[#E8F3FF]') : ''}`}>
                                                             <View className="flex-row items-center flex-1">
                                                                 {(() => {
                                                                     const displayStr = formatDisplayDate(formatted, t, timezone);
@@ -697,11 +695,9 @@ const EventCard = memo(({
                                                                                         }
                                                                                     </Text>
                                                                                 )}
-                                                                                <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-sky-400' : 'text-sky-600'} font-black text-base`}>{dStr}</Text>
-                                                                                <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
-                                                                                <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                                <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-base`}>{tPart}</Text>
+                                                                                <Text className={`${isDark ? 'text-[#3182F6]' : 'text-[#3182F6]'} font-bold text-[15px]`}>{dStr}</Text>
+                                                                                <Text className={`mx-2 ${isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]'}`}>·</Text>
+                                                                                <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{tPart}</Text>
                                                                             </View>
                                                                         );
                                                                     }
@@ -709,8 +705,7 @@ const EventCard = memo(({
                                                                     // Default Fallback
                                                                     return (
                                                                         <View className="flex-row items-center">
-                                                                            <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                            <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-bold text-base`}>{displayStr}</Text>
+                                                                            <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{displayStr}</Text>
                                                                         </View>
                                                                     );
                                                                 })()}
@@ -718,7 +713,7 @@ const EventCard = memo(({
                                                             {isSlotOngoing && (
                                                                 <View className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a] shadow-[0_0_10px_rgba(0,255,136,0.5)]" style={{ shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }}>
                                                                     <Ionicons name="flash" size={8} color="#0f172a" style={{ marginRight: 2 }} />
-                                                                    <Text className="text-slate-900 text-[9px] font-black ml-0.5">{t('events.status.ongoing')}</Text>
+                                                                    <Text className="text-[#333D4B] text-[10px] font-bold ml-0.5">{t('events.status.ongoing')}</Text>
                                                                 </View>
                                                             )}
                                                         </View>
@@ -754,7 +749,7 @@ const EventCard = memo(({
                                         const content = rawLabel ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                                         if (content === "." || !content) return null;
                                         return (
-                                            <View key={idx} className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-black/20 border-slate-800/60' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
+                                            <View key={idx} className={`rounded-[16px] overflow-hidden ${isDark ? 'bg-black/20' : 'bg-[#F9FAFB]'}`}>
                                                 {!!rawLabel && (
                                                     <View className={`px-4 py-2 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                                                         <Text className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{displayLabel}</Text>
@@ -783,7 +778,7 @@ const EventCard = memo(({
                                                                     })();
 
                                                             return (
-                                                                <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                                <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0`}>
                                                                     <View className="flex-row items-center flex-1">
                                                                         {!!prefix && prefix.trim() && (
                                                                             <Text className={`${isDark ? 'text-slate-100' : 'text-slate-900'} font-bold text-base mr-2`}>
@@ -794,11 +789,9 @@ const EventCard = memo(({
                                                                                 }
                                                                             </Text>
                                                                         )}
-                                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                        <Text className={`${isDark ? 'text-sky-400' : 'text-sky-600'} font-black text-base`}>{dStr}</Text>
-                                                                        <Text className={`mx-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>·</Text>
-                                                                        <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                        <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-base`}>{tPart}</Text>
+                                                                        <Text className={`${isDark ? 'text-[#3182F6]' : 'text-[#3182F6]'} font-bold text-[15px]`}>{dStr}</Text>
+                                                                        <Text className={`mx-2 ${isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]'}`}>·</Text>
+                                                                        <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{tPart}</Text>
                                                                     </View>
                                                                 </View>
                                                             );
@@ -806,10 +799,9 @@ const EventCard = memo(({
 
                                                         // Default Fallback
                                                         return (
-                                                            <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-slate-800/40' : 'border-slate-100'} last:border-0`}>
+                                                            <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0`}>
                                                                 <View className="flex-row items-center flex-1">
-                                                                    <Ionicons name="time-outline" size={14} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginRight: 4 }} />
-                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-800'} font-black text-base`}>{displayStr}</Text>
+                                                                    <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{displayStr}</Text>
                                                                 </View>
                                                             </View>
                                                         );
@@ -822,57 +814,39 @@ const EventCard = memo(({
                             );
                         })()}
                     </View>
-                    <View className="flex-row gap-3 mt-6">
+                    <View className="flex-row gap-2 mt-4">
                         <Pressable
                             onPress={() => openGuideModal(event)}
                             onHoverIn={() => setGuideHover(true)}
                             onHoverOut={() => setGuideHover(false)}
-                            className={`flex-1 py-2.5 rounded-2xl flex-row items-center justify-center border ${guideHover ? 'bg-blue-600 border-blue-400' : (isDark ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-200')}`}
+                            className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'} ${guideHover ? 'opacity-80' : 'opacity-100'}`}
                             style={({ pressed }: any) => [
                                 {
-                                    transform: [{ scale: pressed ? 0.95 : (guideHover ? 1.05 : 1) }],
-                                    // @ts-ignore
-                                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    shadowColor: '#3b82f6',
-                                    shadowOffset: { width: 0, height: guideHover ? 10 : 0 },
-                                    shadowOpacity: guideHover ? 0.4 : 0,
-                                    shadowRadius: guideHover ? 18 : 0,
-                                    elevation: guideHover ? 10 : 0,
-                                    cursor: 'pointer',
+                                    transform: [{ scale: pressed ? 0.96 : 1 }],
                                 }
                             ]}
                         >
-                            <Ionicons name="book" size={24} color={guideHover ? '#fff' : (isDark ? '#60a5fa' : '#2563eb')} style={{ marginRight: 10 }} />
-                            <Text className={`font-black text-lg ${guideHover ? 'text-white' : (isDark ? 'text-blue-400' : 'text-blue-700')}`}>{t('events.guide')}</Text>
+                            <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#E5E8EB]' : 'text-[#4E5968]'}`}>{t('events.guide')}</Text>
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
                                 onPress={() => openAttendeeModal(event, selectedTeamTab || 0)}
                                 onHoverIn={() => setAttendHover(true)}
                                 onHoverOut={() => setAttendHover(false)}
-                                className={`flex-1 py-2.5 rounded-2xl flex-row items-center justify-center border ${attendHover ? 'bg-emerald-600 border-emerald-500' : (isDark ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200')}`}
+                                className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#3182F6]/20' : 'bg-[#E8F3FF]'} ${attendHover ? 'opacity-80' : 'opacity-100'}`}
                                 style={({ pressed }: any) => [
                                     {
-                                        transform: [{ scale: pressed ? 0.95 : (attendHover ? 1.05 : 1) }],
-                                        // @ts-ignore
-                                        transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
-                                        shadowColor: '#10b981',
-                                        shadowOffset: { width: 0, height: attendHover ? 10 : 0 },
-                                        shadowOpacity: attendHover ? 0.4 : 0,
-                                        shadowRadius: 18,
-                                        elevation: attendHover ? 10 : 0,
-                                        cursor: 'pointer',
+                                        transform: [{ scale: pressed ? 0.96 : 1 }],
                                     }
                                 ]}
                             >
-                                <Ionicons name="people" size={24} color={attendHover ? '#fff' : (isDark ? '#34d399' : '#059669')} style={{ marginRight: 10 }} />
-                                <Text className={`font-black text-lg ${attendHover ? 'text-white' : (isDark ? 'text-emerald-400' : 'text-emerald-700')}`}>{t('events.attend')}</Text>
+                                <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#4F93F7]' : 'text-[#3182F6]'}`}>{t('events.attend')}</Text>
                             </Pressable>
                         )}
                     </View>
                 </View>
-            </Pressable>
-        </View>
+            </Pressable >
+        </View >
     );
 });
 
@@ -3028,13 +3002,13 @@ export default function EventTracker() {
                             <View className={`flex-row items-center ${isDesktop ? 'flex-1' : 'w-full'} mr-3 mb-2`}>
                                 <TouchableOpacity
                                     onPress={() => router.replace({ pathname: '/', params: { viewMode: params.viewMode } })}
-                                    className={`mr-2 w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-50 border border-slate-100 shadow-sm'}`}
+                                    className={`mr-3 w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}
                                 >
-                                    <Ionicons name="arrow-back-outline" size={14} color={isDark ? "white" : "#1e293b"} />
+                                    <Ionicons name="arrow-back" size={20} color={isDark ? "#B0B8C1" : "#4E5968"} />
                                 </TouchableOpacity>
                                 <View className="flex-1">
-                                    <Text className={`text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('events.title')}</Text>
-                                    <Text className={`text-[9px] font-semibold mt-0 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('events.subtitle')}</Text>
+                                    <Text className={`text-[24px] font-bold tracking-tight ${isDark ? 'text-[#F2F4F6]' : 'text-[#191F28]'}`}>{t('events.title')}</Text>
+                                    <Text className={`text-[15px] mt-1 font-medium ${isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'}`}>{t('events.subtitle')}</Text>
                                 </View>
                             </View>
 
@@ -3154,14 +3128,14 @@ export default function EventTracker() {
                                                         color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
                                                         className="mr-2"
                                                     />
-                                                    <Text className={`text-[13px] font-black transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-500' : 'text-slate-400'))}`}>
+                                                    <Text className={`text-[15px] font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-[#191F28]') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'))}`}>
                                                         {cat === '전체' ? t('common.all')
                                                             : cat === '연맹' ? t('events.category.alliance')
                                                                 : cat === '개인' ? t('events.category.individual')
                                                                     : cat === '서버' ? t('events.category.server')
                                                                         : cat === '초보자' ? t('events.category.beginner')
                                                                             : cat}
-                                                    </Text>
+                                                    </Text>\
                                                     {(selectedCategory === cat || hovered) && (
                                                         <View
                                                             className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-t-full transition-all"
@@ -3257,7 +3231,7 @@ export default function EventTracker() {
                             onPress={() => setGuideModalVisible(false)}
                             className="absolute inset-0"
                         />
-                        <View className="bg-slate-900 w-full max-w-2xl max-h-[85%] rounded-[32px] border border-slate-700 overflow-hidden shadow-2xl">
+                        <View className={`w-full max-w-2xl max-h-[85%] rounded-[24px] border overflow-hidden shadow-2xl ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-transparent'}`}>
                             {/* Modal Header Image */}
                             {selectedEventForGuide?.imageUrl ? (
                                 <ImageBackground source={{ uri: selectedEventForGuide.imageUrl }} className="h-32 w-full">
@@ -3279,8 +3253,8 @@ export default function EventTracker() {
                                     </TouchableOpacity>
                                 </ImageBackground>
                             ) : (
-                                <View className="h-24 bg-slate-800 w-full justify-center px-6">
-                                    <Text className="text-white text-2xl font-bold">{selectedEventForGuide?.title}</Text>
+                                <View className={`h-24 w-full justify-center px-6 ${isDark ? 'bg-[#191F28]' : 'bg-white border-b border-[#E5E8EB]'}`}>
+                                    <Text className={`text-[22px] font-bold ${isDark ? 'text-[#F2F4F6]' : 'text-[#191F28]'}`}>{selectedEventForGuide?.title}</Text>
                                     <TouchableOpacity onPress={() => setGuideModalVisible(false)} className="absolute top-4 right-4">
                                         <Ionicons name="close" size={24} color="white" />
                                     </TouchableOpacity>
@@ -3397,12 +3371,14 @@ export default function EventTracker() {
                                 <View className="h-10" />
                             </ScrollView>
 
-                            <TouchableOpacity
-                                onPress={() => setGuideModalVisible(false)}
-                                className="bg-slate-800 py-4 items-center border-t border-slate-700"
-                            >
-                                <Text className="text-slate-400 font-semibold text-sm">{t('common.close')}</Text>
-                            </TouchableOpacity>
+                            <View className={`p-4 border-t ${isDark ? 'border-[#333D4B]' : 'border-[#E5E8EB]'}`}>
+                                <TouchableOpacity
+                                    onPress={() => setGuideModalVisible(false)}
+                                    className={`w-full h-[52px] rounded-[16px] items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}
+                                >
+                                    <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('common.close')}</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     </View>
                 </Modal>
@@ -3429,7 +3405,7 @@ export default function EventTracker() {
                                 setActiveFortressDropdown(null);
                                 setActiveNamePickerId(null);
                             }}
-                            className={`p-0 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-800 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}
+                            className={`p-0 rounded-t-[24px] border-t overflow-hidden ${isDark ? 'bg-[#191F28] border-[#333D4B] shadow-2xl' : 'bg-white border-transparent shadow-2xl'}`}
                             style={{ height: (DATE_RANGE_IDS.includes(editingEvent?.id || '') || editingEvent?.category === '개인') ? 'auto' : '85%', maxHeight: '90%' }}
                         >
                             <View className="px-6 pt-5 pb-1 flex-row justify-between items-start" style={{ zIndex: (!!activeDateDropdown || hourDropdownVisible || minuteDropdownVisible || !!activeFortressDropdown || !!activeNamePickerId) ? 1 : 100 }}>
@@ -3441,15 +3417,15 @@ export default function EventTracker() {
                                                 {t(`events.${editingEvent?.id?.replace(/_(?:team\d+|t?\d+(?:_\d+)?)$/, '')}_title`, { defaultValue: editingEvent?.title })}
                                             </Text>
                                         </View>
-                                        <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                        <Text className={`text-[13px] font-medium leading-5 ml-4.5 ${isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'}`}>
                                             {(editingEvent?.category === '개인' || editingEvent?.id === 'alliance_frost_league' || editingEvent?.id === 'a_weapon' || editingEvent?.id === 'alliance_champion' || editingEvent?.id === 'a_champ' || editingEvent?.id === 'a_operation' || editingEvent?.id === 'alliance_operation') ? t('events.modal.set_date_range_desc') : t('events.modal.set_day_time_desc')}
                                         </Text>
 
                                     </>
                                 </View>
-                                <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
+                                    <Ionicons name="close" size={24} color={isDark ? "#B0B8C1" : "#4E5968"} />
+                                </TouchableOpacity>\
                             </View>
 
                             <View className="px-4 flex-1" style={{ overflow: 'visible', zIndex: (activeDateDropdown || activeFortressDropdown || activeNamePickerId || hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
@@ -3640,10 +3616,10 @@ export default function EventTracker() {
                                                 {/* Add Button */}
                                                 <TouchableOpacity
                                                     onPress={() => addFortressSlot()}
-                                                    className={`w-full py-3.5 rounded-xl items-center flex-row justify-center ${editingSlotId ? 'bg-emerald-600' : 'bg-sky-600'}`}
+                                                    className={`w-full h-[52px] rounded-[16px] items-center flex-row justify-center ${editingSlotId ? 'bg-emerald-600' : 'bg-[#3182F6]'}`}
                                                 >
                                                     <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color="white" style={{ marginRight: 8 }} />
-                                                    <Text className="text-white font-bold text-base">
+                                                    <Text className="text-white font-bold text-[16px]">
                                                         {editingSlotId ? t('events.modal.update_schedule') : t('events.add_schedule_entry')}
                                                     </Text>
                                                 </TouchableOpacity>
@@ -3725,8 +3701,18 @@ export default function EventTracker() {
                                             if (editingEvent?.category === '연맹' && !singleSlotIDs.includes(editingEvent.id)) {
                                                 return (
                                                     <View className={`flex-row mb-2 p-1 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                                        <TouchableOpacity onPress={() => handleTabSwitch(1)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 1 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 1 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? t('events.bear1_setting') : t('events.team1_setting')}</Text></TouchableOpacity>
-                                                        <TouchableOpacity onPress={() => handleTabSwitch(2)} className={`flex-1 py-1.5 items-center rounded-lg ${activeTab === 2 ? (isDark ? 'bg-slate-700 shadow-sm' : 'bg-white shadow-sm') : ''}`}><Text className={`font-semibold text-xs ${activeTab === 2 ? (isDark ? 'text-white' : 'text-sky-600') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{(editingEvent?.id === 'a_bear' || editingEvent?.id === 'alliance_bear') ? t('events.bear2_setting') : t('events.team2_setting')}</Text></TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            onPress={() => setActiveTab(1)}
+                                                            className={`flex-1 py-3 items-center justify-center rounded-[12px] transition-all ${activeTab === 1 ? (isDark ? 'bg-[#333D4B]' : 'bg-white shadow-sm border border-[#E5E8EB]') : ''}`}
+                                                        >
+                                                            <Text className={`font-bold text-[14px] ${activeTab === 1 ? (isDark ? 'text-white' : 'text-[#333D4B]') : (isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]')}`}>{t('events.slot1')}</Text>
+                                                        </TouchableOpacity>
+                                                        <TouchableOpacity
+                                                            onPress={() => setActiveTab(2)}
+                                                            className={`flex-1 py-3 items-center justify-center rounded-[12px] transition-all ${activeTab === 2 ? (isDark ? 'bg-[#333D4B]' : 'bg-white shadow-sm border border-[#E5E8EB]') : ''}`}
+                                                        >
+                                                            <Text className={`font-bold text-[14px] ${activeTab === 2 ? (isDark ? 'text-white' : 'text-[#333D4B]') : (isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]')}`}>{t('events.slot2')}</Text>
+                                                        </TouchableOpacity>
                                                     </View>
                                                 );
                                             }
@@ -3822,13 +3808,17 @@ export default function EventTracker() {
                                                                                             onPress={() => setCurRecU('day')}
                                                                                             className={`flex-1 py-2 items-center rounded-lg ${curRecU === 'day' ? 'bg-indigo-600 shadow-sm' : ''}`}
                                                                                         >
-                                                                                            <Text className={`text-[10px] sm:text-xs font-bold ${curRecU === 'day' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1}>{t('events.recurrence_days')}</Text>
+                                                                                            <Text className={`text-[10px] sm:text-xs font-bold ${curRecU === 'day' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>
+                                                                                                {t('events.recurrence_days')}
+                                                                                            </Text>
                                                                                         </TouchableOpacity>
                                                                                         <TouchableOpacity
                                                                                             onPress={() => setCurRecU('week')}
                                                                                             className={`flex-1 py-2 items-center rounded-lg ${curRecU === 'week' ? 'bg-indigo-600 shadow-sm' : ''}`}
                                                                                         >
-                                                                                            <Text className={`text-[10px] sm:text-xs font-bold ${curRecU === 'week' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1}>{t('events.recurrence_weeks')}</Text>
+                                                                                            <Text className={`text-[10px] sm:text-xs font-bold ${curRecU === 'week' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>
+                                                                                                {t('events.recurrence_weeks')}
+                                                                                            </Text>
                                                                                         </TouchableOpacity>
                                                                                     </View>
                                                                                 </View>
@@ -3869,9 +3859,9 @@ export default function EventTracker() {
                                                                             setPickerSyncKey(prev => prev + 1);
                                                                         }
                                                                     }}
-                                                                    className={`flex-row items-center mr-2 px-3 py-1.5 rounded-full border ${editingSlotId === slot.id ? (isDark ? 'bg-sky-500/20 border-sky-500/50' : 'bg-sky-50 border-sky-500/50') : (isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-slate-200')} shadow-sm`}
+                                                                    className={`flex-row items-center mr-2 px-3 py-1.5 rounded-full border ${editingSlotId === slot.id ? (isDark ? 'bg-[#3182F6]/20 border-[#3182F6]' : 'bg-[#E8F3FF] border-[#3182F6]') : (isDark ? 'bg-[#333D4B] border-transparent' : 'bg-[#F2F4F6] border-transparent')}`}
                                                                 >
-                                                                    <Text className={`text-xs font-bold mr-1.5 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                                                    <Text className={`text-[13px] font-bold mr-1.5 ${editingSlotId === slot.id ? (isDark ? 'text-[#4F93F7]' : 'text-[#3182F6]') : (isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]')}`}>
                                                                         {t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'daily', 'always'][['일', '월', '화', '수', '목', '금', '토', '매일', '상시'].indexOf(slot.day)]}`)}{slot.time ? `(${slot.time})` : ''}
                                                                     </Text>
                                                                     <TouchableOpacity
@@ -3884,11 +3874,11 @@ export default function EventTracker() {
                                                             ))}
                                                             {(activeTab === 1 ? slots1 : slots2).length === 0 && (
                                                                 <View
-                                                                    className={`flex-1 h-10 flex-row items-center justify-center border rounded-xl ${isDark ? 'border-amber-500/30 bg-amber-500/5' : 'border-amber-500/50 bg-amber-50'}`}
+                                                                    className={`flex-1 h-12 flex-row items-center justify-center border rounded-[16px] ${isDark ? 'border-[#333D4B] bg-[#191F28]' : 'border-[#E5E8EB] bg-[#F9FAFB]'}`}
                                                                     style={{ borderStyle: 'dashed', borderWidth: 1 }}
                                                                 >
-                                                                    <Ionicons name="alert-circle-outline" size={14} color={isDark ? "#fbbf24" : "#d97706"} style={{ marginRight: 6 }} />
-                                                                    <Text className={`text-[11px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('events.modal.no_schedule')}</Text>
+                                                                    <Ionicons name="alert-circle-outline" size={16} color={isDark ? "#8B95A1" : "#8B95A1"} style={{ marginRight: 6 }} />
+                                                                    <Text className={`text-[13px] font-medium ${isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'}`}>{t('events.modal.no_schedule')}</Text>
                                                                 </View>
                                                             )}
                                                         </ScrollView>
@@ -3899,10 +3889,10 @@ export default function EventTracker() {
                                                                 {/* Triple Wheel Picker (Pro) for General Events */}
                                                                 <View className="mb-6">
                                                                     <View className="flex-row items-center justify-between mb-2 px-1">
-                                                                        <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.day_of_week')}</Text>
-                                                                        <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.modal.set_time')}</Text>
+                                                                        <Text className={`text-[13px] font-bold ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('events.day_of_week')}</Text>
+                                                                        <Text className={`text-[13px] font-bold ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('events.modal.set_time')}</Text>
                                                                     </View>
-                                                                    <View className={`rounded-2xl border p-2 flex-row items-center justify-around ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200'}`} style={{ height: 160 }}>
+                                                                    <View className={`rounded-[20px] border p-2 flex-row items-center justify-around ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-[#E5E8EB]'}`} style={{ height: 160 }}>
                                                                         {/* Global Highlight Bar - Precisely Centered */}
                                                                         <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 8, right: 8, height: 44, marginTop: -22, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 10 }} />
 
@@ -3992,20 +3982,18 @@ export default function EventTracker() {
                                                             </>
                                                         ) : (
                                                             <View className="flex-1 justify-center">
-                                                                <View>
-                                                                    <View className="flex-row items-center mb-2">
-                                                                        <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                                        <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.day_of_week')}</Text>
-                                                                    </View>
-                                                                    <View className="flex-row flex-wrap justify-between gap-1">
-                                                                        {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
-                                                                            const isSelected = selectedDayForSlot === d;
-                                                                            const dayLabel = d === '월' ? t('events.days.mon') : d === '화' ? t('events.days.tue') : d === '수' ? t('events.days.wed') : d === '목' ? t('events.days.thu') : d === '금' ? t('events.days.fri') : d === '토' ? t('events.days.sat') : d === '일' ? t('events.days.sun') : t('events.days.always');
-                                                                            return (
-                                                                                <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{dayLabel}</Text></TouchableOpacity>
-                                                                            );
-                                                                        })}
-                                                                    </View>
+                                                                <View className="flex-row items-center mb-2">
+                                                                    <Ionicons name="calendar-outline" size={14} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
+                                                                    <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.day_of_week')}</Text>
+                                                                </View>
+                                                                <View className="flex-row flex-wrap justify-between gap-1">
+                                                                    {['월', '화', '수', '목', '금', '토', '일', '상시'].map((d) => {
+                                                                        const isSelected = selectedDayForSlot === d;
+                                                                        const dayLabel = d === '월' ? t('events.days.mon') : d === '화' ? t('events.days.tue') : d === '수' ? t('events.days.wed') : d === '목' ? t('events.days.thu') : d === '금' ? t('events.days.fri') : d === '토' ? t('events.days.sat') : d === '일' ? t('events.days.sun') : t('events.days.always');
+                                                                        return (
+                                                                            <TouchableOpacity key={d} onPress={() => toggleDay(d)} className={`w-[11%] h-9 rounded-lg items-center justify-center border ${isSelected ? 'bg-brand-accent border-brand-accent' : 'bg-slate-800/60 border-slate-700'}`}><Text className={`font-bold text-[10px] ${isSelected ? 'text-brand-dark' : 'text-slate-300'}`}>{dayLabel}</Text></TouchableOpacity>
+                                                                        );
+                                                                    })}
                                                                 </View>
                                                                 <View className="flex-1 justify-center items-center">
                                                                     <TouchableOpacity onPress={addTimeSlot} className="bg-brand-accent/20 py-4 px-8 rounded-xl border border-brand-accent/40 items-center"><Text className="text-brand-accent font-bold text-lg">{t('events.days.always')} {t('common.add')}</Text></TouchableOpacity>
@@ -4021,14 +4009,13 @@ export default function EventTracker() {
                                 )}
                             </View>
 
-                            {/* Schedule Modal Footer */}
-                            <View className={`px-6 pt-4 pb-6 border-t ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-50 border-slate-200'}`} style={{ zIndex: 100 }}>
-                                <View className="flex-row gap-4">
-                                    <TouchableOpacity onPress={handleDeleteSchedule} className={`flex-1 py-4 rounded-2xl border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                        <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.reset')}</Text>
+                            <View className={`px-4 pt-4 pb-6 border-t ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-[#E5E8EB]'}`} style={{ zIndex: 100 }}>
+                                <View className="flex-row gap-3">
+                                    <TouchableOpacity onPress={handleDeleteSchedule} className={`flex-1 h-[52px] rounded-[16px] items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
+                                        <Text className={`font-bold text-[16px] ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('common.reset')}</Text>
                                     </TouchableOpacity>
-                                    <TouchableOpacity onPress={saveSchedule} className="flex-[2] bg-brand-accent py-4 rounded-2xl items-center justify-center shadow-lg shadow-brand-accent/20">
-                                        <Text className="text-brand-dark font-black text-lg">{t('common.save')}</Text>
+                                    <TouchableOpacity onPress={saveSchedule} className="flex-[2] bg-[#3182F6] h-[52px] rounded-[16px] items-center justify-center">
+                                        <Text className="text-white font-bold text-[16px]">{t('common.save')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
@@ -4150,10 +4137,10 @@ export default function EventTracker() {
 
                 {/* Attendee Management Modal */}
                 <Modal visible={attendeeModalVisible} transparent animationType="slide">
-                    <Pressable className="flex-1 bg-black/80 justify-end" onPress={() => setAttendeeModalVisible(false)}>
+                    <Pressable className="flex-1 bg-black/60 justify-end" onPress={() => setAttendeeModalVisible(false)}>
                         <Pressable className="flex-1 justify-end" onPress={() => { }}>
-                            <View className={`flex-1 rounded-t-[40px] border-t ${isDark ? 'bg-slate-900 border-slate-700 shadow-2xl' : 'bg-white border-slate-100 shadow-2xl'}`}>
-                                <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                            <View className={`flex-1 rounded-t-[24px] border-t overflow-hidden ${isDark ? 'bg-[#191F28] border-[#333D4B] shadow-2xl' : 'bg-white border-transparent shadow-2xl'}`}>
+                                <View className={`h-16 flex-row items-center justify-between px-6 border-b ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-[#E5E8EB]'}`}>
                                     <View className="flex-row items-center flex-1 mr-2">
                                         <Text className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>
                                             {managedEvent?.title}
@@ -4171,8 +4158,8 @@ export default function EventTracker() {
                                                 </Text>
                                             </TouchableOpacity>
                                         )}
-                                        <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`p-2 rounded-full border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
-                                            <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                        <TouchableOpacity onPress={() => setAttendeeModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
+                                            <Ionicons name="close" size={24} color={isDark ? "#B0B8C1" : "#4E5968"} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -4184,11 +4171,11 @@ export default function EventTracker() {
                                         return (
                                             <View
                                                 style={{ zIndex: bulkAttendees.length - index, elevation: bulkAttendees.length - index }}
-                                                className={`mb-4 p-4 rounded-2xl border relative ${isDark ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'}`}
+                                                className={`mb-4 p-4 rounded-[20px] border relative ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-[#E5E8EB]'}`}
                                             >
                                                 <View className="flex-row items-center mb-3" style={{ zIndex: 50, elevation: 50 }}>
-                                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-slate-700' : 'bg-slate-200'}`}>
-                                                        <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>{index + 1}</Text>
+                                                    <View className={`w-8 h-8 rounded-full items-center justify-center mr-3 ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
+                                                        <Text className={`font-bold ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{index + 1}</Text>
                                                     </View>
                                                     <View className="flex-1">
                                                         <MemberPicker
@@ -4398,18 +4385,18 @@ export default function EventTracker() {
                                 <View className="flex-row gap-3 w-full">
                                     <TouchableOpacity
                                         onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                        className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                        className={`flex-1 h-[52px] items-center justify-center rounded-[16px] border ${isDark ? 'bg-[#333D4B] border-transparent' : 'bg-[#F2F4F6] border-transparent'}`}
                                     >
-                                        <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
+                                        <Text className={`text-center font-bold text-[16px] ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('common.cancel')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={() => {
                                             setCustomAlert({ ...customAlert, visible: false });
                                             if (customAlert.onConfirm) customAlert.onConfirm();
                                         }}
-                                        className="flex-1 py-4 bg-red-600 rounded-2xl"
+                                        className="flex-1 h-[52px] items-center justify-center bg-[#E0264D] rounded-[16px]"
                                     >
-                                        <Text className="text-white text-center font-bold text-lg">{t('common.delete')}</Text>
+                                        <Text className="text-white text-center font-bold text-[16px]">{t('common.delete')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
@@ -4418,9 +4405,9 @@ export default function EventTracker() {
                                         setCustomAlert({ ...customAlert, visible: false });
                                         if (customAlert.onConfirm) customAlert.onConfirm();
                                     }}
-                                    className={`py-4 w-full rounded-2xl ${customAlert.type === 'success' ? 'bg-emerald-600' : customAlert.type === 'error' ? 'bg-red-600' : 'bg-amber-600'}`}
+                                    className={`w-full h-[52px] rounded-[16px] items-center justify-center ${customAlert.type === 'success' ? 'bg-[#10B981]' : customAlert.type === 'error' ? 'bg-[#E0264D]' : 'bg-[#F2B308]'}`}
                                 >
-                                    <Text className="text-white text-center font-bold text-lg">{t('common.ok')}</Text>
+                                    <Text className="text-white text-center font-bold text-[16px]">{t('common.ok')}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -4467,15 +4454,15 @@ export default function EventTracker() {
                             ];
 
                             return (
-                                <View className={`w-full max-w-sm rounded-[32px] overflow-hidden border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                <View className={`w-full max-w-sm rounded-[24px] overflow-hidden border shadow-2xl ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-transparent'}`}>
                                     {/* Calendar Header */}
-                                    <View className="flex-row items-center justify-between p-6 border-b border-slate-800/10">
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{year}{t('common.year')} {monthNames[month]}</Text>
+                                    <View className={`flex-row items-center justify-between p-6 border-b ${isDark ? 'border-[#333D4B]' : 'border-[#E5E8EB]'}`}>
+                                        <Text className={`text-[20px] font-bold ${isDark ? 'text-[#F2F4F6]' : 'text-[#191F28]'}`}>{year}{t('common.year')} {monthNames[month]}</Text>
                                         <View className="flex-row gap-2">
-                                            <TouchableOpacity onPress={() => changeMonth(-1)} className={`p-2 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}><Ionicons name="chevron-back" size={20} color="#38bdf8" /></TouchableOpacity>
-                                            <TouchableOpacity onPress={() => changeMonth(1)} className={`p-2 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}><Ionicons name="chevron-forward" size={20} color="#38bdf8" /></TouchableOpacity>
+                                            <TouchableOpacity onPress={() => changeMonth(-1)} className={`w-9 h-9 items-center justify-center rounded-[10px] ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}><Ionicons name="chevron-back" size={20} color={isDark ? "#B0B8C1" : "#4E5968"} /></TouchableOpacity>
+                                            <TouchableOpacity onPress={() => changeMonth(1)} className={`w-9 h-9 items-center justify-center rounded-[10px] ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}><Ionicons name="chevron-forward" size={20} color={isDark ? "#B0B8C1" : "#4E5968"} /></TouchableOpacity>
                                         </View>
-                                    </View>
+                                    </View>\
 
                                     {/* Days Header */}
                                     <View className="flex-row px-4 pt-4">
@@ -4512,8 +4499,8 @@ export default function EventTracker() {
                                                     className="w-[14.28%] aspect-square items-center justify-center p-1"
                                                 >
                                                     {day && (
-                                                        <View className={`w-full h-full rounded-xl items-center justify-center ${isSelected ? 'bg-sky-500' : isToday ? 'bg-sky-500/10 border border-sky-500/30' : ''}`}>
-                                                            <Text className={`text-sm font-bold ${isSelected ? 'text-white' : isToday ? 'text-sky-400' : isDark ? (idx % 7 === 0 ? 'text-red-400' : idx % 7 === 6 ? 'text-blue-400' : 'text-slate-400') : (idx % 7 === 0 ? 'text-red-500' : idx % 7 === 6 ? 'text-blue-500' : 'text-slate-700')}`}>
+                                                        <View className={`w-full h-full rounded-[14px] items-center justify-center ${isSelected ? 'bg-[#3182F6]' : isToday ? (isDark ? 'bg-[#3182F6]/20 border border-[#3182F6]/50' : 'bg-[#E8F3FF] border border-[#3182F6]/30') : ''}`}>
+                                                            <Text className={`text-[14px] font-bold ${isSelected ? 'text-white' : isToday ? (isDark ? 'text-[#4F93F7]' : 'text-[#3182F6]') : isDark ? (idx % 7 === 0 ? 'text-[#FF5F5F]' : idx % 7 === 6 ? 'text-[#4F93F7]' : 'text-[#B0B8C1]') : (idx % 7 === 0 ? 'text-[#F04452]' : idx % 7 === 6 ? 'text-[#3182F6]' : 'text-[#333D4B]')}`}>
                                                                 {day}
                                                             </Text>
                                                         </View>
@@ -4525,10 +4512,10 @@ export default function EventTracker() {
 
                                     <TouchableOpacity
                                         onPress={() => setShowDatePicker(null)}
-                                        className={`py-5 items-center border-t ${isDark ? 'border-slate-800' : 'border-slate-100'} active:bg-sky-500/5`}
+                                        className={`py-4 items-center border-t active:opacity-70 ${isDark ? 'border-[#333D4B]' : 'border-[#E5E8EB]'}`}
                                     >
-                                        <Text className="text-slate-500 font-bold">{t('common.close')}</Text>
-                                    </TouchableOpacity>
+                                        <Text className={`font-bold text-[16px] ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('common.close')}</Text>
+                                    </TouchableOpacity>\
                                 </View>
                             );
                         })()}
@@ -4544,12 +4531,12 @@ export default function EventTracker() {
                         ) : (
                             <BlurView intensity={20} className="absolute inset-0" />
                         )}
-                        <View className={`w-full max-w-sm p-6 rounded-[32px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                            <View className="w-16 h-16 rounded-full items-center justify-center mb-4 bg-amber-500/10">
-                                <Ionicons name="warning" size={32} color="#fbbf24" />
+                        <View className={`w-full max-w-sm p-6 rounded-[24px] border shadow-2xl items-center ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-transparent'}`}>
+                            <View className={`w-16 h-16 rounded-full items-center justify-center mb-4 ${isDark ? 'bg-[#333D4B]' : 'bg-[#FFF8DD]'}`}>
+                                <Ionicons name="warning" size={32} color={isDark ? "#FFD43B" : "#F2B308"} />
                             </View>
-                            <Text className={`text-xl font-bold mb-3 text-center ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('common.unsaved_changes')}</Text>
-                            <Text className={`text-center mb-6 text-sm leading-6 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                            <Text className={`text-[20px] font-bold mb-2 text-center ${isDark ? 'text-[#F2F4F6]' : 'text-[#191F28]'}`}>{t('common.unsaved_changes')}</Text>
+                            <Text className={`text-center mb-6 text-[15px] leading-6 font-medium ${isDark ? 'text-[#8B95A1]' : 'text-[#6B7684]'}`}>
                                 {t('common.unsaved_changes_message')}
                             </Text>
 
@@ -4559,9 +4546,9 @@ export default function EventTracker() {
                                         setWarningModalVisible(false);
                                         setPendingTab(null);
                                     }}
-                                    className={`flex-1 py-3 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
+                                    className={`flex-1 h-[52px] items-center justify-center rounded-[16px] border ${isDark ? 'bg-[#333D4B] border-transparent' : 'bg-[#F2F4F6] border-transparent'}`}
                                 >
-                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
+                                    <Text className={`text-center font-bold text-[16px] ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('common.cancel')}</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     onPress={() => {
@@ -4569,12 +4556,12 @@ export default function EventTracker() {
                                         if (pendingTab) setActiveTab(pendingTab);
                                         setPendingTab(null);
                                     }}
-                                    className="flex-1 py-3 bg-amber-500 rounded-xl"
+                                    className="flex-1 h-[52px] items-center justify-center bg-[#F2B308] rounded-[16px]"
                                 >
-                                    <Text className="text-white text-center font-bold text-base">{t('common.navigate_without_save')}</Text>
+                                    <Text className="text-white text-center font-bold text-[16px]">{t('common.navigate_without_save')}</Text>
                                 </TouchableOpacity>
                             </View>
-                        </View>
+                        </View>\
                     </View>
                 </Modal>
             </View >

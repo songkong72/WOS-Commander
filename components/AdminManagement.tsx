@@ -24,7 +24,7 @@ interface AdminManagementProps {
 export default function AdminManagement({ serverId, allianceId, onBack }: AdminManagementProps) {
     const { t } = useTranslation();
     const { auth } = useAuth();
-    const { theme } = useTheme();
+    const { theme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
     const { width } = useWindowDimensions();
     const isMobile = width < 600;
@@ -440,7 +440,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                     <TouchableOpacity onPress={onBack} className={`mr-4 ${isMobile ? 'p-2' : 'p-3'} rounded-2xl shadow-lg border transition-all active:scale-95 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                         <Ionicons name="arrow-back" size={isMobile ? 18 : 22} color={isDark ? "white" : "#1e293b"} />
                     </TouchableOpacity>
-                    <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.dashboardTitle')}</Text>
+                    <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 20 : 30) * fontSizeScale }}>{t('admin.dashboardTitle')}</Text>
                 </View>
 
                 {/* Master Context Selector */}
@@ -448,11 +448,11 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                     <View className={`mb-6 p-4 rounded-3xl border ${isDark ? 'bg-slate-900/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
                         <View className="flex-row items-center mb-3">
                             <Ionicons name="globe-outline" size={18} color="#38bdf8" className="mr-2" />
-                            <Text className={`font-black ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('admin.selectTargetMaster')}</Text>
+                            <Text className={`font-black ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 16 * fontSizeScale }}>{t('admin.selectTargetMaster')}</Text>
                         </View>
                         <View className="flex-row gap-3">
                             <View className="flex-1 space-y-2">
-                                <Text className={`text-xs font-bold ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.serverLabel')}</Text>
+                                <Text className={`font-bold ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 12 * fontSizeScale }}>{t('admin.serverLabel')}</Text>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row gap-2">
                                     {allServers.map(s => (
                                         <TouchableOpacity
@@ -460,7 +460,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                             onPress={() => setTargetServerId(s)}
                                             className={`px-4 py-2 rounded-xl border ${targetServerId === s ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}
                                         >
-                                            <Text className={`font-bold text-xs ${targetServerId === s ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{s}</Text>
+                                            <Text className={`font-bold ${targetServerId === s ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} style={{ fontSize: 12 * fontSizeScale }}>{s}</Text>
                                         </TouchableOpacity>
                                     ))}
                                 </ScrollView>
@@ -469,7 +469,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                         <View className="flex-row gap-3 mt-4">
                             <View className="flex-1 space-y-2">
                                 <View className="flex-row items-center justify-between">
-                                    <Text className={`text-xs font-bold ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                    <Text className={`font-bold ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 12 * fontSizeScale }}>
                                         {targetServerId ? `[${targetServerId}] 소속 연맹 (${allAlliances.filter(a => a.serverId === targetServerId).length})` : '연맹 (Alliance)'}
                                     </Text>
                                 </View>
@@ -482,11 +482,11 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                 className={`px-4 py-2 rounded-xl border flex-row items-center gap-2 ${targetAllianceId === a.id ? 'bg-indigo-500 border-indigo-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200')}`}
                                             >
                                                 <Ionicons name="shield-half" size={12} color={targetAllianceId === a.id ? 'white' : (isDark ? '#cbd5e1' : '#64748b')} />
-                                                <Text className={`font-bold text-xs ${targetAllianceId === a.id ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{a.id}</Text>
+                                                <Text className={`font-bold ${targetAllianceId === a.id ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} style={{ fontSize: 12 * fontSizeScale }}>{a.id}</Text>
                                             </TouchableOpacity>
                                         ))
                                     ) : (
-                                        <Text className={`text-xs p-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                                        <Text className={`p-2 ${isDark ? 'text-slate-600' : 'text-slate-400'}`} style={{ fontSize: 12 * fontSizeScale }}>
                                             {t('admin.noAlliancesInServer')}
                                         </Text>
                                     )}
@@ -503,21 +503,21 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                         className={`flex-1 flex-row items-center justify-center ${isMobile ? 'py-3' : 'py-4'} rounded-[20px] transition-all duration-300 ${activeTab === 'members' ? (isDark ? 'bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white shadow-md') : ''}`}
                     >
                         <Ionicons name="people" size={isMobile ? 16 : 20} color={activeTab === 'members' ? (isDark ? 'white' : '#4f46e5') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
-                        <Text className={`font-black ${isMobile ? 'text-xs' : 'text-sm'} ${activeTab === 'members' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('admin.memberManagementTab')}</Text>
+                        <Text className={`font-black ${activeTab === 'members' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.memberManagementTab')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setActiveTab('strategy')}
                         className={`flex-1 flex-row items-center justify-center ${isMobile ? 'py-3' : 'py-4'} rounded-[20px] transition-all duration-300 ${activeTab === 'strategy' ? (isDark ? 'bg-amber-500 shadow-lg shadow-amber-500/20' : 'bg-white shadow-md') : ''}`}
                     >
                         <Ionicons name="document-text" size={isMobile ? 16 : 20} color={activeTab === 'strategy' ? (isDark ? 'white' : '#d97706') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
-                        <Text className={`font-black ${isMobile ? 'text-xs' : 'text-sm'} ${activeTab === 'strategy' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('admin.strategyDocumentTab')}</Text>
+                        <Text className={`font-black ${activeTab === 'strategy' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.strategyDocumentTab')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                         onPress={() => setActiveTab('settings')}
                         className={`flex-1 flex-row items-center justify-center ${isMobile ? 'py-3' : 'py-4'} rounded-[20px] transition-all duration-300 ${activeTab === 'settings' ? (isDark ? 'bg-slate-600 shadow-lg shadow-slate-500/20' : 'bg-white shadow-md') : ''}`}
                     >
                         <Ionicons name="settings" size={isMobile ? 16 : 20} color={activeTab === 'settings' ? (isDark ? 'white' : '#475569') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
-                        <Text className={`font-black ${isMobile ? 'text-xs' : 'text-sm'} ${activeTab === 'settings' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>{t('admin.manageSettings', '설정')}</Text>
+                        <Text className={`font-black ${activeTab === 'settings' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.manageSettings', '설정')}</Text>
                     </TouchableOpacity>
                 </View>
 
@@ -530,28 +530,28 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                     <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
                                         <Ionicons name="settings-outline" size={isMobile ? 18 : 22} color={isDark ? "#818cf8" : "#4f46e5"} />
                                     </View>
-                                    <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.appSettings', '앱 설정 관리')}</Text>
+                                    <Text className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 18 : 20) * fontSizeScale }}>{t('admin.appSettings', '앱 설정 관리')}</Text>
                                 </View>
 
                                 <View className={`p-4 rounded-xl border mb-6 ${isDark ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-indigo-50/50 border-indigo-100'}`}>
                                     <View className="flex-row items-center mb-2">
                                         <Ionicons name="color-palette-outline" size={18} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
-                                        <Text className={`font-bold ${isMobile ? 'text-[10px]' : 'text-xs'} ${isDark ? 'text-indigo-500' : 'text-indigo-600'}`}>{t('admin.themeSettings', '테마 설정')}</Text>
+                                        <Text className={`font-bold ${isDark ? 'text-indigo-500' : 'text-indigo-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.themeSettings', '테마 설정')}</Text>
                                     </View>
-                                    <Text className={`${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                    <Text className={`leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`} style={{ fontSize: (isMobile ? 9 : 11) * fontSizeScale }}>
                                         {t('admin.themeSettingsDesc', '앱의 기본 테마 모드를 설정합니다. 사용자가 수동으로 변경하기 전까지 이 테마가 적용됩니다.')}
                                     </Text>
                                 </View>
 
                                 <View className={`p-5 rounded-2xl border shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                                    <Text className={`font-bold ${isMobile ? 'text-[9px]' : 'text-xs'} mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.defaultThemeMode', '기본 테마 모드')}</Text>
+                                    <Text className={`font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 9 : 12) * fontSizeScale }}>{t('admin.defaultThemeMode', '기본 테마 모드')}</Text>
                                     <View className="flex-row gap-4">
                                         <TouchableOpacity
                                             onPress={() => handleSaveDefaultTheme('dark')}
                                             className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 transition-all ${themeConfig?.defaultMode === 'dark' ? (isDark ? 'bg-indigo-600 border-indigo-400' : 'bg-slate-800 border-slate-600') : (isDark ? 'bg-slate-900 border-slate-700 opacity-50' : 'bg-white border-slate-200 opacity-50')}`}
                                         >
                                             <Ionicons name="moon" size={20} color="white" style={{ marginRight: 8 }} />
-                                            <Text className="text-white font-black text-sm">{t('admin.darkMode', '다크 모드')}</Text>
+                                            <Text className="text-white font-black" style={{ fontSize: 14 * fontSizeScale }}>{t('admin.darkMode', '다크 모드')}</Text>
                                             {themeConfig?.defaultMode === 'dark' && <Ionicons name="checkmark-circle" size={18} color="#4ade80" style={{ marginLeft: 8 }} />}
                                         </TouchableOpacity>
                                         <TouchableOpacity
@@ -559,7 +559,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                             className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 transition-all ${themeConfig?.defaultMode === 'light' ? (isDark ? 'bg-indigo-600 border-indigo-400' : 'bg-white border-slate-300') : (isDark ? 'bg-slate-900 border-slate-700 opacity-50' : 'bg-white border-slate-200 opacity-50')}`}
                                         >
                                             <Ionicons name="sunny" size={20} color={themeConfig?.defaultMode === 'light' && !isDark ? "#f59e0b" : (isDark ? "white" : "#64748b")} style={{ marginRight: 8 }} />
-                                            <Text className={`font-black text-sm ${themeConfig?.defaultMode === 'light' && !isDark ? 'text-slate-900' : 'text-white'}`}>{t('admin.lightMode', '라이트 모드')}</Text>
+                                            <Text className={`font-black ${themeConfig?.defaultMode === 'light' && !isDark ? 'text-slate-900' : 'text-white'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('admin.lightMode', '라이트 모드')}</Text>
                                             {themeConfig?.defaultMode === 'light' && <Ionicons name="checkmark-circle" size={18} color="#4ade80" style={{ marginLeft: 8 }} />}
                                         </TouchableOpacity>
                                     </View>
@@ -582,22 +582,23 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                 <View className={`p-4 rounded-xl border mb-6 ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50/50 border-amber-100'}`}>
                                     <View className="flex-row items-center mb-2">
                                         <Ionicons name="information-circle" size={18} color={isDark ? "#f59e0b" : "#d97706"} className="mr-2" />
-                                        <Text className={`font-bold ${isMobile ? 'text-[10px]' : 'text-xs'} ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>{t('common.info', '안내')}</Text>
+                                        <Text className={`font-bold ${isDark ? 'text-amber-500' : 'text-amber-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('common.info', '안내')}</Text>
                                     </View>
-                                    <Text className={`${isMobile ? 'text-[9px]' : 'text-[11px]'} leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                                    <Text className={`leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`} style={{ fontSize: (isMobile ? 9 : 11) * fontSizeScale }}>
                                         {t('admin.strategyGuide')}
                                     </Text>
                                 </View>
 
                                 <View className={`p-4 rounded-2xl border shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                                    <Text className={`font-bold ${isMobile ? 'text-[9px]' : 'text-[10px]'} mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.urlLabel')}</Text>
+                                    <Text className={`font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 9 : 10) * fontSizeScale }}>{t('admin.urlLabel')}</Text>
                                     <View className="space-y-4">
                                         <TextInput
-                                            className={`${isMobile ? 'p-3.5 h-12' : 'p-4 h-14'} rounded-xl border font-semibold ${isMobile ? 'text-xs' : 'text-sm'} ${isDark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+                                            className={`${isMobile ? 'p-3.5 h-12' : 'p-4 h-14'} rounded-xl border font-semibold ${isDark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
                                             placeholder="https://docs.google.com/..."
                                             placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
                                             value={strategyUrl}
                                             onChangeText={setStrategyUrl}
+                                            style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}
                                         />
                                         <TouchableOpacity
                                             onPress={handleSaveStrategyUrl}
@@ -607,7 +608,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                             {saveLoading ? <ActivityIndicator color="white" /> : (
                                                 <View className="flex-row items-center">
                                                     <Ionicons name="save-outline" size={isMobile ? 16 : 18} color="#0f172a" style={{ marginRight: 6 }} />
-                                                    <Text className={`text-[#0f172a] font-bold ${isMobile ? 'text-sm' : 'text-base'}`}>{t('common.save', '저장하기')}</Text>
+                                                    <Text className={`text-[#0f172a] font-bold`} style={{ fontSize: (isMobile ? 14 : 16) * fontSizeScale }}>{t('common.save', '저장하기')}</Text>
                                                 </View>
                                             )}
                                         </TouchableOpacity>
@@ -634,15 +635,15 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <View className={`w-7 h-7 rounded-lg items-center justify-center mr-2 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
                                             <Ionicons name="people" size={16} color={isDark ? "#818cf8" : "#4f46e5"} />
                                         </View>
-                                        <Text className={`${isMobile ? 'text-base' : 'text-xl'} font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.memberManagementTab')}</Text>
+                                        <Text className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 16 : 20) * fontSizeScale }}>{t('admin.memberManagementTab')}</Text>
                                     </View>
-                                    <Text className={`font-bold ${isMobile ? 'text-[10px]' : 'text-sm'} ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{t('admin.totalMembers', { count: members.length })}</Text>
+                                    <Text className={`font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} style={{ fontSize: (isMobile ? 10 : 14) * fontSizeScale }}>{t('admin.totalMembers', { count: members.length })}</Text>
                                 </View>
 
                                 <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
                                     <View className="flex-row items-center mb-3">
                                         <Ionicons name="documents" size={14} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
-                                        <Text className={`font-bold ${isMobile ? 'text-xs' : 'text-sm'} ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>{t('admin.bulkRegister')}</Text>
+                                        <Text className={`font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.bulkRegister')}</Text>
                                     </View>
 
                                     <View
@@ -653,20 +654,20 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         className={`items-center justify-center ${isMobile ? 'py-5' : 'py-8'} px-3 rounded-xl border-2 border-dashed mb-3 ${isDragOver ? (isDark ? 'bg-indigo-500/15 border-indigo-400' : 'bg-indigo-50 border-indigo-400') : (isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-200')}`}
                                     >
                                         <Ionicons name={isDragOver ? "cloud-upload" : "document-text-outline"} size={20} color={isDark ? "#64748b" : "#94a3b8"} className="mb-1" />
-                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[10px]'} text-center font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.dragAndDropExcel')}</Text>
+                                        <Text className={`text-center font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: (isMobile ? 8 : 10) * fontSizeScale }}>{t('admin.dragAndDropExcel')}</Text>
                                     </View>
 
                                     <View className="flex-row gap-2">
                                         <TouchableOpacity onPress={handleExcelUpload} disabled={uploading} className={`flex-1 py-2.5 rounded-lg border items-center flex-row justify-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
-                                            <Text className={`font-bold ${isMobile ? 'text-[10px]' : 'text-xs'} ${isDark ? 'text-white' : 'text-slate-600'}`}>{t('admin.selectFile')}</Text>
+                                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.selectFile')}</Text>
                                         </TouchableOpacity>
                                         {previewData.length > 0 ? (
                                             <TouchableOpacity onPress={handleSaveMembers} className="flex-1 bg-indigo-600 py-2.5 rounded-lg items-center flex-row justify-center">
-                                                <Text className={`text-white font-bold ${isMobile ? 'text-[10px]' : 'text-xs'}`}>{t('common.save', '저장')} ({previewData.length})</Text>
+                                                <Text className={`text-white font-bold`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('common.save', '저장')} ({previewData.length})</Text>
                                             </TouchableOpacity>
                                         ) : (
                                             <TouchableOpacity onPress={downloadTemplate} className={`flex-1 py-2.5 rounded-lg border items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-indigo-500/30' : 'bg-white border-indigo-100'}`}>
-                                                <Text className={`font-bold ${isMobile ? 'text-[10px]' : 'text-xs'} ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>{t('admin.downloadTemplate')}</Text>
+                                                <Text className={`font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.downloadTemplate')}</Text>
                                             </TouchableOpacity>
                                         )}
                                     </View>
@@ -675,20 +676,20 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                 <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}>
                                     <View className="flex-row items-center mb-3">
                                         <Ionicons name="person-add" size={14} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
-                                        <Text className={`font-bold ${isMobile ? 'text-xs' : 'text-sm'} ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>{t('admin.individualRegister')}</Text>
+                                        <Text className={`font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.individualRegister')}</Text>
                                     </View>
                                     <View className="space-y-4">
                                         <View className="flex-row gap-2 w-full">
                                             <TextInput
-                                                style={{ flex: isMobile ? 1 : 1.5, minWidth: 0 }}
-                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                style={{ flex: isMobile ? 1 : 1.5, minWidth: 0, fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
+                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                                                 placeholder={`${t('admin.nicknameLabel')} *`}
                                                 value={manualNick}
                                                 onChangeText={setManualNick}
                                             />
                                             <TextInput
-                                                style={{ flex: 1, minWidth: 0 }}
-                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                style={{ flex: 1, minWidth: 0, fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
+                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                                                 placeholder={t('admin.idLabel')}
                                                 value={manualId}
                                                 onChangeText={setManualId}
@@ -697,14 +698,15 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         </View>
                                         <View className="flex-row gap-2">
                                             <TextInput
-                                                className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border ${isMobile ? 'text-[11px]' : 'text-xs'} font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
+                                                className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
                                                 placeholder={t('admin.passwordLabel')}
                                                 value={manualPw}
                                                 onChangeText={setManualPw}
                                                 secureTextEntry
                                             />
                                             <TouchableOpacity onPress={handleManualAdd} className={`bg-indigo-600 ${isMobile ? 'w-16 h-11' : 'px-8 h-12'} rounded-xl items-center justify-center`}>
-                                                <Text className={`text-white font-black ${isMobile ? 'text-[10px]' : 'text-sm'}`}>{t('admin.register')}</Text>
+                                                <Text className={`text-white font-black`} style={{ fontSize: (isMobile ? 10 : 14) * fontSizeScale }}>{t('admin.register')}</Text>
                                             </TouchableOpacity>
                                         </View>
                                     </View>
@@ -721,7 +723,8 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                 placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
                                                 value={searchTerm}
                                                 onChangeText={setSearchTerm}
-                                                className={`flex-1 font-bold ${isMobile ? 'text-[11px]' : 'text-xs'} ${isDark ? 'text-white' : 'text-slate-800'}`}
+                                                style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
+                                                className={`flex-1 font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}
                                             />
                                             {searchTerm.length > 0 && (
                                                 <TouchableOpacity onPress={() => setSearchTerm('')}>
@@ -738,7 +741,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                     onPress={() => setRoleFilter(filter)}
                                                     className={`px-3 py-1.5 rounded-lg items-center justify-center ${roleFilter === filter ? (isDark ? 'bg-indigo-500' : 'bg-indigo-500 shadow-sm') : ''}`}
                                                 >
-                                                    <Text className={`${isMobile ? 'text-[10px]' : 'text-xs'} font-black ${roleFilter === filter ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>
+                                                    <Text className={`font-black ${roleFilter === filter ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>
                                                         {filter === 'all' ? t('admin.all') : filter === 'staff' ? t('admin.staff') : t('admin.general')}
                                                     </Text>
                                                 </TouchableOpacity>
@@ -753,8 +756,8 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <TouchableOpacity onPress={toggleSelectAll} className={`w-4.5 h-4.5 rounded-md items-center justify-center border-2 mr-2 ${selectedIds.length === filteredMembers.length && filteredMembers.length > 0 ? 'bg-indigo-500 border-indigo-500' : (isDark ? 'bg-slate-900 border-slate-600' : 'bg-white border-slate-300')}`}>
                                             {selectedIds.length === filteredMembers.length && filteredMembers.length > 0 && <Ionicons name="checkmark" size={10} color="white" />}
                                         </TouchableOpacity>
-                                        <Text className={`flex-1 ${isMobile ? 'text-[9px]' : 'text-[10px]'} font-black ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.memberList')}</Text>
-                                        <Text className={`${isMobile ? 'text-[9px]' : 'text-[10px]'} font-black mr-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.role_staff_label', '관리')}</Text>
+                                        <Text className={`flex-1 font-black ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: (isMobile ? 9 : 10) * fontSizeScale }}>{t('admin.memberList')}</Text>
+                                        <Text className={`font-black mr-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: (isMobile ? 9 : 10) * fontSizeScale }}>{t('admin.role_staff_label', '관리')}</Text>
                                     </View>
 
                                     {membersLoading ? (
@@ -771,12 +774,12 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                                 {isSelected && <Ionicons name="checkmark" size={10} color="white" />}
                                                             </View>
                                                             <View className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg items-center justify-center mr-2.5 ${isRowStaff ? (isDark ? 'bg-indigo-500/20' : 'bg-indigo-50') : (isDark ? 'bg-slate-800' : 'bg-slate-100')}`}>
-                                                                <Text className={`${isMobile ? 'text-[11px]' : 'text-sm'} font-black ${isRowStaff ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>{m.nickname.charAt(0)}</Text>
+                                                                <Text className={`font-black ${isRowStaff ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 11 : 14) * fontSizeScale }}>{m.nickname.charAt(0)}</Text>
                                                             </View>
                                                             <View className="flex-1 mr-2">
                                                                 <View className="flex-row items-center flex-wrap">
-                                                                    <Text numberOfLines={1} className={`font-black ${isMobile ? 'text-xs' : 'text-sm'} ${isDark ? 'text-white' : 'text-slate-800'}`}>{m.nickname}</Text>
-                                                                    {isRowStaff && <View className="ml-1 px-1 py-0.5 rounded-full bg-indigo-500/10"><Text className="text-[7px] font-black text-indigo-500">{t('admin.staff')}</Text></View>}
+                                                                    <Text numberOfLines={1} className={`font-black ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{m.nickname}</Text>
+                                                                    {isRowStaff && <View className="ml-1 px-1 py-0.5 rounded-full bg-indigo-500/10"><Text className="font-black text-indigo-500" style={{ fontSize: 7 * fontSizeScale }}>{t('admin.staff')}</Text></View>}
                                                                 </View>
                                                                 <Text numberOfLines={1} className={`text-[9px] mt-0.5 font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>UID: {m.id}</Text>
                                                             </View>

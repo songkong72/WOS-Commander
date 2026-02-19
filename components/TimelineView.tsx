@@ -3,7 +3,7 @@ import { View, Text, ScrollView, Pressable, Image, Platform, ViewStyle, Animated
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
-import { useLanguage } from '../app/context';
+import { useLanguage, useTheme } from '../app/context';
 
 interface TimelineViewProps {
     events: any[];
@@ -16,6 +16,7 @@ interface TimelineViewProps {
 const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPress, checkIsOngoing, timezone = 'LOCAL' }) => {
     const { t } = useTranslation();
     const { language } = useLanguage();
+    const { fontSizeScale } = useTheme();
     const [now, setNow] = useState(new Date());
     const [selectedBarId, setSelectedBarId] = useState<string | null>(null);
     const [hoveredBarId, setHoveredBarId] = useState<string | null>(null);
@@ -567,7 +568,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
                 {/* Centered Date/Time Display */}
                 <View className="absolute inset-0 items-center justify-center pointer-events-none">
-                    <Text className="text-white font-black text-[14px] uppercase tracking-widest shadow-lg">
+                    <Text className="text-white font-black uppercase tracking-widest shadow-lg" style={{ fontSize: 14 * fontSizeScale }}>
                         {timezone === 'UTC'
                             ? now.toISOString().replace('T', ' ').substring(0, 19).replace(/-/g, '.')
                             : `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
@@ -586,7 +587,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                             marginRight: 8
                         }}
                     />
-                    <Text className="text-white text-[14px] font-black tracking-tight">{t('events.modal.ongoing_count', { count: ongoingCount })}</Text>
+                    <Text className="text-white font-black tracking-tight" style={{ fontSize: 14 * fontSizeScale }}>{t('events.modal.ongoing_count', { count: ongoingCount })}</Text>
                 </View>
             </LinearGradient>
 
@@ -599,10 +600,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     return (
                         <View key={`day-header-${i}`} className="flex-1 items-center">
                             <View className={`items-center px-4 py-2 rounded-2xl ${isToday ? 'bg-[#f97316] shadow-lg scale-110' : ''}`}>
-                                <Text className={`text-[13px] font-black mb-0.5 ${isToday ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                <Text className={`font-black mb-0.5 ${isToday ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 13 * fontSizeScale }}>
                                     {dayNames[dIdx]}
                                 </Text>
-                                <Text className={`text-[16px] font-black ${isToday ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-700')}`}>
+                                <Text className={`font-black ${isToday ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-700')}`} style={{ fontSize: 16 * fontSizeScale }}>
                                     {mv}/{dv}
                                 </Text>
                             </View>
@@ -649,7 +650,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                 <View className={`p-1.5 rounded-lg mr-2 ${cfg.bg} border ${cfg.border}`}>
                                     <Ionicons name={cfg.icon as any} size={14} color={cfg.color} />
                                 </View>
-                                <Text className={`text-[13px] font-black uppercase tracking-wide ${isDark ? cfg.darkText : cfg.text}`}>{cfg.label}</Text>
+                                <Text className={`font-black uppercase tracking-wide ${isDark ? cfg.darkText : cfg.text}`} style={{ fontSize: 13 * fontSizeScale }}>{cfg.label}</Text>
                             </Pressable>
                             {evs.map((ev: any, evIdx: number) => {
                                 const isTopRow = ck === '연맹' && evIdx < 2;
@@ -726,7 +727,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                 {!!ev.imageUrl ? (
                                                                                     <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-5 h-5 rounded-full" />
                                                                                 ) : (
-                                                                                    <Text style={{ fontSize: 12 }}>📅</Text>
+                                                                                    <Text style={{ fontSize: 12 * fontSizeScale }}>📅</Text>
                                                                                 )}
                                                                             </View>
                                                                         </View>
@@ -761,13 +762,13 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                     {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-4 h-4 rounded-full" />}
                                                                                 </View>
                                                                             )}
-                                                                            <Text key="title-text" className="text-white font-black text-[11px] flex-1 tracking-tight" numberOfLines={1}>
+                                                                            <Text key="title-text" className="text-white font-black flex-1 tracking-tight" numberOfLines={1} style={{ fontSize: 11 * fontSizeScale }}>
                                                                                 {t(`events.${(ev._original?.id || ev.id || ev.eventId || '').replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '')}_title`, { defaultValue: ev.title })}
                                                                             </Text>
                                                                             {isActive && (
                                                                                 <View className="flex-row items-center bg-white/30 px-2 py-0.5 rounded-lg ml-1 border border-white/40">
                                                                                     <View className="w-1 h-1 rounded-full bg-white mr-1" />
-                                                                                    <Text className="text-[8px] text-white font-black tracking-tighter">LIVE</Text>
+                                                                                    <Text className="text-white font-black tracking-tighter" style={{ fontSize: 8 * fontSizeScale }}>LIVE</Text>
                                                                                 </View>
                                                                             )}
                                                                         </LinearGradient>
@@ -795,7 +796,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                     )}
                                                                                 </View>
                                                                                 <View className="flex-1">
-                                                                                    <Text className={`font-black text-[16px] leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                                                                    <Text className={`font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
                                                                                         {(() => {
                                                                                             const eventId = ev._original?.id || ev.id || ev.eventId || '';
                                                                                             const baseId = eventId.replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '');
@@ -809,7 +810,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                             return displayTitle;
                                                                                         })()}
                                                                                     </Text>
-                                                                                    <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                                    <Text className={`font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>
                                                                                         {cfg.label} Event
                                                                                     </Text>
                                                                                 </View>
@@ -818,15 +819,16 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                             <View className={`flex-row items-center p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
                                                                                 <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
                                                                                 <Text
-                                                                                    className={`font-mono text-[12px] font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
+                                                                                    className={`font-mono font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
                                                                                     numberOfLines={1}
+                                                                                    style={{ fontSize: 12 * fontSizeScale }}
                                                                                 >
                                                                                     {p.timeText}
                                                                                 </Text>
                                                                             </View>
 
                                                                             <View className="mt-4 flex-row items-center justify-between">
-                                                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                                <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
                                                                                     {t('events.modal.tap_for_details')}
                                                                                 </Text>
                                                                                 <Ionicons name="chevron-forward" size={14} color={isDark ? '#475569' : '#cbd5e1'} />
@@ -860,7 +862,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     <View key="indicator-label" className="absolute -top-12 -left-12 bg-orange-600 px-3 py-1.5 rounded-xl shadow-2xl flex-row items-center border border-white/30">
                         {/* Live Dot */}
                         <View className="w-2 h-2 rounded-full bg-white animate-pulse mr-2" />
-                        <Text className="text-white text-[11px] font-black tracking-tighter">
+                        <Text className="text-white font-black tracking-tighter" style={{ fontSize: 11 * fontSizeScale }}>
                             NOW {String(now.getHours()).padStart(2, '0')}:{String(now.getMinutes()).padStart(2, '0')}
                         </Text>
                         {/* Pointer Arrow */}
