@@ -3015,35 +3015,35 @@ export default function Home() {
                                 elevation: 0,
                             }}
                         >
-                            <View className={`p-4 flex-row items-center`}>
+                            <View className={`${windowWidth < 380 ? 'px-2' : 'px-4'} py-4 flex-row items-center`}>
                                 {/* Icon */}
-                                <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
+                                <View className={`${windowWidth < 380 ? 'w-11 h-11 mr-2' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
                                     {eventImageUrl ? (
                                         <Image
                                             source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
-                                            className="w-8 h-8"
+                                            className={`${windowWidth < 380 ? 'w-7 h-7' : 'w-8 h-8'}`}
                                             resizeMode="contain"
                                         />
                                     ) : (
-                                        <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={24} color={isDark ? '#94a3b8' : '#64748b'} />
+                                        <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={windowWidth < 380 ? 20 : 24} color={isDark ? '#94a3b8' : '#64748b'} />
                                     )}
                                 </View>
 
                                 {/* Content */}
-                                <View className="flex-1 pr-2">
+                                <View className="flex-1 pr-1">
+                                    {isUpcomingSoon && !isExpired && (
+                                        <View className={`inline-flex flex-row items-center self-start px-1.5 py-0.5 rounded-md mb-1 ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                                            <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
+                                            <Text className={`text-[10px] font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>SOON</Text>
+                                        </View>
+                                    )}
                                     <View className="flex-row items-center mb-1">
-                                        {isUpcomingSoon && !isExpired && (
-                                            <View className={`flex-row items-center px-1.5 py-0.5 rounded-md mr-2 ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                                                <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
-                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>SOON</Text>
-                                            </View>
-                                        )}
                                         <Text
-                                            className={`text-lg font-bold tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
+                                            className={`flex-1 font-bold tracking-tighter ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
                                             numberOfLines={1}
                                             adjustsFontSizeToFit={true}
-                                            minimumFontScale={0.7}
-                                            style={{ fontFamily: 'Pretendard-Bold', fontSize: 18 * fontSizeScale }}
+                                            minimumFontScale={0.5}
+                                            style={{ fontFamily: 'Pretendard-Bold', fontSize: (windowWidth < 380 ? 14 : (windowWidth < 400 ? 16 : 18)) * fontSizeScale }}
                                         >
                                             {(() => {
                                                 const eventId = event.eventId || '';
