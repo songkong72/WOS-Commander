@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
+import i18n from '../services/i18n';
 import { BlurView } from 'expo-blur';
 import { useAuth, useTheme, useLanguage } from './context';
 import { MASTER_CREDENTIALS, SUPER_ADMINS, AdminStatus } from '../data/admin-config';
@@ -52,8 +53,8 @@ export default function Home() {
     const router = useRouter();
     const { t } = useTranslation();
     const params = useLocalSearchParams();
-    const { auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen } = useAuth();
-    const { theme, setTheme, toggleTheme, fontSizeScale } = useTheme();
+    const { auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen, showCustomAlert } = useAuth();
+    const { theme, setTheme, toggleTheme, toggleTemporaryTheme, fontSizeScale, changeFontSize } = useTheme();
     const { language, changeLanguage } = useLanguage();
     const isDark = theme === 'dark';
     const [isLoading, setIsLoading] = useState(false);
@@ -152,12 +153,18 @@ export default function Home() {
         AsyncStorage.getItem('settings_fontSize').then(val => {
             if (val && ['small', 'medium', 'large'].includes(val)) {
                 setFontSize(val as any);
+                // Trigger global change on load
+                const scale = val === 'small' ? 0.95 : val === 'large' ? 1.25 : 1.1;
+                changeFontSize(scale);
             }
         });
     }, []);
 
     useEffect(() => {
         AsyncStorage.setItem('settings_fontSize', fontSize);
+        // Sync with global context
+        const scale = fontSize === 'small' ? 0.95 : fontSize === 'large' ? 1.25 : 1.1;
+        changeFontSize(scale);
     }, [fontSize]);
 
     // -- Dynamic Font Size Helper --
@@ -639,23 +646,6 @@ export default function Home() {
         };
     };
 
-    // Custom Alert State
-    const [customAlert, setCustomAlert] = useState<{
-        visible: boolean,
-        title: string,
-        message: string,
-        type: 'success' | 'error' | 'warning' | 'confirm',
-        onConfirm?: () => void
-    }>({
-        visible: false,
-        title: '',
-        message: '',
-        type: 'error'
-    });
-
-    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
-        setCustomAlert({ visible: true, title, message, type, onConfirm });
-    };
 
     // Dynamic Admins Support
     const { dynamicAdmins, addAdmin, removeAdmin } = useFirestoreAdmins(serverId, allianceId);
@@ -2898,7 +2888,7 @@ export default function Home() {
 
                                             <Text
                                                 className={`font-black tracking-tight text-white`}
-                                                style={{ fontSize: 26 * fontSizeScale, lineHeight: 30 * fontSizeScale }}
+                                                style={{ fontSize: 20 * fontSizeScale, lineHeight: 24 * fontSizeScale }}
                                                 numberOfLines={2}
                                             >
                                                 {(() => {
@@ -2942,12 +2932,12 @@ export default function Home() {
                                                             <View className="flex-row items-baseline justify-center">
                                                                 {d > 0 && (
                                                                     <Text className={`font-black mr-2 ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`} style={{ fontSize: 24 * fontSizeScale }}>
-                                                                        {d}일
+                                                                        {d}{i18n.language === 'ko' ? '일' : 'd'}
                                                                     </Text>
                                                                 )}
                                                                 <Text
                                                                     className={`font-black tracking-widest tabular-nums ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`}
-                                                                    style={{ fontSize: 28 * fontSizeScale }}
+                                                                    style={{ fontSize: 26 * fontSizeScale, fontFamily: 'Orbitron' }}
                                                                 >
                                                                     {timeStr}
                                                                 </Text>
@@ -2966,11 +2956,38 @@ export default function Home() {
                                     </View>
 
                                     {/* Date Range Display - Bottom Full Width */}
-                                    <View className="flex-row items-center pt-2">
-                                        <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
-                                        <Text className={`font-medium text-slate-300`} style={{ fontSize: 18 * fontSizeScale }} numberOfLines={1} adjustsFontSizeToFit>
-                                            {formattedDateRange}
-                                        </Text>
+                                    <View className="flex-row flex-wrap items-center pt-2">
+                                        <View className="flex-row items-center mr-2 py-0.5">
+                                            <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
+                                            {(() => {
+                                                const parts = formattedDateRange.split(' ~ ');
+                                                if (parts.length === 2 && parts[0].includes(' ') && parts[1].includes(' ')) {
+                                                    const [date1, time1] = parts[0].split(' ');
+                                                    return (
+                                                        <View className="flex-row items-center">
+                                                            <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date1}</Text>
+                                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time1}</Text>
+                                                        </View>
+                                                    );
+                                                }
+                                                return <Text className="font-medium text-slate-300" style={{ fontSize: 18 * fontSizeScale }}>{formattedDateRange}</Text>;
+                                            })()}
+                                        </View>
+
+                                        {(() => {
+                                            const parts = formattedDateRange.split(' ~ ');
+                                            if (parts.length === 2 && parts[1].includes(' ')) {
+                                                const [date2, time2] = parts[1].split(' ');
+                                                return (
+                                                    <View className="flex-row items-center py-0.5">
+                                                        <Text className="text-white mx-1" style={{ fontSize: 18 * fontSizeScale }}>~</Text>
+                                                        <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date2}</Text>
+                                                        <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time2}</Text>
+                                                    </View>
+                                                );
+                                            }
+                                            return null;
+                                        })()}
                                     </View>
                                 </View>
                             </ImageBackground>
@@ -3036,20 +3053,48 @@ export default function Home() {
                                         ) : (
                                             (() => {
                                                 let finalStr = displayTime || displayDay || '-';
+                                                // Combine Day and Time if separate and valid
                                                 if (displayDay && displayTime && !/[일월화수목금토]/.test(displayTime)) {
                                                     if (!event.isFortressSplit) finalStr = `${displayDay} ${displayTime}`;
                                                 }
 
-                                                // Clean up and format string
-                                                finalStr = finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.'); // Shorten year (2024 -> 24)
-                                                finalStr = finalStr.replace(/성채전\s*:\s*/g, ''); // Remove 'Castle Battle:' prefix
-                                                finalStr = finalStr.replace(/,\s*/g, '\n'); // Replace commas with newlines
+                                                // Clean up string
+                                                finalStr = finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.'); // Shorten year
+                                                finalStr = finalStr.replace(/성채전\s*:\s*/g, ''); // Remove prefix
+                                                finalStr = finalStr.replace(/,\s*/g, '\n'); // Split by comma
+
+                                                const lines = finalStr.split('\n');
 
                                                 return (
                                                     <View>
-                                                        <Text className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale }}>
-                                                            {finalStr}
-                                                        </Text>
+                                                        {lines.map((line, idx) => {
+                                                            // Format: "Mon 22:00" -> "Mon(22:00)"
+                                                            let formattedLine = line.replace(/([월화수목금토일])\s+(\d{2}:\d{2})/, '$1($2)');
+
+                                                            // Check for Fortress/Citadel keywords to style separately
+                                                            const parts = formattedLine.split(' ');
+
+                                                            return (
+                                                                <Text key={idx} className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale }}>
+                                                                    {parts.map((part, pIdx) => {
+                                                                        // Identify keywords (FortressN, CitadelN)
+                                                                        const isKeyword = /^(요새|성채)\d+/.test(part);
+                                                                        // Identify Time pattern Day(HH:MM)
+                                                                        const isTimePattern = /[월화수목금토일]\(\d{2}:\d{2}\)/.test(part);
+
+                                                                        const styleClass = isKeyword
+                                                                            ? (isDark ? 'text-sky-300 font-bold' : 'text-blue-600 font-bold')
+                                                                            : (isTimePattern ? (isDark ? 'text-slate-300' : 'text-slate-600') : '');
+
+                                                                        return (
+                                                                            <Text key={pIdx} className={styleClass}>
+                                                                                {isKeyword ? translateLabel(part) : (isTimePattern ? part.replace(/[월화수목금토일]/g, m => translateDay(m)) : translateDay(part))}{pIdx < parts.length - 1 ? ' ' : ''}
+                                                                            </Text>
+                                                                        );
+                                                                    })}
+                                                                </Text>
+                                                            );
+                                                        })}
                                                     </View>
                                                 );
                                             })()
@@ -3247,6 +3292,51 @@ export default function Home() {
                                         color={language === 'en' ? 'white' : '#64748b'}
                                     />
                                 </Pressable>
+                                {/* Temporary Theme Toggle */}
+                                <Pressable
+                                    onPress={toggleTemporaryTheme}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: hovered ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)') : 'transparent',
+                                            marginLeft: 4,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                    // @ts-ignore
+                                    tabIndex={-1}
+                                >
+                                    <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={isDark ? "#f59e0b" : "#f59e0b"} />
+                                </Pressable>
+
+                                {/* Settings Link */}
+                                <Pressable
+                                    onPress={() => router.push('/settings')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: hovered ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                                            marginLeft: 4,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                    // @ts-ignore
+                                    tabIndex={-1}
+                                >
+                                    <Ionicons name="settings-outline" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
+                                </Pressable>
                             </View>
 
 
@@ -3284,11 +3374,11 @@ export default function Home() {
                                 // @ts-ignore - Web-specific property
                                 tabIndex={-1}
                             >
-                                <Text className={`font-black ${!isRegisterMode ? 'text-sky-400' : 'text-white/90'}`} style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}>{t('dashboard.dashboardEntrance')}</Text>
+                                <Text className={`font-black ${!isRegisterMode ? 'text-sky-400' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}>{t('dashboard.dashboardEntrance')}</Text>
                             </Pressable>
 
                             {/* Middle Divider */}
-                            <View className="w-[1px] h-4 bg-white/10" />
+                            <View className={`w-[1px] h-4 ${isDark ? 'bg-white/10' : 'bg-slate-300'}`} />
 
                             <Pressable
                                 onPress={() => setIsRegisterMode(true)}
@@ -3315,7 +3405,7 @@ export default function Home() {
                                 // @ts-ignore
                                 tabIndex={-1}
                             >
-                                <Text className={`font-black ${isRegisterMode ? 'text-amber-400' : 'text-white/90'}`} style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}>{t('dashboard.applyAdmin')}</Text>
+                                <Text className={`font-black ${isRegisterMode ? 'text-amber-400' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}>{t('dashboard.applyAdmin')}</Text>
                             </Pressable>
                         </View>
 
@@ -3339,7 +3429,7 @@ export default function Home() {
                                             onChangeText={setInputServer}
                                             onFocus={() => setActiveInput('server')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-white text-slate-900 border-slate-200'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !inputServer.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
+                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !inputServer.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
                                             style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
                                             keyboardType="number-pad"
                                             // @ts-ignore - Web-specific property
@@ -3366,7 +3456,7 @@ export default function Home() {
                                             onChangeText={setInputAlliance}
                                             onFocus={() => setActiveInput('alliance')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-white text-slate-900 border-slate-200'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !inputAlliance.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
+                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !inputAlliance.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
                                             style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
                                             autoCapitalize="characters"
                                             // @ts-ignore - Web-specific property
@@ -3399,7 +3489,7 @@ export default function Home() {
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                             onSubmitEditing={() => gatePasswordRef.current?.focus()}
                                             blurOnSubmit={false}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-white text-slate-900 border-slate-200'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !!inputUserId.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
+                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !!inputUserId.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
                                             style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
                                             // @ts-ignore - Web-specific property
                                             tabIndex={3}
@@ -3433,7 +3523,7 @@ export default function Home() {
                                             onFocus={() => setActiveInput('password')}
                                             onBlur={() => setTimeout(() => setActiveInput(null), 200)}
                                             onSubmitEditing={handleEnterAlliance}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-white text-slate-900 border-slate-200'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 pr-12 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !!inputPassword.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
+                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 pr-12 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !!inputPassword.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
                                             style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
                                             // @ts-ignore - Web-specific property
                                             tabIndex={4}
@@ -3839,7 +3929,7 @@ export default function Home() {
                                     <Ionicons name={!auth.isLoggedIn ? 'lock-closed' : card.icon as any} size={22} color={card.color} />
                                 </View>
                                 <View>
-                                    <Text className={`text-base font-black ${isDark ? 'text-slate-100' : 'text-slate-950'}`}>{card.label}</Text>
+                                    <Text className={`text-2xl font-black ${isDark ? 'text-slate-100' : 'text-slate-950'}`}>{card.label}</Text>
                                     <Text className={`text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{card.desc}</Text>
                                 </View>
                             </Pressable>
@@ -3859,81 +3949,85 @@ export default function Home() {
                                     <Text className={`text-2xl md:text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.weekly_event_title')}</Text>
                                 </View>
                             </View>
-                            <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
-                                <Pressable
-                                    onPress={() => setTimezone('LOCAL')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            paddingHorizontal: 24,
-                                            paddingVertical: 10,
-                                            borderRadius: 12,
-                                            backgroundColor: timezone === 'LOCAL'
-                                                ? '#3b82f6'
-                                                : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                            borderColor: timezone === 'LOCAL' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
-                                            borderWidth: 1,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                >
-                                    <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
-                                </Pressable>
-                                <Pressable
-                                    onPress={() => setTimezone('UTC')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            paddingHorizontal: 24,
-                                            paddingVertical: 10,
-                                            borderRadius: 12,
-                                            backgroundColor: timezone === 'UTC'
-                                                ? '#3b82f6'
-                                                : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                            borderColor: timezone === 'UTC' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
-                                            borderWidth: 1,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                >
-                                    <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
-                                </Pressable>
-                            </View>
 
-                            {/* View Mode Toggle Switch (Orange Point) */}
-                            <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                <Pressable
-                                    onPress={() => setViewMode('timeline')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            paddingHorizontal: 20,
-                                            paddingVertical: 10,
-                                            borderRadius: 12,
-                                            backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                        }
-                                    ]}
-                                >
-                                    <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
-                                </Pressable>
-                                <Pressable
-                                    onPress={() => setViewMode('list')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            paddingHorizontal: 20,
-                                            paddingVertical: 10,
-                                            borderRadius: 12,
-                                            backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                        }
-                                    ]}
-                                >
-                                    <Ionicons name="list" size={20} color={viewMode === 'list' ? 'white' : '#f97316'} />
-                                </Pressable>
+                            <View className="flex-row items-center gap-2">
+                                {/* Timezone Group */}
+                                <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
+                                    <Pressable
+                                        onPress={() => setTimezone('LOCAL')}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                paddingHorizontal: isMobile ? 12 : 24,
+                                                paddingVertical: 10,
+                                                borderRadius: 12,
+                                                backgroundColor: timezone === 'LOCAL'
+                                                    ? '#3b82f6'
+                                                    : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
+                                                borderColor: timezone === 'LOCAL' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                                borderWidth: 1,
+                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                cursor: 'pointer'
+                                            }
+                                        ]}
+                                    >
+                                        <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => setTimezone('UTC')}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                paddingHorizontal: isMobile ? 12 : 24,
+                                                paddingVertical: 10,
+                                                borderRadius: 12,
+                                                backgroundColor: timezone === 'UTC'
+                                                    ? '#3b82f6'
+                                                    : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
+                                                borderColor: timezone === 'UTC' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                                borderWidth: 1,
+                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                cursor: 'pointer'
+                                            }
+                                        ]}
+                                    >
+                                        <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                    </Pressable>
+                                </View>
+
+                                {/* View Mode Group */}
+                                <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                    <Pressable
+                                        onPress={() => setViewMode('timeline')}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                paddingHorizontal: isMobile ? 12 : 20,
+                                                paddingVertical: 10,
+                                                borderRadius: 12,
+                                                backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
+                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                                transition: 'all 0.2s',
+                                            }
+                                        ]}
+                                    >
+                                        <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
+                                    </Pressable>
+                                    <Pressable
+                                        onPress={() => setViewMode('list')}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                paddingHorizontal: isMobile ? 12 : 20,
+                                                paddingVertical: 10,
+                                                borderRadius: 12,
+                                                backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
+                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                                transition: 'all 0.2s',
+                                            }
+                                        ]}
+                                    >
+                                        <Ionicons name="list" size={20} color={viewMode === 'list' ? 'white' : '#f97316'} />
+                                    </Pressable>
+                                </View>
                             </View>
                         </View>
 
@@ -4053,7 +4147,7 @@ export default function Home() {
                                                                     onPress={() => setIsActiveExpanded(!isActiveExpanded)}
                                                                 >
                                                                     <View className="w-1.5 h-6 bg-emerald-500 rounded-full mr-3" />
-                                                                    <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>{t('dashboard.event_active')}</Text>
+                                                                    <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 20 * fontSizeScale }}>{t('dashboard.event_active')}</Text>
                                                                     <Ionicons name={isActiveExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                                 </TouchableOpacity>
                                                                 {activeEvents.length > 0 && <View className="bg-emerald-500/10 px-3 py-1 rounded-full"><Text className="text-emerald-500 font-black text-xs">{activeEvents.length}</Text></View>}
@@ -4318,31 +4412,29 @@ export default function Home() {
                             <View className="gap-3">
                                 {/* Admin Actions Grid */}
                                 {/* Admin Actions List */}
-                                <View className="gap-2">
+                                <TouchableOpacity
+                                    onPress={() => setAdminDashboardVisible(true)}
+                                    className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
+                                >
+                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                        <Ionicons name="people" size={20} color="#818cf8" />
+                                    </View>
+                                    <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_members')}</Text>
+                                    <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
+                                </TouchableOpacity>
+
+                                {auth.isLoggedIn && auth.role !== 'master' && (
                                     <TouchableOpacity
-                                        onPress={() => setAdminDashboardVisible(true)}
+                                        onPress={() => setIsUserPassChangeOpen(true)}
                                         className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
                                     >
-                                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                            <Ionicons name="people" size={20} color="#818cf8" />
+                                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
+                                            <Ionicons name="key" size={20} color="#fbbf24" />
                                         </View>
-                                        <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_members')}</Text>
+                                        <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.change_pw')}</Text>
                                         <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                                     </TouchableOpacity>
-
-                                    {auth.isLoggedIn && auth.role !== 'master' && (
-                                        <TouchableOpacity
-                                            onPress={() => setIsUserPassChangeOpen(true)}
-                                            className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
-                                        >
-                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                                <Ionicons name="key" size={20} color="#fbbf24" />
-                                            </View>
-                                            <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.change_pw')}</Text>
-                                            <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
-                                        </TouchableOpacity>
-                                    )}
-                                </View>
+                                )}
 
                                 {!!isSuperAdmin && (
                                     <>
@@ -4426,7 +4518,7 @@ export default function Home() {
 
                                         <TouchableOpacity
                                             onPress={() => { setIsSuperAdminDashboardVisible(true); }}
-                                            className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
+                                            className={`mt-4 p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
                                         >
                                             <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
                                                 <Ionicons name="planet" size={20} color="#38bdf8" />
@@ -4488,14 +4580,13 @@ export default function Home() {
                         showsVerticalScrollIndicator={false}
                     >
                         {/* Header */}
-                        <View className="mb-8 px-6">
-                            <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{t('admin.super_admin_manage')}</Text>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.super_dashboard_title')}</Text>
+                        <View className="mb-8 px-6 pt-8">
+                            <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('admin.super_admin_manage')}</Text>
+                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 30 * fontSizeScale }}>{t('admin.super_dashboard_title')}</Text>
                             <View className="w-10 h-1 bg-sky-500 rounded-full mt-3" />
                         </View>
 
                         {/* Stats / Interactive Tabs */}
-                        {/* Improved Segmented Tab Controls */}
                         <View className="flex-row gap-2 mb-8 px-5">
                             {[
                                 { id: 'pending', label: t('admin.pending_count'), count: allRequests.filter(r => r.status === 'pending').length, icon: 'time-outline', color: 'sky' },
@@ -4515,12 +4606,12 @@ export default function Home() {
                                             <Ionicons name={tab.icon as any} size={16} color={superAdminTab === tab.id ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
                                         </View>
                                         {tab.count !== undefined && (
-                                            <Text className={`text-xl font-black ${superAdminTab === tab.id ? (isDark ? `text-${tab.color}-400` : `text-${tab.color}-500`) : (isDark ? 'text-slate-700' : 'text-slate-300')}`}>
+                                            <Text className={`text-xl font-black ${superAdminTab === tab.id ? (isDark ? `text-${tab.color}-400` : `text-${tab.color}-500`) : (isDark ? 'text-slate-700' : 'text-slate-400')}`} style={{ fontSize: 20 * fontSizeScale }}>
                                                 {tab.count}
                                             </Text>
                                         )}
                                     </View>
-                                    <Text className={`text-[10px] font-black uppercase tracking-tight ${superAdminTab === tab.id ? `text-${tab.color}-500` : (isDark ? 'text-slate-500' : 'text-slate-400')}`} numberOfLines={1}>
+                                    <Text className={`text-[10px] font-black uppercase tracking-tight ${superAdminTab === tab.id ? `text-${tab.color}-500` : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
                                         {tab.label}
                                     </Text>
                                 </TouchableOpacity>
@@ -4531,13 +4622,13 @@ export default function Home() {
                             <View>
                                 <View className="flex-row items-center gap-2 mb-0.5">
                                     <View className="w-1 h-5 bg-sky-500 rounded-full" />
-                                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                                    <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>
                                         {superAdminTab === 'pending' ? t('admin.pending_queue') :
                                             superAdminTab === 'alliances' ? t('admin.registered_alliances') :
                                                 t('admin.appSettings')}
                                     </Text>
                                 </View>
-                                <Text className={`text-xs font-bold pl-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <Text className={`text-xs font-bold pl-3 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 12 * fontSizeScale }}>
                                     {superAdminTab === 'pending' ? t('admin.pending_desc') :
                                         superAdminTab === 'alliances' ? t('admin.registered_desc') :
                                             t('admin.settings_desc')}
@@ -4562,19 +4653,20 @@ export default function Home() {
                                         size={24}
                                         color={selectedReqIds.size > 0 ? "#38bdf8" : (isDark ? "#475569" : "#94a3b8")}
                                     />
-                                    <Text className={`ml-2 font-black text-sm ${selectedReqIds.size > 0 ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>
+                                    <Text className={`ml-2 font-black text-sm ${selectedReqIds.size > 0 ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`} style={{ fontSize: 14 * fontSizeScale }}>
                                         {t('admin.select_all')}
                                     </Text>
                                 </TouchableOpacity>
                             )}
                         </View>
 
-                        {selectedReqIds.size > 0 && (
-                            <View className={`flex-row gap-3 mb-8 mx-10 p-4 rounded-[24px] border shadow-xl transition-all ${isDark ? 'bg-slate-900/95 border-sky-500/20' : 'bg-white border-sky-100 shadow-sky-200/40'}`}>
+                        {/* Batch Controls */}
+                        {superAdminTab === 'pending' && selectedReqIds.size > 0 && (
+                            <View className={`flex-row gap-3 mb-8 mx-6 p-4 rounded-[28px] border shadow-xl transition-all ${isDark ? 'bg-slate-900/95 border-sky-500/20' : 'bg-white border-sky-100 shadow-sky-200/40'}`}>
                                 <View className="flex-1 flex-row items-center bg-sky-500/10 px-4 py-2 rounded-xl">
                                     <Ionicons name="checkbox" size={18} color="#38bdf8" />
-                                    <Text className={`ml-2 font-black text-base ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-                                        {selectedReqIds.size}{t('common.count')} <Text className="text-xs font-bold opacity-60">{t('common.selected')}</Text>
+                                    <Text className={`ml-2 font-black text-base ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 16 * fontSizeScale }}>
+                                        {selectedReqIds.size}{t('common.count')} <Text className="text-xs font-bold opacity-60" style={{ fontSize: 12 * fontSizeScale }}>{t('common.selected')}</Text>
                                     </Text>
                                 </View>
                                 <View className="flex-row gap-2">
@@ -4583,7 +4675,7 @@ export default function Home() {
                                         activeOpacity={0.7}
                                         className={`px-4 py-3 rounded-xl border ${isDark ? 'border-red-500/30 bg-red-500/10' : 'border-red-100 bg-red-50'}`}
                                     >
-                                        <Text className="text-xs font-bold text-red-500">{t('admin.reject_selected')}</Text>
+                                        <Text className="text-xs font-bold text-red-500" style={{ fontSize: 12 * fontSizeScale }}>{t('admin.reject_selected')}</Text>
                                     </TouchableOpacity>
                                     <TouchableOpacity
                                         onPress={handleBulkApprove}
@@ -4591,123 +4683,67 @@ export default function Home() {
                                         className="px-6 py-3 bg-sky-500 rounded-xl shadow-lg shadow-sky-500/20 flex-row items-center"
                                     >
                                         <Ionicons name="checkmark-circle" size={16} color="white" style={{ marginRight: 6 }} />
-                                        <Text className="font-black text-white text-sm">{t('admin.approve_selected')}</Text>
+                                        <Text className="font-black text-white text-sm" style={{ fontSize: 14 * fontSizeScale }}>{t('admin.approve_selected')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>
                         )}
 
-                        <View className="px-5">
+                        <View className="px-6">
                             {isSuperAdminLoading ? (
                                 <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 40 }} />
                             ) : (
                                 <View>
                                     {superAdminTab === 'settings' ? (
-                                        <View className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
-                                            {/* Global Theme Settings Section */}
-                                            <View className={`p-3 rounded-[24px] border shadow-xl ${isDark ? 'bg-slate-900/40 border-slate-800/50' : 'bg-white border-slate-100 shadow-slate-100/50'}`}>
-                                                <BlurView intensity={isDark ? 6 : 12} className="absolute inset-0 rounded-[24px]" />
-
-                                                <View className="flex-row items-center mb-3">
-                                                    <View className={`w-8 h-8 rounded-lg items-center justify-center mr-2.5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                                        <Ionicons name="color-palette" size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
+                                        <View className="pb-10">
+                                            <View className={`p-5 rounded-[32px] border mb-6 ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                                <View className="flex-row items-center mb-6">
+                                                    <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                                        <Ionicons name="color-palette" size={20} color={isDark ? "#818cf8" : "#4f46e5"} />
                                                     </View>
                                                     <View>
-                                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.themeSettings')}</Text>
-                                                        <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Visual System</Text>
+                                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('admin.themeSettings')}</Text>
+                                                        <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Visual System</Text>
                                                     </View>
                                                 </View>
-
-                                                <View className={`p-2.5 rounded-lg border mb-3 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-100'}`}>
-                                                    <Text className={`text-[11px] font-medium leading-4 ${isDark ? 'text-indigo-300/80' : 'text-indigo-700/80'}`}>
-                                                        {t('admin.themeSettingsDesc')}
-                                                    </Text>
+                                                <View className="flex-row gap-3">
+                                                    <TouchableOpacity
+                                                        onPress={() => { saveGlobalTheme('dark'); setTheme('dark'); }}
+                                                        className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${globalThemeConfig?.defaultMode === 'dark' ? 'bg-indigo-600 border-indigo-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}
+                                                    >
+                                                        <Ionicons name="moon" size={18} color={globalThemeConfig?.defaultMode === 'dark' ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
+                                                        <Text className={`font-black text-xs mt-2 ${globalThemeConfig?.defaultMode === 'dark' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>DARK</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        onPress={() => { saveGlobalTheme('light'); setTheme('light'); }}
+                                                        className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${globalThemeConfig?.defaultMode === 'light' ? 'bg-indigo-600 border-indigo-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}
+                                                    >
+                                                        <Ionicons name="sunny" size={18} color={globalThemeConfig?.defaultMode === 'light' ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
+                                                        <Text className={`font-black text-xs mt-2 ${globalThemeConfig?.defaultMode === 'light' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>LIGHT</Text>
+                                                    </TouchableOpacity>
                                                 </View>
-
-                                                <View className={`p-2 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/50' : 'bg-slate-50 border-slate-200/50'}`}>
-                                                    <Text className={`font-black text-[8px] uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.defaultThemeMode')}</Text>
-
-                                                    <View className="flex-row gap-2">
-                                                        <TouchableOpacity
-                                                            onPress={() => {
-                                                                saveGlobalTheme('dark');
-                                                                setTheme('dark');
-                                                            }}
-                                                            className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${globalThemeConfig?.defaultMode === 'dark' ?
-                                                                'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' :
-                                                                (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}>
-                                                            <Ionicons name="moon" size={16} color={globalThemeConfig?.defaultMode === 'dark' ? "white" : (isDark ? "#94a3b8" : "#64748b")} style={{ marginRight: 6 }} />
-                                                            <Text className={`font-black text-[11px] ${globalThemeConfig?.defaultMode === 'dark' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1}>{t('admin.darkMode')}</Text>
-                                                            {globalThemeConfig?.defaultMode === 'dark' && (
-                                                                <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-slate-900">
-                                                                    <Ionicons name="checkmark" size={10} color="white" />
-                                                                </View>
-                                                            )}
-                                                        </TouchableOpacity>
-
-                                                        <TouchableOpacity
-                                                            onPress={() => {
-                                                                saveGlobalTheme('light');
-                                                                setTheme('light');
-                                                            }}
-                                                            className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${globalThemeConfig?.defaultMode === 'light' ?
-                                                                (isDark ? 'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-white border-white shadow-md shadow-slate-200/40') :
-                                                                (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}>
-                                                            <Ionicons name="sunny" size={16} color={globalThemeConfig?.defaultMode === 'light' ? (isDark ? "white" : "#f59e0b") : (isDark ? "#94a3b8" : "#64748b")} style={{ marginRight: 6 }} />
-                                                            <Text className={`font-black text-[11px] ${globalThemeConfig?.defaultMode === 'light' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1}>{t('admin.lightMode')}</Text>
-                                                            {globalThemeConfig?.defaultMode === 'light' && (
-                                                                <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-white">
-                                                                    <Ionicons name="checkmark" size={10} color="white" />
-                                                                </View>
-                                                            )}
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                </View>
-
-
                                             </View>
 
-                                            {/* Font Size Settings Section */}
-                                            <View className={`mt-4 p-3 rounded-[24px] border shadow-xl ${isDark ? 'bg-slate-900/40 border-slate-800/50' : 'bg-white border-slate-100 shadow-slate-100/50'}`}>
-                                                <BlurView intensity={isDark ? 6 : 12} className="absolute inset-0 rounded-[24px]" />
-
-                                                <View className="flex-row items-center mb-3">
-                                                    <View className={`w-8 h-8 rounded-lg items-center justify-center mr-2.5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                                        <Ionicons name="text" size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
+                                            <View className={`p-5 rounded-[32px] border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                                <View className="flex-row items-center mb-6">
+                                                    <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
+                                                        <Ionicons name="text" size={20} color={isDark ? "#60a5fa" : "#2563eb"} />
                                                     </View>
                                                     <View>
-                                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.fontSettings')}</Text>
-                                                        <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Accessibility</Text>
+                                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('admin.fontSettings')}</Text>
+                                                        <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Accessibility</Text>
                                                     </View>
                                                 </View>
-
-                                                <View className={`p-2.5 rounded-lg border mb-3 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-100'}`}>
-                                                    <Text className={`text-[11px] font-medium leading-4 ${isDark ? 'text-indigo-300/80' : 'text-indigo-700/80'}`}>
-                                                        {t('admin.fontSettingsDesc')}
-                                                    </Text>
-                                                </View>
-
-                                                <View className={`p-2 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/50' : 'bg-slate-50 border-slate-200/50'}`}>
-                                                    <View className="flex-row gap-2">
-                                                        {(['small', 'medium', 'large'] as const).map((size) => (
-                                                            <TouchableOpacity
-                                                                key={size}
-                                                                onPress={() => setFontSize(size)}
-                                                                className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${fontSize === size ?
-                                                                    'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' :
-                                                                    (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}
-                                                            >
-                                                                <Text className={`font-black text-[11px] ${fontSize === size ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1}>
-                                                                    {size === 'small' ? t('admin.fontSmall') : size === 'medium' ? t('admin.fontMedium') : t('admin.fontLarge')}
-                                                                </Text>
-                                                                {fontSize === size && (
-                                                                    <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-white">
-                                                                        <Ionicons name="checkmark" size={10} color="white" />
-                                                                    </View>
-                                                                )}
-                                                            </TouchableOpacity>
-                                                        ))}
-                                                    </View>
+                                                <View className="flex-row gap-2">
+                                                    {(['small', 'medium', 'large'] as const).map((size) => (
+                                                        <TouchableOpacity
+                                                            key={size}
+                                                            onPress={() => setFontSize(size)}
+                                                            className={`flex-1 py-3 rounded-xl border-2 items-center justify-center ${fontSize === size ? 'bg-blue-600 border-blue-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}
+                                                        >
+                                                            <Text className={`font-black text-[10px] ${fontSize === size ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>{size.toUpperCase()}</Text>
+                                                        </TouchableOpacity>
+                                                    ))}
                                                 </View>
                                             </View>
                                         </View>
@@ -4721,13 +4757,13 @@ export default function Home() {
                                                     </Text>
                                                 </View>
                                             ) : (
-                                                allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').map((req) => (
+                                                allRequests.filter(r => (superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved')).map((req) => (
                                                     <View key={req.id} className={`p-4 rounded-[24px] border mb-3 shadow-md ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                                         <View className="flex-row">
                                                             {superAdminTab === 'pending' && (
                                                                 <TouchableOpacity
                                                                     onPress={() => toggleSelectRequest(req.id)}
-                                                                    className="mr-6 justify-center"
+                                                                    className="mr-4 justify-center"
                                                                 >
                                                                     <View className={`w-10 h-10 rounded-2xl items-center justify-center border-2 ${selectedReqIds.has(req.id) ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200')}`}>
                                                                         {selectedReqIds.has(req.id) && <Ionicons name="checkmark" size={24} color="white" />}
@@ -4739,9 +4775,9 @@ export default function Home() {
                                                                     <View style={{ flex: 1, marginRight: 8 }}>
                                                                         <View className="flex-row flex-wrap items-center">
                                                                             <Text className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1">{req.serverId}</Text>
-                                                                            <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail">{req.allianceId}</Text>
+                                                                            <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`}>{req.allianceId}</Text>
                                                                         </View>
-                                                                        {req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>{req.allianceName}</Text>}
+                                                                        {req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{req.allianceName}</Text>}
                                                                     </View>
 
                                                                     {superAdminTab === 'pending' ? (
@@ -4806,7 +4842,6 @@ export default function Home() {
                         </View>
                     </ScrollView>
 
-                    {/* Floating Close Button */}
                     <TouchableOpacity
                         onPress={() => setIsSuperAdminDashboardVisible(false)}
                         className="absolute top-6 right-6 w-14 h-14 rounded-full bg-sky-500 items-center justify-center shadow-2xl border-2 border-white/20"
@@ -5265,64 +5300,6 @@ export default function Home() {
                                 <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
                             </Pressable>
                         </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Custom Alert Modal */}
-            <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                <View className="flex-1 bg-black/60 items-center justify-center p-6">
-                    <BlurView intensity={20} className="absolute inset-0" />
-                    <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className="items-center mb-6">
-                            <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${customAlert.type === 'success' ? 'bg-emerald-500/20' :
-                                customAlert.type === 'error' ? 'bg-red-500/20' :
-                                    customAlert.type === 'warning' ? 'bg-amber-500/20' : 'bg-sky-500/20'
-                                }`}>
-                                <Ionicons
-                                    name={
-                                        customAlert.type === 'success' ? 'checkmark-circle' :
-                                            customAlert.type === 'error' ? 'alert-circle' :
-                                                customAlert.type === 'warning' ? 'warning' : 'help-circle'
-                                    }
-                                    size={32}
-                                    color={
-                                        customAlert.type === 'success' ? '#10b981' :
-                                            customAlert.type === 'error' ? '#ef4444' :
-                                                customAlert.type === 'warning' ? '#f59e0b' : '#0ea5e9'
-                                    }
-                                />
-                            </View>
-                            <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                            <Text className={`mt-4 text-center text-lg font-medium leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
-                        </View>
-
-                        {customAlert.type === 'confirm' ? (
-                            <View className="flex-row gap-3">
-                                <TouchableOpacity
-                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                    className={`flex-1 py-4 rounded-3xl border ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
-                                >
-                                    <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setCustomAlert({ ...customAlert, visible: false });
-                                        if (customAlert.onConfirm) customAlert.onConfirm();
-                                    }}
-                                    className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
-                                >
-                                    <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
-                            >
-                                <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
-                            </TouchableOpacity>
-                        )}
                     </View>
                 </View>
             </Modal>

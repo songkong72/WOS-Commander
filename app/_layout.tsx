@@ -3,7 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Slot } from 'expo-router';
 import { NativeWindStyleSheet } from "nativewind";
 import { AdminStatus } from '../data/admin-config';
-import { View, Platform, ImageBackground, StyleSheet, Image, useWindowDimensions, ScrollView } from 'react-native';
+import { View, Platform, ImageBackground, StyleSheet, Image, useWindowDimensions, ScrollView, Modal, Text, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { useTranslation } from 'react-i18next';
 import Head from 'expo-router/head';
 import { AuthContext, ThemeContext, LanguageContext, Language } from './context';
 import "../global.css";
@@ -40,6 +43,25 @@ export default function Layout() {
     const [isLayoutReady, setIsLayoutReady] = useState(false);
     const [isGateOpen, setIsGateOpen] = useState(true);
     const mainScrollRef = useRef<ScrollView>(null);
+    const { t } = useTranslation();
+
+    // Custom Alert State
+    const [customAlert, setCustomAlert] = useState<{
+        visible: boolean,
+        title: string,
+        message: string,
+        type: 'success' | 'error' | 'warning' | 'confirm',
+        onConfirm?: () => void
+    }>({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'error'
+    });
+
+    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
+        setCustomAlert({ visible: true, title, message, type, onConfirm });
+    };
     const isDark = theme === 'dark'; // Moved up for context
 
     useEffect(() => {
@@ -89,20 +111,29 @@ export default function Layout() {
         let unsubscribe: (() => void) | undefined;
 
         const setupThemeListener = async () => {
-            const savedTheme = await AsyncStorage.getItem('theme');
-            // If user has manually set a theme, don't override it with global default
-            if (savedTheme) return;
-
+            // We always listen to global theme, but decide whether to apply it based on timestamps
             let configRef = doc(db, 'config', 'themeConfig');
             if (serverId && allianceId) {
                 configRef = doc(db, "servers", serverId, "alliances", allianceId, "settings", "themeConfig");
             }
 
-            unsubscribe = onSnapshot(configRef, (docSnap) => {
+            unsubscribe = onSnapshot(configRef, async (docSnap) => {
                 if (docSnap.exists()) {
-                    const defaultMode = docSnap.data().defaultMode;
+                    const data = docSnap.data();
+                    const defaultMode = data.defaultMode;
+                    const dbUpdatedAt = data.updatedAt || 0;
+
                     if (defaultMode && (defaultMode === 'dark' || defaultMode === 'light')) {
-                        setTheme(defaultMode);
+                        const localUpdateTs = await AsyncStorage.getItem('themeUpdateTimestamp');
+                        const localTs = localUpdateTs ? parseInt(localUpdateTs) : 0;
+
+                        // If DB update is newer than local manual change, or no local preference exists
+                        if (dbUpdatedAt > localTs) {
+                            setTheme(defaultMode);
+                            // Do NOT set 'theme' in AsyncStorage here, as we want to know it was a global sync
+                            // But we update the sync timestamp
+                            await AsyncStorage.setItem('themeUpdateTimestamp', dbUpdatedAt.toString());
+                        }
                     }
                 }
             }, (err) => {
@@ -138,11 +169,21 @@ export default function Layout() {
     const handleSetTheme = (newTheme: 'dark' | 'light') => {
         setTheme(newTheme);
         AsyncStorage.setItem('theme', newTheme);
+        // Mark user's manual change as "Now" so it won't be overridden by older global settings
+        AsyncStorage.setItem('themeUpdateTimestamp', Date.now().toString());
     };
 
     const toggleTheme = () => {
         const newTheme = theme === 'dark' ? 'light' : 'dark';
         handleSetTheme(newTheme);
+    };
+
+    const setTemporaryTheme = (newTheme: 'dark' | 'light') => {
+        setTheme(newTheme);
+    };
+
+    const toggleTemporaryTheme = () => {
+        setTemporaryTheme(theme === 'dark' ? 'light' : 'dark');
     };
 
     const changeLanguage = (lang: Language) => {
@@ -162,8 +203,12 @@ export default function Layout() {
     if (!isLayoutReady) return null;
 
     return (
-        <AuthContext.Provider value={{ auth, login, logout, serverId, allianceId, setAllianceInfo, dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen }}>
-            <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, toggleTheme, fontSizeScale, changeFontSize }}>
+        <AuthContext.Provider value={{
+            auth, login, logout, serverId, allianceId, setAllianceInfo,
+            dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen,
+            showCustomAlert
+        }}>
+            <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, toggleTheme, setTemporaryTheme, toggleTemporaryTheme, fontSizeScale, changeFontSize }}>
                 <LanguageContext.Provider value={{ language, changeLanguage }}>
                     {Platform.OS === 'web' && (
                         <Head>
@@ -171,6 +216,7 @@ export default function Layout() {
                             <meta name="apple-mobile-web-app-status-bar-style" content={isDark ? "black-translucent" : "default"} />
                             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
                             <link rel="manifest" href="/manifest.json" />
+                            <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
                             <style>{`
                                 html, body, #root, [data-expo-router-root] {
                                     width: 100% !important;
@@ -195,6 +241,64 @@ export default function Layout() {
                         </View>
                         {!isGateOpen && <GlobalNavigationBar />}
                     </View>
+                    {/* Custom Alert Modal (Global) */}
+                    <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                        <View className="flex-1 bg-black/60 items-center justify-center p-6">
+                            <BlurView intensity={20} className="absolute inset-0" />
+                            <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+                                <View className="items-center mb-6">
+                                    <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${customAlert.type === 'success' ? 'bg-emerald-500/20' :
+                                        customAlert.type === 'error' ? 'bg-red-500/20' :
+                                            customAlert.type === 'warning' ? 'bg-amber-500/20' : 'bg-sky-500/20'
+                                        }`}>
+                                        <Ionicons
+                                            name={
+                                                customAlert.type === 'success' ? 'checkmark-circle' :
+                                                    customAlert.type === 'error' ? 'alert-circle' :
+                                                        customAlert.type === 'warning' ? 'warning' : 'help-circle'
+                                            }
+                                            size={32}
+                                            color={
+                                                customAlert.type === 'success' ? '#10b981' :
+                                                    customAlert.type === 'error' ? '#ef4444' :
+                                                        customAlert.type === 'warning' ? '#f59e0b' : '#0ea5e9'
+                                            }
+                                        />
+                                    </View>
+                                    <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                                    <Text className={`mt-4 text-center text-lg font-medium leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
+                                </View>
+
+                                {customAlert.type === 'confirm' ? (
+                                    <View className="flex-row gap-3">
+                                        <TouchableOpacity
+                                            onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                            className={`flex-1 py-4 rounded-3xl border ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
+                                        >
+                                            <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            onPress={() => {
+                                                setCustomAlert({ ...customAlert, visible: false });
+                                                if (customAlert.onConfirm) customAlert.onConfirm();
+                                            }}
+                                            className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                        >
+                                            <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                ) : (
+                                    <TouchableOpacity
+                                        onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                        className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                    >
+                                        <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+                    </Modal>
+
                 </LanguageContext.Provider>
             </ThemeContext.Provider>
         </AuthContext.Provider>
