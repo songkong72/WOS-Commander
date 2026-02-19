@@ -2775,7 +2775,6 @@ export default function Home() {
                 }}
                 style={({ pressed, hovered }: any) => [
                     {
-                        padding: 8,
                         width: '100%',
                         transform: [{ scale: pressed && auth.isLoggedIn ? 0.98 : (hovered && auth.isLoggedIn ? 1.02 : 1) }],
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -2886,8 +2885,8 @@ export default function Home() {
                                 <View className="absolute inset-0 bg-black/50" />
 
                                 <View className={`p-5`}>
-                                    <View className="flex-row items-start justify-between mb-2">
-                                        <View className="flex-1 pr-2">
+                                    <View className="flex-col mb-1">
+                                        <View className="w-full mb-4">
                                             <View className="flex-row items-center mb-2">
                                                 <View className={`px-2 py-1 rounded-[6px] bg-blue-500`}>
                                                     <Text className={`text-[11px] font-bold uppercase tracking-wider text-white`}>
@@ -2921,7 +2920,7 @@ export default function Home() {
                                             </Text>
                                         </View>
 
-                                        <View className="items-end pl-2">
+                                        <View className="w-full items-end mb-2">
                                             {(() => {
                                                 let remSeconds = getRemainingSeconds(toLocal(displayDay)) || getRemainingSeconds(toLocal(displayTime));
                                                 if (remSeconds === null) {
@@ -2939,26 +2938,26 @@ export default function Home() {
                                                     const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 
                                                     return (
-                                                        <View className={`items-end justify-center px-3 py-2 rounded-xl border ${isDark ? 'bg-sky-500/10 border-sky-500/50' : 'bg-blue-50 border-blue-200'}`} style={{ minWidth: 150 }}>
-                                                            <View className="flex-row items-baseline justify-end">
+                                                        <View className={`w-full items-center justify-center px-4 py-3 rounded-xl border ${isDark ? 'bg-sky-500/10 border-sky-500/50' : 'bg-blue-50 border-blue-200'}`}>
+                                                            <View className="flex-row items-baseline justify-center">
                                                                 {d > 0 && (
-                                                                    <Text className={`font-black mr-2 ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`} style={{ fontSize: 20 * fontSizeScale }}>
+                                                                    <Text className={`font-black mr-2 ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`} style={{ fontSize: 24 * fontSizeScale }}>
                                                                         {d}일
                                                                     </Text>
                                                                 )}
                                                                 <Text
                                                                     className={`font-black tracking-widest tabular-nums ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`}
-                                                                    style={{ fontSize: 24 * fontSizeScale }}
+                                                                    style={{ fontSize: 28 * fontSizeScale }}
                                                                 >
                                                                     {timeStr}
                                                                 </Text>
                                                             </View>
-                                                            <Text className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>REMAINING</Text>
+                                                            <Text className={`text-[11px] font-bold uppercase tracking-[0.3em] mt-1 opacity-80 ${isDark ? 'text-sky-200' : 'text-blue-400'}`}>REMAINING</Text>
                                                         </View>
                                                     );
                                                 }
                                                 return (
-                                                    <View className={`px-4 py-2 rounded-xl bg-blue-500/20`}>
+                                                    <View className={`w-full items-center justify-center px-4 py-2 rounded-xl bg-blue-500/20`}>
                                                         <Text className={`text-sm font-bold uppercase tracking-widest text-blue-400`}>Active</Text>
                                                     </View>
                                                 );
@@ -3042,6 +3041,7 @@ export default function Home() {
                                                 }
 
                                                 // Clean up and format string
+                                                finalStr = finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.'); // Shorten year (2024 -> 24)
                                                 finalStr = finalStr.replace(/성채전\s*:\s*/g, ''); // Remove 'Castle Battle:' prefix
                                                 finalStr = finalStr.replace(/,\s*/g, '\n'); // Replace commas with newlines
 
@@ -4012,8 +4012,8 @@ export default function Home() {
                     onLayout={(e) => setContainerY(e.nativeEvent.layout.y)}
                     className="w-full items-center pb-24"
                 >
-                    <View className={viewMode === 'timeline' ? 'w-full' : 'w-full max-w-6xl px-4 md:px-8'}>
-                        <View className={viewMode === 'timeline' ? 'w-full' : 'flex-col gap-3'}>
+                    <View className={viewMode === 'timeline' ? 'w-full' : 'w-full px-4'}>
+                        <View className={viewMode === 'timeline' ? 'w-full' : 'w-full flex-col gap-3'}>
                             {loading ? (
                                 <View className={`p-16 rounded-[32px] border border-dashed items-center justify-center ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                                     <Text className={`font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('dashboard.loading_schedule')}</Text>
@@ -4060,7 +4060,7 @@ export default function Home() {
                                                             </View>
                                                             {isActiveExpanded && (
                                                                 activeEvents.length > 0 ? (
-                                                                    <View className="flex-col gap-y-2">
+                                                                    <View className="flex-col gap-y-2 px-1">
                                                                         {activeEvents.map((event, idx) => renderEventCard(event, `active-${idx}`))}
                                                                     </View>
                                                                 ) : (
@@ -4090,7 +4090,7 @@ export default function Home() {
                                                             </View>
                                                             {isUpcomingExpanded && (
                                                                 upcomingEvents.length > 0 ? (
-                                                                    <View className="flex-col gap-y-2">
+                                                                    <View className="flex-col gap-y-2 px-1">
                                                                         {upcomingEvents.map((event, idx) => renderEventCard(event, `upcoming-${idx}`))}
                                                                     </View>
                                                                 ) : (
@@ -4120,7 +4120,7 @@ export default function Home() {
                                                             </View>
                                                             {isExpiredExpanded ? (
                                                                 expiredEvents.length > 0 ? (
-                                                                    <View className="flex-col gap-y-2 opacity-60">
+                                                                    <View className="flex-col gap-y-2 opacity-60 px-1">
                                                                         {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
                                                                     </View>
                                                                 ) : (
