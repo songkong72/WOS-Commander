@@ -238,7 +238,7 @@ interface EventCardProps {
     onLayout: (y: number) => void;
 }
 
-const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = true, syncKey }: any) => {
+const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = true, syncKey, containerBgColor }: any) => {
     const itemHeight = 44;
     const flatListRef = useRef<FlatList>(null);
     const [localActiveValue, setLocalActiveValue] = useState(value);
@@ -295,6 +295,8 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
         }
     }, [value, syncKey, options]);
 
+    const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
+
     const handleScroll = (e: any) => {
         const offset = e.nativeEvent.contentOffset.y;
         const index = Math.round(offset / itemHeight);
@@ -304,6 +306,30 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
             if (currentVal !== localActiveValue) {
                 setLocalActiveValue(currentVal);
             }
+        }
+
+        // Web Mouse Scroll Snapping Hack
+        if (Platform.OS === 'web') {
+            if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+            scrollTimeout.current = setTimeout(() => {
+                if (index < 0 || index >= infiniteOptions.length) return;
+                const selectedItem = infiniteOptions[index];
+                const selectedVal = getValue(selectedItem);
+
+                if (selectedVal !== value) {
+                    onChange(selectedVal);
+                }
+
+                // Snap directly on web to ensure exact alignment
+                scrollToIndex(index, true);
+
+                // Re-center block after animation
+                const realIndex = index % options.length;
+                const targetIndex = realIndex + centerOffset;
+                if (index !== targetIndex) {
+                    setTimeout(() => scrollToIndex(targetIndex, false), 300);
+                }
+            }, 150);
         }
     };
 
@@ -331,12 +357,12 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
     return (
         <View style={{ width, height: itemHeight * 3, overflow: 'hidden' }} className="relative">
             <LinearGradient
-                colors={isDark ? ['#0f172a', '#0f172a90', 'transparent'] : ['#f8fafc', '#f8fafc90', 'transparent']}
+                colors={[containerBgColor || (isDark ? '#0f172a' : '#ffffff'), `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, 'transparent']}
                 style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
                 pointerEvents="none"
             />
             <LinearGradient
-                colors={isDark ? ['transparent', '#0f172a90', '#0f172a'] : ['transparent', '#f8fafc90', '#f8fafc']}
+                colors={['transparent', `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, containerBgColor || (isDark ? '#0f172a' : '#ffffff')]}
                 style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
                 pointerEvents="none"
             />
@@ -544,12 +570,13 @@ const EventCard = memo(({
                             </Text>
                         </View>
                         {isOngoing ? (
-                            <View className="bg-[#E8F3FF] px-2 py-1 rounded-[6px] flex-row items-center dark:bg-[#1C2539]">
-                                <Text className="text-[#3182F6] font-bold dark:text-[#4F93F7]" style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ongoing')}</Text>
+                            <View className="bg-[#E8F3FF] px-2.5 py-1 rounded-[6px] flex-row items-center border border-[#3182F6]/30 dark:bg-[#3182F6]/10 dark:border-[#3182F6]/30">
+                                <View className={`w-1.5 h-1.5 rounded-full bg-[#3182F6] dark:bg-[#4F93F7] mr-1.5 ${Platform.OS === 'web' ? 'animate-pulse' : ''}`} />
+                                <Text className="text-[#3182F6] font-black tracking-wide dark:text-[#4F93F7]" style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ongoing')}</Text>
                             </View>
                         ) : isExpired ? (
-                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#2C3544]' : 'bg-[#EFF1F3]'}`}>
-                                <Text className={`font-bold ${isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ended')}</Text>
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#2C3544]' : 'bg-slate-200'}`}>
+                                <Text className={`font-bold ${isDark ? 'text-[#8B95A1]' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ended')}</Text>
                             </View>
                         ) : (
                             <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#FFF8DD]/10' : 'bg-[#FFF8DD]'}`}>
@@ -564,8 +591,8 @@ const EventCard = memo(({
                 <View className="px-4 pt-3 pb-4 flex-1 justify-between">
                     <View className="mb-4">
                         {(!event.day && (!event.time || !event.time.trim())) ? (
-                            <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-100'}`}>
-                                <Text className={`font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('events.schedule_empty')}</Text>
+                            <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text className={`font-semibold ${isDark ? 'text-slate-500' : 'text-slate-500'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('events.schedule_empty')}</Text>
                             </View>
                         ) : (
                             event.day && (!event.time || !event.time.trim() || DATE_RANGE_IDS.includes(event.id)) && event.day !== '상설' && event.day !== '상시' ? (
@@ -819,14 +846,14 @@ const EventCard = memo(({
                             onPress={() => openGuideModal(event)}
                             onHoverIn={() => setGuideHover(true)}
                             onHoverOut={() => setGuideHover(false)}
-                            className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'} ${guideHover ? 'opacity-80' : 'opacity-100'}`}
+                            className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#333D4B]' : 'bg-violet-50'} ${guideHover ? 'opacity-80' : 'opacity-100'}`}
                             style={({ pressed }: any) => [
                                 {
                                     transform: [{ scale: pressed ? 0.96 : 1 }],
                                 }
                             ]}
                         >
-                            <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#E5E8EB]' : 'text-[#4E5968]'}`}>{t('events.guide')}</Text>
+                            <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#E5E8EB]' : 'text-violet-600'}`}>{t('events.guide')}</Text>
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
@@ -2965,7 +2992,7 @@ export default function EventTracker() {
                                                 size={18}
                                                 color={selectedCategory === cat ? '#6366f1' : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
                                             />
-                                            <Text className={`ml-3 font-bold text-sm ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-800') : (isDark ? 'text-slate-400' : 'text-slate-500'))}`}>
+                                            <Text className={`ml-3 font-bold text-base ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-800') : (isDark ? 'text-slate-400' : 'text-slate-500'))}`}>
                                                 {cat === '전체' ? t('common.all')
                                                     : cat === '연맹' ? t('events.category.alliance')
                                                         : cat === '개인' ? t('events.category.individual')
@@ -3118,24 +3145,24 @@ export default function EventTracker() {
                                                 const { x, width } = e.nativeEvent.layout;
                                                 categoryItemLayouts.current[cat] = { x, width };
                                             }}
-                                            className="px-4 py-3 mr-1 relative flex-row items-center"
+                                            className="px-4 py-3 mr-1 relative flex-row items-center outline-none cursor-pointer"
                                         >
                                             {({ hovered }: any) => (
                                                 <>
                                                     <Ionicons
                                                         name={cat === '연맹' ? 'flag-outline' : cat === '개인' ? 'person-outline' : cat === '서버' ? 'earth-outline' : cat === '초보자' ? 'star-outline' : 'apps-outline'}
-                                                        size={15}
-                                                        color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#94a3b8'))}
+                                                        size={18}
+                                                        color={selectedCategory === cat ? (isDark ? '#818cf8' : '#6366f1') : (hovered ? (isDark ? '#818cf8' : '#6366f1') : (isDark ? '#475569' : '#64748b'))}
                                                         className="mr-2"
                                                     />
-                                                    <Text className={`text-[15px] font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-[#191F28]') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-[#8B95A1]' : 'text-[#8B95A1]'))}`}>
+                                                    <Text className={`text-[17px] font-bold transition-all ${selectedCategory === cat ? (isDark ? 'text-indigo-400' : 'text-indigo-600') : (hovered ? (isDark ? 'text-slate-200' : 'text-slate-700') : (isDark ? 'text-slate-400' : 'text-slate-500'))}`}>
                                                         {cat === '전체' ? t('common.all')
                                                             : cat === '연맹' ? t('events.category.alliance')
                                                                 : cat === '개인' ? t('events.category.individual')
                                                                     : cat === '서버' ? t('events.category.server')
                                                                         : cat === '초보자' ? t('events.category.beginner')
                                                                             : cat}
-                                                    </Text>\
+                                                    </Text>
                                                     {(selectedCategory === cat || hovered) && (
                                                         <View
                                                             className="absolute bottom-0 left-4 right-4 h-[2.5px] rounded-t-full transition-all"
@@ -3425,7 +3452,7 @@ export default function EventTracker() {
                                 </View>
                                 <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
                                     <Ionicons name="close" size={24} color={isDark ? "#B0B8C1" : "#4E5968"} />
-                                </TouchableOpacity>\
+                                </TouchableOpacity>
                             </View>
 
                             <View className="px-4 flex-1" style={{ overflow: 'visible', zIndex: (activeDateDropdown || activeFortressDropdown || activeNamePickerId || hourDropdownVisible || minuteDropdownVisible) ? 200 : 1 }}>
@@ -3433,8 +3460,10 @@ export default function EventTracker() {
                                     <View className="flex-1 mt-4">
                                         <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false} className="flex-1">
                                             <View className="mb-2">
-                                                <View className="flex-row items-center mb-2">
-                                                    <Text className="text-brand-accent text-[10px] font-bold uppercase opacity-60">{t('events.modal.registered_schedule')}</Text>
+                                                <View className="flex-row items-center mb-3">
+                                                    <Text className={`text-[12px] font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-600'}`}>
+                                                        {t('events.modal.registered_schedule')}
+                                                    </Text>
                                                 </View>
                                                 <View className="flex-row flex-wrap gap-2">
                                                     {(editingEvent?.id === 'a_fortress' ? fortressList : citadelList).map(slot => (
@@ -3450,8 +3479,8 @@ export default function EventTracker() {
                                                                 setEditMinute(slot.m);
                                                                 setPickerSyncKey(prev => prev + 1); // Force picker sync
                                                             }
-                                                        }} className={`border px-2 py-1.5 rounded-xl flex-row items-center justify-between w-[155px] ${editingSlotId === slot.id ? 'bg-brand-accent/30 border-brand-accent' : 'bg-brand-accent/10 border-brand-accent/20'}`}>
-                                                            <Text className="text-white text-[10px] font-bold flex-1 mr-1" numberOfLines={1} ellipsizeMode="tail">
+                                                        }} className={`border px-3 py-2 rounded-xl flex-row items-center justify-between w-[155px] ${editingSlotId === slot.id ? (isDark ? 'bg-[#3182F6]/20 border-[#3182F6]' : 'bg-[#E8F3FF] border-[#3182F6]') : (isDark ? 'bg-[#333D4B] border-[#333D4B]' : 'bg-[#F2F4F6] border-[#E5E8EB]')}`}>
+                                                            <Text className={`${editingSlotId === slot.id ? (isDark ? 'text-[#4F93F7]' : 'text-[#3182F6]') : (isDark ? 'text-slate-300' : 'text-slate-700')} text-[12px] font-bold flex-1 mr-1`} numberOfLines={1} ellipsizeMode="tail">
                                                                 {slot.name.replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`).replace(/성채\s*(\d+)/, `${t('events.citadel')} $1`)} {t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(slot.day || '토')]}`)}({slot.h}:{slot.m})
                                                             </Text>
                                                             <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} onPress={() => removeFortressSlot(slot.id)}><Ionicons name="close-circle" size={16} color="#ef4444" /></TouchableOpacity>
@@ -3470,7 +3499,7 @@ export default function EventTracker() {
                                             </View>
 
                                             {/* Start Date Toggle - Compact */}
-                                            <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                            <View className={`mb-2 p-2.5 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                                                 <View className="flex-row items-center justify-between">
                                                     <View className="flex-row items-center flex-1">
                                                         <Ionicons name="calendar-number-outline" size={16} color="#0ea5e9" style={{ marginRight: 8 }} />
@@ -3487,7 +3516,7 @@ export default function EventTracker() {
                                                 {enableStartDate && (
                                                     <TouchableOpacity
                                                         onPress={() => setShowDatePicker('startDate')}
-                                                        className={`mt-3 p-2.5 rounded-lg border ${isDark ? 'bg-slate-900/40 border-slate-600' : 'bg-white border-slate-300'}`}
+                                                        className={`mt-2 p-2 rounded-lg border ${isDark ? 'bg-slate-900/40 border-slate-600' : 'bg-white border-slate-300'}`}
                                                     >
                                                         <View className="flex-row items-center justify-between">
                                                             <Text className={`font-mono text-base ${eventStartDate ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
@@ -3500,7 +3529,7 @@ export default function EventTracker() {
                                             </View>
 
                                             {/* Recurrence Option - Compact */}
-                                            <View className={`mb-4 p-3 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                            <View className={`mb-2 p-2.5 rounded-xl border ${isDark ? 'bg-slate-800/30 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                                                 <View className="flex-row items-center justify-between">
                                                     <View className="flex-row items-center flex-1">
                                                         <Ionicons name="repeat-outline" size={16} color="#8b5cf6" style={{ marginRight: 8 }} />
@@ -3515,7 +3544,7 @@ export default function EventTracker() {
                                                     />
                                                 </View>
                                                 {isRecurring && (
-                                                    <View className="mt-3 flex-row items-center gap-2">
+                                                    <View className="mt-2 flex-row items-center gap-2">
                                                         <TextInput
                                                             value={recurrenceValue}
                                                             onChangeText={setRecurrenceValue}
@@ -3547,36 +3576,51 @@ export default function EventTracker() {
                                             </View>
 
                                             {/* Compact Form */}
-                                            <View className={`rounded-xl p-4 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-50 border-slate-200'}`}>
-                                                <Text className={`text-sm font-bold mb-4 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
+                                            <View className={`rounded-xl p-3 border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-50 border-slate-200'}`}>
+                                                <Text className={`text-sm font-bold mb-2 ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>
                                                     {t('events.modal.new_schedule')}
                                                 </Text>
 
-                                                {/* Fortress/Citadel Dropdown */}
-                                                <View className="mb-3">
-                                                    <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                                        {editingEvent?.id === 'a_fortress' ? t('events.fortress') : t('events.citadel')}
-                                                    </Text>
-                                                    <TouchableOpacity
-                                                        onPress={() => setActiveNamePickerId(activeNamePickerId === 'fortress_picker' ? null : 'fortress_picker')}
-                                                        className={`p-3 rounded-lg border flex-row items-center justify-between ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-300'}`}
-                                                    >
-                                                        <Text className={`text-base font-semibold ${selectedFortressName ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
-                                                            {selectedFortressName ? selectedFortressName.replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`).replace(/성채\s*(\d+)/, `${t('events.citadel')} $1`) : `${editingEvent?.id === 'a_fortress' ? t('events.select_fortress') : t('events.select_citadel')}`}
-                                                        </Text>
-                                                        <Ionicons name="chevron-down" size={20} color={isDark ? '#94a3b8' : '#64748b'} />
-                                                    </TouchableOpacity>
+                                                {/* Fortress/Citadel Horizontal Picker */}
+                                                <View className="mb-4">
+                                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" contentContainerStyle={{ paddingVertical: 4, paddingRight: 10 }}>
+                                                        {(editingEvent?.id === 'a_fortress' ? FORTRESS_IDS : CITADEL_IDS).map((id) => {
+                                                            const isFortress = editingEvent?.id === 'a_fortress';
+                                                            const fName = isFortress ? `요새 ${id.split('_')[1]}` : `성채 ${id.split('_')[1]}`;
+                                                            const isSelected = selectedFortressName === fName;
+                                                            return (
+                                                                <TouchableOpacity
+                                                                    key={id}
+                                                                    activeOpacity={0.7}
+                                                                    onPress={() => setSelectedFortressName(fName)}
+                                                                    style={isSelected && !isDark ? {
+                                                                        shadowColor: '#0ea5e9',
+                                                                        shadowOffset: { width: 0, height: 4 },
+                                                                        shadowOpacity: 0.2,
+                                                                        shadowRadius: 8,
+                                                                        elevation: 4
+                                                                    } : undefined}
+                                                                    className={`mr-2.5 px-4 py-2.5 rounded-2xl flex-row items-center border ${isSelected ? (isDark ? 'bg-sky-500 border-sky-400' : 'bg-sky-500 border-sky-500') : (isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-white border-slate-200/60')}`}
+                                                                >
+                                                                    <Text className="mr-1.5 text-sm">{isFortress ? '🏰' : '🛡️'}</Text>
+                                                                    <Text className={`font-black tracking-wide text-[14px] ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
+                                                                        {isFortress ? t('events.fortress') : t('events.citadel')} {id.split('_')[1]}
+                                                                    </Text>
+                                                                </TouchableOpacity>
+                                                            );
+                                                        })}
+                                                    </ScrollView>
                                                 </View>
 
                                                 {/* Triple Wheel Picker (Pro) */}
-                                                <View className="mb-6">
-                                                    <View className="flex-row items-center justify-between mb-2 px-1">
-                                                        <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.day_of_week')}</Text>
-                                                        <Text className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.modal.set_time')}</Text>
+                                                <View className="mb-3">
+                                                    <View className="flex-row items-center justify-between mb-1 px-1">
+                                                        <Text className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.day_of_week')}</Text>
+                                                        <Text className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.modal.set_time')}</Text>
                                                     </View>
-                                                    <View className={`rounded-2xl border p-2 flex-row items-center justify-around ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200'}`} style={{ height: 160 }}>
+                                                    <View className={`rounded-[20px] border flex-row items-center justify-around ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ height: 132, overflow: 'hidden' }}>
                                                         {/* Global Highlight Bar */}
-                                                        <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 8, right: 8, height: 44, marginTop: -22, backgroundColor: isDark ? '#38bdf815' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf830' : '#38bdf815', zIndex: 10 }} />
+                                                        <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 8, right: 8, height: 36, marginTop: -18, backgroundColor: isDark ? '#38bdf815' : '#38bdf805', borderRadius: 10, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf830' : '#38bdf815', zIndex: 30 }} />
 
                                                         <WheelPicker
                                                             options={['일', '월', '화', '수', '목', '금', '토'].map(d => ({
@@ -3589,6 +3633,7 @@ export default function EventTracker() {
                                                             width={80}
                                                             showHighlight={false}
                                                             syncKey={pickerSyncKey}
+                                                            containerBgColor={isDark ? '#0f172a' : '#ffffff'}
                                                         />
                                                         <View className="w-[1px] h-12 bg-slate-700/20" />
                                                         <WheelPicker
@@ -3599,6 +3644,7 @@ export default function EventTracker() {
                                                             width={70}
                                                             showHighlight={false}
                                                             syncKey={pickerSyncKey}
+                                                            containerBgColor={isDark ? '#0f172a' : '#ffffff'}
                                                         />
                                                         <Text className={`text-lg font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>:</Text>
                                                         <WheelPicker
@@ -3609,6 +3655,7 @@ export default function EventTracker() {
                                                             width={70}
                                                             showHighlight={false}
                                                             syncKey={pickerSyncKey}
+                                                            containerBgColor={isDark ? '#0f172a' : '#ffffff'}
                                                         />
                                                     </View>
                                                 </View>
@@ -3616,10 +3663,10 @@ export default function EventTracker() {
                                                 {/* Add Button */}
                                                 <TouchableOpacity
                                                     onPress={() => addFortressSlot()}
-                                                    className={`w-full h-[52px] rounded-[16px] items-center flex-row justify-center ${editingSlotId ? 'bg-emerald-600' : 'bg-[#3182F6]'}`}
+                                                    className={`w-full py-3 rounded-xl items-center flex-row justify-center ${editingSlotId ? 'bg-emerald-600' : 'bg-[#3182F6]'}`}
                                                 >
-                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color="white" style={{ marginRight: 8 }} />
-                                                    <Text className="text-white font-bold text-[16px]">
+                                                    <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color="white" style={{ marginRight: 6 }} />
+                                                    <Text className="text-white font-bold text-sm">
                                                         {editingSlotId ? t('events.modal.update_schedule') : t('events.add_schedule_entry')}
                                                     </Text>
                                                 </TouchableOpacity>
@@ -3831,7 +3878,7 @@ export default function EventTracker() {
 
                                                         {/* Registered Slots Section */}
                                                         <View className="flex-row items-center justify-between mb-2 px-1">
-                                                            <Text className={`text-[10px] uppercase font-bold tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                            <Text className={`text-[12px] font-bold uppercase tracking-wider ${isDark ? 'text-white' : 'text-slate-600'}`}>
                                                                 {t('events.modal.registered_schedule')}
                                                             </Text>
                                                         </View>
@@ -3894,7 +3941,7 @@ export default function EventTracker() {
                                                                     </View>
                                                                     <View className={`rounded-[20px] border p-2 flex-row items-center justify-around ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-[#E5E8EB]'}`} style={{ height: 160 }}>
                                                                         {/* Global Highlight Bar - Precisely Centered */}
-                                                                        <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 8, right: 8, height: 44, marginTop: -22, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 10 }} />
+                                                                        <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 8, right: 8, height: 44, marginTop: -22, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 30 }} />
 
                                                                         <View style={{ height: 132, justifyContent: 'center' }}>
                                                                             <WheelPicker
@@ -3905,6 +3952,7 @@ export default function EventTracker() {
                                                                                 width={80}
                                                                                 showHighlight={false}
                                                                                 syncKey={pickerSyncKey}
+                                                                                containerBgColor={isDark ? '#191F28' : '#ffffff'}
                                                                             />
                                                                         </View>
 
@@ -3920,6 +3968,7 @@ export default function EventTracker() {
                                                                                     width={70}
                                                                                     showHighlight={false}
                                                                                     syncKey={pickerSyncKey}
+                                                                                    containerBgColor={isDark ? '#191F28' : '#ffffff'}
                                                                                 />
                                                                             </View>
                                                                             <Text className={`text-lg font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`} style={{ marginHorizontal: -2, paddingBottom: 4 }}>:</Text>
@@ -3932,6 +3981,7 @@ export default function EventTracker() {
                                                                                     width={70}
                                                                                     showHighlight={false}
                                                                                     syncKey={pickerSyncKey}
+                                                                                    containerBgColor={isDark ? '#191F28' : '#ffffff'}
                                                                                 />
                                                                             </View>
 

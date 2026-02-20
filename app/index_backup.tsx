@@ -869,11 +869,12 @@ export default function Home() {
     };
 
     const handleResetPasswordAdmin = async (req: any) => {
-        showCustomAlert(
-            t('admin.resetPassword'),
-            t('admin.resetPwConfirm', { id: req.adminId }),
-            'confirm',
-            async () => {
+        setCustomAlert({
+            visible: true,
+            title: t('admin.resetPassword'),
+            message: t('admin.resetPwConfirm', { id: req.adminId }),
+            type: 'confirm',
+            onConfirm: async () => {
                 try {
                     const hashed = await hashPassword('1234');
                     await updateDoc(doc(db, "users", req.adminId), {
@@ -885,15 +886,16 @@ export default function Home() {
                     showCustomAlert(t('common.error_title'), t('admin.resetPwError'), 'error');
                 }
             }
-        );
+        });
     };
 
     const handleDeleteAlliance = async (req: any) => {
-        showCustomAlert(
-            t('admin.deleteAlliance'),
-            t('admin.deleteAllianceConfirm', { id: req.allianceId }),
-            'confirm',
-            async () => {
+        setCustomAlert({
+            visible: true,
+            title: t('admin.deleteAlliance'),
+            message: t('admin.deleteAllianceConfirm', { id: req.allianceId }),
+            type: 'confirm',
+            onConfirm: async () => {
                 try {
                     // 1. Delete user account
                     await deleteDoc(doc(db, "users", req.adminId));
@@ -905,7 +907,7 @@ export default function Home() {
                     showCustomAlert(t('common.error_title'), t('admin.deleteAllianceError'), 'error');
                 }
             }
-        );
+        });
     };
 
     const handleDeleteSuperAdmin = async (adminId: string, name: string) => {
@@ -2375,22 +2377,6 @@ export default function Home() {
         }
     }, []);
 
-    // Badge API Support (PWA) - Show ongoing events count on app icon
-    useEffect(() => {
-        if (typeof navigator !== 'undefined' && 'setAppBadge' in navigator) {
-            try {
-                const ongoingCount = displayEvents.filter(e => isEventActive(e)).length;
-                if (ongoingCount > 0) {
-                    (navigator as any).setAppBadge(ongoingCount).catch(() => { });
-                } else {
-                    (navigator as any).clearAppBadge().catch(() => { });
-                }
-            } catch (err) {
-                console.error('Badge API Error:', err);
-            }
-        }
-    }, [displayEvents]);
-
     const handleInstallClick = () => {
         if (deferredPrompt) {
             deferredPrompt.prompt();
@@ -2902,7 +2888,7 @@ export default function Home() {
 
                                             <Text
                                                 className={`font-black tracking-tight text-white`}
-                                                style={{ fontSize: 22 * fontSizeScale, lineHeight: 26 * fontSizeScale }}
+                                                style={{ fontSize: 20 * fontSizeScale, lineHeight: 24 * fontSizeScale }}
                                                 numberOfLines={2}
                                             >
                                                 {(() => {
@@ -2951,7 +2937,7 @@ export default function Home() {
                                                                 )}
                                                                 <Text
                                                                     className={`font-black tracking-widest tabular-nums ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`}
-                                                                    style={{ fontSize: 28 * fontSizeScale, fontFamily: 'Orbitron' }}
+                                                                    style={{ fontSize: 26 * fontSizeScale, fontFamily: 'Orbitron' }}
                                                                 >
                                                                     {timeStr}
                                                                 </Text>
@@ -2970,38 +2956,27 @@ export default function Home() {
                                     </View>
 
                                     {/* Date Range Display - Bottom Full Width */}
-                                    <View className="flex-row flex-wrap items-center pt-2">
-                                        <View className="flex-row items-center mr-2 py-0.5">
-                                            <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
+                                    <View className="flex-row items-center pt-2">
+                                        <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
+                                        <Text className={`font-medium text-slate-300`} style={{ fontSize: 18 * fontSizeScale }} numberOfLines={1} adjustsFontSizeToFit>
                                             {(() => {
                                                 const parts = formattedDateRange.split(' ~ ');
                                                 if (parts.length === 2 && parts[0].includes(' ') && parts[1].includes(' ')) {
                                                     const [date1, time1] = parts[0].split(' ');
+                                                    const [date2, time2] = parts[1].split(' ');
                                                     return (
-                                                        <View className="flex-row items-center">
-                                                            <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date1}</Text>
-                                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time1}</Text>
-                                                        </View>
+                                                        <>
+                                                            <Text className="font-bold text-white">{date1}</Text>
+                                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time1} </Text>
+                                                            <Text className="text-white mx-1">~</Text>
+                                                            <Text className="font-bold text-white"> {date2}</Text>
+                                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time2}</Text>
+                                                        </>
                                                     );
                                                 }
-                                                return <Text className="font-medium text-slate-300" style={{ fontSize: 18 * fontSizeScale }}>{formattedDateRange}</Text>;
+                                                return formattedDateRange;
                                             })()}
-                                        </View>
-
-                                        {(() => {
-                                            const parts = formattedDateRange.split(' ~ ');
-                                            if (parts.length === 2 && parts[1].includes(' ')) {
-                                                const [date2, time2] = parts[1].split(' ');
-                                                return (
-                                                    <View className="flex-row items-center py-0.5">
-                                                        <Text className="text-white mx-1" style={{ fontSize: 18 * fontSizeScale }}>~</Text>
-                                                        <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date2}</Text>
-                                                        <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time2}</Text>
-                                                    </View>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
+                                        </Text>
                                     </View>
                                 </View>
                             </ImageBackground>
@@ -3013,35 +2988,33 @@ export default function Home() {
                                 elevation: 0,
                             }}
                         >
-                            <View className={`${windowWidth < 380 ? 'px-2' : 'px-4'} py-4 flex-row items-center`}>
+                            <View className={`p-4 flex-row items-center`}>
                                 {/* Icon */}
-                                <View className={`${windowWidth < 380 ? 'w-11 h-11 mr-2' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
+                                <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
                                     {eventImageUrl ? (
                                         <Image
                                             source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
-                                            className={`${windowWidth < 380 ? 'w-7 h-7' : 'w-8 h-8'}`}
+                                            className="w-8 h-8"
                                             resizeMode="contain"
                                         />
                                     ) : (
-                                        <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={windowWidth < 380 ? 20 : 24} color={isDark ? '#94a3b8' : '#64748b'} />
+                                        <Ionicons name={getEventIcon(event.originalEventId || event.eventId)} size={24} color={isDark ? '#94a3b8' : '#64748b'} />
                                     )}
                                 </View>
 
                                 {/* Content */}
-                                <View className="flex-1 pr-1">
-                                    {isUpcomingSoon && !isExpired && (
-                                        <View className={`inline-flex flex-row items-center self-start px-1.5 py-0.5 rounded-md mb-1 ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                                            <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
-                                            <Text className={`text-[10px] font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>SOON</Text>
-                                        </View>
-                                    )}
+                                <View className="flex-1 pr-2">
                                     <View className="flex-row items-center mb-1">
+                                        {isUpcomingSoon && !isExpired && (
+                                            <View className={`flex-row items-center px-1.5 py-0.5 rounded-md mr-2 ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                                                <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
+                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>SOON</Text>
+                                            </View>
+                                        )}
                                         <Text
-                                            className={`flex-1 font-bold tracking-tighter ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
-                                            numberOfLines={1}
-                                            adjustsFontSizeToFit={true}
-                                            minimumFontScale={0.5}
-                                            style={{ fontFamily: 'Pretendard-Bold', fontSize: (windowWidth < 380 ? 14 : (windowWidth < 400 ? 16 : 18)) * fontSizeScale }}
+                                            className={`text-lg font-bold tracking-tight ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
+                                            numberOfLines={2}
+                                            style={{ fontFamily: 'Pretendard-Bold', fontSize: 18 * fontSizeScale }}
                                         >
                                             {(() => {
                                                 const eventId = event.eventId || '';
@@ -3717,6 +3690,54 @@ export default function Home() {
                     </View>
                 </Modal>
 
+                {/* Custom Alert Modal (Shared with Gate ) */}
+                <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
+                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
+                        <BlurView intensity={40} className="absolute inset-0" />
+                        <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
+                            {/* Icon Area */}
+                            <View className={`w-20 h-20 rounded-full items-center justify-center mb-6 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/10' : 'bg-emerald-50') : (customAlert.type === 'error') ? (isDark ? 'bg-red-500/10' : 'bg-red-50') : (isDark ? 'bg-slate-800' : 'bg-slate-100')}`}>
+                                <View className={`w-14 h-14 rounded-full items-center justify-center ${customAlert.type === 'success' ? 'bg-emerald-500' : (customAlert.type === 'error') ? 'bg-red-500' : 'bg-slate-600'}`}>
+                                    <Ionicons
+                                        name={customAlert.type === 'success' ? 'checkmark' : (customAlert.type === 'error') ? 'close' : 'trash-outline'}
+                                        size={28}
+                                        color="white"
+                                    />
+                                </View>
+                            </View>
+
+                            <Text className={`text-2xl font-black mb-3 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
+                            <Text className={`text-center mb-8 text-base leading-6 font-medium ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
+
+                            {customAlert.type === 'confirm' ? (
+                                <View className="flex-row w-full gap-3">
+                                    <TouchableOpacity
+                                        onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                        className={`flex-1 py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
+                                    >
+                                        <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => {
+                                            setCustomAlert({ ...customAlert, visible: false });
+                                            customAlert.onConfirm?.();
+                                        }}
+                                        className={`flex-[1.5] py-4 rounded-2xl ${isDark ? 'bg-sky-500' : 'bg-sky-600'}`}
+                                    >
+                                        <Text className="text-center font-bold text-base text-white">{t('common.confirm')}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    onPress={() => setCustomAlert({ ...customAlert, visible: false })}
+                                    className={`w-full py-4 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
+                                >
+                                    <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.ok')}</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </Modal>
             </View>
         );
     }
@@ -3917,81 +3938,81 @@ export default function Home() {
                                     <Text className={`text-2xl md:text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.weekly_event_title')}</Text>
                                 </View>
                             </View>
+                            <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
+                                <Pressable
+                                    onPress={() => setTimezone('LOCAL')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 24,
+                                            paddingVertical: 10,
+                                            borderRadius: 12,
+                                            backgroundColor: timezone === 'LOCAL'
+                                                ? '#3b82f6'
+                                                : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
+                                            borderColor: timezone === 'LOCAL' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                            borderWidth: 1,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                >
+                                    <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>Local</Text>
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setTimezone('UTC')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 24,
+                                            paddingVertical: 10,
+                                            borderRadius: 12,
+                                            backgroundColor: timezone === 'UTC'
+                                                ? '#3b82f6'
+                                                : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
+                                            borderColor: timezone === 'UTC' ? '#3b82f6' : (hovered ? (isDark ? '#60a5fa' : '#3b82f6') : 'transparent'),
+                                            borderWidth: 1,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                >
+                                    <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>UTC</Text>
+                                </Pressable>
+                            </View>
 
-                            <View className="flex-row items-center gap-2">
-                                {/* Timezone Group */}
-                                <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
-                                    <Pressable
-                                        onPress={() => setTimezone('LOCAL')}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                paddingHorizontal: isMobile ? 12 : 24,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
-                                                backgroundColor: timezone === 'LOCAL'
-                                                    ? '#3b82f6'
-                                                    : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                cursor: 'pointer'
-                                            }
-                                        ]}
-                                    >
-                                        <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : 'text-[#3b82f6]'}`}>Local</Text>
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={() => setTimezone('UTC')}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                paddingHorizontal: isMobile ? 12 : 24,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
-                                                backgroundColor: timezone === 'UTC'
-                                                    ? '#3b82f6'
-                                                    : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                cursor: 'pointer'
-                                            }
-                                        ]}
-                                    >
-                                        <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : 'text-[#3b82f6]'}`}>UTC</Text>
-                                    </Pressable>
-                                </View>
-
-                                {/* View Mode Group */}
-                                <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                    <Pressable
-                                        onPress={() => setViewMode('timeline')}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                paddingHorizontal: isMobile ? 12 : 20,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
-                                                backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                transition: 'all 0.2s',
-                                            }
-                                        ]}
-                                    >
-                                        <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={() => setViewMode('list')}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                paddingHorizontal: isMobile ? 12 : 20,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
-                                                backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                transition: 'all 0.2s',
-                                            }
-                                        ]}
-                                    >
-                                        <Ionicons name="list" size={20} color={viewMode === 'list' ? 'white' : '#f97316'} />
-                                    </Pressable>
-                                </View>
+                            {/* View Mode Toggle Switch (Orange Point) */}
+                            <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <Pressable
+                                    onPress={() => setViewMode('timeline')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 10,
+                                            borderRadius: 12,
+                                            backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                        }
+                                    ]}
+                                >
+                                    <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
+                                </Pressable>
+                                <Pressable
+                                    onPress={() => setViewMode('list')}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            paddingHorizontal: 20,
+                                            paddingVertical: 10,
+                                            borderRadius: 12,
+                                            backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                        }
+                                    ]}
+                                >
+                                    <Ionicons name="list" size={20} color={viewMode === 'list' ? 'white' : '#f97316'} />
+                                </Pressable>
                             </View>
                         </View>
 
@@ -4544,13 +4565,14 @@ export default function Home() {
                         showsVerticalScrollIndicator={false}
                     >
                         {/* Header */}
-                        <View className="mb-8 px-6 pt-8">
+                        <View className="mb-8 px-6">
                             <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('admin.super_admin_manage')}</Text>
                             <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 30 * fontSizeScale }}>{t('admin.super_dashboard_title')}</Text>
                             <View className="w-10 h-1 bg-sky-500 rounded-full mt-3" />
                         </View>
 
                         {/* Stats / Interactive Tabs */}
+                        {/* Improved Segmented Tab Controls */}
                         <View className="flex-row gap-2 mb-8 px-5">
                             {[
                                 { id: 'pending', label: t('admin.pending_count'), count: allRequests.filter(r => r.status === 'pending').length, icon: 'time-outline', color: 'sky' },
@@ -4624,9 +4646,8 @@ export default function Home() {
                             )}
                         </View>
 
-                        {/* Batch Controls */}
-                        {superAdminTab === 'pending' && selectedReqIds.size > 0 && (
-                            <View className={`flex-row gap-3 mb-8 mx-6 p-4 rounded-[28px] border shadow-xl transition-all ${isDark ? 'bg-slate-900/95 border-sky-500/20' : 'bg-white border-sky-100 shadow-sky-200/40'}`}>
+                        {selectedReqIds.size > 0 && (
+                            <View className={`flex-row gap-3 mb-8 mx-10 p-4 rounded-[24px] border shadow-xl transition-all ${isDark ? 'bg-slate-900/95 border-sky-500/20' : 'bg-white border-sky-100 shadow-sky-200/40'}`}>
                                 <View className="flex-1 flex-row items-center bg-sky-500/10 px-4 py-2 rounded-xl">
                                     <Ionicons name="checkbox" size={18} color="#38bdf8" />
                                     <Text className={`ml-2 font-black text-base ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 16 * fontSizeScale }}>
@@ -4653,61 +4674,115 @@ export default function Home() {
                             </View>
                         )}
 
-                        <View className="px-6">
+                        <View className="px-5">
                             {isSuperAdminLoading ? (
                                 <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 40 }} />
                             ) : (
                                 <View>
                                     {superAdminTab === 'settings' ? (
-                                        <View className="pb-10">
-                                            <View className={`p-5 rounded-[32px] border mb-6 ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                                <View className="flex-row items-center mb-6">
-                                                    <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                                        <Ionicons name="color-palette" size={20} color={isDark ? "#818cf8" : "#4f46e5"} />
+                                        <View className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
+                                            {/* Global Theme Settings Section */}
+                                            <View className={`p-3 rounded-[24px] border shadow-xl ${isDark ? 'bg-slate-900/40 border-slate-800/50' : 'bg-white border-slate-100 shadow-slate-100/50'}`}>
+                                                <BlurView intensity={isDark ? 6 : 12} className="absolute inset-0 rounded-[24px]" />
+
+                                                <View className="flex-row items-center mb-3">
+                                                    <View className={`w-8 h-8 rounded-lg items-center justify-center mr-2.5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                                        <Ionicons name="color-palette" size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
                                                     </View>
                                                     <View>
                                                         <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('admin.themeSettings')}</Text>
-                                                        <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Visual System</Text>
+                                                        <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`} style={{ fontSize: 9 * fontSizeScale }}>Visual System</Text>
                                                     </View>
                                                 </View>
-                                                <View className="flex-row gap-3">
-                                                    <TouchableOpacity
-                                                        onPress={() => { saveGlobalTheme('dark'); setTheme('dark'); }}
-                                                        className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${globalThemeConfig?.defaultMode === 'dark' ? 'bg-indigo-600 border-indigo-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}
-                                                    >
-                                                        <Ionicons name="moon" size={18} color={globalThemeConfig?.defaultMode === 'dark' ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
-                                                        <Text className={`font-black text-xs mt-2 ${globalThemeConfig?.defaultMode === 'dark' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>DARK</Text>
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={() => { saveGlobalTheme('light'); setTheme('light'); }}
-                                                        className={`flex-1 py-4 rounded-2xl border-2 items-center justify-center ${globalThemeConfig?.defaultMode === 'light' ? 'bg-indigo-600 border-indigo-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}
-                                                    >
-                                                        <Ionicons name="sunny" size={18} color={globalThemeConfig?.defaultMode === 'light' ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
-                                                        <Text className={`font-black text-xs mt-2 ${globalThemeConfig?.defaultMode === 'light' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>LIGHT</Text>
-                                                    </TouchableOpacity>
+
+                                                <View className={`p-2.5 rounded-lg border mb-3 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-100'}`}>
+                                                    <Text className={`text-[11px] font-medium leading-4 ${isDark ? 'text-indigo-300/80' : 'text-indigo-700/80'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                        {t('admin.themeSettingsDesc')}
+                                                    </Text>
+                                                </View>
+
+                                                <View className={`p-2 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/50' : 'bg-slate-50 border-slate-200/50'}`}>
+                                                    <Text className={`font-black text-[8px] uppercase tracking-widest mb-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 8 * fontSizeScale }}>{t('admin.defaultThemeMode')}</Text>
+
+                                                    <View className="flex-row gap-2">
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                saveGlobalTheme('dark');
+                                                                setTheme('dark');
+                                                            }}
+                                                            className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${globalThemeConfig?.defaultMode === 'dark' ?
+                                                                'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' :
+                                                                (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}>
+                                                            <Ionicons name="moon" size={16} color={globalThemeConfig?.defaultMode === 'dark' ? "white" : (isDark ? "#94a3b8" : "#64748b")} style={{ marginRight: 6 }} />
+                                                            <Text className={`font-black text-[11px] ${globalThemeConfig?.defaultMode === 'dark' ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1} style={{ fontSize: 11 * fontSizeScale }}>{t('admin.darkMode')}</Text>
+                                                            {globalThemeConfig?.defaultMode === 'dark' && (
+                                                                <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-slate-900">
+                                                                    <Ionicons name="checkmark" size={10} color="white" />
+                                                                </View>
+                                                            )}
+                                                        </TouchableOpacity>
+
+                                                        <TouchableOpacity
+                                                            onPress={() => {
+                                                                saveGlobalTheme('light');
+                                                                setTheme('light');
+                                                            }}
+                                                            className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${globalThemeConfig?.defaultMode === 'light' ?
+                                                                (isDark ? 'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' : 'bg-white border-white shadow-md shadow-slate-200/40') :
+                                                                (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}>
+                                                            <Ionicons name="sunny" size={16} color={globalThemeConfig?.defaultMode === 'light' ? (isDark ? "white" : "#f59e0b") : (isDark ? "#94a3b8" : "#64748b")} style={{ marginRight: 6 }} />
+                                                            <Text className={`font-black text-[11px] ${globalThemeConfig?.defaultMode === 'light' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1} style={{ fontSize: 11 * fontSizeScale }}>{t('admin.lightMode')}</Text>
+                                                            {globalThemeConfig?.defaultMode === 'light' && (
+                                                                <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-white">
+                                                                    <Ionicons name="checkmark" size={10} color="white" />
+                                                                </View>
+                                                            )}
+                                                        </TouchableOpacity>
+                                                    </View>
                                                 </View>
                                             </View>
 
-                                            <View className={`p-5 rounded-[32px] border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
-                                                <View className="flex-row items-center mb-6">
-                                                    <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
-                                                        <Ionicons name="text" size={20} color={isDark ? "#60a5fa" : "#2563eb"} />
+                                            {/* Font Size Settings Section */}
+                                            <View className={`mt-4 p-3 rounded-[24px] border shadow-xl ${isDark ? 'bg-slate-900/40 border-slate-800/50' : 'bg-white border-slate-100 shadow-slate-100/50'}`}>
+                                                <BlurView intensity={isDark ? 6 : 12} className="absolute inset-0 rounded-[24px]" />
+
+                                                <View className="flex-row items-center mb-3">
+                                                    <View className={`w-8 h-8 rounded-lg items-center justify-center mr-2.5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                                        <Ionicons name="text" size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
                                                     </View>
                                                     <View>
                                                         <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('admin.fontSettings')}</Text>
-                                                        <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Accessibility</Text>
+                                                        <Text className={`text-[9px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`} style={{ fontSize: 9 * fontSizeScale }}>Accessibility</Text>
                                                     </View>
                                                 </View>
-                                                <View className="flex-row gap-2">
-                                                    {(['small', 'medium', 'large'] as const).map((size) => (
-                                                        <TouchableOpacity
-                                                            key={size}
-                                                            onPress={() => setFontSize(size)}
-                                                            className={`flex-1 py-3 rounded-xl border-2 items-center justify-center ${fontSize === size ? 'bg-blue-600 border-blue-400' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200')}`}
-                                                        >
-                                                            <Text className={`font-black text-[10px] ${fontSize === size ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>{size.toUpperCase()}</Text>
-                                                        </TouchableOpacity>
-                                                    ))}
+
+                                                <View className={`p-2.5 rounded-lg border mb-3 ${isDark ? 'bg-indigo-500/10 border-indigo-500/20' : 'bg-indigo-50/50 border-indigo-100'}`}>
+                                                    <Text className={`text-[11px] font-medium leading-4 ${isDark ? 'text-indigo-300/80' : 'text-indigo-700/80'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                        {t('admin.fontSettingsDesc')}
+                                                    </Text>
+                                                </View>
+
+                                                <View className={`p-2 rounded-xl border ${isDark ? 'bg-slate-950/40 border-slate-800/50' : 'bg-slate-50 border-slate-200/50'}`}>
+                                                    <View className="flex-row gap-2">
+                                                        {(['small', 'medium', 'large'] as const).map((size) => (
+                                                            <TouchableOpacity
+                                                                key={size}
+                                                                onPress={() => setFontSize(size)}
+                                                                className={`flex-1 flex-row items-center justify-center py-2.5 px-2 rounded-xl border-2 transition-all ${fontSize === size ?
+                                                                    'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/30' :
+                                                                    (isDark ? 'bg-slate-900 border-slate-800 opacity-60' : 'bg-white border-slate-200 opacity-60')}`}
+                                                            >
+                                                                <Text className={`font-black text-[11px] ${fontSize === size ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`} numberOfLines={1} style={{ fontSize: 11 * fontSizeScale }}>
+                                                                    {size === 'small' ? t('admin.fontSmall') : size === 'medium' ? t('admin.fontMedium') : t('admin.fontLarge')}
+                                                                </Text>
+                                                                {fontSize === size && (
+                                                                    <View className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-emerald-500 items-center justify-center border-2 border-white">
+                                                                        <Ionicons name="checkmark" size={10} color="white" />
+                                                                    </View>
+                                                                )}
+                                                            </TouchableOpacity>
+                                                        ))}
+                                                    </View>
                                                 </View>
                                             </View>
                                         </View>
@@ -4721,13 +4796,13 @@ export default function Home() {
                                                     </Text>
                                                 </View>
                                             ) : (
-                                                allRequests.filter(r => (superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved')).map((req) => (
+                                                allRequests.filter(r => superAdminTab === 'pending' ? r.status === 'pending' : r.status === 'approved').map((req) => (
                                                     <View key={req.id} className={`p-4 rounded-[24px] border mb-3 shadow-md ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                                                         <View className="flex-row">
                                                             {superAdminTab === 'pending' && (
                                                                 <TouchableOpacity
                                                                     onPress={() => toggleSelectRequest(req.id)}
-                                                                    className="mr-4 justify-center"
+                                                                    className="mr-6 justify-center"
                                                                 >
                                                                     <View className={`w-10 h-10 rounded-2xl items-center justify-center border-2 ${selectedReqIds.has(req.id) ? 'bg-sky-500 border-sky-500' : (isDark ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200')}`}>
                                                                         {selectedReqIds.has(req.id) && <Ionicons name="checkmark" size={24} color="white" />}
@@ -4806,6 +4881,7 @@ export default function Home() {
                         </View>
                     </ScrollView>
 
+                    {/* Floating Close Button */}
                     <TouchableOpacity
                         onPress={() => setIsSuperAdminDashboardVisible(false)}
                         className="absolute top-6 right-6 w-14 h-14 rounded-full bg-sky-500 items-center justify-center shadow-2xl border-2 border-white/20"
@@ -4814,7 +4890,7 @@ export default function Home() {
                         <Ionicons name="close" size={32} color="white" />
                     </TouchableOpacity>
                 </View>
-            </Modal>
+            </Modal >
 
             <Modal visible={adminDashboardVisible} animationType="slide" onRequestClose={() => setAdminDashboardVisible(false)}>
                 <AdminManagement
@@ -5267,6 +5343,11 @@ export default function Home() {
                     </View>
                 </View>
             </Modal>
-        </View>
+
+
+
+
+
+        </View >
     );
 }

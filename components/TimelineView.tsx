@@ -76,10 +76,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     // Fixed Korean day names for internal parsing logic (since data source uses Korean)
     const KR_DAYS_PARSER = ['일', '월', '화', '수', '목', '금', '토'];
 
-    const formatTs = (ts: number, timeOnly = false, tzOverride?: 'LOCAL' | 'UTC') => {
+    const formatTs = (ts: number, timeOnly = false) => {
         const d = new Date(ts);
-        const targetTz = tzOverride || timezone;
-        if (targetTz === 'UTC') {
+        if (timezone === 'UTC') {
             const dw = d.getUTCDay();
             const dy = dayNames[dw];
             const timeStr = `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
@@ -98,8 +97,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
         // Check for startDate first (one-time events)
         const startDate = ev.startDate;
         if (startDate) {
-            const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, altTimeText: string, isWeekly?: boolean, label?: string }[] = [];
-            const altTz = timezone === 'LOCAL' ? 'UTC' : 'LOCAL';
+            // Convert startDate to a format the timeline can process
+            // Extract first time from the time field
             const timeStr = ev.time || '00:00';
             const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})/);
             const finalTime = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
@@ -118,6 +117,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
             // Let the ISO single date parser handle it
             const fullComb = specificDateComb;
+            const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean, label?: string }[] = [];
 
             const parseDateVal = (dStr: string, tStr: string) => {
                 if (!dStr) return null;
@@ -148,8 +148,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                             st, et, isR: true,
                             left: `${leftPct.toFixed(4)}%`,
                             width: `${widthPct.toFixed(4)}%`,
-                            timeText: `${formatTs(st)} ~ ${formatTs(et)}`,
-                            altTimeText: `${formatTs(st, false, altTz)} ~ ${formatTs(et, false, altTz)}`
+                            timeText: `${formatTs(st)} ~ ${formatTs(et)}`
                         });
                     }
                 }
@@ -164,8 +163,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
         const eventIdString = ev.id || ev.eventId || '';
         const isBearHunt = eventIdString.toLowerCase().includes('bear');
 
-        const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, altTimeText: string, isWeekly?: boolean, label?: string }[] = [];
-        const altTz = timezone === 'LOCAL' ? 'UTC' : 'LOCAL';
+        const res: { st: number, et: number, isR: boolean, left: string, width: string, timeText: string, isWeekly?: boolean, label?: string }[] = [];
         const localStart = winStart;
 
         // Split by '/' to handle multiple distinct time slots (Team 1 / Team 2)
@@ -227,7 +225,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                 left: `${leftPct.toFixed(4)}%`,
                                 width: `${widthPct.toFixed(4)}%`,
                                 timeText: `${formatTs(st)} ~ ${formatTs(et)}`,
-                                altTimeText: `${formatTs(st, false, altTz)} ~ ${formatTs(et, false, altTz)}`,
                                 label: label || undefined
                             });
                         }
@@ -269,7 +266,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
                 subParts.forEach(sp => {
                     const cleanSp = sp.trim().replace(/^.*(요새전|성채전|Fortress|Citadel)[:\s：]*/, '').trim();
-                    const match = cleanSp.match(/(.+?)\s+([일월화수목금토])\s*(\d{1,2}:\d{2})/) || cleanSp.match(/([일월화수목금토])\s*(\d{1,2}:\d{2})/);
+                    const match = cleanSp.match(/(.+?)\s+([월화수목금토일])\s*(\d{1,2}:\d{2})/) || cleanSp.match(/([월화수목금토일])\s*(\d{1,2}:\d{2})/);
 
                     if (match) {
                         specificHandled = true;
@@ -299,7 +296,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                             left: `${leftPct.toFixed(4)}%`,
                                             width: `${widthPct.toFixed(4)}%`,
                                             timeText: `${formatTs(st)} ~ ${formatTs(et)}`,
-                                            altTimeText: `${formatTs(st, false, altTz)} ~ ${formatTs(et, false, altTz)}`,
                                             label: label
                                         });
                                     }
@@ -445,8 +441,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 const leftPct = (s - winStart) / totalMs * 100;
                 const widthPct = b.et >= winEnd ? (100 - leftPct) : ((e - s) / totalMs * 100);
 
-                const isSameDay = formatTs(b.st).split(' ')[0] === formatTs(b.et).split(' ')[0];
-                const altTz = timezone === 'LOCAL' ? 'UTC' : 'LOCAL';
+                const isSameDay = timezone === 'UTC'
+                    ? (new Date(b.st).getUTCDate() === new Date(b.et).getUTCDate())
+                    : (new Date(b.st).getDate() === new Date(b.et).getDate());
+
                 res.push({
                     st: b.st,
                     et: b.et,
@@ -457,9 +455,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     timeText: b.isR
                         ? (isSameDay ? `${formatTs(b.st)} ~ ${formatTs(b.et, true)}` : `${formatTs(b.st)} ~ ${formatTs(b.et)}`)
                         : formatTs(b.st),
-                    altTimeText: b.isR
-                        ? (isSameDay ? `${formatTs(b.st, false, altTz)} ~ ${formatTs(b.et, true, altTz)}` : `${formatTs(b.st, false, altTz)} ~ ${formatTs(b.et, false, altTz)}`)
-                        : formatTs(b.st, false, altTz),
                     label: label || undefined
                 });
             });
@@ -604,15 +599,19 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     const mv = (timezone === 'UTC' ? d.getUTCMonth() : d.getMonth()) + 1;
                     return (
                         <View key={`day-header-${i}`} className="flex-1 items-center">
-                            <View className={`items-center px-4 py-2 rounded-2xl ${isToday ? 'bg-[#f97316] shadow-lg scale-110' : ''}`}>
-                                <Text className={`font-black mb-0.5 ${isToday ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 13 * fontSizeScale }}>
+                            <View className={`items-center w-full max-w-[48px] py-1.5 rounded-xl ${isToday ? 'bg-[#f97316] shadow-md' : 'bg-transparent'}`}>
+                                <Text className={`font-bold mb-0.5 ${isToday ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: 12 * fontSizeScale }}>
                                     {dayNames[dIdx]}
                                 </Text>
-                                <Text className={`font-black ${isToday ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-700')}`} style={{ fontSize: 16 * fontSizeScale }}>
+                                <Text className={`font-black tracking-tighter ${isToday ? 'text-white' : (isDark ? 'text-slate-200' : 'text-slate-700')}`} style={{ fontSize: 16 * fontSizeScale }}>
                                     {mv}/{dv}
                                 </Text>
                             </View>
-                            {isToday && <View className="w-2 h-2 rounded-full bg-orange-500 mt-2 shadow-sm" />}
+                            {isToday ? (
+                                <View className="w-1.5 h-1.5 rounded-full bg-[#f97316] mt-1.5 shadow-sm" />
+                            ) : (
+                                <View className="w-1.5 h-1.5 mt-1.5" />
+                            )}
                         </View>
                     );
                 })}
@@ -625,7 +624,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 scrollEventThrottle={16}
             >
                 <Pressable
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, minHeight: 1200 }}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, minHeight: '100%' }}
                     onPress={() => setSelectedBarId(null)}
                 />
                 <View className="absolute inset-x-0 top-0 bottom-0 flex-row pointer-events-none">
@@ -767,7 +766,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                     {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-4 h-4 rounded-full" />}
                                                                                 </View>
                                                                             )}
-                                                                            <Text key="title-text" className="text-white font-black flex-1 tracking-tight" numberOfLines={1} style={{ fontSize: 11 * fontSizeScale }}>
+                                                                            <Text key="title-text" className="text-white font-black flex-1 tracking-tight" numberOfLines={1} style={{ fontSize: 13 * fontSizeScale }}>
                                                                                 {t(`events.${(ev._original?.id || ev.id || ev.eventId || '').replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '')}_title`, { defaultValue: ev.title })}
                                                                             </Text>
                                                                             {isActive && (
@@ -801,7 +800,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                     )}
                                                                                 </View>
                                                                                 <View className="flex-1">
-                                                                                    <Text className={`font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
+                                                                                    <Text className={`font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>
                                                                                         {(() => {
                                                                                             const eventId = ev._original?.id || ev.id || ev.eventId || '';
                                                                                             const baseId = eventId.replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '');
@@ -821,29 +820,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                 </View>
                                                                             </View>
 
-                                                                            <View className={`p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
-                                                                                <View className="flex-row items-center mb-1">
-                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
-                                                                                    <Text
-                                                                                        className={`font-mono font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
-                                                                                        numberOfLines={1}
-                                                                                        style={{ fontSize: 13 * fontSizeScale }}
-                                                                                    >
-                                                                                        {p.timeText}
-                                                                                    </Text>
-                                                                                    <Text className={`ml-2 text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{timezone}</Text>
-                                                                                </View>
-                                                                                <View className="flex-row items-center opacity-70">
-                                                                                    <View className="w-3.5 h-[1px] bg-slate-500 mr-2 ml-0.5" />
-                                                                                    <Text
-                                                                                        className={`font-mono font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}
-                                                                                        numberOfLines={1}
-                                                                                        style={{ fontSize: 11 * fontSizeScale }}
-                                                                                    >
-                                                                                        {p.altTimeText}
-                                                                                    </Text>
-                                                                                    <Text className={`ml-2 text-[9px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-500'}`}>{timezone === 'LOCAL' ? 'UTC' : 'LOCAL'}</Text>
-                                                                                </View>
+                                                                            <View className={`flex-row items-center p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
+                                                                                <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
+                                                                                <Text
+                                                                                    className={`font-mono font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
+                                                                                    numberOfLines={1}
+                                                                                    style={{ fontSize: 12 * fontSizeScale }}
+                                                                                >
+                                                                                    {p.timeText}
+                                                                                </Text>
                                                                             </View>
 
                                                                             <View className="mt-4 flex-row items-center justify-between">
