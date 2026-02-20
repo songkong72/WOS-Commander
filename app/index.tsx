@@ -3403,28 +3403,7 @@ export default function Home() {
                                     <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={isDark ? "#f59e0b" : "#f59e0b"} />
                                 </Pressable>
 
-                                {/* Settings Link */}
-                                <Pressable
-                                    onPress={() => router.push('/settings')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: hovered ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                                            marginLeft: 4,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons name="settings-outline" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </Pressable>
+
                             </View>
 
 
