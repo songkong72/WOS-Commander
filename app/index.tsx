@@ -3429,7 +3429,7 @@ export default function Home() {
 
 
 
-                            <View className="items-center justify-center mb-6">
+                            <View className="items-center justify-center mb-6" style={{ marginTop: 46 }}>
                                 <View className="w-24 h-24 rounded-[32px] bg-white/10 items-center justify-center border border-white/20 shadow-2xl overflow-hidden mb-2">
                                     <Image
                                         source={require('../assets/icon.png')}
