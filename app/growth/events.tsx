@@ -238,7 +238,7 @@ interface EventCardProps {
     onLayout: (y: number) => void;
 }
 
-const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = true, syncKey, containerBgColor }: any) => {
+const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = true, syncKey, containerBgColor, lines = 3 }: any) => {
     const itemHeight = 44;
     const flatListRef = useRef<FlatList>(null);
     const [localActiveValue, setLocalActiveValue] = useState(value);
@@ -355,19 +355,23 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
     };
 
     return (
-        <View style={{ width, height: itemHeight * 3, overflow: 'hidden' }} className="relative">
-            <LinearGradient
-                colors={[containerBgColor || (isDark ? '#0f172a' : '#ffffff'), `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, 'transparent']}
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
-                pointerEvents="none"
-            />
-            <LinearGradient
-                colors={['transparent', `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, containerBgColor || (isDark ? '#0f172a' : '#ffffff')]}
-                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
-                pointerEvents="none"
-            />
+        <View style={{ width, height: itemHeight * lines, overflow: 'hidden' }} className="relative">
+            {lines > 1 && (
+                <LinearGradient
+                    colors={[containerBgColor || (isDark ? '#0f172a' : '#ffffff'), `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, 'transparent']}
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
+                    pointerEvents="none"
+                />
+            )}
+            {lines > 1 && (
+                <LinearGradient
+                    colors={['transparent', `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, containerBgColor || (isDark ? '#0f172a' : '#ffffff')]}
+                    style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
+                    pointerEvents="none"
+                />
+            )}
             {showHighlight && (
-                <View pointerEvents="none" style={{ position: 'absolute', top: itemHeight, left: 4, right: 4, height: itemHeight, backgroundColor: isDark ? '#38bdf815' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf830' : '#38bdf820', zIndex: 10 }} />
+                <View pointerEvents="none" style={{ position: 'absolute', top: itemHeight * Math.floor(lines / 2), left: 4, right: 4, height: itemHeight, backgroundColor: isDark ? '#38bdf815' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf830' : '#38bdf820', zIndex: 10 }} />
             )}
 
             <FlatList
@@ -379,7 +383,7 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                 snapToAlignment="center"
                 decelerationRate="fast"
                 disableIntervalMomentum={true}
-                contentContainerStyle={{ paddingVertical: itemHeight }}
+                contentContainerStyle={{ paddingVertical: itemHeight * Math.floor(lines / 2) }}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 onMomentumScrollEnd={handleScrollEnd}
@@ -438,7 +442,7 @@ const EventCard = memo(({
     const [wikiHover, setWikiHover] = useState(false);
 
     const isUpcoming = !isOngoing && !isExpired;
-    const textColor = isUpcoming ? (isDark ? 'text-slate-400' : 'text-slate-500') : (isDark ? 'text-white' : 'text-slate-900');
+    const textColor = isExpired ? (isDark ? 'text-slate-500' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900');
 
     const renderStartEndPeriod = (str: string, textClass: string, isUtc = false) => {
         const formatted = formatDisplayDate(str, t, isUtc ? 'UTC' : 'LOCAL');
@@ -552,9 +556,8 @@ const EventCard = memo(({
                             </Pressable>
                         )}
                     </View>
-                    {/* Event Description (Added for cleaner design) */}
                     {!!event.description && (
-                        <Text className={`mb-3 leading-6 ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'} ${isOngoing ? (isDark ? 'text-white' : 'text-[#333D4B]') : ''}`} numberOfLines={isOngoing ? undefined : 1} style={{ fontSize: 15 * fontSizeScale }}>
+                        <Text className={`mb-3 leading-6 ${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]')}`} numberOfLines={isOngoing ? undefined : 1} style={{ fontSize: 15 * fontSizeScale }}>
                             {t(`events.${event.id}_description`, { defaultValue: event.description })}
                         </Text>
                     )}
@@ -1184,7 +1187,8 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                 <View style={{ flex: 2.2, marginRight: 8 }}>
                     <TouchableOpacity
                         onPress={() => setShowDatePicker(type)}
-                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
+                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} px-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
+                        style={{ height: 52 }}
                     >
                         <View className="flex-row items-center flex-1">
                             <Ionicons name="calendar" size={16} color="#38bdf8" style={{ marginRight: 10 }} />
@@ -1196,68 +1200,37 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
                     </TouchableOpacity>
                 </View>
 
-                {/* Hour Selection */}
-                <View style={{ flex: 0.9, marginRight: 8, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'h') ? 20000 : 1, overflow: 'visible' }}>
-                    <TouchableOpacity
-                        onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? null : { type, field: 'h' })}
-                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
-                    >
-                        <View className="flex-row items-center">
-                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{h}{t('common.hour')}</Text>
-                        </View>
-                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'h' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
-                    </TouchableOpacity>
-                    {activeDateDropdown?.type === type && activeDateDropdown.field === 'h' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 rounded-2xl border overflow-hidden shadow-2xl z-[50000] elevation-25 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`} style={{ height: 208 }}>
-                            <FlatList
-                                data={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
-                                renderItem={({ item: hour }) => (
-                                    <TouchableOpacity
-                                        onPress={() => { onChange(`${datePart} ${hour}:${m}`); setActiveDateDropdown(null); }}
-                                        className={`h-11 items-center justify-center border-b ${h === hour ? (isDark ? 'bg-sky-500/25 border-sky-500/20' : 'bg-sky-50 border-sky-100') : (isDark ? 'border-slate-700/30' : 'border-slate-100')}`}
-                                    >
-                                        <Text className={`font-bold text-sm ${h === hour ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{hour}{t('common.hour')}</Text>
-                                    </TouchableOpacity>
-                                )}
-                                keyExtractor={item => item}
-                                showsVerticalScrollIndicator={true}
-                                initialScrollIndex={Math.max(0, parseInt(h) - 2)}
-                                getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+                {/* Unified Inline Time Selection */}
+                <View style={{ flex: 2.2, height: 52, overflow: 'hidden' }} className={`rounded-2xl border shadow-inner ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'} justify-center`}>
+                    <View className="flex-row items-center justify-center px-4">
+                        <View className="flex-1">
+                            <WheelPicker
+                                options={Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'))}
+                                value={h}
+                                onChange={(val: string) => onChange(`${datePart} ${val}:${m}`)}
+                                isDark={isDark}
+                                width="100%"
+                                showHighlight={false}
+                                containerBgColor="transparent"
+                                syncKey={value}
+                                lines={1}
                             />
                         </View>
-                    )}
-                </View>
-
-                {/* Minute Selection */}
-                <View style={{ flex: 0.9, zIndex: (activeDateDropdown?.type === type && activeDateDropdown?.field === 'min') ? 20000 : 1, overflow: 'visible' }}>
-                    <TouchableOpacity
-                        onPress={() => setActiveDateDropdown(activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? null : { type, field: 'min' })}
-                        className={`${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white border-slate-200'} p-3.5 rounded-2xl border flex-row justify-between items-center shadow-inner`}
-                    >
-                        <View className="flex-row items-center">
-                            <Ionicons name="time" size={16} color="#38bdf8" style={{ marginRight: 6 }} />
-                            <Text className={`font-semibold text-[15px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{m}{t('common.minute')}</Text>
-                        </View>
-                        <Ionicons name={activeDateDropdown?.type === type && activeDateDropdown?.field === 'min' ? "chevron-up" : "chevron-down"} size={14} color="#475569" />
-                    </TouchableOpacity>
-                    {activeDateDropdown?.type === type && activeDateDropdown.field === 'min' && (
-                        <View className={`absolute ${type === 'end' ? 'bottom-[65px]' : 'top-[65px]'} left-0 right-0 rounded-2xl border overflow-hidden shadow-2xl z-[50000] elevation-25 ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-200'}`} style={{ height: 208 }}>
-                            <FlatList
-                                data={['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']}
-                                renderItem={({ item: min }) => (
-                                    <TouchableOpacity
-                                        onPress={() => { onChange(`${datePart} ${h}:${min}`); setActiveDateDropdown(null); }}
-                                        className={`h-11 items-center justify-center border-b ${m === min ? (isDark ? 'bg-sky-500/25 border-sky-500/20' : 'bg-sky-50 border-sky-100') : (isDark ? 'border-slate-700/30' : 'border-slate-100')}`}
-                                    >
-                                        <Text className={`font-bold text-sm ${m === min ? 'text-sky-400' : (isDark ? 'text-slate-300' : 'text-slate-600')}`}>{min}{t('common.minute')}</Text>
-                                    </TouchableOpacity>
-                                )}
-                                keyExtractor={item => item}
-                                showsVerticalScrollIndicator={true}
+                        <Text className={`text-xl font-black mx-2 z-10 opacity-50 ${isDark ? 'text-sky-400' : 'text-slate-400'}`}>:</Text>
+                        <View className="flex-1">
+                            <WheelPicker
+                                options={['00', '10', '20', '30', '40', '50']}
+                                value={m}
+                                onChange={(val: string) => onChange(`${datePart} ${h}:${val}`)}
+                                isDark={isDark}
+                                width="100%"
+                                showHighlight={false}
+                                containerBgColor="transparent"
+                                syncKey={value}
+                                lines={1}
                             />
                         </View>
-                    )}
+                    </View>
                 </View>
             </View>
         </View>
@@ -2406,8 +2379,19 @@ export default function EventTracker() {
             const now = new Date();
             const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} 09:00`;
 
-            setMStart(s || defaultStr);
-            setMEnd(e || defaultStr);
+            const parseDateRangeStr = (str: string) => {
+                if (!str) return defaultStr;
+                const match = str.match(/(.*?)\s*(?:(\d{1,2}:\d{2}))?$/);
+                if (match) {
+                    const datePart = match[1].trim();
+                    const extractedTime = match[2] || '09:00';
+                    return `${datePart} ${extractedTime}`;
+                }
+                return defaultStr;
+            };
+
+            setMStart(s ? parseDateRangeStr(s) : defaultStr);
+            setMEnd(e ? parseDateRangeStr(e) : defaultStr);
 
             // For date range events, use the common recurrence states
             setIsRecurring(!!event.isRecurring);
@@ -3648,7 +3632,7 @@ export default function EventTracker() {
                                                         />
                                                         <Text className={`text-lg font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>:</Text>
                                                         <WheelPicker
-                                                            options={Array.from({ length: 60 }, (_, i) => pad(i))}
+                                                            options={Array.from({ length: 6 }, (_, i) => pad(i * 10))}
                                                             value={editMinute}
                                                             onChange={setEditMinute}
                                                             isDark={isDark}
@@ -3678,10 +3662,10 @@ export default function EventTracker() {
                                         <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 150 }}>
                                             {(() => {
                                                 return (
-                                                    <View className={`mt-6 p-4 rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700/30' : 'bg-slate-100 border-slate-200'}`} style={{ zIndex: 50 }}>
+                                                    <View className={`mt-6 p-4 rounded-2xl border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`} style={{ zIndex: 50 }}>
                                                         <View className="flex-row items-center mb-4">
                                                             <Ionicons name="calendar-number-outline" size={16} color={isDark ? "#94a3b8" : "#64748b"} style={{ marginRight: 6 }} />
-                                                            <Text className="text-brand-accent text-xs font-bold uppercase">{t('events.set_schedule')}</Text>
+                                                            <Text className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{t('events.set_schedule')}</Text>
                                                         </View>
                                                         <RenderDateSelector
                                                             label={t('events.start_datetime')}
