@@ -2731,42 +2731,47 @@ export default function Home() {
             return 'calendar-clear-outline';
         };
 
-        const checkIsSoon = (str: string) => {
-            if (!str) return false;
+        const getSoonRemainingSeconds = (str: string) => {
+            if (!str) return null;
             // 월요일~일요일이 한 주 (월요일 00:00 리셋)
             const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
             const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
-            const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
-            const totalWeekMinutes = 7 * 1440;
+            const currentTotalSec = currentDay * 86400 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            const totalWeekSec = 7 * 86400;
 
             const dateRangeMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d\s~\.\/-]*\s*(\d{2}):(\d{2})/);
             if (dateRangeMatch) {
                 const [_, y, m, d, h, min] = dateRangeMatch;
-                const start = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+                const currentYear = now.getFullYear();
+                const start = new Date(parseInt(y || currentYear.toString()), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
                 if (!isNaN(start.getTime())) {
-                    const diff = (start.getTime() - now.getTime()) / 60000;
-                    return diff > 0 && diff <= 30;
+                    const diff = (start.getTime() - now.getTime()) / 1000;
+                    if (diff > 0 && diff <= 1800) return Math.floor(diff);
                 }
             }
 
             const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
             if (explicitMatches.length > 0) {
-                return explicitMatches.some(m => {
+                let minDiff: number | null = null;
+                explicitMatches.forEach(m => {
                     const dayStr = m[1];
                     const h = parseInt(m[2]);
                     const min = parseInt(m[3]);
                     const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-                    return scheduledDays.some(d => {
+                    scheduledDays.forEach(d => {
                         const dayOffset = dayMapObj[d];
-                        if (dayOffset === undefined) return false;
-                        let startTotal = dayOffset * 1440 + h * 60 + min;
-                        let diff = startTotal - currentTotal;
-                        if (diff < 0) diff += totalWeekMinutes;
-                        return diff > 0 && diff <= 30;
+                        if (dayOffset === undefined) return;
+                        let startTotalSec = dayOffset * 86400 + h * 3600 + min * 60;
+                        let diff = startTotalSec - currentTotalSec;
+                        if (diff < 0) diff += totalWeekSec;
+                        if (diff > 0 && diff <= 1800) {
+                            if (minDiff === null || diff < minDiff) minDiff = diff;
+                        }
                     });
                 });
+                return minDiff;
             }
-            return false;
+            return null;
         };
 
         const windowWidth = Dimensions.get('window').width;
@@ -2876,7 +2881,8 @@ export default function Home() {
                     const formattedDateRange = getFormattedDateRange();
 
 
-                    const isUpcomingSoon = !isActive && !isExpired && (checkIsSoon(displayDay) || checkIsSoon(displayTime));
+                    const remSoonSeconds = !isActive && !isExpired ? (getSoonRemainingSeconds(displayDay) ?? getSoonRemainingSeconds(displayTime)) : null;
+                    const isUpcomingSoon = remSoonSeconds !== null;
 
                     return isActive ? (
                         <View className={`w-full rounded-[24px] overflow-hidden shadow-toss transition-all`} style={{
@@ -3095,7 +3101,14 @@ export default function Home() {
                                                             const parts = formattedLine.split(' ');
 
                                                             return (
-                                                                <Text key={idx} className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale }}>
+                                                                <Text
+                                                                    key={idx}
+                                                                    className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
+                                                                    numberOfLines={1}
+                                                                    adjustsFontSizeToFit={true}
+                                                                    minimumFontScale={0.7}
+                                                                    style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale }}
+                                                                >
                                                                     {parts.map((part, pIdx) => {
                                                                         // Identify keywords (FortressN, CitadelN)
                                                                         const isKeyword = /^(요새|성채)\d+/.test(part);
@@ -3123,7 +3136,15 @@ export default function Home() {
                                 </View>
 
                                 {/* Right Side Status/Action - Enhanced Affordance */}
-                                <View className="pl-2">
+                                <View className="flex-row items-center pl-2">
+                                    {isUpcomingSoon && remSoonSeconds !== null && (
+                                        <View className="mr-3 items-end" style={{ width: 65 }}>
+                                            <Text className="text-[10px] font-black text-amber-500 uppercase tracking-tighter" style={{ marginBottom: -2 }}>Starts In</Text>
+                                            <Text className="text-lg font-black text-amber-500 tabular-nums" style={{ fontFamily: 'Orbitron' }}>
+                                                {formatRemainingTime(remSoonSeconds)}
+                                            </Text>
+                                        </View>
+                                    )}
                                     {isExpired ? (
                                         <View className={`px-3 py-1.5 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                                             <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Ended</Text>
@@ -3913,25 +3934,31 @@ export default function Home() {
                 <View className={`w-full items-center z-50 py-3 ${isDark ? 'bg-[#060b14]/95' : 'bg-slate-50/95'}`} style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#1e293b' : '#e2e8f0' }}>
                     <View className="w-full max-w-6xl">
                         {/* Weekly Program Title & Timezone */}
-                        <View className={`flex-row flex-wrap items-center justify-between gap-y-4 px-6 py-5 border ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
-                            <View className="flex-row items-center">
-                                <View className="w-1.5 h-10 rounded-full mr-5 bg-[#38bdf8]" />
+                        <View className={`flex-row items-center justify-between px-3 md:px-6 py-3 md:py-5 border ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
+                            <View className="flex-row items-center flex-1 mr-2">
+                                <View className={`w-1 h-6 md:w-1.5 md:h-10 rounded-full ${windowWidth < 380 ? 'mr-2' : 'mr-5'} bg-[#38bdf8]`} />
                                 <View>
-                                    <Text className={`text-[11px] font-black tracking-[0.25em] uppercase mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Weekly Program</Text>
-                                    <Text className={`text-2xl md:text-3xl font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.weekly_event_title')}</Text>
+                                    {windowWidth > 400 && (
+                                        <Text className={`text-[11px] font-black tracking-[0.25em] uppercase mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Weekly Program</Text>
+                                    )}
+                                    <Text className={`font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: (windowWidth < 380 ? 20 : 24) * fontSizeScale }}>
+                                        {t('dashboard.weekly_event_title')}
+                                    </Text>
                                 </View>
                             </View>
 
-                            <View className="flex-row items-center gap-2">
+                            <View className="flex-row items-center gap-1 md:gap-2">
                                 {/* Timezone Group */}
-                                <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
+                                <View className={`flex-row p-0.5 md:p-1 rounded-[14px] md:rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200 shadow-inner'}`}>
                                     <Pressable
                                         onPress={() => setTimezone('LOCAL')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: isMobile ? 12 : 24,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
+                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 24),
+                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                                 backgroundColor: timezone === 'LOCAL'
                                                     ? '#3b82f6'
                                                     : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
@@ -3941,15 +3968,17 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Text className={`text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : 'text-[#3b82f6]'}`}>Local</Text>
+                                        <Text className={`text-[11px] md:text-[14px] font-black ${timezone === 'LOCAL' ? 'text-white' : 'text-[#3b82f6]'}`}>Local</Text>
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setTimezone('UTC')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: isMobile ? 12 : 24,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
+                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 24),
+                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                                 backgroundColor: timezone === 'UTC'
                                                     ? '#3b82f6'
                                                     : (hovered ? (isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)') : 'transparent'),
@@ -3959,41 +3988,45 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Text className={`text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : 'text-[#3b82f6]'}`}>UTC</Text>
+                                        <Text className={`text-[11px] md:text-[14px] font-black ${timezone === 'UTC' ? 'text-white' : 'text-[#3b82f6]'}`}>UTC</Text>
                                     </Pressable>
                                 </View>
 
                                 {/* View Mode Group */}
-                                <View className={`flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
+                                <View className={`flex-row p-0.5 md:p-1 rounded-[14px] md:rounded-2xl border ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                                     <Pressable
                                         onPress={() => setViewMode('timeline')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: isMobile ? 12 : 20,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
+                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 20),
+                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                                 backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
                                                 transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                                 transition: 'all 0.2s',
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="analytics" size={18} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
+                                        <Ionicons name="analytics" size={windowWidth < 380 ? 16 : 20} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setViewMode('list')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: isMobile ? 12 : 20,
-                                                paddingVertical: 10,
-                                                borderRadius: 12,
+                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 20),
+                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
                                                 backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
                                                 transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                                 transition: 'all 0.2s',
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="list" size={20} color={viewMode === 'list' ? 'white' : '#f97316'} />
+                                        <Ionicons name="list" size={windowWidth < 380 ? 16 : 20} color={viewMode === 'list' ? 'white' : '#f97316'} />
                                     </Pressable>
                                 </View>
                             </View>
@@ -4015,10 +4048,10 @@ export default function Home() {
                                             style={({ pressed, hovered }: any) => [
                                                 {
                                                     flex: 1,
-                                                    paddingVertical: 14,
-                                                    paddingHorizontal: 12,
-                                                    borderTopLeftRadius: 16,
-                                                    borderTopRightRadius: 16,
+                                                    paddingVertical: windowWidth < 380 ? 10 : 14,
+                                                    paddingHorizontal: windowWidth < 380 ? 4 : 12,
+                                                    borderTopLeftRadius: windowWidth < 380 ? 12 : 16,
+                                                    borderTopRightRadius: windowWidth < 380 ? 12 : 16,
                                                     flexDirection: 'row',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
@@ -4047,17 +4080,17 @@ export default function Home() {
                                                 <>
                                                     <Ionicons
                                                         name={tab.icon as any}
-                                                        size={16}
+                                                        size={windowWidth < 380 ? 14 : 16}
                                                         color={isActive
                                                             ? (isDark ? tab.color : '#fff')
                                                             : (hovered ? (isDark ? '#94a3b8' : '#64748b') : (isDark ? '#475569' : '#94a3b8'))
                                                         }
-                                                        style={{ marginRight: 6 }}
+                                                        style={{ marginRight: windowWidth < 380 ? 4 : 6 }}
                                                     />
-                                                    <Text className={`font-black tracking-tighter text-sm ${isActive
+                                                    <Text className={`font-black tracking-tighter ${windowWidth < 380 ? 'text-[13px]' : 'text-sm'} ${isActive
                                                         ? (isDark ? 'text-white' : 'text-white')
                                                         : (hovered ? (isDark ? 'text-slate-300' : 'text-slate-700') : (isDark ? 'text-slate-600' : 'text-slate-400'))}`}>
-                                                        {tab.label} <Text className={`ml-1 font-black ${isActive ? 'text-white' : 'opacity-80'} text-lg`}>{tab.count}</Text>
+                                                        {tab.label} <Text className={`font-black ${isActive ? 'text-white' : 'opacity-80'}`} style={{ fontSize: (windowWidth < 380 ? 14 : 18) * fontSizeScale }}>{tab.count}</Text>
                                                     </Text>
                                                 </>
                                             )}
