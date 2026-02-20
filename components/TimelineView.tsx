@@ -692,7 +692,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                             if (Platform.OS === 'web' && !('ontouchstart' in window)) {
                                                                 onEventPress(ev);
                                                             } else {
-                                                                setSelectedBarId(selectedBarId === barKey ? null : barKey);
+                                                                if (selectedBarId === barKey) {
+                                                                    // Second tap: Open the modal (admin scheduling or user guide)
+                                                                    onEventPress(ev);
+                                                                    // Optionally close the tooltip
+                                                                    setSelectedBarId(null);
+                                                                } else {
+                                                                    // First tap: Show the tooltip
+                                                                    setSelectedBarId(barKey);
+                                                                }
                                                             }
                                                         }}
                                                         // @ts-ignore
