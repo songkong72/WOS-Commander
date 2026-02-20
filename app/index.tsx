@@ -3297,6 +3297,29 @@ export default function Home() {
                                     <Ionicons name="book-outline" size={20} color="#f59e0b" />
                                 </Pressable>
 
+                                {/* Temporary Theme Toggle */}
+                                <Pressable
+                                    onPress={toggleTemporaryTheme}
+                                    style={({ pressed, hovered }: any) => [
+                                        {
+                                            width: 36,
+                                            height: 36,
+                                            borderRadius: 10,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: hovered ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)') : 'transparent',
+                                            marginLeft: 4,
+                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
+                                            transition: 'all 0.2s',
+                                            cursor: 'pointer'
+                                        }
+                                    ]}
+                                    // @ts-ignore
+                                    tabIndex={-1}
+                                >
+                                    <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={isDark ? "#f59e0b" : "#f59e0b"} />
+                                </Pressable>
+
                                 <Pressable
                                     onPress={handleResetSettings}
                                     style={({ pressed, hovered }: any) => [
@@ -3380,28 +3403,7 @@ export default function Home() {
                                         color={language === 'en' ? 'white' : '#64748b'}
                                     />
                                 </Pressable>
-                                {/* Temporary Theme Toggle */}
-                                <Pressable
-                                    onPress={toggleTemporaryTheme}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: hovered ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)') : 'transparent',
-                                            marginLeft: 4,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={isDark ? "#f59e0b" : "#f59e0b"} />
-                                </Pressable>
+
 
 
                             </View>
