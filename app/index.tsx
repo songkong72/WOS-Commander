@@ -3417,8 +3417,14 @@ export default function Home() {
 
 
 
-                            <View className={`w-12 h-12 rounded-2xl ${isRegisterMode ? 'bg-amber-500/20 shadow-amber-500/20' : 'bg-sky-500/20 shadow-sky-500/20'} items-center justify-center mb-3 border ${isRegisterMode ? 'border-amber-400/30' : 'border-sky-400/30'} shadow-lg`}>
-                                <Ionicons name="snow" size={28} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
+                            <View className="items-center justify-center mb-6">
+                                <View className="w-24 h-24 rounded-[32px] bg-white/10 items-center justify-center border border-white/20 shadow-2xl overflow-hidden mb-2">
+                                    <Image
+                                        source={require('../assets/icon.png')}
+                                        style={{ width: 80, height: 80 }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
                             </View>
                             <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'} text-center tracking-tighter`} style={{ fontSize: (isMobile ? 20 : 24) * fontSizeScale }}>{t('dashboard.title')}</Text>
                             <Text className={`${isRegisterMode ? (isDark ? 'text-amber-400/80' : 'text-amber-600/90') : (isDark ? 'text-sky-400/80' : 'text-sky-600/90')} font-bold mt-0.5 tracking-[0.2em] uppercase`} style={{ fontSize: (isMobile ? 8 : 9) * fontSizeScale }}>{t('dashboard.subtitle')}</Text>
@@ -3886,12 +3892,21 @@ export default function Home() {
                                 </View>
                             </View>
 
-                            <View className="mb-2">
-                                <Text className={`font-bold text-[8px] md:text-xs tracking-[0.4em] mb-1 uppercase ${isDark ? 'text-sky-400' : 'text-slate-500'}`}>{t('dashboard.whiteoutSurvival')}</Text>
-                                <Text className={`text-2xl md:text-4xl font-black tracking-tighter leading-tight ${isDark ? 'text-white' : 'text-slate-950'}`}>{t('dashboard.title')}</Text>
-                                <View className="mt-2.5 flex-row items-center">
-                                    <View className="h-0.5 w-8 bg-brand-accent rounded-full mr-2.5" />
-                                    <Text className={`text-[11px] font-bold leading-relaxed tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('dashboard.subtitle')}</Text>
+                            <View className="mb-4 flex-row items-center">
+                                <View className={`w-16 h-16 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-white/10' : 'bg-slate-100 shadow-sm'}`}>
+                                    <Image
+                                        source={require('../assets/icon.png')}
+                                        style={{ width: 52, height: 52 }}
+                                        resizeMode="contain"
+                                    />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className={`font-bold text-[8px] md:text-xs tracking-[0.4em] mb-1 uppercase ${isDark ? 'text-sky-400' : 'text-slate-500'}`}>{t('dashboard.whiteoutSurvival')}</Text>
+                                    <Text className={`text-2xl md:text-4xl font-black tracking-tighter leading-tight ${isDark ? 'text-white' : 'text-slate-950'}`}>{t('dashboard.title')}</Text>
+                                    <View className="mt-2.5 flex-row items-center">
+                                        <View className="h-0.5 w-8 bg-brand-accent rounded-full mr-2.5" />
+                                        <Text className={`text-[11px] font-bold leading-relaxed tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('dashboard.subtitle')}</Text>
+                                    </View>
                                 </View>
                             </View>
                         </View>
