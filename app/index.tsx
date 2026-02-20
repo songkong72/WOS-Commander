@@ -1751,11 +1751,15 @@ export default function Home() {
         if (!str || diffMinutes === 0) return str;
 
         // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
-        let processed = str.replace(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
+        let processed = str.replace(/(?:(\d{2,4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~\.]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
             const currentYear = now.getFullYear();
-            const date = new Date(parseInt(y || currentYear.toString()), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+            let yearNum = parseInt(y || currentYear.toString());
+            if (y && y.length === 2) yearNum += 2000;
+            const date = new Date(yearNum, parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
             if (isNaN(date.getTime())) return match;
             const converted = new Date(date.getTime() + diffMinutes * 60000);
+
+            // Output format based on timezone setting
             return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
         });
 
@@ -2841,9 +2845,6 @@ export default function Home() {
                         let targetDayStr = displayDay;
                         let targetTimeStr = displayTime;
 
-                        // Try to handle specific date format first if available in displayDay
-                        // Simple heuristic: if it contains a month/day pattern
-
                         // Fallback to weekly logic
                         let dIdx = dayMapObj[targetDayStr];
                         if (dIdx !== undefined) {
@@ -2859,14 +2860,16 @@ export default function Home() {
                                 const endDate = new Date(targetDate);
                                 endDate.setMinutes(endDate.getMinutes() + 30); // Default 30 min duration
 
-                                const format = (d: Date) => `${d.getFullYear().toString().slice(-2)}.${(d.getMonth() + 1).toString().padStart(2, '0')}.${d.getDate().toString().padStart(2, '0')} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+                                // Helper to format KST string
+                                const kstFormat = (d: Date) => `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                                const kstStr = `${kstFormat(targetDate)} ~ ${kstFormat(endDate)}`;
 
-                                return `${format(targetDate)} ~ ${format(endDate)}`;
+                                return convertTime(kstStr).replace(/20(\d{2})[\.\/-]/g, '$1.');
                             }
                         }
 
-                        // If regex match failed or complex string, return original but simplified (YY.MM.DD)
-                        let finalStr = `${displayDay} ${displayTime}`;
+                        // Use common conversion helper for date strings
+                        let finalStr = convertTime(`${displayDay} ${displayTime}`);
                         return finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.');
                     };
 
@@ -3068,11 +3071,12 @@ export default function Home() {
                                             <Text className="text-slate-400 text-sm">{t('dashboard.unassigned')}</Text>
                                         ) : (
                                             (() => {
-                                                let finalStr = displayTime || displayDay || '-';
+                                                let rawStr = displayTime || displayDay || '-';
                                                 // Combine Day and Time if separate and valid
                                                 if (displayDay && displayTime && !/[일월화수목금토]/.test(displayTime)) {
-                                                    if (!event.isFortressSplit) finalStr = `${displayDay} ${displayTime}`;
+                                                    if (!event.isFortressSplit) rawStr = `${displayDay} ${displayTime}`;
                                                 }
+                                                let finalStr = convertTime(rawStr);
 
                                                 // Clean up string
                                                 finalStr = finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.'); // Shorten year
@@ -4114,7 +4118,6 @@ export default function Home() {
                                                                     <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 20 * fontSizeScale }}>{t('dashboard.event_active')}</Text>
                                                                     <Ionicons name={isActiveExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                                 </TouchableOpacity>
-                                                                {activeEvents.length > 0 && <View className="bg-emerald-500/10 px-3 py-1 rounded-full"><Text className="text-emerald-500 font-black text-xs">{activeEvents.length}</Text></View>}
                                                             </View>
                                                             {isActiveExpanded && (
                                                                 activeEvents.length > 0 ? (
@@ -4144,7 +4147,6 @@ export default function Home() {
                                                                     <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.event_upcoming')}</Text>
                                                                     <Ionicons name={isUpcomingExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                                 </TouchableOpacity>
-                                                                {upcomingEvents.length > 0 && <View className="bg-sky-500/10 px-3 py-1 rounded-full"><Text className="text-sky-500 font-black text-xs">{upcomingEvents.length}</Text></View>}
                                                             </View>
                                                             {isUpcomingExpanded && (
                                                                 upcomingEvents.length > 0 ? (
@@ -4174,7 +4176,6 @@ export default function Home() {
                                                                     <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.event_expired')}</Text>
                                                                     <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                                 </TouchableOpacity>
-                                                                {expiredEvents.length > 0 && <View className="bg-slate-500/10 px-3 py-1 rounded-full"><Text className="text-slate-500 font-black text-xs">{expiredEvents.length}</Text></View>}
                                                             </View>
                                                             {isExpiredExpanded ? (
                                                                 expiredEvents.length > 0 ? (

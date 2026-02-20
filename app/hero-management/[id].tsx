@@ -422,71 +422,73 @@ export default function HeroDetail() {
                                         <Text className="text-[#22d3ee] font-bold mb-6" style={{ fontSize: 18 * fontSizeScale }}>{t('heroes.detail.equipment_title')}</Text>
 
                                         {(() => {
-                                            const stats = (hero as any).skills?.special?.[0]?.equipment?.stats || (hero as any).equipment?.stats;
-                                            if (stats) {
-                                                return (
-                                                    <View className="mb-8">
-                                                        <Text className="text-white font-bold mb-3 pl-1" style={{ fontSize: 14 * fontSizeScale }}>{t('heroes.detail.stats_title')}</Text>
-                                                        <View className="flex-col md:flex-row gap-4">
-                                                            <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                                                <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
-                                                                    <Text className={`font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.detail.exploration')}</Text>
+                                            const equipmentData = (hero as any).skills?.special?.[0]?.equipment || (hero as any).equipment;
+                                            if (!equipmentData) return null;
+
+                                            const stats = equipmentData.stats;
+                                            const displayPower = equipmentData.power
+                                                ? (typeof equipmentData.power === 'number'
+                                                    ? equipmentData.power.toLocaleString()
+                                                    : equipmentData.power)
+                                                : '';
+
+                                            return (
+                                                <View>
+                                                    {stats && (
+                                                        <View className="mb-8">
+                                                            <Text className={`font-bold mb-3 pl-1 ${isDark ? 'text-white' : 'text-slate-700'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('heroes.detail.stats_title')}</Text>
+                                                            <View className="flex-col md:flex-row gap-4">
+                                                                <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                                                    <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
+                                                                        <Text className={`font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.detail.exploration')}</Text>
+                                                                    </View>
+                                                                    <StatRow label={t('heroes.detail.atk')} value={stats.exploration.atk?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
+                                                                    <StatRow label={t('heroes.detail.def')} value={stats.exploration.def?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
+                                                                    <StatRow label={t('heroes.detail.hp')} value={stats.exploration.hp?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
                                                                 </View>
-                                                                <StatRow label={t('heroes.detail.atk')} value={stats.exploration.atk?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_001.png" />
-                                                                <StatRow label={t('heroes.detail.def')} value={stats.exploration.def?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_002.png" />
-                                                                <StatRow label={t('heroes.detail.hp')} value={stats.exploration.hp?.toLocaleString()} icon="https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2023/05/common_icon_attr_003.png" />
-                                                            </View>
-                                                            <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                                                <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
-                                                                    <Text className={`font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.detail.expedition')}</Text>
+                                                                <View className={`flex-1 rounded-2xl p-4 border ${isDark ? 'bg-slate-800/50 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                                                    <View className={`py-1.5 rounded-lg mb-3 ${isDark ? 'bg-slate-900/80' : 'bg-slate-200'}`}>
+                                                                        <Text className={`font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('heroes.detail.expedition')}</Text>
+                                                                    </View>
+                                                                    <StatRow label={t('heroes.detail.power')} value={stats.expedition.power} />
+                                                                    <StatRow label={t('heroes.detail.hp')} value={stats.expedition.hp} />
                                                                 </View>
-                                                                <StatRow label={t('heroes.detail.power')} value={stats.expedition.power} />
-                                                                <StatRow label={t('heroes.detail.hp')} value={stats.expedition.hp} />
                                                             </View>
                                                         </View>
-                                                    </View>
-                                                );
-                                            }
-                                            return null;
-                                        })()}
-                                        const displayPower = equipmentData.power
-                                        ? (typeof equipmentData.power === 'number'
-                                        ? equipmentData.power.toLocaleString()
-                                        : equipmentData.power)
-                                        : '';
+                                                    )}
 
-                                        return (
-                                        <View className={`rounded-3xl p-6 border mb-6 ${isDark ? 'bg-slate-800/30 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
-                                            <View className="flex-row items-center gap-6 mb-8">
-                                                <SkillImage
-                                                    icon={equipmentData.icon}
-                                                    className="w-20 h-20 rounded-2xl"
-                                                />
-                                                <View>
-                                                    <Text className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 18 * fontSizeScale }}>{equipmentData.name}</Text>
-                                                    <View className="flex-row items-center gap-2">
-                                                        <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/power-e1711159096981.png' }} className="w-5 h-5" />
-                                                        <Text className="text-brand-accent font-bold">{displayPower}</Text>
+                                                    <View className={`rounded-3xl p-6 border mb-6 ${isDark ? 'bg-slate-800/30 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                                                        <View className="flex-row items-center gap-6 mb-8">
+                                                            <SkillImage
+                                                                icon={equipmentData.icon}
+                                                                className="w-20 h-20 rounded-2xl"
+                                                            />
+                                                            <View>
+                                                                <Text className={`font-bold mb-1 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 18 * fontSizeScale }}>{equipmentData.name}</Text>
+                                                                <View className="flex-row items-center gap-2">
+                                                                    <Image source={{ uri: 'https://gom-s3-user-avatar.s3.us-west-2.amazonaws.com/wp-content/uploads/2024/03/power-e1711159096981.png' }} className="w-5 h-5" />
+                                                                    <Text className="text-brand-accent font-bold">{displayPower}</Text>
+                                                                </View>
+                                                            </View>
+                                                        </View>
+
+                                                        <View className="space-y-4">
+                                                            {equipmentData.skills?.map((skill: any, idx: number) => (
+                                                                <View key={idx} className="flex-row gap-4 items-center mb-4">
+                                                                    <SkillImage
+                                                                        icon={skill.icon}
+                                                                        className="w-12 h-12 rounded-lg"
+                                                                    />
+                                                                    <View className="flex-1">
+                                                                        <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 14 * fontSizeScale }}>{skill.name}</Text>
+                                                                        <Text className={`leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`} style={{ fontSize: 12 * fontSizeScale }}>{skill.desc}</Text>
+                                                                    </View>
+                                                                </View>
+                                                            ))}
+                                                        </View>
                                                     </View>
                                                 </View>
-                                            </View>
-
-                                            <View className="space-y-4">
-                                                {equipmentData.skills.map((skill: any, idx: number) => (
-                                                    <View key={idx} className="flex-row gap-4 items-center">
-                                                        <SkillImage
-                                                            icon={skill.icon}
-                                                            className="w-12 h-12 rounded-lg"
-                                                        />
-                                                        <View className="flex-1">
-                                                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: 14 * fontSizeScale }}>{skill.name}</Text>
-                                                            <Text className={`leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`} style={{ fontSize: 12 * fontSizeScale }}>{skill.desc}</Text>
-                                                        </View>
-                                                    </View>
-                                                ))}
-                                            </View>
-                                        </View>
-                                        );
+                                            );
                                         })()}
                                     </View>
                                 ) : (
