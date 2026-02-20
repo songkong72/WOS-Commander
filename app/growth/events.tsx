@@ -2348,7 +2348,7 @@ export default function EventTracker() {
             const now = new Date();
             const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} 09:00`;
 
-            const currentSchedule = (schedules || []).find(s => (s.eventId || "").trim() === (event.id || "").trim() || (s.eventId || "").trim() === (event.eventId || "").trim());
+            const currentSchedule = (schedules || []).find(s => (s.eventId || "").trim() === (event.id || "").trim() || (s.eventId || "").trim() === ((event as any).eventId || "").trim());
             const realDayStr = (currentSchedule?.day || event.day || "").trim();
             const rawParts = realDayStr.split(/[~～]+/).map(x => x.trim());
             const sRaw = rawParts[0] || "";
