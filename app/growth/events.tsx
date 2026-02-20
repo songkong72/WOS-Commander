@@ -141,55 +141,16 @@ const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactN
 const pad = (n: number | undefined | null) => (n ?? 0).toString().padStart(2, '0');
 
 const toLocal = (kstStr: string) => {
-    const userOffset = -new Date().getTimezoneOffset();
-    const kstOffset = 540; // UTC+9
-    return processConversion(kstStr, userOffset - kstOffset);
+    console.log(`[WOS_DEBUG] toLocal [IN]: "${kstStr}" -> [OUT]: "${kstStr}"`);
+    return kstStr;
 };
-
 const toUTC = (kstStr: string) => {
-    return processConversion(kstStr, -540);
+    console.log(`[WOS_DEBUG] toUTC [IN]: "${kstStr}" -> [OUT]: "${kstStr}"`);
+    return kstStr;
 };
-
 const processConversion = (str: string, diffMinutes: number) => {
-    if (!str || diffMinutes === 0) return str;
-
-    // 1. 기간형 (2024.01.01 10:00)
-    let processed = str.replace(/(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})/g, (match, y, m, d, timePart) => {
-        const [h, min] = timePart.split(':');
-        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
-        if (isNaN(date.getTime())) return match;
-        const converted = new Date(date.getTime() + diffMinutes * 60000);
-        return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
-    });
-
-    // 2. 주간 요일형 (화(22:00), 매일(10:00))
-    processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {
-        const hour = parseInt(h);
-        const min = parseInt(m);
-        const days = ['일', '월', '화', '수', '목', '금', '토'];
-        let dayIdx = days.indexOf(day);
-
-        if (dayIdx === -1) { // '매일'
-            let totalMin = hour * 60 + min + diffMinutes;
-            while (totalMin < 0) totalMin += 1440;
-            totalMin %= 1440;
-            const newH = Math.floor(totalMin / 60);
-            const newM = totalMin % 60;
-            return `${day}(${pad(newH)}:${pad(newM)})`;
-        }
-
-        let totalMin = dayIdx * 1440 + hour * 60 + min + diffMinutes;
-        while (totalMin < 0) totalMin += 10080;
-        totalMin %= 10080;
-
-        const newDayIdx = Math.floor(totalMin / 1440);
-        const remain = totalMin % 1440;
-        const newH = Math.floor(remain / 60);
-        const newM = remain % 60;
-        return `${days[newDayIdx]}(${pad(newH)}:${pad(newM)})`;
-    });
-
-    return processed;
+    console.log(`[WOS_DEBUG] processConversion [IN]: "${str}" -> [OUT]: "${str}"`);
+    return str;
 };
 
 
@@ -279,18 +240,11 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
 
             const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
             if (realIndex !== -1) {
-                const performScroll = () => {
-                    if (flatListRef.current) {
-                        scrollToIndex(realIndex + centerOffset, false);
-                    }
-                };
-
-                const timers = [
-                    setTimeout(performScroll, 50),
-                    setTimeout(performScroll, 150),
-                    setTimeout(performScroll, 300),
-                ];
-                return () => timers.forEach(clearTimeout);
+                // Since FlatList now uses initialScrollIndex and getItemLayout,
+                // we only need a lightweight sync if value externally changed after mount.
+                if (!isFirstRun.current) {
+                    scrollToIndex(realIndex + centerOffset, false);
+                }
             }
         }
     }, [value, syncKey, options]);
@@ -384,17 +338,24 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                 decelerationRate="fast"
                 disableIntervalMomentum={true}
                 contentContainerStyle={{ paddingVertical: itemHeight * Math.floor(lines / 2) }}
+                getItemLayout={(_, index) => ({
+                    length: itemHeight,
+                    offset: itemHeight * index,
+                    index,
+                })}
+                initialScrollIndex={
+                    (() => {
+                        const valStr = String(value || '').trim();
+                        const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
+                        return realIndex !== -1 ? realIndex + centerOffset : centerOffset;
+                    })()
+                }
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 onMomentumScrollEnd={handleScrollEnd}
                 onScrollEndDrag={handleScrollEnd}
                 onLayout={() => {
                     isLayoutReady.current = true;
-                    const valStr = String(value || '').trim();
-                    const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
-                    if (realIndex !== -1) {
-                        setTimeout(() => scrollToIndex(realIndex + centerOffset, false), 50);
-                    }
                 }}
                 renderItem={({ item, index }) => {
 
@@ -402,7 +363,8 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                     return (
                         <TouchableOpacity
                             onPress={() => {
-                                if (value !== getValue(item)) {
+                                // WheelPicker가 부모에게 값을 전달할 때 의도치 않은 초기화를 막음
+                                if (String(value).trim() !== String(getValue(item)).trim()) {
                                     onChange(getValue(item));
                                 }
                                 scrollToIndex(index, true);
@@ -1176,6 +1138,10 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
     const timePart = parts[1] || '';
     const [h, m] = timePart ? timePart.split(':') : ['00', '00'];
 
+    if (label.includes('종료')) {
+        console.log(`[WOS_DEBUG] Selector [IN] (${label}): "${value}" -> Parsed H: "${h}", M: "${m}"`);
+    }
+
     return (
         <View className="mb-6" style={{ zIndex: activeDateDropdown?.type === type ? 10000 : 1, elevation: activeDateDropdown?.type === type ? 50 : 0, overflow: 'visible' }}>
             <View className="flex-row items-center mb-3 ml-1">
@@ -1328,6 +1294,9 @@ export default function EventTracker() {
                 });
 
                 if (savedSchedule) {
+                    if (eid === 'a_operation' || eid === 'alliance_operation') {
+                        console.log(`[WOS_DEBUG] Merge Schedule - Event: ${eid}, DB_Day: "${savedSchedule.day}", DB_Time: "${savedSchedule.time}"`);
+                    }
                     return {
                         ...event,
                         day: (savedSchedule.day === '.' ? '' : (savedSchedule.day || '')),
@@ -2379,19 +2348,22 @@ export default function EventTracker() {
             const now = new Date();
             const defaultStr = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())} 09:00`;
 
-            const parseDateRangeStr = (str: string) => {
-                if (!str) return defaultStr;
-                const match = str.match(/(.*?)\s*(?:(\d{1,2}:\d{2}))?$/);
-                if (match) {
-                    const datePart = match[1].trim();
-                    const extractedTime = match[2] || '09:00';
-                    return `${datePart} ${extractedTime}`;
-                }
-                return defaultStr;
-            };
+            const currentSchedule = (schedules || []).find(s => (s.eventId || "").trim() === (event.id || "").trim() || (s.eventId || "").trim() === (event.eventId || "").trim());
+            const realDayStr = (currentSchedule?.day || event.day || "").trim();
+            const rawParts = realDayStr.split(/[~～]+/).map(x => x.trim());
+            const sRaw = rawParts[0] || "";
+            const eRaw = rawParts.length > 1 ? rawParts[1] : "";
 
-            setMStart(s ? parseDateRangeStr(s) : defaultStr);
-            setMEnd(e ? parseDateRangeStr(e) : defaultStr);
+            console.log(`[WOS_DEBUG] Open Modal - Raw: "${realDayStr}", sRaw: "${sRaw}", eRaw: "${eRaw}"`);
+
+            // mStart, mEnd에 들어가는 모든 값은 Date 파싱을 거치지 않는 '문자열'이어야 함
+            const forceStart = sRaw ? String(sRaw).trim() : defaultStr;
+            const forceEnd = eRaw ? String(eRaw).trim() : (sRaw ? String(sRaw).trim() : defaultStr);
+
+            console.log(`[WOS_DEBUG] Final Force Values - Start: "${forceStart}", End: "${forceEnd}"`);
+
+            setMStart(forceStart);
+            setMEnd(forceEnd);
 
             // For date range events, use the common recurrence states
             setIsRecurring(!!event.isRecurring);
@@ -2669,6 +2641,7 @@ export default function EventTracker() {
             try {
                 // Consolidate to a single ID for weapon league data
                 const targetId = (editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') ? 'a_weapon' : editingEvent.id;
+                console.log(`[WOS_DEBUG] Save Start - Event: ${targetId}, mStart: "${mStart}", mEnd: "${mEnd}", finalDay: "${finalDay}"`);
 
                 console.log(`[Save] DateRange: ${targetId}, day: ${finalDay}, time: ${finalTime}`);
                 setEvents(prev => prev.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? {
@@ -3232,7 +3205,7 @@ export default function EventTracker() {
                             <View className="h-20" />
                         </ScrollView>
                     )}
-                </View >
+                </View>
 
                 {/* Guide Detail Popup Modal */}
                 < Modal visible={guideModalVisible} transparent animationType="fade" >
@@ -4549,7 +4522,7 @@ export default function EventTracker() {
                                         className={`py-4 items-center border-t active:opacity-70 ${isDark ? 'border-[#333D4B]' : 'border-[#E5E8EB]'}`}
                                     >
                                         <Text className={`font-bold text-[16px] ${isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]'}`}>{t('common.close')}</Text>
-                                    </TouchableOpacity>\
+                                    </TouchableOpacity>
                                 </View>
                             );
                         })()}
@@ -4595,7 +4568,7 @@ export default function EventTracker() {
                                     <Text className="text-white text-center font-bold text-[16px]">{t('common.navigate_without_save')}</Text>
                                 </TouchableOpacity>
                             </View>
-                        </View>\
+                        </View>
                     </View>
                 </Modal>
             </View >

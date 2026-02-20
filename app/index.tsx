@@ -1345,13 +1345,36 @@ export default function Home() {
         try {
             const schedule = getEventSchedule(event);
 
-            // 0. Check startDate first (for one-time weekly events)
+            const originalId = (event.originalEventId || '').trim();
+            const id = (originalId || event.id || event.eventId || '').trim();
+
+            const dayStr = schedule?.day || event.day || '';
+            const timeStr = schedule?.time || event.time || '';
+            const combined = `${dayStr} ${timeStr} `;
+
+            // 0. DATE_RANGE_IDS 이벤트는 day 필드의 날짜 범위를 우선 확인
+            const isDateRangeEvent = DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId);
+            if (isDateRangeEvent && combined.includes('~')) {
+                const rangeMatch = combined.match(/(?:(\d{4})[\.\\/-])?(\d{2})[\.\\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\\/-])?(\d{2})[\.\\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
+                if (rangeMatch) {
+                    const currentYear = now.getFullYear();
+                    const eYear = parseInt(rangeMatch[5] || currentYear.toString());
+                    const eMonth = parseInt(rangeMatch[6]) - 1;
+                    const eDay = parseInt(rangeMatch[7]);
+                    const timePart = rangeMatch[8] || '23:59';
+                    const [eH, eM] = timePart.split(':').map(Number);
+
+                    const end = new Date(eYear, eMonth, eDay, eH, eM);
+                    if (!isNaN(end.getTime())) return end;
+                }
+            }
+
+            // 1. Check startDate (for one-time weekly events, non date-range)
             const startDate = schedule?.startDate || event.startDate;
             if (startDate) {
                 try {
-                    const timeStr = schedule?.time || event.time || '00:00';
-                    // Extract first time if multiple slots (e.g., "1군: 화(22:30) / 2군: 목(21:00)")
-                    const timeMatch = timeStr.match(/(\d{2}):(\d{2})/);
+                    const sTimeStr = schedule?.time || event.time || '00:00';
+                    const timeMatch = sTimeStr.match(/(\d{2}):(\d{2})/);
                     const finalTime = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
                     const dateTimeStr = `${startDate}T${finalTime}:00`;
                     const eventDateTime = new Date(dateTimeStr);
@@ -1362,27 +1385,21 @@ export default function Home() {
                 } catch (e) { }
             }
 
-            const dayStr = schedule?.day || event.day || '';
-            const timeStr = schedule?.time || event.time || '';
-            const combined = `${dayStr} ${timeStr} `;
-
-            // 1. Date Range Match (Improved regex for various separators and optional day info)
-            // Expected: YYYY.MM.DD (Day) HH:mm ~ YYYY.MM.DD (Day) HH:mm or MM/DD ...
-            // Day marker (e.g. '월') can appear between date and time without parentheses.
-            const rangeMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
-            if (rangeMatch) {
+            // 2. Fallback: Generic Date Range Match
+            const genericRangeMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
+            if (genericRangeMatch) {
                 const currentYear = now.getFullYear();
-                const eYear = parseInt(rangeMatch[5] || currentYear.toString());
-                const eMonth = parseInt(rangeMatch[6]) - 1;
-                const eDay = parseInt(rangeMatch[7]);
-                const timePart = rangeMatch[8] || '23:59';
+                const eYear = parseInt(genericRangeMatch[5] || currentYear.toString());
+                const eMonth = parseInt(genericRangeMatch[6]) - 1;
+                const eDay = parseInt(genericRangeMatch[7]);
+                const timePart = genericRangeMatch[8] || '23:59';
                 const [eH, eM] = timePart.split(':').map(Number);
 
                 const end = new Date(eYear, eMonth, eDay, eH, eM);
-                return isNaN(end.getTime()) ? null : end;
+                if (!isNaN(end.getTime())) return end;
             }
 
-            // 2. Single Date Match
+            // 3. Single Date Match
             const singleMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(?:오후|오전)?\s*(\d{1,2}):(\d{2})/);
             if (singleMatch) {
                 const currentYear = now.getFullYear();
@@ -1392,7 +1409,7 @@ export default function Home() {
                 const h = parseInt(singleMatch[4]);
                 const min = parseInt(singleMatch[5]);
                 const end = new Date(y, m, d, h + 1, min); // 1 hour buffer
-                return isNaN(end.getTime()) ? null : end;
+                if (!isNaN(end.getTime())) return end;
             }
         } catch (e) { }
         return null;
@@ -1718,15 +1735,15 @@ export default function Home() {
             // startDate 없으면 주간 반복 이벤트
             const isBear = (id === 'a_bear' || id === 'alliance_bear');
             const dayStr = isBear ? calculateBearHuntDay(event) : (schedule?.day || event.day || '');
-            // split된 이벤트는 event.time 우선 사용
-            const timeStr = (event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) ? event.time : (schedule?.time || event.time || '');
-
+            const timeStr = schedule?.time || event.time || '';
             const combinedStr = `${dayStr || ''} ${timeStr || ''}`.trim();
-            const result = checkItemActive(toLocal(combinedStr));
 
+            // 기간형 이벤트는 이미 absolute 일시가 포함되어 있으므로 변환 없이 직접 체크
+            if (isRange) {
+                return checkItemActive(combinedStr);
+            }
 
-
-            return result;
+            return checkItemActive(toLocal(combinedStr));
         } catch (e) { return false; }
     };
 
@@ -2906,6 +2923,11 @@ export default function Home() {
 
                                 return convertTime(kstStr).replace(/20(\d{2})[\.\/-]/g, '$1.');
                             }
+                        }
+
+                        // 날짜 범위(~가 포함된) 이벤트는 변환 없이 그대로 사용
+                        if (displayDay.includes("~")) {
+                            return `${displayDay} ${displayTime}`.trim().replace(/20(\d{2})[\.\/-]/g, "$1.");
                         }
 
                         // Use common conversion helper for date strings
