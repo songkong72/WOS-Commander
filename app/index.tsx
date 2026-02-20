@@ -17,7 +17,8 @@ import {
     UIManager,
     ImageBackground,
     ActivityIndicator,
-    useWindowDimensions
+    useWindowDimensions,
+    Easing
 } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -1880,6 +1881,40 @@ export default function Home() {
 
     const flickerAnim = useRef(new Animated.Value(1)).current;
     const scaleAnim = useRef(new Animated.Value(1)).current;
+    const noticeScrollAnim = useRef(new Animated.Value(0)).current;
+    const [noticeTextWidth, setNoticeTextWidth] = useState(0);
+    const [noticeContainerWidth, setNoticeContainerWidth] = useState(0);
+
+    useEffect(() => {
+        if (notice?.content && noticeTextWidth > 0 && noticeContainerWidth > 0) {
+            // Only marquee if content is significantly long or always? User said "like billboard".
+            // Let's make it always scroll.
+
+            noticeScrollAnim.setValue(noticeContainerWidth);
+
+            const distance = noticeTextWidth + noticeContainerWidth;
+            const duration = distance * 30; // 30ms per pixel, adjust for speed
+
+            const anim = Animated.loop(
+                Animated.sequence([
+                    Animated.timing(noticeScrollAnim, {
+                        toValue: -noticeTextWidth,
+                        duration: duration,
+                        easing: Easing.linear,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(noticeScrollAnim, {
+                        toValue: noticeContainerWidth,
+                        duration: 0,
+                        useNativeDriver: true,
+                    })
+                ])
+            );
+
+            anim.start();
+            return () => anim.stop();
+        }
+    }, [notice?.content, noticeTextWidth, noticeContainerWidth]);
 
     useEffect(() => {
         const createPulse = () => {
@@ -3894,8 +3929,19 @@ export default function Home() {
                                 <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 flex-shrink-0 ${notice.visible ? 'bg-amber-500/20' : 'bg-slate-700/10'}`}>
                                     <Ionicons name={notice.visible ? "notifications" : "notifications-off"} size={20} color={notice.visible ? "#f59e0b" : "#94a3b8"} />
                                 </View>
-                                <View className="flex-1 min-w-0 pr-2">
-                                    <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-950'}`} numberOfLines={1} ellipsizeMode="tail">{notice.content || t('dashboard.notice_empty')}</Text>
+                                <View
+                                    className="flex-1 min-w-0 pr-2 overflow-hidden h-10 justify-center"
+                                    onLayout={(e) => setNoticeContainerWidth(e.nativeEvent.layout.width)}
+                                >
+                                    <Animated.View style={{ transform: [{ translateX: noticeScrollAnim }], width: noticeTextWidth + noticeContainerWidth + 50, flexDirection: 'row' }}>
+                                        <Text
+                                            className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-950'}`}
+                                            onLayout={(e) => setNoticeTextWidth(e.nativeEvent.layout.width)}
+                                            numberOfLines={1}
+                                        >
+                                            {notice.content || t('dashboard.notice_empty')}
+                                        </Text>
+                                    </Animated.View>
                                 </View>
                                 {!!auth.isLoggedIn && (
                                     <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleOpenNotice(); }} className="p-2.5 bg-sky-500/10 rounded-xl flex-shrink-0">
@@ -4515,7 +4561,10 @@ export default function Home() {
                                         )}
 
                                         <TouchableOpacity
-                                            onPress={() => { setIsSuperAdminDashboardVisible(true); }}
+                                            onPress={() => {
+                                                setSuperAdminTab('pending');
+                                                setIsSuperAdminDashboardVisible(true);
+                                            }}
                                             className={`mt-4 p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
                                         >
                                             <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
@@ -4524,6 +4573,22 @@ export default function Home() {
                                             <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.super_dashboard_title')}</Text>
                                             <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                                         </TouchableOpacity>
+
+                                        {auth.role === 'master' && (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    setSuperAdminTab('settings');
+                                                    setIsSuperAdminDashboardVisible(true);
+                                                }}
+                                                className={`mt-4 p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
+                                            >
+                                                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
+                                                    <Ionicons name="desktop" size={20} color="#6366f1" />
+                                                </View>
+                                                <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.screen_management')}</Text>
+                                                <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
+                                            </TouchableOpacity>
+                                        )}
                                     </>
                                 )}
 
@@ -4578,43 +4643,54 @@ export default function Home() {
                         showsVerticalScrollIndicator={false}
                     >
                         {/* Header */}
-                        <View className="mb-8 px-6 pt-8">
-                            <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('admin.super_admin_manage')}</Text>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 30 * fontSizeScale }}>{t('admin.super_dashboard_title')}</Text>
-                            <View className="w-10 h-1 bg-sky-500 rounded-full mt-3" />
+                        <View className="mb-8 px-6 pt-8 flex-row items-center justify-between">
+                            <View className="flex-1">
+                                <Text className={`text-[10px] font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-sky-400' : 'text-sky-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('admin.super_admin_manage')}</Text>
+                                <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 30 * fontSizeScale }}>
+                                    {superAdminTab === 'settings' ? t('admin.screen_management') : t('admin.super_dashboard_title')}
+                                </Text>
+                                <View className="w-10 h-1 bg-sky-500 rounded-full mt-3" />
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setIsSuperAdminDashboardVisible(false)}
+                                className={`p-3 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
+                            >
+                                <Ionicons name="close" size={24} color={isDark ? '#94a3b8' : '#64748b'} />
+                            </TouchableOpacity>
                         </View>
 
-                        {/* Stats / Interactive Tabs */}
-                        <View className="flex-row gap-2 mb-8 px-5">
-                            {[
-                                { id: 'pending', label: t('admin.pending_count'), count: allRequests.filter(r => r.status === 'pending').length, icon: 'time-outline', color: 'sky' },
-                                { id: 'alliances', label: t('admin.approved_count'), count: allRequests.filter(r => r.status === 'approved').length, icon: 'business-outline', color: 'emerald' },
-                                { id: 'settings', label: t('admin.manageSettings'), icon: 'settings-outline', color: 'indigo' }
-                            ].map((tab) => (
-                                <TouchableOpacity
-                                    key={tab.id}
-                                    onPress={() => setSuperAdminTab(tab.id as any)}
-                                    activeOpacity={0.7}
-                                    className={`flex-1 p-3 rounded-[24px] border transition-all ${superAdminTab === tab.id ?
-                                        `border-${tab.color}-500 bg-${tab.color}-500/10 shadow-lg shadow-${tab.color}-500/20` :
-                                        (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
-                                >
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <View className={`w-8 h-8 rounded-xl items-center justify-center ${superAdminTab === tab.id ? `bg-${tab.color}-500` : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>
-                                            <Ionicons name={tab.icon as any} size={16} color={superAdminTab === tab.id ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
+                        {/* Stats / Interactive Tabs - Only show for Alliance Management */}
+                        {superAdminTab !== 'settings' && (
+                            <View className="flex-row gap-2 mb-8 px-5">
+                                {[
+                                    { id: 'pending', label: t('admin.pending_count'), count: allRequests.filter(r => r.status === 'pending').length, icon: 'time-outline', color: 'sky' },
+                                    { id: 'alliances', label: t('admin.approved_count'), count: allRequests.filter(r => r.status === 'approved').length, icon: 'business-outline', color: 'emerald' },
+                                ].map((tab) => (
+                                    <TouchableOpacity
+                                        key={tab.id}
+                                        onPress={() => setSuperAdminTab(tab.id as any)}
+                                        activeOpacity={0.7}
+                                        className={`flex-1 p-3 rounded-[24px] border transition-all ${superAdminTab === tab.id ?
+                                            `border-${tab.color}-500 bg-${tab.color}-500/10 shadow-lg shadow-${tab.color}-500/20` :
+                                            (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
+                                    >
+                                        <View className="flex-row items-center justify-between mb-1">
+                                            <View className={`w-8 h-8 rounded-xl items-center justify-center ${superAdminTab === tab.id ? `bg-${tab.color}-500` : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>
+                                                <Ionicons name={tab.icon as any} size={16} color={superAdminTab === tab.id ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
+                                            </View>
+                                            {tab.count !== undefined && (
+                                                <Text className={`text-xl font-black ${superAdminTab === tab.id ? (isDark ? `text-${tab.color}-400` : `text-${tab.color}-500`) : (isDark ? 'text-slate-700' : 'text-slate-400')}`} style={{ fontSize: 20 * fontSizeScale }}>
+                                                    {tab.count}
+                                                </Text>
+                                            )}
                                         </View>
-                                        {tab.count !== undefined && (
-                                            <Text className={`text-xl font-black ${superAdminTab === tab.id ? (isDark ? `text-${tab.color}-400` : `text-${tab.color}-500`) : (isDark ? 'text-slate-700' : 'text-slate-400')}`} style={{ fontSize: 20 * fontSizeScale }}>
-                                                {tab.count}
-                                            </Text>
-                                        )}
-                                    </View>
-                                    <Text className={`text-[10px] font-black uppercase tracking-tight ${superAdminTab === tab.id ? `text-${tab.color}-500` : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
-                                        {tab.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
+                                        <Text className={`text-[10px] font-black uppercase tracking-tight ${superAdminTab === tab.id ? `text-${tab.color}-500` : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
+                                            {tab.label}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        )}
 
                         <View className="flex-row items-center justify-between mb-6 px-6">
                             <View>

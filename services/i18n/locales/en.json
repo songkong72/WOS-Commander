@@ -186,6 +186,7 @@
         "pm": "PM"
     },
     "admin": {
+        "screen_management": "Screen Management",
         "eventManagement": "Event Management",
         "bulkUpload": "Bulk Upload (Excel)",
         "manualAdd": "Manual Add",
@@ -235,7 +236,7 @@
         "menu_title_alliance": "Alliance Management",
         "logout": "Sign Out",
         "manage_members": "Manage Members",
-        "manage_staff": "Manage Staff",
+        "manage_staff": "Super Admin Management",
         "add_staff_placeholder": "Staff Name",
         "add_staff_pw_placeholder": "Set Password",
         "role_alliance_admin_label": "Alliance Admin",
@@ -243,7 +244,7 @@
         "change_pw": "Change Password",
         "super_admin_manage": "Global System Admin",
         "close_btn": "Close",
-        "super_dashboard_title": "Master Control",
+        "super_dashboard_title": "Alliance Admin Management",
         "pending_count": "Pending Approvals",
         "approved_count": "Active Alliances",
         "adminId": "Admin ID",

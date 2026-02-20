@@ -184,6 +184,7 @@
         "unassigned": "미지정"
     },
     "admin": {
+        "screen_management": "화면 관리",
         "eventManagement": "이벤트 관리",
         "bulkUpload": "엑셀 일괄 등록",
         "manualAdd": "개별 추가",
@@ -233,7 +234,7 @@
         "menu_title_alliance": "연맹 관리",
         "logout": "로그아웃",
         "manage_members": "연맹원 관리",
-        "manage_staff": "운영진 관리",
+        "manage_staff": "슈퍼관리자 관리",
         "add_staff_placeholder": "운영진 이름",
         "add_staff_pw_placeholder": "비밀번호 설정",
         "role_alliance_admin_label": "연맹 관리자",
@@ -241,7 +242,7 @@
         "change_pw": "비밀번호 변경",
         "super_admin_manage": "전체 시스템 관리",
         "close_btn": "닫기",
-        "super_dashboard_title": "마스터 컨트롤",
+        "super_dashboard_title": "연맹관리자 관리",
         "pending_count": "승인 대기",
         "approved_count": "활성 연맹",
         "adminId": "관리자 ID",
