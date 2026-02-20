@@ -1738,11 +1738,6 @@ export default function Home() {
             const timeStr = schedule?.time || event.time || '';
             const combinedStr = `${dayStr || ''} ${timeStr || ''}`.trim();
 
-            // 기간형 이벤트는 이미 absolute 일시가 포함되어 있으므로 변환 없이 직접 체크
-            if (isRange) {
-                return checkItemActive(combinedStr);
-            }
-
             return checkItemActive(toLocal(combinedStr));
         } catch (e) { return false; }
     };
@@ -2923,11 +2918,6 @@ export default function Home() {
 
                                 return convertTime(kstStr).replace(/20(\d{2})[\.\/-]/g, '$1.');
                             }
-                        }
-
-                        // 날짜 범위(~가 포함된) 이벤트는 변환 없이 그대로 사용
-                        if (displayDay.includes("~")) {
-                            return `${displayDay} ${displayTime}`.trim().replace(/20(\d{2})[\.\/-]/g, "$1.");
                         }
 
                         // Use common conversion helper for date strings
