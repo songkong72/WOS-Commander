@@ -376,9 +376,7 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                                 className={`font-black ${isSelected ? (isDark ? 'text-sky-400 text-xl' : 'text-sky-600 text-xl') : (isDark ? 'text-white text-base' : 'text-slate-500 text-base')}`}
                                 style={{
                                     opacity: isSelected ? 1 : 0.7,
-                                    textShadowColor: isDark ? 'rgba(0,0,0,0.3)' : 'transparent',
-                                    textShadowOffset: { width: 0, height: 1 },
-                                    textShadowRadius: 2
+                                    textShadow: isDark ? '0px 1px 2px rgba(0,0,0,0.3)' : 'none'
                                 }}
                             >
                                 {getLabel(item)}

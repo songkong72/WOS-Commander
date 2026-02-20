@@ -1913,12 +1913,12 @@ export default function Home() {
                         toValue: -noticeTextWidth,
                         duration: duration,
                         easing: Easing.linear,
-                        useNativeDriver: true,
+                        useNativeDriver: false,
                     }),
                     Animated.timing(noticeScrollAnim, {
                         toValue: noticeContainerWidth,
                         duration: 0,
-                        useNativeDriver: true,
+                        useNativeDriver: false,
                     })
                 ])
             );
@@ -1931,15 +1931,15 @@ export default function Home() {
     useEffect(() => {
         const createPulse = () => {
             return Animated.sequence([
-                Animated.timing(flickerAnim, { toValue: 0.5, duration: 1000, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                Animated.timing(flickerAnim, { toValue: 0.5, duration: 1000, useNativeDriver: false }),
+                Animated.timing(flickerAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
             ]);
         };
 
         const createScale = () => {
             return Animated.sequence([
-                Animated.timing(scaleAnim, { toValue: 1.05, duration: 1000, useNativeDriver: true }),
-                Animated.timing(scaleAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+                Animated.timing(scaleAnim, { toValue: 1.05, duration: 1000, useNativeDriver: false }),
+                Animated.timing(scaleAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
             ]);
         };
 
@@ -2480,12 +2480,12 @@ export default function Home() {
                 Animated.timing(blinkAnim, {
                     toValue: 1,
                     duration: 800,
-                    useNativeDriver: true,
+                    useNativeDriver: false,
                 }),
                 Animated.timing(blinkAnim, {
                     toValue: 0.3,
                     duration: 800,
-                    useNativeDriver: true,
+                    useNativeDriver: false,
                 }),
             ])
         ).start();
