@@ -18,6 +18,7 @@ interface UseAdminAuthProps {
     setIsGateOpen?: (open: boolean) => void;
     showCustomAlert?: (title: string, message: string, type?: 'success' | 'error' | 'warning' | 'confirm', onConfirm?: () => void) => void;
     t?: (key: string, options?: any) => string;
+    onLoginSuccess?: () => void;
 }
 
 export const useAdminAuth = (props?: UseAdminAuthProps) => {
@@ -115,7 +116,9 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
             role === 'alliance_admin' ? t('auth.role_alliance_admin') :
                 role === 'admin' ? t('auth.role_op_admin') : t('auth.role_general');
 
-        showCustomAlert(t('auth.authSuccess'), t('auth.welcome', { id, role: roleName }), 'success');
+        showCustomAlert(t('auth.authSuccess'), t('auth.welcome', { id, role: roleName }), 'success', () => {
+            props?.onLoginSuccess?.();
+        });
     };
 
     const handleEnterAlliance = async () => {

@@ -236,7 +236,14 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         if ((event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) && event.teamLabel) {
             const translatedTeam = event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'));
-            return `${baseTitle} (${translatedTeam})`;
+            // Use word-joiner (\u2060) to keep "(1군)" together as a single unit
+            const teamBadge = `\u2060(\u2060${translatedTeam}\u2060)\u2060`;
+
+            // Only move to next line if REALLY narrow (below 340px)
+            if (windowWidth < 340) {
+                return `${baseTitle}\n${teamBadge}`;
+            }
+            return `${baseTitle} ${teamBadge}`;
         }
         return baseTitle;
     };
@@ -250,18 +257,20 @@ export const EventCard: React.FC<EventCardProps> = ({
                         width: '100%',
                         borderRadius: 24,
                         overflow: 'hidden',
-                        backgroundColor: isDark ? 'rgba(25, 31, 40, 0.65)' : 'rgba(255, 255, 255, 0.8)',
+                        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.9)',
+                        borderWidth: 1.5,
+                        borderColor: isDark ? 'rgba(71, 85, 105, 0.5)' : 'rgba(203, 213, 225, 0.8)',
                         elevation: 5,
-                        opacity: isLocked ? 0.7 : (pressed ? 0.98 : 1),
+                        opacity: pressed ? 0.98 : 1,
                         transform: [{ scale: (hovered && !isLocked) ? 1.02 : 1 }],
                         marginBottom: 12,
                     }
                 ]}
             >
                 {isLocked && (
-                    <View className="absolute top-3 right-3 z-20 flex-row items-center bg-black/60 px-2.5 py-1 rounded-full">
-                        <Ionicons name="lock-closed" size={10} color="#94a3b8" style={{ marginRight: 4 }} />
-                        <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', fontWeight: '700' }}>{t('common.member_only_title')}</Text>
+                    <View className={`absolute top-3 right-3 z-20 flex-row items-center px-2.5 py-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-600'}`}>
+                        <Ionicons name="lock-closed" size={10} color="#fbbf24" style={{ marginRight: 4 }} />
+                        <Text style={{ fontSize: 9 * fontSizeScale, color: '#ffffff', fontWeight: '500' }}>{t('common.member_only_title')}</Text>
                     </View>
                 )}
                 <ImageBackground
@@ -365,18 +374,21 @@ export const EventCard: React.FC<EventCardProps> = ({
                     borderRadius: 24,
                     marginBottom: 8,
                     overflow: 'hidden',
-                    backgroundColor: isDark ? 'rgba(30, 41, 59, 0.35)' : 'rgba(255, 255, 255, 0.7)',
-                    borderWidth: 1,
-                    borderColor: isUpcomingSoon ? '#38bdf8' : (isDark ? 'rgba(51, 65, 85, 0.3)' : '#e2e8f0'),
-                    opacity: isLocked ? 0.7 : (pressed ? 0.98 : 1),
+                    backgroundColor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.95)',
+                    borderWidth: 1.5,
+                    borderColor: isUpcomingSoon
+                        ? '#38bdf8'
+                        : (isExpired
+                            ? (isDark ? 'rgba(100, 116, 139, 0.8)' : 'rgba(148, 163, 184, 0.8)')
+                            : (isDark ? 'rgba(56, 189, 248, 0.5)' : 'rgba(59, 130, 246, 0.5)')),
+                    opacity: pressed ? 0.98 : 1,
                     transform: [{ scale: (hovered && !isLocked) ? 1.02 : 1 }],
                 }
             ]}
         >
             {isLocked && (
-                <View className="absolute top-3 right-3 z-20 flex-row items-center bg-black/40 px-2.5 py-1 rounded-full">
-                    <Ionicons name="lock-closed" size={10} color="#94a3b8" style={{ marginRight: 4 }} />
-                    <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', fontWeight: '700' }}>{t('common.member_only_title')}</Text>
+                <View className={`absolute top-3 right-3 z-20 flex-row items-center p-1.5 rounded-full ${isDark ? 'bg-slate-800/80' : 'bg-slate-500/80'}`}>
+                    <Ionicons name="lock-closed" size={10} color="#fbbf24" />
                 </View>
             )}
             <View className={`${windowWidth < 380 ? 'px-3' : 'px-4'} py-4 flex-row items-center`}>
@@ -395,7 +407,16 @@ export const EventCard: React.FC<EventCardProps> = ({
                         </View>
                     )}
                     <View className="flex-row items-center mb-1">
-                        <Text className={`flex-1 font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`} style={{ fontSize: (windowWidth < 380 ? 14 : 18) * fontSizeScale, lineHeight: (windowWidth < 380 ? 18 : 22) * fontSizeScale }} numberOfLines={2}>
+                        <Text
+                            className="flex-1 font-bold text-white"
+                            style={{
+                                fontSize: (windowWidth < 340 ? 13 : (windowWidth < 380 ? 15 : 18)) * fontSizeScale,
+                                lineHeight: (windowWidth < 340 ? 17 : (windowWidth < 380 ? 19 : 22)) * fontSizeScale
+                            }}
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.7}
+                        >
                             {renderEventTitle()}
                         </Text>
                     </View>

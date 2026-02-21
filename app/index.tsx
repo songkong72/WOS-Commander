@@ -86,59 +86,6 @@ export default function Home() {
     const isDark = theme === 'dark';
     const [isLoading, setIsLoading] = useState(false);
 
-    // -- Admin Authentication Hook --
-    const adminAuth = useAdminAuth({
-        auth,
-        login,
-        logout,
-        serverId,
-        allianceId,
-        setAllianceInfo,
-        setIsGateOpen,
-        showCustomAlert,
-        t
-    });
-
-    const {
-        loginInput, setLoginInput,
-        passwordInput, setPasswordInput,
-        loginError, setLoginError,
-        gateLoginError, setGateLoginError,
-        isLoginLoading, setIsLoginLoading,
-        inputServer, setInputServer,
-        inputAlliance, setInputAlliance,
-        inputUserId, setInputUserId,
-        inputPassword, setInputPassword,
-        isRegisterMode, setIsRegisterMode,
-        recentServers, recentAlliances, recentUserIds,
-        gateUserIdRef, gatePasswordRef, loginPasswordRef,
-        allRequests, setAllRequests,
-        selectedReqIds, setSelectedReqIds,
-        superAdminTab, setSuperAdminTab,
-        isSuperAdminLoading, setIsSuperAdminLoading,
-        superAdminsList, setSuperAdminsList,
-        loadingSuperAdmins, setLoadingSuperAdmins,
-        newAdminName, setNewAdminName,
-        newAdminPassword, setNewAdminPassword,
-        handleEnterAlliance,
-        handleLogin,
-        handleLogout,
-        handleSettingsPress,
-        handleResetSettings,
-        saveToHistory,
-        fetchRequests,
-        fetchSuperAdmins,
-        handleApproveRequest,
-        handleRejectRequest,
-        handleBulkApprove,
-        handleBulkReject,
-        handleResetPasswordAdmin,
-        handleDeleteAlliance,
-        handleDeleteSuperAdmin,
-        handleAddSuperAdmin,
-        toggleSelectRequest
-    } = adminAuth;
-
     // -- Firestore Data Hooks --
     const noticeData = useFirestoreNotice(serverId, allianceId);
     const { notice, saveNotice } = noticeData;
@@ -208,6 +155,60 @@ export default function Home() {
         isMobile,
         windowWidth
     } = dashboard;
+
+    // -- Admin Authentication Hook --
+    const adminAuth = useAdminAuth({
+        auth,
+        login,
+        logout,
+        serverId,
+        allianceId,
+        setAllianceInfo,
+        setIsGateOpen,
+        showCustomAlert,
+        t,
+        onLoginSuccess: () => setLoginModalVisible(false)
+    });
+
+    const {
+        loginInput, setLoginInput,
+        passwordInput, setPasswordInput,
+        loginError, setLoginError,
+        gateLoginError, setGateLoginError,
+        isLoginLoading, setIsLoginLoading,
+        inputServer, setInputServer,
+        inputAlliance, setInputAlliance,
+        inputUserId, setInputUserId,
+        inputPassword, setInputPassword,
+        isRegisterMode, setIsRegisterMode,
+        recentServers, recentAlliances, recentUserIds,
+        gateUserIdRef, gatePasswordRef, loginPasswordRef,
+        allRequests, setAllRequests,
+        selectedReqIds, setSelectedReqIds,
+        superAdminTab, setSuperAdminTab,
+        isSuperAdminLoading, setIsSuperAdminLoading,
+        superAdminsList, setSuperAdminsList,
+        loadingSuperAdmins, setLoadingSuperAdmins,
+        newAdminName, setNewAdminName,
+        newAdminPassword, setNewAdminPassword,
+        handleEnterAlliance,
+        handleLogin,
+        handleLogout,
+        handleSettingsPress,
+        handleResetSettings,
+        saveToHistory,
+        fetchRequests,
+        fetchSuperAdmins,
+        handleApproveRequest,
+        handleRejectRequest,
+        handleBulkApprove,
+        handleBulkReject,
+        handleResetPasswordAdmin,
+        handleDeleteAlliance,
+        handleDeleteSuperAdmin,
+        handleAddSuperAdmin,
+        toggleSelectRequest
+    } = adminAuth;
 
     const pad = (n: number) => padUtil(n);
     const getKoreanDayOfWeek = (date: Date) => getKoreanDayOfWeekUtil(date, t);
