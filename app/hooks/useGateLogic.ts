@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { Animated, Easing } from 'react-native';
+import { Animated, Easing, Platform } from 'react-native';
 
 export const useGateLogic = () => {
     // -- Animations for Loading & Gate --
@@ -15,13 +15,13 @@ export const useGateLogic = () => {
                     toValue: 1,
                     duration: 1500,
                     easing: Easing.bezier(0.4, 0, 0.2, 1),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(flickerAnim, {
                     toValue: 0.4,
                     duration: 1500,
                     easing: Easing.bezier(0.4, 0, 0.2, 1),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();
@@ -32,13 +32,13 @@ export const useGateLogic = () => {
                     toValue: 1.05,
                     duration: 2500,
                     easing: Easing.inOut(Easing.sin),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
                 Animated.timing(scaleAnim, {
                     toValue: 0.95,
                     duration: 2500,
                     easing: Easing.inOut(Easing.sin),
-                    useNativeDriver: true,
+                    useNativeDriver: Platform.OS !== 'web',
                 }),
             ])
         ).start();

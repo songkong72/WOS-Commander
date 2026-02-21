@@ -85,7 +85,12 @@ const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactN
 
     return (
         <View className="relative overflow-hidden w-10 h-10 rounded-xl mr-3"
-            style={{ shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 5 }}
+            style={{
+                ...Platform.select({
+                    web: { boxShadow: `0px 2px 6px ${colors.shadow}66` },
+                    default: { shadowColor: colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 5 }
+                })
+            }}
         >
             <LinearGradient
                 colors={isDark ? [colors.bg, colors.bg] : ['#ffffff', colors.bg]}
@@ -327,9 +332,14 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                                 className={`font-black ${isSelected ? (isDark ? 'text-sky-400 text-xl' : 'text-sky-600 text-xl') : (isDark ? 'text-white text-base' : 'text-slate-500 text-base')}`}
                                 style={{
                                     opacity: isSelected ? 1 : 0.4,
-                                    textShadowColor: isDark ? 'rgba(0,0,0,0.3)' : 'transparent',
-                                    textShadowOffset: { width: 0, height: 1 },
-                                    textShadowRadius: 2,
+                                    ...(Platform.OS === 'web'
+                                        ? { textShadow: isDark ? '0px 1px 2px rgba(0,0,0,0.3)' : 'none' }
+                                        : {
+                                            textShadowColor: isDark ? 'rgba(0,0,0,0.3)' : 'transparent',
+                                            textShadowOffset: { width: 0, height: 1 },
+                                            textShadowRadius: 2,
+                                        }
+                                    ),
                                     transform: [{ scale: isSelected ? 1.1 : 0.9 }]
                                 }}
                             >
@@ -355,13 +365,11 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
             {/* Gradient Masks */}
             <LinearGradient
                 colors={[containerBgColor || (isDark ? '#191F28' : '#ffffff'), (containerBgColor || (isDark ? '#191F28' : '#ffffff')) + '00']}
-                pointerEvents="none"
-                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight / 2, zIndex: 10 }}
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight / 2, zIndex: 10, pointerEvents: 'none' as any }}
             />
             <LinearGradient
                 colors={[(containerBgColor || (isDark ? '#191F28' : '#ffffff')) + '00', containerBgColor || (isDark ? '#191F28' : '#ffffff')]}
-                pointerEvents="none"
-                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight / 2, zIndex: 10 }}
+                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight / 2, zIndex: 10, pointerEvents: 'none' as any }}
             />
         </View>
     );
@@ -800,11 +808,16 @@ const EventCard = memo(({
                                 {
                                     transform: [{ scale: pressed ? 0.96 : (hovered ? 1.02 : 1) }],
                                     opacity: pressed ? 0.8 : 1,
-                                    shadowColor: '#8b5cf6',
-                                    shadowOffset: { width: 0, height: hovered ? 4 : 0 },
-                                    shadowOpacity: hovered ? 0.2 : 0,
-                                    shadowRadius: 8,
-                                    elevation: hovered ? 4 : 0
+                                    ...Platform.select({
+                                        web: { boxShadow: hovered ? '0 4px 12px rgba(139, 92, 246, 0.2)' : 'none' },
+                                        default: {
+                                            shadowColor: '#8b5cf6',
+                                            shadowOffset: { width: 0, height: hovered ? 4 : 0 },
+                                            shadowOpacity: hovered ? 0.2 : 0,
+                                            shadowRadius: 8,
+                                            elevation: hovered ? 4 : 0
+                                        }
+                                    })
                                 }
                             ]}
                         >
@@ -821,11 +834,16 @@ const EventCard = memo(({
                                     {
                                         transform: [{ scale: pressed ? 0.96 : (hovered ? 1.02 : 1) }],
                                         opacity: pressed ? 0.8 : 1,
-                                        shadowColor: '#3182f6',
-                                        shadowOffset: { width: 0, height: hovered ? 4 : 0 },
-                                        shadowOpacity: hovered ? 0.2 : 0,
-                                        shadowRadius: 8,
-                                        elevation: hovered ? 4 : 0
+                                        ...Platform.select({
+                                            web: { boxShadow: '0 4px 12px rgba(49, 130, 246, 0.4)' },
+                                            default: {
+                                                shadowColor: '#3182f6',
+                                                shadowOffset: { width: 0, height: hovered ? 4 : 2 },
+                                                shadowOpacity: hovered ? 0.4 : 0.4,
+                                                shadowRadius: 8,
+                                                elevation: 3
+                                            }
+                                        })
                                     }
                                 ]}
                             >
@@ -1526,21 +1544,21 @@ export default function EventTracker() {
     useEffect(() => {
         const createFlicker = () => {
             return Animated.sequence([
-                Animated.timing(flickerAnim, { toValue: 0.3, duration: 50, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 1, duration: 50, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 0.4, duration: 100, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 1, duration: 50, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 0.2, duration: 50, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 0.7, duration: 50, useNativeDriver: true }),
-                Animated.timing(flickerAnim, { toValue: 1, duration: 2000, useNativeDriver: true }), // Long pause
+                Animated.timing(flickerAnim, { toValue: 0.3, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 1, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 0.4, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 1, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 0.2, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 1, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 0.7, duration: 50, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(flickerAnim, { toValue: 1, duration: 2000, useNativeDriver: Platform.OS !== 'web' }), // Long pause
             ]);
         };
 
         const createScale = () => {
             return Animated.sequence([
-                Animated.timing(scaleAnim, { toValue: 1.2, duration: 100, useNativeDriver: true }),
-                Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true }),
+                Animated.timing(scaleAnim, { toValue: 1.2, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
+                Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: Platform.OS !== 'web' }),
                 Animated.delay(2300),
             ]);
         };
@@ -1548,12 +1566,12 @@ export default function EventTracker() {
         const createPulse = () => {
             return Animated.parallel([
                 Animated.sequence([
-                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 800, useNativeDriver: true }),
-                    Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+                    Animated.timing(pulseAnim, { toValue: 1.05, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
                 ]),
                 Animated.sequence([
-                    Animated.timing(glowAnim, { toValue: 0.8, duration: 800, useNativeDriver: true }),
-                    Animated.timing(glowAnim, { toValue: 0.4, duration: 800, useNativeDriver: true }),
+                    Animated.timing(glowAnim, { toValue: 0.8, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
+                    Animated.timing(glowAnim, { toValue: 0.4, duration: 800, useNativeDriver: Platform.OS !== 'web' }),
                 ])
             ]);
         };
@@ -2975,10 +2993,15 @@ export default function EventTracker() {
                                                     style={{
                                                         backgroundColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
                                                         opacity: selectedCategory === cat ? 1 : 0.8,
-                                                        shadowColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
-                                                        shadowOffset: { width: 0, height: 0 },
-                                                        shadowOpacity: 0.8,
-                                                        shadowRadius: 5
+                                                        ...Platform.select({
+                                                            web: { boxShadow: `0 0 10px ${selectedCategory === cat ? 'rgba(99, 102, 241, 0.8)' : 'rgba(244, 63, 94, 0.8)'}` },
+                                                            default: {
+                                                                shadowColor: selectedCategory === cat ? '#6366f1' : '#f43f5e',
+                                                                shadowOffset: { width: 0, height: 0 },
+                                                                shadowOpacity: 0.8,
+                                                                shadowRadius: 5
+                                                            }
+                                                        })
                                                     }}
                                                 />
                                             )}
@@ -3059,33 +3082,51 @@ export default function EventTracker() {
                                         onPress={() => setViewMode('card')}
                                         style={({ pressed, hovered }: any) => [
                                             {
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
                                                 paddingHorizontal: 12,
-                                                paddingVertical: 8,
+                                                paddingVertical: 6,
                                                 borderRadius: 12,
-                                                backgroundColor: viewMode === 'card' ? '#f97316' : 'transparent',
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                backgroundColor: viewMode === 'card' ? (isDark ? '#334155' : 'white') : 'transparent',
+                                                ...(Platform.OS === 'web'
+                                                    ? (viewMode === 'card' ? { boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.05)' } : {})
+                                                    : (viewMode === 'card' ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 } : {})
+                                                ) as any,
+                                                transform: [{ scale: pressed ? 0.95 : 1 }],
+                                                transition: 'all 0.2s',
                                                 cursor: 'pointer'
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="apps" size={14} color={viewMode === 'card' ? 'white' : (isDark ? '#475569' : '#94a3b8')} />
+                                        <Ionicons name="list" size={16} color={viewMode === 'card' ? (isDark ? '#38bdf8' : '#3b82f6') : (isDark ? '#64748b' : '#94a3b8')} />
+                                        <Text className={`ml-2 font-bold ${viewMode === 'card' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 13 * fontSizeScale }}>
+                                            {t('events.list_view')}
+                                        </Text>
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setViewMode('timeline')}
                                         style={({ pressed, hovered }: any) => [
                                             {
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
                                                 paddingHorizontal: 12,
-                                                paddingVertical: 8,
+                                                paddingVertical: 6,
                                                 borderRadius: 12,
-                                                backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
-                                                transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                backgroundColor: viewMode === 'timeline' ? (isDark ? '#334155' : 'white') : 'transparent',
+                                                ...(Platform.OS === 'web'
+                                                    ? (viewMode === 'timeline' ? { boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.05)' } : {})
+                                                    : (viewMode === 'timeline' ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 } : {})
+                                                ) as any,
+                                                transform: [{ scale: pressed ? 0.95 : 1 }],
+                                                transition: 'all 0.2s',
                                                 cursor: 'pointer'
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="list" size={14} color={viewMode === 'timeline' ? 'white' : (isDark ? '#475569' : '#94a3b8')} />
+                                        <Ionicons name="calendar-outline" size={16} color={viewMode === 'timeline' ? (isDark ? '#38bdf8' : '#3b82f6') : (isDark ? '#64748b' : '#94a3b8')} />
+                                        <Text className={`ml-2 font-bold ${viewMode === 'timeline' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: 13 * fontSizeScale }}>
+                                            {t('events.timeline_view')}
+                                        </Text>
                                     </Pressable>
                                 </View>
                             </View>
@@ -3566,11 +3607,16 @@ export default function EventTracker() {
                                                                     activeOpacity={0.7}
                                                                     onPress={() => setSelectedFortressName(fName)}
                                                                     style={isSelected && !isDark ? {
-                                                                        shadowColor: '#0ea5e9',
-                                                                        shadowOffset: { width: 0, height: 4 },
-                                                                        shadowOpacity: 0.2,
-                                                                        shadowRadius: 8,
-                                                                        elevation: 4
+                                                                        ...Platform.select({
+                                                                            web: { boxShadow: `0 4px 12px ${cat === 'personal' ? 'rgba(14, 165, 233, 0.4)' : (cat === 'server' ? 'rgba(99, 102, 241, 0.4)' : 'rgba(16, 185, 129, 0.4)')}` },
+                                                                            default: {
+                                                                                shadowColor: cat === 'personal' ? '#0ea5e9' : (cat === 'server' ? '#6366f1' : '#10b981'),
+                                                                                shadowOffset: { width: 0, height: 4 },
+                                                                                shadowOpacity: 0.3,
+                                                                                shadowRadius: 8,
+                                                                                elevation: 6
+                                                                            }
+                                                                        })
                                                                     } : undefined}
                                                                     className={`mr-2.5 px-4 py-2.5 rounded-2xl flex-row items-center border ${isSelected ? (isDark ? 'bg-sky-500 border-sky-400' : 'bg-sky-500 border-sky-500') : (isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-white border-slate-200/60')}`}
                                                                 >

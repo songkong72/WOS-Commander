@@ -25,6 +25,7 @@
         "month": "월",
         "week": "주",
         "day": "일",
+        "day_short": "일",
         "ok": "확인",
         "close": "닫기",
         "delete": "삭제",

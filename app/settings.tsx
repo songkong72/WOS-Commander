@@ -22,7 +22,12 @@ export default function Settings() {
             <LinearGradient
                 colors={isDark ? ['#1e293b', '#0f172a'] : ['#ffffff', '#f8fafc']}
                 className="px-6 pt-4 pb-2"
-                style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 }}
+                style={{
+                    ...Platform.select({
+                        web: { boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)' },
+                        default: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 }
+                    })
+                }}
             >
                 <View className="flex-row items-center">
                     <TouchableOpacity

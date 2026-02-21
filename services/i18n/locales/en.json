@@ -25,6 +25,7 @@
         "month": "Month",
         "week": "Week",
         "day": "Day",
+        "day_short": "d",
         "ok": "OK",
         "close": "Close",
         "delete": "Delete",
