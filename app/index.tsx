@@ -3069,9 +3069,9 @@ export default function Home() {
                                 elevation: 0,
                             }}
                         >
-                            <View className={`${windowWidth < 380 ? 'px-2' : 'px-4'} py-4 flex-row items-center`}>
+                            <View className={`${windowWidth < 380 ? 'px-3' : 'px-4'} py-4 flex-row items-center`}>
                                 {/* Icon */}
-                                <View className={`${windowWidth < 380 ? 'w-11 h-11 mr-2' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
+                                <View className={`${windowWidth < 380 ? 'w-11 h-11 mr-2.5' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
                                     {eventImageUrl ? (
                                         <Image
                                             source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
@@ -3094,7 +3094,7 @@ export default function Home() {
                                     <View className="flex-row items-center mb-1">
                                         <Text
                                             className={`flex-1 font-bold tracking-tighter ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
-                                            numberOfLines={1}
+                                            numberOfLines={windowWidth < 380 ? 2 : 1}
                                             adjustsFontSizeToFit={true}
                                             minimumFontScale={0.5}
                                             style={{ fontFamily: 'Pretendard-Bold', fontSize: (windowWidth < 380 ? 14 : (windowWidth < 400 ? 16 : 18)) * fontSizeScale }}
@@ -3151,7 +3151,7 @@ export default function Home() {
                                                                 <Text
                                                                     key={idx}
                                                                     className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
-                                                                    numberOfLines={1}
+                                                                    numberOfLines={windowWidth < 380 ? 2 : 1}
                                                                     adjustsFontSizeToFit={true}
                                                                     minimumFontScale={0.7}
                                                                     style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale }}
