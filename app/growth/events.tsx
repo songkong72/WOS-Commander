@@ -492,7 +492,15 @@ const EventCard = memo(({
                                 <Ionicons name="calendar-outline" size={20} color={isDark ? '#B0B8C1' : '#8B95A1'} />
                             </View>
                         )}
-                        <Text className={`font-bold flex-1 ${textColor}`} numberOfLines={1} style={{ letterSpacing: -0.5, fontSize: 20 * fontSizeScale }}>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
+                        <Text
+                            className={`font-bold flex-1 ${textColor}`}
+                            numberOfLines={2}
+                            adjustsFontSizeToFit
+                            minimumFontScale={0.8}
+                            style={{ letterSpacing: -0.5, fontSize: 20 * fontSizeScale }}
+                        >
+                            {t(`events.${event.id}_title`, { defaultValue: event.title })}
+                        </Text>
                         {!!event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
