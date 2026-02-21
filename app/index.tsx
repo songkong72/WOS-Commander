@@ -3094,7 +3094,7 @@ export default function Home() {
                                     <View className="flex-row items-center mb-1">
                                         <Text
                                             className={`flex-1 font-bold tracking-tighter ${isDark ? 'text-slate-100' : 'text-slate-900'}`}
-                                            numberOfLines={windowWidth < 380 ? 2 : 1}
+                                            numberOfLines={windowWidth < 430 ? 2 : 1}
                                             adjustsFontSizeToFit={true}
                                             minimumFontScale={0.5}
                                             style={{ fontFamily: 'Pretendard-Bold', fontSize: (windowWidth < 380 ? 14 : (windowWidth < 400 ? 16 : 18)) * fontSizeScale }}
@@ -3151,7 +3151,7 @@ export default function Home() {
                                                                 <Text
                                                                     key={idx}
                                                                     className={`font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}
-                                                                    numberOfLines={windowWidth < 380 ? 2 : 1}
+                                                                    numberOfLines={windowWidth < 430 ? 2 : 1}
                                                                     adjustsFontSizeToFit={true}
                                                                     minimumFontScale={0.7}
                                                                     style={{ fontFamily: 'Pretendard-Medium', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale }}
