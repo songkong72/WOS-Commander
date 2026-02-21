@@ -65,23 +65,6 @@ export const EventSectionList: React.FC<EventSectionListProps> = ({
 }) => {
     return (
         <>
-            {/* Section 2: Sticky Header (Weekly Program + Tabs) */}
-            <EventSectionHeader
-                isDark={isDark}
-                windowWidth={windowWidth}
-                fontSizeScale={fontSizeScale}
-                t={t}
-                timezone={timezone}
-                setTimezone={setTimezone}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
-                isMobile={isMobile}
-                displayEvents={displayEvents}
-                isEventActive={isEventActive}
-                isEventExpired={isEventExpired}
-                activeEventTab={activeEventTab}
-                scrollToSection={scrollToSection}
-            />
 
             {/* Section 3: Event List */}
             <View

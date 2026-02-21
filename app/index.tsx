@@ -52,19 +52,10 @@ import {
 import { dfs as dfsUtil } from './utils/dynamicFontSize';
 import {
     DATE_RANGE_IDS,
-    getEventSchedule as getEventScheduleUtil,
-    getEventEndDate as getEventEndDateUtil,
-    checkWeeklyExpired as checkWeeklyExpiredUtil,
-    isEventExpired as isEventExpiredUtil,
-    getRemainingSeconds as getRemainingSecondsUtil,
-    getNextResetSeconds as getNextResetSecondsUtil,
-    checkItemActive as checkItemActiveUtil,
-    isVisibleInList as isVisibleInListUtil,
-    calculateBearHuntDay as calculateBearHuntDayUtil,
-    isEventActive as isEventActiveUtil,
     getBundleId as getBundleIdUtil,
     getSortTime as getSortTimeUtil
 } from './utils/eventStatus';
+import { useDashboard } from './hooks/useDashboard';
 import { doc, setDoc, getDoc, collection, getDocs, query, writeBatch, updateDoc, onSnapshot, orderBy, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import AdminManagement from '../components/AdminManagement';
@@ -82,6 +73,7 @@ import { EventCard } from '../components/events/EventCard';
 import { SuperAdminModal } from '../components/modals/SuperAdminModal';
 import { EventSectionList } from '../components/dashboard/EventSectionList';
 import { DashboardCards } from '../components/dashboard/DashboardCards';
+import { EventSectionHeader } from '../components/dashboard/EventSectionHeader';
 
 
 export default function Home() {
@@ -93,25 +85,8 @@ export default function Home() {
     const { language, changeLanguage } = useLanguage();
     const isDark = theme === 'dark';
     const [isLoading, setIsLoading] = useState(false);
-    const sectionPositions = useRef<{ [key: string]: number }>({});
-    const [activeEventTab, setActiveEventTab] = useState<'active' | 'upcoming' | 'expired'>('active');
-    const [containerY, setContainerY] = useState(0);
-    const [isExpiredExpanded, setIsExpiredExpanded] = useState(false);
-    const { width: windowWidth } = useWindowDimensions();
-    const isMobile = windowWidth < 600;
 
-    const scrollToSection = useCallback((section: 'active' | 'upcoming' | 'expired') => {
-        if (section === 'expired') setIsExpiredExpanded(true);
-        const sectionY = sectionPositions.current[section];
-        if (sectionY !== undefined && mainScrollRef.current) {
-            const offset = 150; // Offset for sticky header
-            mainScrollRef.current.scrollTo({
-                y: sectionY + containerY - offset,
-                animated: true
-            });
-            setActiveEventTab(section);
-        }
-    }, [containerY]);
+    // -- Admin Authentication Hook --
     const adminAuth = useAdminAuth({
         auth,
         login,
@@ -164,196 +139,91 @@ export default function Home() {
         toggleSelectRequest
     } = adminAuth;
 
+    // -- Firestore Data Hooks --
     const noticeData = useFirestoreNotice(serverId, allianceId);
     const { notice, saveNotice } = noticeData;
     const { themeConfig: globalThemeConfig, saveDefaultMode: saveGlobalTheme } = useFirestoreThemeConfig(null, null);
     const { schedules, loading, clearAllSchedules } = useFirestoreEventSchedules(serverId, allianceId);
-
-    const [adminMenuVisible, setAdminMenuVisible] = useState(false);
-    const [loginModalVisible, setLoginModalVisible] = useState(false);
-
-    // -- Trigger Admin Menu via Query Params (For Navigation/Settings Button) --
-    useEffect(() => {
-        if (params.showAdminMenu === 'true') {
-            if (auth.isLoggedIn) {
-                setAdminMenuVisible(true);
-            } else {
-                setLoginModalVisible(true);
-            }
-            // Clear the param
-            router.setParams({ showAdminMenu: undefined });
-        }
-    }, [params.showAdminMenu, auth.isLoggedIn]);
-
-    // -- Handle viewMode from parameters (Back navigation restoration) --
-    useEffect(() => {
-        if (params.viewMode === 'list' || params.viewMode === 'timeline') {
-            setViewMode(params.viewMode);
-            // Clear the param so it doesn't stay in the URL
-            router.setParams({ viewMode: undefined });
-        }
-    }, [params.viewMode]);
-
-    // -- Scroll Restoration --
-    useEffect(() => {
-        if (serverId && allianceId && !isLoading && dashboardScrollY > 0) {
-            // Small timeout to ensure layout is ready
-            const timer = setTimeout(() => {
-                mainScrollRef.current?.scrollTo({ y: dashboardScrollY, animated: false });
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [serverId, allianceId, isLoading]);
-
-    // -- Modals --
-
-    const [isSuperAdminDashboardVisible, setIsSuperAdminDashboardVisible] = useState(false);
-    const [adminDashboardVisible, setAdminDashboardVisible] = useState(false);
-
-
-    const [adminMenuHover, setAdminMenuHover] = useState<string | null>(null);
-    const [isUserPassChangeOpen, setIsUserPassChangeOpen] = useState(false);
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [isChangingPassword, setIsChangingPassword] = useState(false);
-    const [showModalPw, setShowModalPw] = useState(false);
-    const [showPass1, setShowPass1] = useState(false);
-    const [showPass2, setShowPass2] = useState(false);
-    const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
-
-    // -- Font Size Persistence --
-    useEffect(() => {
-        AsyncStorage.getItem('settings_fontSize').then(val => {
-            if (val && ['small', 'medium', 'large'].includes(val)) {
-                setFontSize(val as any);
-                // Trigger global change on load
-                const scale = val === 'small' ? 0.95 : val === 'large' ? 1.25 : 1.1;
-                changeFontSize(scale);
-            }
-        });
-    }, []);
-
-    useEffect(() => {
-        AsyncStorage.setItem('settings_fontSize', fontSize);
-        // Sync with global context
-        const scale = fontSize === 'small' ? 0.95 : fontSize === 'large' ? 1.25 : 1.1;
-        changeFontSize(scale);
-    }, [fontSize]);
-
-    // -- Dynamic Font Size Helper --
-    const dfs = (baseClass: string) => dfsUtil(baseClass, fontSize);
-
-
-    const [noticeDetailVisible, setNoticeDetailVisible] = useState(false);
-    const [noticePopupVisible, setNoticePopupVisible] = useState(false);
-    const [noticePopupDontShow, setNoticePopupDontShow] = useState(false);
-    const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
-    const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
-    const [isManualVisible, setIsManualVisible] = useState(false);
-
-    // -- Global Back Button & History Handling for Modals (Web Fix) --
-    useEffect(() => {
-        if (Platform.OS !== 'web') return;
-
-        const handlePopState = () => {
-            setIsManualVisible(false);
-            setAdminMenuVisible(false);
-            setNoticeDetailVisible(false);
-            setAdminDashboardVisible(false);
-            setIsSuperAdminDashboardVisible(false);
-            setIsUserPassChangeOpen(false);
-            setNoticePopupVisible(false);
-        };
-
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, [isManualVisible, adminMenuVisible, noticeDetailVisible, adminDashboardVisible,
-        isSuperAdminDashboardVisible, isUserPassChangeOpen, noticePopupVisible]);
-
-    const openModalWithHistory = (setter: (v: boolean) => void) => {
-        setter(true);
-        if (Platform.OS === 'web') {
-            window.history.pushState({ modal: true }, '');
-        }
-    };
-
-
-
-
-
-    // Check if notice popup should be shown on load
-    useEffect(() => {
-        const checkNoticePopup = async () => {
-            // Don't show popup for logged-in admins (they can see via banner)
-            if (auth.isLoggedIn) return;
-            if (!notice || !notice.visible || !notice.content) return;
-
-            try {
-                // Generate a simple hash of notice content to detect changes
-                const noticeHash = btoa(unescape(encodeURIComponent(notice.content))).substring(0, 20);
-                const storageKey = `notice_dismissed_${serverId}_${allianceId}`;
-                const dismissedData = await AsyncStorage.getItem(storageKey);
-
-                if (dismissedData) {
-                    const parsed = JSON.parse(dismissedData);
-                    // Check if permanently dismissed for this notice
-                    if (parsed.hash === noticeHash && parsed.permanent) {
-                        return; // Don't show
-                    }
-                    // Check if dismissed today
-                    if (parsed.hash === noticeHash && parsed.today) {
-                        const dismissedDate = new Date(parsed.date);
-                        const today = new Date();
-                        if (dismissedDate.toDateString() === today.toDateString()) {
-                            return; // Don't show today
-                        }
-                    }
-                }
-
-                // Show the popup - ONLY for logged in users
-                if (auth.isLoggedIn) {
-                    setTimeout(() => setNoticePopupVisible(true), 500);
-                }
-            } catch (e) {
-                console.error('Notice popup check error:', e);
-            }
-        };
-
-        checkNoticePopup();
-    }, [notice, serverId, allianceId, auth.isLoggedIn]);
-
-    const dismissNoticePopup = async (permanent: boolean = false, today: boolean = false) => {
-        setNoticePopupVisible(false);
-        setNoticePopupDontShow(false);
-
-        if ((permanent || today) && notice?.content) {
-            try {
-                const noticeHash = btoa(unescape(encodeURIComponent(notice.content))).substring(0, 20);
-                const storageKey = `notice_dismissed_${serverId}_${allianceId}`;
-                await AsyncStorage.setItem(storageKey, JSON.stringify({
-                    hash: noticeHash,
-                    permanent,
-                    today,
-                    date: new Date().toISOString()
-                }));
-            } catch (e) {
-                console.error('Notice dismiss error:', e);
-            }
-        };
-    };
-
-
-    // Dynamic Admins Support
     const { dynamicAdmins, addAdmin, removeAdmin } = useFirestoreAdmins(serverId, allianceId);
-    const [newAdminRole, setNewAdminRole] = useState<'admin' | 'alliance_admin'>('admin');
-    const [showAdminList, setShowAdminList] = useState(false);
+
+    const dashboard = useDashboard({
+        serverId,
+        allianceId,
+        auth,
+        schedules,
+        notice,
+        saveNotice,
+        showCustomAlert,
+        t,
+        changeFontSize,
+        mainScrollRef,
+        dashboardScrollY,
+        setDashboardScrollY,
+        setIsGateOpen
+    });
+
+    const {
+        now,
+        activeEventTab, setActiveEventTab,
+        containerY, setContainerY,
+        isActiveExpanded, setIsActiveExpanded,
+        isUpcomingExpanded, setIsUpcomingExpanded,
+        isExpiredExpanded, setIsExpiredExpanded,
+        timezone, setTimezone,
+        viewMode, setViewMode,
+        fontSize, setFontSize,
+        adminMenuVisible, setAdminMenuVisible,
+        loginModalVisible, setLoginModalVisible,
+        isSuperAdminDashboardVisible, setIsSuperAdminDashboardVisible,
+        adminDashboardVisible, setAdminDashboardVisible,
+        isUserPassChangeOpen, setIsUserPassChangeOpen,
+        noticeDetailVisible, setNoticeDetailVisible,
+        noticePopupVisible, setNoticePopupVisible,
+        noticeModalVisible, setNoticeModalVisible,
+        installModalVisible, setInstallModalVisible,
+        isManualVisible, setIsManualVisible,
+        newPassword, setNewPassword,
+        confirmPassword, setConfirmPassword,
+        isChangingPassword, setIsChangingPassword,
+        showModalPw, setShowModalPw,
+        editNoticeContent, setEditNoticeContent,
+        editNoticeVisible, setEditNoticeVisible,
+        noticePopupDontShow, setNoticePopupDontShow,
+        sectionPositions,
+        displayEvents,
+        scrollToSection,
+        dismissNoticePopup,
+        handleOpenNotice,
+        handleSaveNoticeAction: handleSaveNotice,
+        openModalWithHistory,
+        getEventSchedule,
+        getEventEndDate,
+        isEventExpired,
+        getRemainingSeconds,
+        getNextResetSeconds,
+        isEventActive,
+        formatRemainingTime,
+        toLocal,
+        toUTC,
+        isMobile,
+        windowWidth
+    } = dashboard;
+
+    const pad = (n: number) => padUtil(n);
+    const getKoreanDayOfWeek = (date: Date) => getKoreanDayOfWeekUtil(date, t);
+    const translateDay = (day: string) => translateDayUtil(day, t);
+    const translateLabel = (label: string) => translateLabelUtil(label, t);
+    const getBundleId = (ev: any) => getBundleIdUtil(ev);
+    const getSortTime = (ev: any) => getSortTimeUtil(ev, now);
+
     const isSuperAdmin = auth.isLoggedIn && (
         auth.role === 'master' ||
         auth.role === 'super_admin'
     );
 
+    const [newAdminRole, setNewAdminRole] = useState<'admin' | 'alliance_admin'>('admin');
+    const [showAdminList, setShowAdminList] = useState(false);
     const [hoveredHeaderBtn, setHoveredHeaderBtn] = useState<string | null>(null);
-
 
     const handleMigrateToAlliance = async () => {
         if (!serverId || !allianceId) {
@@ -453,414 +323,21 @@ export default function Home() {
         }
     }, [showAdminList]);
 
-
-
-
-
-    const [now, setNow] = useState(new Date());
-    useEffect(() => {
-        const timer = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    const getEventSchedule = (event: any) => getEventScheduleUtil(event, schedules);
-    const getEventEndDate = (event: any) => getEventEndDateUtil(event, schedules, now);
-    const checkWeeklyExpired = (str: string) => checkWeeklyExpiredUtil(str, now);
-    const isEventExpired = (event: any) => isEventExpiredUtil(event, schedules, now);
-    const getRemainingSeconds = (str: string, eventId?: string) => getRemainingSecondsUtil(str, now, eventId);
-    const getNextResetSeconds = () => getNextResetSecondsUtil(now);
-    const checkItemActive = (str: string, targetNow: Date, eventId?: string) => checkItemActiveUtil(str, targetNow, eventId);
-    const isVisibleInList = (event: any) => isVisibleInListUtil(event, schedules, now);
-
-    const calculateBearHuntDay = useCallback((event: any, targetTime?: string): string =>
-        calculateBearHuntDayUtil(event, schedules, now, targetTime), [now, schedules]);
-
-    const isEventActive = (event: any) => isEventActiveUtil(
-        event,
-        schedules,
-        now,
-        toLocal,
-        checkItemActive,
-        (e, s, n) => calculateBearHuntDayUtil(e, s, n)
-    );
-
-    const pad = (n: number) => padUtil(n);
-    const formatRemainingTime = (seconds: number) => formatRemainingTimeUtil(seconds);
-    const getKoreanDayOfWeek = (date: Date) => getKoreanDayOfWeekUtil(date, t);
-    const translateDay = (day: string) => translateDayUtil(day, t);
-    const translateLabel = (label: string) => translateLabelUtil(label, t);
-    const getBundleId = (ev: any) => getBundleIdUtil(ev);
-    const getSortTime = (ev: any) => getSortTimeUtil(ev, now);
-
     // --- Timezone Conversion Helpers ---
-    const toLocal = (kstStr: string) => toLocalUtil(kstStr, (str, diff) => processConversion(str, diff));
-    const toUTC = (kstStr: string) => toUTCUtil(kstStr, (str, diff) => processConversion(str, diff));
-
     const convertTime = (kstStr: string) => {
         if (!kstStr) return kstStr;
         return timezone === 'LOCAL' ? toLocal(kstStr) : toUTC(kstStr);
     };
 
     const processConversion = (str: string, diffMinutes: number) => processConversionUtil(str, diffMinutes, t, now);
-    // ------------------------------------
-
     const splitSchedulePart = (str: string) => splitSchedulePartUtil(str, t, now);
-
-
-
-    const [noticeModalVisible, setNoticeModalVisible] = useState(false);
-    const [editNoticeContent, setEditNoticeContent] = useState('');
-    const [editNoticeVisible, setEditNoticeVisible] = useState(true);
-    const [superAdminDashboardVisible, setSuperAdminDashboardVisible] = useState(false);
-    const [installModalVisible, setInstallModalVisible] = useState(false);
-
-    // Section collapse states
-    const [isActiveExpanded, setIsActiveExpanded] = useState(true);
-    const [isUpcomingExpanded, setIsUpcomingExpanded] = useState(true);
-
-
 
     // Enable LayoutAnimation for Android
     if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
         UIManager.setLayoutAnimationEnabledExperimental(true);
     }
 
-
-    // Load active tab state
-    useEffect(() => {
-        AsyncStorage.getItem('activeEventTab').then(saved => {
-            if (saved && (saved === 'active' || saved === 'upcoming' || saved === 'expired')) {
-                setActiveEventTab(saved as 'active' | 'upcoming' | 'expired');
-            }
-        });
-    }, []);
-
-
-
-
-
-
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-
-
-
-    const handleOpenNotice = () => {
-        if (notice) {
-            setEditNoticeContent(notice.content);
-            setEditNoticeVisible(notice.visible);
-        }
-        setNoticeModalVisible(true);
-    };
-
-    const handleSaveNotice = async () => {
-        await saveNotice(editNoticeContent, editNoticeVisible);
-        setNoticeModalVisible(false);
-        showCustomAlert(t('admin.saveNoticeSuccessTitle'), t('admin.saveNoticeSuccessDesc'), 'success');
-    };
-
-    const displayEvents = useMemo(() => {
-        if (!schedules) return [];
-        const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
-
-        // 1. First, map schedules to base event info and filter out invalid/unnecessary items
-        const rawList = schedules.map(s => {
-            let searchId = s.eventId;
-            if (s.eventId === 'alliance_frost_league' || s.eventId === 'a_weapon') searchId = 'a_weapon';
-            if (s.eventId === 'alliance_operation' || s.eventId === 'a_operation') searchId = 'alliance_operation';
-            if (s.eventId === 'alliance_trade' || s.eventId === 'a_trade') searchId = 'alliance_trade';
-            if (s.eventId === 'alliance_champion' || s.eventId === 'a_champ') searchId = 'alliance_champion';
-            if (s.eventId === 'alliance_bear' || s.eventId === 'a_bear') searchId = 'alliance_bear';
-            if (s.eventId === 'alliance_joe' || s.eventId === 'a_joe') searchId = 'alliance_joe';
-            if (s.eventId === 'alliance_center' || s.eventId === 'a_center') searchId = 'alliance_center';
-            const eventInfo = allBaseEvents.find(e => e.id === searchId);
-            const cleanDay = (s.day === '.' || s.day?.trim() === '.') ? '' : (s.day || '');
-            const cleanTime = (s.time === '.' || s.time?.trim() === '.') ? '' : (s.time || '');
-            return {
-                ...s,
-                day: cleanDay,
-                time: cleanTime,
-                title: eventInfo ? eventInfo.title : '알 수 없는 이벤트',
-                imageUrl: eventInfo?.imageUrl,
-                category: eventInfo?.category
-            };
-        }).filter(e => {
-            if (e.title === '알 수 없는 이벤트') return false;
-            if (!(!!e.day || !!e.time)) return false;
-
-            return isVisibleInList(e); // Use the new visibility logic
-        });
-
-        // 2. Split Bear Hunt into separate cards for Team 1 and Team 2
-        const processedList: any[] = [];
-        rawList.forEach(e => {
-            const isBear = (e.eventId === 'a_bear' || e.eventId === 'alliance_bear' || e.eventId.includes('bear'));
-            if (isBear) {
-                // 곰사냥 2일 단위 로테이션으로 실제 요일 계산
-                const parts = (e.time || '').split(/\s*\/\s*/);
-                if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
-                        // Simplify Team Label (e.g., 곰 1 팀 -> 1군)
-                        const cleanLabel = rawLabel ? (rawLabel.replace(/곰|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-
-                        // Extract day from teamTime (e.g., "월(12:30)" -> "월")
-                        const dayMatch = teamTime.match(/^([일월화수목금토])/);
-                        const registeredTeamDay = dayMatch ? dayMatch[1] : (e.day || '월');
-
-                        // 곰사냥 로테이션을 반영한 실제 요일 계산 (각 팀별 등록 요일과 팀별 시간을 기준)
-                        const actualTeamDay = calculateBearHuntDay({ ...e, day: registeredTeamDay }, teamTime);
-
-                        let simplifiedTime = teamTime.split(/[,|]/).map(t => {
-                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
-                        }).join(', ');
-
-                        // 만약 시간이 "월 01:30" 처럼 요일을 포함하고 있다면, 실제 요일로 교체
-                        if (dayMatch && dayMatch[0] !== actualTeamDay) {
-                            simplifiedTime = simplifiedTime.replace(dayMatch[0], actualTeamDay);
-                        }
-
-                        processedList.push({
-                            ...e,
-                            eventId: `${e.eventId}_team${idx + 1}`,
-                            originalEventId: e.eventId,
-                            title: t('events.alliance_bear_title'),
-                            day: actualTeamDay, // 각 팀별 실제 요일
-                            time: simplifiedTime,
-                            isBearSplit: true,
-                            teamLabel: cleanLabel,
-                            teamIcon: '🐻'
-                        });
-                    });
-                } else {
-                    const actualDay = calculateBearHuntDay(e);
-                    const dayMatch = (e.time || '').match(/^([일월화수목금토])/);
-                    let updatedTime = e.time || '';
-                    if (dayMatch && dayMatch[0] !== actualDay) {
-                        updatedTime = updatedTime.replace(dayMatch[0], actualDay);
-                    }
-                    processedList.push({ ...e, day: actualDay, time: updatedTime });
-                }
-            } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
-                // Split Foundry into separate cards for Team 1 and Team 2
-                const parts = (e.time || '').split(/\s*\/\s*/);
-                if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
-                        const cleanLabel = rawLabel ? (rawLabel.replace(/팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-
-                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
-                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
-                        }).join(', ');
-
-                        processedList.push({
-                            ...e,
-                            eventId: `${e.eventId}_team${idx + 1}`,
-                            originalEventId: e.eventId,
-                            title: t('events.alliance_foundry_title'),
-                            time: simplifiedTime,
-                            isFoundrySplit: true,
-                            teamLabel: cleanLabel,
-                            teamIcon: '🏭'
-                        });
-                    });
-                } else {
-                    processedList.push(e);
-                }
-            } else if (e.eventId === 'a_fortress' || e.eventId === 'alliance_fortress') {
-                // Split Fortress Battle into separate 'Fortress' and 'Citadel' events
-                const rawTime = (e.time || '').replace(/\s*\/\s*/g, ', ');
-                const parts = rawTime.split(',').map(p => {
-                    let cleaned = p.trim().replace(/.*(요새전|성채전|Fortress|Citadel)[:\s：]*/, '');
-                    return cleaned.trim();
-                }).filter(p => p);
-
-                const fortressParts: string[] = [];
-                const citadelParts: string[] = [];
-
-                parts.forEach(part => {
-                    if (part.includes('성채') || part.toLowerCase().includes('citadel')) {
-                        citadelParts.push(part);
-                    } else {
-                        fortressParts.push(part);
-                    }
-                });
-
-                // Add Fortress Event if data exists
-                if (fortressParts.length > 0) {
-                    processedList.push({
-                        ...e,
-                        eventId: `${e.eventId}_fortress`,
-                        originalEventId: e.eventId,
-                        title: t('events.fortress_battle_title'),
-                        day: t('events.fortress'),
-                        time: fortressParts.join(', '),
-                        isFortressSplit: true
-                    });
-                }
-
-                // Add Citadel Event if data exists
-                if (citadelParts.length > 0) {
-                    processedList.push({
-                        ...e,
-                        eventId: `${e.eventId}_citadel`,
-                        originalEventId: e.eventId,
-                        title: t('events.citadel_battle_title'),
-                        day: t('events.citadel'),
-                        time: citadelParts.join(', '),
-                        isFortressSplit: true
-                    });
-                }
-
-                // If neither exists (empty time), push original as fallback (optional, but good for safety)
-                if (fortressParts.length === 0 && citadelParts.length === 0) {
-                    processedList.push(e);
-                }
-            } else if (e.eventId === 'alliance_canyon') {
-                // Split Canyon Battle into Team 1 and Team 2
-                const parts = (e.time || '').split(/\s*\/\s*/);
-                if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
-                        const cleanLabel = rawLabel ? (rawLabel.replace(/협곡|전투|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-
-                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
-                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
-                        }).join(', ');
-
-                        processedList.push({
-                            ...e,
-                            eventId: `${e.eventId}_team${idx + 1}`,
-                            originalEventId: e.eventId,
-                            title: t('events.canyon_title'),
-                            time: simplifiedTime,
-                            isCanyonSplit: true,
-                            teamLabel: cleanLabel,
-                            teamIcon: '⛰️'
-                        });
-                    });
-                } else {
-                    processedList.push(e);
-                }
-            } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
-                // Split Weapon Factory into Team 1 and Team 2
-                const parts = (e.time || '').split(/\s*\/\s*/);
-                if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
-                        const cleanLabel = rawLabel ? (rawLabel.replace(/무기|공장|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-
-                        const simplifiedTime = teamTime.split(/[,|]/).map(t => {
-                            return t.replace(/출격|귀환|시작|종료/g, '').trim();
-                        }).join(', ');
-
-                        processedList.push({
-                            ...e,
-                            eventId: `${e.eventId}_team${idx + 1}`,
-                            originalEventId: e.eventId,
-                            title: cleanLabel ? `${t('events.foundry_title')}(${cleanLabel})` : t('events.foundry_title'),
-                            time: simplifiedTime,
-                            isFoundrySplit: true,
-                            teamLabel: cleanLabel,
-                            teamIcon: '🏭'
-                        });
-                    });
-                } else {
-                    processedList.push(e);
-                }
-            } else {
-                processedList.push(e);
-            }
-        });
-
-
-
-        // Pre-calculate group-level data: minTime, hasActive, allExpired, count
-        const groupData: { [key: string]: { minTime: number, hasActive: boolean, allExpired: boolean, count: number } } = {};
-        processedList.forEach(e => {
-            const groupId = getBundleId(e);
-            const sTime = getSortTime(e);
-            const active = isEventActive(e);
-            const expired = isEventExpired(e);
-
-            if (!groupData[groupId]) {
-                groupData[groupId] = { minTime: sTime, hasActive: active, allExpired: expired, count: 1 };
-            } else {
-                if (sTime < groupData[groupId].minTime) groupData[groupId].minTime = sTime;
-                if (active) groupData[groupId].hasActive = true;
-                groupData[groupId].allExpired = groupData[groupId].allExpired && expired;
-                groupData[groupId].count += 1;
-            }
-        });
-
-        return processedList.sort((a, b) => {
-            const groupIdA = getBundleId(a);
-            const groupIdB = getBundleId(b);
-            const gDataA = groupData[groupIdA];
-            const gDataB = groupData[groupIdB];
-
-            // Priority 1: Group Active Status (If any member is active, move whole group up)
-            if (gDataA.hasActive && !gDataB.hasActive) return -1;
-            if (!gDataA.hasActive && gDataB.hasActive) return 1;
-
-            // Priority 2: Group Expired Status (Only move to bottom if ALL members are expired)
-            if (!gDataA.allExpired && gDataB.allExpired) return -1;
-            if (gDataA.allExpired && !gDataB.allExpired) return 1;
-
-            // Priority 3: Bundle Priority (Keep bundles together at the top of each section to ensure side-by-side layout)
-            const isBundleA = gDataA.count > 1;
-            const isBundleB = gDataB.count > 1;
-            if (isBundleA && !isBundleB) return -1;
-            if (!isBundleA && isBundleB) return 1;
-
-            // Priority 4: Group Sort Time (Keep groups together by earliest member's time)
-            if (gDataA.minTime !== gDataB.minTime) return gDataA.minTime - gDataB.minTime;
-
-            // Priority 5: Strict Group ID grouping (for groups with same time)
-            if (groupIdA !== groupIdB) return groupIdA.localeCompare(groupIdB);
-
-            // Priority 6: Internal Order
-            // Team Order (1군 < 2군)
-            const teamA = a.teamLabel ? (parseInt(a.teamLabel) || (a.teamLabel.includes('1') ? 1 : 2)) : 0;
-            const teamB = b.teamLabel ? (parseInt(b.teamLabel) || (b.teamLabel.includes('1') ? 1 : 2)) : 0;
-            if (teamA !== teamB) return teamA - teamB;
-
-            // Fortress/Citadel Priority (Fortress < Citadel)
-            const aIsFortress = a.title.includes('요새') || a.title.toLowerCase().includes('fortress');
-            const aIsCitadel = a.title.includes('성채') || a.title.toLowerCase().includes('citadel');
-            const bIsFortress = b.title.includes('요새') || b.title.toLowerCase().includes('fortress');
-            const bIsCitadel = b.title.includes('성채') || b.title.toLowerCase().includes('citadel');
-            if (aIsFortress && bIsCitadel) return -1;
-            if (aIsCitadel && bIsFortress) return 1;
-
-            // Priority 7: Title Alphabetical
-            return (a.title || '').localeCompare(b.title || '');
-        });
-    }, [schedules, now, calculateBearHuntDay, t]);
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -967,7 +444,7 @@ export default function Home() {
 
             <ImageBackground
                 source={require('../assets/images/bg-main.png')}
-                style={{ position: 'absolute', width: '100%', height: '100%', opacity: isDark ? 0.3 : 0.05 }}
+                style={{ position: 'absolute', width: '100%', height: '100%', opacity: isDark ? 0.45 : 0.12 }}
                 resizeMode="cover"
             />
 
@@ -1031,6 +508,23 @@ export default function Home() {
                     router={router}
                 />
 
+                <EventSectionHeader
+                    isDark={isDark}
+                    windowWidth={windowWidth}
+                    fontSizeScale={fontSizeScale}
+                    t={t}
+                    timezone={timezone}
+                    setTimezone={setTimezone}
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    isMobile={isMobile}
+                    displayEvents={displayEvents}
+                    isEventActive={isEventActive}
+                    isEventExpired={isEventExpired}
+                    activeEventTab={activeEventTab}
+                    scrollToSection={scrollToSection}
+                />
+
                 <EventSectionList
                     isDark={isDark}
                     windowWidth={windowWidth}
@@ -1062,7 +556,7 @@ export default function Home() {
                 />
 
                 {/* Modern Refined Footer */}
-                <View className="mt-12 mb-20 items-center">
+                <View className="mt-32 mb-24 items-center">
                     {/* Thin Subtle Divider */}
                     <View className={`w-full h-[1px] mb-8 self-stretch ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/60'}`} />
 

@@ -893,7 +893,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                             <View
                                                                                 style={{
                                                                                     position: 'absolute',
-                                                                                    [isTopRow ? 'top' : 'bottom']: -8,
+                                                                                    [isTopRow ? 'top' : 'bottom']: -12,
                                                                                     left: parseFloat(p.left) > 65 ? 'auto' : '50%',
                                                                                     right: parseFloat(p.left) > 65 ? 20 : 'auto',
                                                                                     marginLeft: parseFloat(p.left) > 65 ? 0 : -8,
