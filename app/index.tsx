@@ -3317,7 +3317,7 @@ export default function Home() {
                                     // @ts-ignore
                                     tabIndex={-1}
                                 >
-                                    <Ionicons name={isDark ? "moon" : "sunny"} size={20} color={isDark ? "#f59e0b" : "#f59e0b"} />
+                                    <Ionicons name={isDark ? "sunny" : "moon"} size={20} color="#f59e0b" />
                                 </Pressable>
 
                                 <Pressable
@@ -3864,7 +3864,7 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Ionicons name={isDark ? "sunny" : "moon"} size={18} color={isDark ? "#fbbf24" : "#333333"} />
+                                        <Ionicons name={isDark ? "sunny" : "moon"} size={18} color="#f59e0b" />
                                     </Pressable>
                                     <Pressable
                                         onPress={() => auth.isLoggedIn ? openModalWithHistory(setIsManualVisible) : openModalWithHistory(setIsGateManualVisible)}
