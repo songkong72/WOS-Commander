@@ -5,7 +5,7 @@ import { useAdminAuth } from './hooks/useAdminAuth';
 
 // 스타일을 인라인으로 변경하여 NativeWind 의존성 제거 (White Screen 방지)
 export default function TestAuthPage() {
-    const { user, login, logout, register, seedSuperAdmin, loading } = useAdminAuth();
+    const { user, handleLogin: performLogin, logout, register, seedSuperAdmin, loading, setLoginInput, setPasswordInput } = useAdminAuth();
 
     // Login State
     const [loginId, setLoginId] = useState('');
@@ -29,9 +29,11 @@ export default function TestAuthPage() {
 
     const handleLogin = async () => {
         addLog(`Attempting login: ${loginId}`);
-        const res = await login(loginId, loginPw);
-        if (res.success) addLog('Login Success!');
-        else addLog(`Login Failed: ${res.message}`);
+        setLoginInput(loginId);
+        setPasswordInput(loginPw);
+        const success = await performLogin([]); // Pass empty dynamicAdmins for testing
+        if (success) addLog('Login Success!');
+        else addLog(`Login Failed: Check credentials or logs`);
     };
 
     const handleRegister = async () => {
@@ -62,9 +64,8 @@ export default function TestAuthPage() {
                 ) : user ? (
                     <View>
                         <Text style={styles.loggedIn}>LOGGED IN</Text>
-                        <Text>ID: {user.username}</Text>
+                        <Text>ID: {user.adminName}</Text>
                         <Text>Role: {user.role}</Text>
-                        <Text>Status: {user.status}</Text>
                         <TouchableOpacity onPress={logout} style={[styles.btn, styles.btnRed]}>
                             <Text style={styles.btnText}>Logout</Text>
                         </TouchableOpacity>

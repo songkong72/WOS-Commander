@@ -1,0 +1,5 @@
+services/i18n/index.ts(16,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(callback?: Callback): Promise<TFunction<"translation", undefined>>', gave the following error.
+    Object literal may only specify known properties, and 'resources' does not exist in type 'Callback'.
+  Overload 2 of 2, '(options: InitOptions<unknown>, callback?: Callback): Promise<TFunction<"translation", undefined>>', gave the following error.
+    Type '"v3"' is not assignable to type '"v4"'.

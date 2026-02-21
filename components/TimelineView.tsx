@@ -688,17 +688,18 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                     }}
                                                 >
                                                     <Pressable
-                                                        onPress={() => {
-                                                            if (Platform.OS === 'web' && !('ontouchstart' in window)) {
+                                                        onPress={(e) => {
+                                                            e.stopPropagation(); // prevent underlying scroll/pressable from clearing selection
+                                                            const isTouch = Platform.OS !== 'web' || (typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+                                                            if (!isTouch) {
+                                                                // Desktop interaction: single click opens modal
                                                                 onEventPress(ev);
                                                             } else {
+                                                                // Mobile/Touch interaction: first tap selects (shows tooltip), second tap opens modal
                                                                 if (selectedBarId === barKey) {
-                                                                    // Second tap: Open the modal (admin scheduling or user guide)
                                                                     onEventPress(ev);
-                                                                    // Optionally close the tooltip
                                                                     setSelectedBarId(null);
                                                                 } else {
-                                                                    // First tap: Show the tooltip
                                                                     setSelectedBarId(barKey);
                                                                 }
                                                             }
@@ -729,10 +730,10 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                 left: -32,
                                                                                 top: 4,
                                                                                 zIndex: 20,
-                                                                                shadowColor: '#000',
-                                                                                shadowOffset: { width: 0, height: 2 },
-                                                                                shadowOpacity: 0.4,
-                                                                                shadowRadius: 4,
+                                                                                ...Platform.select({
+                                                                                    web: { boxShadow: '0px 2px 4px rgba(0,0,0,0.4)' },
+                                                                                    default: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4, elevation: 4 }
+                                                                                })
                                                                             }}
                                                                         >
                                                                             <View className={`w-8 h-8 rounded-2xl items-center justify-center border-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>

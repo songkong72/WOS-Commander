@@ -28,6 +28,7 @@ import { useAuth, useTheme, useLanguage } from './context';
 import { MASTER_CREDENTIALS, SUPER_ADMINS, AdminStatus } from '../data/admin-config';
 import { useFirestoreEventSchedules } from '../hooks/useFirestoreEventSchedules';
 import { useFirestoreAdmins } from '../hooks/useFirestoreAdmins';
+import { useAdminAuth } from './hooks/useAdminAuth';
 // @ts-ignore
 import { useFirestoreNotice } from '../hooks/useFirestoreNotice';
 import { useFirestoreThemeConfig } from '../hooks/useFirestoreThemeConfig';
@@ -37,18 +38,51 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { hashPassword } from '../utils/crypto';
 import { LinearGradient } from 'expo-linear-gradient';
+import {
+    pad as padUtil,
+    formatRemainingTime as formatRemainingTimeUtil,
+    toLocal as toLocalUtil,
+    toUTC as toUTCUtil,
+    processConversion as processConversionUtil,
+    splitSchedulePart as splitSchedulePartUtil,
+    getKoreanDayOfWeek as getKoreanDayOfWeekUtil,
+    translateDay as translateDayUtil,
+    translateLabel as translateLabelUtil,
+} from './utils/eventHelpers';
+import { dfs as dfsUtil } from './utils/dynamicFontSize';
+import {
+    DATE_RANGE_IDS,
+    getEventSchedule as getEventScheduleUtil,
+    getEventEndDate as getEventEndDateUtil,
+    checkWeeklyExpired as checkWeeklyExpiredUtil,
+    isEventExpired as isEventExpiredUtil,
+    getRemainingSeconds as getRemainingSecondsUtil,
+    getNextResetSeconds as getNextResetSecondsUtil,
+    checkItemActive as checkItemActiveUtil,
+    isVisibleInList as isVisibleInListUtil,
+    calculateBearHuntDay as calculateBearHuntDayUtil,
+    isEventActive as isEventActiveUtil,
+    getBundleId as getBundleIdUtil,
+    getSortTime as getSortTimeUtil
+} from './utils/eventStatus';
 import { doc, setDoc, getDoc, collection, getDocs, query, writeBatch, updateDoc, onSnapshot, orderBy, where, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import AdminManagement from '../components/AdminManagement';
 import TimelineView from '../components/TimelineView';
+import { GateScreen } from './screens/GateScreen';
+import { ManualModal } from '../components/modals/ManualModal';
+import { LoginModal } from '../components/modals/LoginModal';
+import { AdminMenuModal } from '../components/modals/AdminMenuModal';
+import { NoticeDetailModal } from '../components/modals/NoticeDetailModal';
+import { NoticeEditModal } from '../components/modals/NoticeEditModal';
+import { InstallModal } from '../components/modals/InstallModal';
+import { UserPassChangeModal } from '../components/modals/UserPassChangeModal';
+import { NoticePopup } from '../components/dashboard/NoticePopup';
+import { DashboardHeader } from '../components/dashboard/DashboardHeader';
+import { NoticeBanner } from '../components/dashboard/NoticeBanner';
+import { DashboardFeatureCards } from '../components/dashboard/DashboardFeatureCards';
 
-const DATE_RANGE_IDS = [
-    'a_castle', 'server_castle', 'a_operation', 'alliance_operation',
-    'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon',
-    'alliance_frost_league', 'server_svs_prep', 'server_svs_battle',
-    'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization',
-    'p26'
-];
+
 
 export default function Home() {
     const router = useRouter();
@@ -73,20 +107,63 @@ export default function Home() {
         setActiveEventTab(section); // 탭 강조 상태 유지
         mainScrollRef.current?.scrollTo({ y: targetY - 250, animated: true });
     };
-    const [inputServer, setInputServer] = useState('');
-    const [inputAlliance, setInputAlliance] = useState('');
-    const [inputUserId, setInputUserId] = useState('');
-    const [inputPassword, setInputPassword] = useState('');
-    const [isRegisterMode, setIsRegisterMode] = useState(false);
+    const adminAuth = useAdminAuth({
+        auth,
+        login,
+        logout,
+        serverId,
+        allianceId,
+        setAllianceInfo,
+        setIsGateOpen,
+        showCustomAlert,
+        t
+    });
 
-    const gateUserIdRef = useRef<TextInput>(null);
-    const gatePasswordRef = useRef<TextInput>(null);
-    const loginPasswordRef = useRef<TextInput>(null);
+    const {
+        loginInput, setLoginInput,
+        passwordInput, setPasswordInput,
+        loginError, setLoginError,
+        gateLoginError, setGateLoginError,
+        isLoginLoading, setIsLoginLoading,
+        inputServer, setInputServer,
+        inputAlliance, setInputAlliance,
+        inputUserId, setInputUserId,
+        inputPassword, setInputPassword,
+        isRegisterMode, setIsRegisterMode,
+        recentServers, recentAlliances, recentUserIds,
+        gateUserIdRef, gatePasswordRef, loginPasswordRef,
+        allRequests, setAllRequests,
+        selectedReqIds, setSelectedReqIds,
+        superAdminTab, setSuperAdminTab,
+        isSuperAdminLoading, setIsSuperAdminLoading,
+        superAdminsList, setSuperAdminsList,
+        loadingSuperAdmins, setLoadingSuperAdmins,
+        newAdminName, setNewAdminName,
+        newAdminPassword, setNewAdminPassword,
+        handleEnterAlliance,
+        handleLogin,
+        handleLogout,
+        handleSettingsPress,
+        handleResetSettings,
+        saveToHistory,
+        fetchRequests,
+        fetchSuperAdmins,
+        handleApproveRequest,
+        handleRejectRequest,
+        handleBulkApprove,
+        handleBulkReject,
+        handleResetPasswordAdmin,
+        handleDeleteAlliance,
+        handleDeleteSuperAdmin,
+        handleAddSuperAdmin,
+        toggleSelectRequest
+    } = adminAuth;
 
     const noticeData = useFirestoreNotice(serverId, allianceId);
     const { notice, saveNotice } = noticeData;
     const { themeConfig: globalThemeConfig, saveDefaultMode: saveGlobalTheme } = useFirestoreThemeConfig(null, null);
     const { schedules, loading, clearAllSchedules } = useFirestoreEventSchedules(serverId, allianceId);
+
     const [adminMenuVisible, setAdminMenuVisible] = useState(false);
     const [loginModalVisible, setLoginModalVisible] = useState(false);
 
@@ -124,26 +201,16 @@ export default function Home() {
     }, [serverId, allianceId, isLoading]);
 
     // -- Modals --
-    const [loginInput, setLoginInput] = useState('');
-    const [passwordInput, setPasswordInput] = useState('');
-    const [loginError, setLoginError] = useState('');
-    const [isSuperAdminDashboardVisible, setIsSuperAdminDashboardVisible] = useState(false);
-    const [superAdminTab, setSuperAdminTab] = useState<'pending' | 'alliances' | 'settings'>('pending');
-    const [allRequests, setAllRequests] = useState<any[]>([]);
-    const [isSuperAdminLoading, setIsSuperAdminLoading] = useState(true);
-    const [adminDashboardVisible, setAdminDashboardVisible] = useState(false);
-    const [selectedReqIds, setSelectedReqIds] = useState<Set<string>>(new Set());
 
-    const [recentServers, setRecentServers] = useState<string[]>([]);
-    const [recentAlliances, setRecentAlliances] = useState<string[]>([]);
-    const [recentUserIds, setRecentUserIds] = useState<string[]>([]);
-    const [activeInput, setActiveInput] = useState<'server' | 'alliance' | 'userid' | 'password' | null>(null);
+    const [isSuperAdminDashboardVisible, setIsSuperAdminDashboardVisible] = useState(false);
+    const [adminDashboardVisible, setAdminDashboardVisible] = useState(false);
+
+
     const [adminMenuHover, setAdminMenuHover] = useState<string | null>(null);
     const [isUserPassChangeOpen, setIsUserPassChangeOpen] = useState(false);
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isChangingPassword, setIsChangingPassword] = useState(false);
-    const [showGatePw, setShowGatePw] = useState(false);
     const [showModalPw, setShowModalPw] = useState(false);
     const [showPass1, setShowPass1] = useState(false);
     const [showPass2, setShowPass2] = useState(false);
@@ -169,48 +236,15 @@ export default function Home() {
     }, [fontSize]);
 
     // -- Dynamic Font Size Helper --
-    const dfs = (baseClass: string) => {
-        if (fontSize === 'medium') return baseClass;
+    const dfs = (baseClass: string) => dfsUtil(baseClass, fontSize);
 
-        const sizeMap: Record<string, { small: string, medium: string, large: string }> = {
-            'text-[8px]': { small: 'text-[7px]', medium: 'text-[8px]', large: 'text-[9px]' },
-            'text-[9px]': { small: 'text-[8px]', medium: 'text-[9px]', large: 'text-[10px]' },
-            'text-[10px]': { small: 'text-[9px]', medium: 'text-[10px]', large: 'text-xs' },
-            'text-xs': { small: 'text-[10px]', medium: 'text-xs', large: 'text-sm' },
-            'text-sm': { small: 'text-xs', medium: 'text-sm', large: 'text-base' },
-            'text-base': { small: 'text-sm', medium: 'text-base', large: 'text-lg' },
-            'text-lg': { small: 'text-base', medium: 'text-lg', large: 'text-xl' },
-            'text-xl': { small: 'text-lg', medium: 'text-xl', large: 'text-2xl' },
-            'text-2xl': { small: 'text-xl', medium: 'text-2xl', large: 'text-3xl' },
-            'text-3xl': { small: 'text-2xl', medium: 'text-3xl', large: 'text-4xl' },
-            'text-4xl': { small: 'text-3xl', medium: 'text-4xl', large: 'text-5xl' },
-        };
 
-        return sizeMap[baseClass]?.[fontSize] || baseClass;
-    };
-
-    const saveToHistory = async (key: string, value: string) => {
-        if (!value || value.trim() === '') return;
-        const storageKey = `recent_${key}`;
-        try {
-            const existing = await AsyncStorage.getItem(storageKey);
-            let list: string[] = existing ? JSON.parse(existing) : [];
-            list = [value, ...list.filter(item => item !== value)].slice(0, 5);
-            await AsyncStorage.setItem(storageKey, JSON.stringify(list));
-            if (key === 'server') setRecentServers(list);
-            if (key === 'alliance') setRecentAlliances(list);
-            if (key === 'userid') setRecentUserIds(list);
-        } catch (e) {
-            console.error('Save history error:', e);
-        }
-    };
     const [noticeDetailVisible, setNoticeDetailVisible] = useState(false);
     const [noticePopupVisible, setNoticePopupVisible] = useState(false);
     const [noticePopupDontShow, setNoticePopupDontShow] = useState(false);
     const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
     const [viewMode, setViewMode] = useState<'list' | 'timeline'>('timeline');
     const [isManualVisible, setIsManualVisible] = useState(false);
-    const [isGateManualVisible, setIsGateManualVisible] = useState(false);
 
     // -- Global Back Button & History Handling for Modals (Web Fix) --
     useEffect(() => {
@@ -218,7 +252,6 @@ export default function Home() {
 
         const handlePopState = () => {
             setIsManualVisible(false);
-            setIsGateManualVisible(false);
             setAdminMenuVisible(false);
             setNoticeDetailVisible(false);
             setAdminDashboardVisible(false);
@@ -229,7 +262,7 @@ export default function Home() {
 
         window.addEventListener('popstate', handlePopState);
         return () => window.removeEventListener('popstate', handlePopState);
-    }, [isManualVisible, isGateManualVisible, adminMenuVisible, noticeDetailVisible, adminDashboardVisible,
+    }, [isManualVisible, adminMenuVisible, noticeDetailVisible, adminDashboardVisible,
         isSuperAdminDashboardVisible, isUserPassChangeOpen, noticePopupVisible]);
 
     const openModalWithHistory = (setter: (v: boolean) => void) => {
@@ -239,352 +272,9 @@ export default function Home() {
         }
     };
 
-    const renderGateManualContent = () => (
-        <ScrollView className={`flex-1 ${isMobile ? 'px-4 pt-4' : 'px-8 pt-8'}`} showsVerticalScrollIndicator={false}>
-            <View className={`${isMobile ? 'gap-6' : 'gap-12'} pb-20`}>
-                {/* 1. Gate 화면 개요 */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
-                            <Ionicons name="apps-outline" size={isMobile ? 24 : 32} color="#38bdf8" />
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.gateTitle')}</Text>
-                        </View>
-                    </View>
-                    <Text className={`${isMobile ? 'text-xs leading-5 mb-4' : 'text-lg leading-7 mb-8'} font-bold ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('manual.gateDesc')}</Text>
-
-                    <View className={`flex-row rounded-[24px] overflow-hidden border-2 ${isDark ? 'border-sky-500/20 bg-slate-900/50' : 'border-sky-100 bg-white shadow-md'} ${isMobile ? 'mb-4' : 'mb-8'}`}>
-                        <View className={`flex-1 ${isMobile ? 'p-3' : 'p-6'} items-center border-r border-sky-500/10`}>
-                            <Ionicons name="enter-outline" size={isMobile ? 20 : 28} color="#38bdf8" className="mb-1" />
-                            <Text className={`${isMobile ? 'text-[10px]' : 'text-sm'} font-black text-sky-400`}>{t('manual.enterDashboard')}</Text>
-                        </View>
-                        <View className={`flex-1 ${isMobile ? 'p-3' : 'p-6'} items-center`}>
-                            <Ionicons name="person-add-outline" size={isMobile ? 20 : 28} color="#94a3b8" className="mb-1" />
-                            <Text className={`${isMobile ? 'text-[10px]' : 'text-sm'} font-black text-slate-500`}>{t('manual.applyAdmin')}</Text>
-                        </View>
-                    </View>
-
-                    <View className={`${isMobile ? 'gap-3' : 'gap-5'} px-2`}>
-                        <View className="flex-row items-start">
-                            <View className="w-1.5 h-1.5 rounded-full bg-sky-500 mt-2 mr-3" />
-                            <Text className={`flex-1 ${isMobile ? 'text-xs' : 'text-base'} font-bold leading-6 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                                <Text className="text-sky-400 font-black">{t('manual.enterDashboard')}:</Text> {t('manual.enterDashboardDesc')}
-                            </Text>
-                        </View>
-                        <View className="flex-row items-start">
-                            <View className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-2 mr-3" />
-                            <Text className={`flex-1 ${isMobile ? 'text-xs' : 'text-base'} font-bold leading-6 ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>
-                                <Text className="text-slate-400 font-black">{t('manual.applyAdmin')}:</Text> {t('manual.applyAdminDesc')}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* 2. 시작하기 (연계 가이드) */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
-                            <Ionicons name="rocket-outline" size={isMobile ? 24 : 32} color="#3b82f6" />
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.startTitle')}</Text>
-                        </View>
-                    </View>
-                    <View className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
-                        <View className={`flex-row items-start ${isMobile ? 'mb-2' : 'mb-4'}`}>
-                            <View className="w-2 h-2 rounded-full bg-sky-500 mt-2 mr-3" />
-                            <Text className={`flex-1 ${isMobile ? 'text-sm' : 'text-base'} font-black leading-7 ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.enterDashboard')}</Text>
-                        </View>
-                        <Text className={`${isMobile ? 'text-xs' : 'text-base'} font-bold leading-6 ml-5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                            {t('manual.enterDashboardDesc')}
-                        </Text>
-                    </View>
-                </View>
-
-                {/* 3. 대시보드 입장 (로그인) */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
-                            <Ionicons name="lock-open-outline" size={isMobile ? 24 : 32} color="#10b981" />
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
-                        </View>
-                    </View>
-                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
-                        <View className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/40 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                            <Text className={`${isMobile ? 'text-sm mb-4' : 'text-xl mb-8'} font-black ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>📝 {t('manual.inputGuide')}</Text>
-                            <View className={isMobile ? 'gap-4' : 'gap-8'}>
-                                {[
-                                    { title: t('manual.serverNum'), desc: t('manual.serverNumDesc'), icon: 'server-outline' },
-                                    { title: t('manual.allianceAbbr'), desc: t('manual.allianceAbbrDesc'), icon: 'flag-outline' },
-                                    { title: t('manual.lordName'), desc: t('manual.lordNameDesc'), icon: 'person-outline' },
-                                    { title: t('auth.password'), desc: t('manual.passwordDesc'), icon: 'key-outline' }
-                                ].map((item, idx) => (
-                                    <View key={idx} className="flex-row items-center">
-                                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-6'} items-center justify-center ${isDark ? 'bg-slate-900' : 'bg-white border border-slate-100 shadow-sm'}`}>
-                                            <Ionicons name={item.icon as any} size={isMobile ? 22 : 28} color="#10b981" />
-                                        </View>
-                                        <View className="flex-1">
-                                            <Text className={`${isMobile ? 'text-xs' : 'text-lg'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{item.title}</Text>
-                                            <Text className={`${isMobile ? 'text-[10px]' : 'text-base'} font-bold mt-1 ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{item.desc}</Text>
-                                        </View>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                        <View className={`${isMobile ? 'p-3 rounded-[16px]' : 'p-6 rounded-[32px]'} flex-row items-center ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
-                            <View className={`${isMobile ? 'w-8 h-8 mr-3' : 'w-12 h-12 mr-5'} rounded-full bg-sky-500/20 items-center justify-center`}>
-                                <Ionicons name="bulb-outline" size={isMobile ? 18 : 24} color="#0ea5e9" />
-                            </View>
-                            <Text className={`flex-1 ${isMobile ? 'text-xs' : 'text-lg'} font-black leading-6 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>{t('manual.autoComplete')}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* 4. 역할(권한) 체계 */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-3' : 'mb-6'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
-                            <Ionicons name="people-outline" size={isMobile ? 24 : 32} color="#fb7185" />
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.roleSystem')}</Text>
-                        </View>
-                    </View>
-                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
-                        {[
-                            { label: t('manual.sysMaster'), color: '#fb7185', desc: t('manual.sysMasterDesc'), badge: '🔴' },
-                            { label: t('admin.allianceAdmin'), color: '#818cf8', desc: t('manual.allianceAdminDesc'), badge: '🔵' },
-                            { label: t('admin.opAdmin'), color: '#22d3ee', desc: t('manual.opAdminDesc'), badge: '🟢' },
-                            { label: t('manual.generalLord'), color: '#94a3b8', desc: t('manual.generalLordDesc'), badge: '⚪' }
-                        ].map((role) => (
-                            <View key={role.label} className={`${isMobile ? 'p-4 rounded-[24px] border-l-4' : 'p-8 rounded-[40px] border-2 border-l-8'} ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`} style={{ borderLeftColor: role.color }}>
-                                <Text style={{ color: role.color }} className={`font-black ${isMobile ? 'text-base mb-1' : 'text-2xl mb-3'}`}>{role.badge} {role.label}</Text>
-                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{role.desc}</Text>
-                            </View>
-                        ))}
-                    </View>
-                    <View className={`${isMobile ? 'mt-4 p-4 rounded-[16px]' : 'mt-8 p-6 rounded-[32px]'} border-2 border-dashed ${isDark ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50 border-rose-200'}`}>
-                        <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black text-center ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ {t('manual.roleWarning')}</Text>
-                    </View>
-                </View>
-
-                {/* 5. 연맹 관리자 신청 */}
-                <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                            <Ionicons name="clipboard-outline" size={32} color="#818cf8" />
-                        </View>
-                        <View>
-                            <Text className={`text-3xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.adminApplyTitle')}</Text>
-                        </View>
-                    </View>
-                    <View className="gap-8">
-                        <View className={`p-8 rounded-[40px] ${isDark ? 'bg-slate-950/30 border-2 border-slate-800' : 'bg-slate-50 border-2 border-slate-200 shadowed-md'}`}>
-                            <View className="flex-row items-center justify-between">
-                                {(t('manual.adminApplySteps', { returnObjects: true }) as string[]).map((step, idx, arr) => (
-                                    <View key={step} className="flex-1 items-center relative">
-                                        <View className={`w-12 h-12 rounded-full items-center justify-center mb-4 ${isDark ? 'bg-indigo-500/30' : 'bg-indigo-50 shadow-sm border border-indigo-100'}`}>
-                                            <Text className="text-sm font-black text-indigo-400">{idx + 1}</Text>
-                                        </View>
-                                        <Text className="text-xs font-black text-slate-500 uppercase tracking-tight text-center px-1">{step}</Text>
-                                        {idx < arr.length - 1 && (
-                                            <View className={`absolute right-[-40%] top-6 w-[80%] h-[2px] ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`} />
-                                        )}
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                        <View className={`p-8 rounded-[32px] flex-row items-center ${isDark ? 'bg-amber-500/10' : 'bg-amber-50 shadow-sm'}`}>
-                            <View className="w-12 h-12 rounded-full bg-amber-500/20 items-center justify-center mr-5">
-                                <Ionicons name="time-outline" size={24} color="#f59e0b" />
-                            </View>
-                            <Text className={`flex-1 text-lg font-black leading-7 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>{t('manual.adminApplyWait')}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* 6. 편리한 도구 및 기타 */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-6'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-cyan-500/20' : 'bg-cyan-50'}`}>
-                            <Ionicons name="construct-outline" size={isMobile ? 24 : 32} color="#06b6d4" />
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.toolsAndEtc')}</Text>
-                        </View>
-                    </View>
-                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
-                        {[
-                            { icon: 'eye-off-outline', title: t('manual.anonymousLogin'), desc: t('manual.anonymousLoginDesc') },
-                            { icon: 'color-palette-outline', title: t('manual.themeFont'), desc: t('manual.themeFontDesc') },
-                            { icon: 'download-outline', title: t('manual.pwaInstall'), desc: t('manual.pwaInstallDesc') }
-                        ].map((tool, idx) => (
-                            <View key={idx} className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-100 shadow-md'}`}>
-                                <View className={`flex-row items-center ${isMobile ? 'mb-2' : 'mb-4'}`}>
-                                    <View className={`${isMobile ? 'w-8 h-8 mr-3' : 'w-10 h-10 mr-4'} rounded-full bg-cyan-500/10 items-center justify-center`}>
-                                        <Ionicons name={tool.icon as any} size={isMobile ? 18 : 24} color="#06b6d4" />
-                                    </View>
-                                    <Text className={`${isMobile ? 'text-lg' : 'text-2xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{tool.title}</Text>
-                                </View>
-                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{tool.desc}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* 7. 자주 묻는 질문 (FAQ) */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                            <Ionicons name="help-buoy-outline" size={isMobile ? 24 : 32} color="#f59e0b" />
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.faq')}</Text>
-                        </View>
-                    </View>
-                    <View className={isMobile ? 'gap-4' : 'gap-8'}>
-                        <View>
-                            <Text className={`${isMobile ? 'text-base mb-2' : 'text-xl mb-4'} font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Q. {t('manual.qPw')}</Text>
-                            <View className={`${isMobile ? 'p-4 rounded-[20px]' : 'p-8 rounded-[32px]'} border-2 ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-white' : 'text-slate-700'}`}>A. {t('manual.aPw')}</Text>
-                            </View>
-                        </View>
-                        <View>
-                            <Text className={`${isMobile ? 'text-base mb-2' : 'text-xl mb-4'} font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>Q. {t('manual.qUnreg')}</Text>
-                            <View className={`${isMobile ? 'p-4 rounded-[20px]' : 'p-8 rounded-[32px]'} border-2 ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
-                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-white' : 'text-slate-700'}`}>A. {t('manual.aUnreg')}</Text>
-                            </View>
-                        </View>
-                    </View>
-                </View>
-            </View>
-        </ScrollView>
-    );
 
 
-    const renderMainManualContent = () => (
-        <ScrollView className={`flex-1 ${isMobile ? 'px-4 pt-4' : 'px-8 pt-8'}`} showsVerticalScrollIndicator={false}>
-            <View className={`${isMobile ? 'gap-6' : 'gap-12'} pb-10`}>
-                {/* 1. 권한 관리 시스템 */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-rose-500/20' : 'bg-rose-50 shadow-sm'}`}>
-                            <Text className={isMobile ? 'text-xl' : 'text-3xl'}>🔐</Text>
-                        </View>
-                        <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.roleMgmtSystem')}</Text>
-                    </View>
-                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
-                        {[
-                            { label: `🔴 ${t('admin.superAdmin')}`, color: '#fb7185', desc: t('manual.roleMasterDesc') },
-                            { label: `🔵 ${t('admin.allianceAdmin')}`, color: '#818cf8', desc: t('manual.roleAllianceAdminDesc') },
-                            { label: `🟢 ${t('admin.opAdmin')}`, color: '#22d3ee', desc: t('manual.roleOpAdminDesc') },
-                            { label: `⚪ ${t('manual.generalLord')}`, color: '#94a3b8', desc: t('manual.roleGeneralDesc') }
-                        ].map((role) => (
-                            <View key={role.label} className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                                <Text style={{ color: role.color }} className={`font-black ${isMobile ? 'text-lg mb-1' : 'text-2xl mb-2'}`}>{role.label}</Text>
-                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{role.desc}</Text>
-                            </View>
-                        ))}
-                    </View>
-                    <View className={`${isMobile ? 'mt-4 p-4 rounded-[16px]' : 'mt-8 p-6 rounded-[32px]'} ${isDark ? 'bg-sky-500/10' : 'bg-sky-50 shadow-sm'}`}>
-                        <Text className={`${isMobile ? 'text-sm' : 'text-lg'} font-bold leading-6 ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>💡 {t('manual.roleTip')}</Text>
-                    </View>
-                </View>
 
-                {/* 2. 헤더 버튼 가이드 */}
-                <View>
-                    <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>
-                        <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-14 h-14 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-blue-500/20' : 'bg-blue-50 shadow-sm'}`}>
-                            <Text className={isMobile ? 'text-xl' : 'text-3xl'}>🔘</Text>
-                        </View>
-                        <Text className={`${isMobile ? 'text-xl' : 'text-3xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.headerBtnGuide')}</Text>
-                    </View>
-                    <View className={isMobile ? 'gap-3' : 'gap-6'}>
-                        {[
-                            { title: t('manual.themeSwitch'), icon: '☀️', desc: t('manual.themeSwitchDesc') },
-                            { title: t('manual.guideBtn'), icon: '📖', desc: t('manual.guideBtnDesc') },
-                            { title: t('manual.installBtn'), icon: '📥', desc: t('manual.installBtnDesc') },
-                            { title: t('manual.profileAdmin'), icon: '👤', desc: t('manual.profileAdminDesc') }
-                        ].map((btn, idx) => (
-                            <View key={idx} className={`${isMobile ? 'p-4 rounded-[24px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200 shadow-sm'}`}>
-                                <Text className={`${isMobile ? 'text-lg mb-1' : 'text-2xl mb-3'} font-black ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>{btn.icon} {btn.title}</Text>
-                                <Text className={`${isMobile ? 'text-sm leading-6' : 'text-lg leading-8'} font-black ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{btn.desc}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* 3. 공지 및 일정 관리 */}
-                <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                            <Text className="text-lg">🔔</Text>
-                        </View>
-                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.noticeSchedule')}</Text>
-                    </View>
-                    <View className="gap-4">
-                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-xl font-black mb-2 ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>{t('dashboard.notice')}</Text>
-                            <Text className={`text-base leading-7 mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('manual.noticeDesc')}</Text>
-                        </View>
-                        <View className={`p-6 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-xl font-black mb-2 ${isDark ? 'text-cyan-400' : 'text-cyan-700'}`}>{t('dashboard.weeklyEvents')}</Text>
-                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('manual.weeklyEventsDesc')}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* 4. 주요 메뉴 안내 */}
-                <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-emerald-500/20' : 'bg-emerald-50'}`}>
-                            <Text className="text-lg">📋</Text>
-                        </View>
-                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.mainMenuGuide')}</Text>
-                    </View>
-                    <View className="gap-6">
-                        <View>
-                            <Text className={`text-lg font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>👥 {t('manual.heroInfo')}</Text>
-                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('manual.heroInfoDesc')}</Text>
-                        </View>
-                        <View>
-                            <Text className={`text-lg font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>📅 {t('manual.eventOps')}</Text>
-                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('manual.eventOpsDesc')}</Text>
-                        </View>
-                        <View>
-                            <Text className={`text-lg font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>🗺️ {t('manual.strategyDocs')}</Text>
-                            <Text className={`text-base leading-7 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('manual.strategyDocsDesc')}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* 5. 관리자 교육 */}
-                <View>
-                    <View className="flex-row items-center mb-6">
-                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                            <Text className="text-lg">⚙️</Text>
-                        </View>
-                        <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.adminGuide')}</Text>
-                    </View>
-                    <View className="gap-4">
-                        <View className={`p-5 rounded-3xl border ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
-                            <Text className={`text-base leading-8 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
-                                • <Text className={`font-black ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('admin.memberManagement')}:</Text> {t('manual.memberMgmtDesc')}{"\n"}
-                                • <Text className={`font-black ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('admin.strategyManagement')}:</Text> {t('manual.strategySetDesc')}{"\n"}
-                                • <Text className={`font-black ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('admin.eventManagement')}:</Text> {t('manual.scheduleSetDesc')}
-                            </Text>
-                        </View>
-                        <View className={`p-5 rounded-2xl ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
-                            <Text className={`text-sm leading-6 ${isDark ? 'text-rose-300' : 'text-rose-700'}`}>⚠️ {t('manual.adminWarning')}</Text>
-                        </View>
-                    </View>
-                </View>
-            </View>
-        </ScrollView>
-    );
 
     // Check if notice popup should be shown on load
     useEffect(() => {
@@ -650,12 +340,8 @@ export default function Home() {
 
     // Dynamic Admins Support
     const { dynamicAdmins, addAdmin, removeAdmin } = useFirestoreAdmins(serverId, allianceId);
-    const [newAdminName, setNewAdminName] = useState('');
-    const [newAdminPassword, setNewAdminPassword] = useState('');
     const [newAdminRole, setNewAdminRole] = useState<'admin' | 'alliance_admin'>('admin');
     const [showAdminList, setShowAdminList] = useState(false);
-    const [superAdminsList, setSuperAdminsList] = useState<any[]>([]);
-    const [loadingSuperAdmins, setLoadingSuperAdmins] = useState(false);
     const isSuperAdmin = auth.isLoggedIn && (
         auth.role === 'master' ||
         auth.role === 'super_admin'
@@ -751,556 +437,20 @@ export default function Home() {
     // -- Super Admin Dashboard Logic --
     useEffect(() => {
         if (isSuperAdmin && isSuperAdminDashboardVisible) {
-            const q = query(
-                collection(db, 'alliance_requests'),
-                orderBy('requestedAt', 'desc')
-            );
-            const unsubscribe = onSnapshot(q, (snapshot: any) => {
-                const reqs = snapshot.docs.map((doc: any) => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setAllRequests(reqs);
-                setIsSuperAdminLoading(false);
-            });
+            const unsubscribe = fetchRequests();
             return () => unsubscribe();
         }
     }, [isSuperAdmin, isSuperAdminDashboardVisible]);
 
     useEffect(() => {
         if (showAdminList) {
-            setLoadingSuperAdmins(true);
-            const q = query(collection(db, 'users'), where('role', '==', 'super_admin'));
-            getDocs(q).then(snapshot => {
-                const admins = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                setSuperAdminsList(admins);
-                setLoadingSuperAdmins(false);
-            }).catch(err => {
-                console.error(err);
-                setLoadingSuperAdmins(false);
-            });
+            fetchSuperAdmins();
         }
     }, [showAdminList]);
 
-    const toggleSelectRequest = (id: string) => {
-        setSelectedReqIds(prev => {
-            const next = new Set(prev);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-        });
-    };
 
-    const handleApproveRequest = async (req: any) => {
-        showCustomAlert(
-            t('admin.approveAlliance'),
-            t('admin.approveConfirm', { server: req.serverId, alliance: req.allianceName }),
-            'confirm',
-            async () => {
-                try {
-                    const userRef = doc(db, 'users', req.adminId);
-                    const userSnap = await getDoc(userRef);
-                    if (userSnap.exists()) {
-                        showCustomAlert(t('common.error_title'), t('admin.idExists'), 'error');
-                        return;
-                    }
-                    await setDoc(userRef, {
-                        uid: `admin_${req.serverId.replace('#', '')}_${req.allianceId}`,
-                        username: req.adminId,
-                        password: req.adminPassword,
-                        nickname: `${req.allianceId} 관리자`,
-                        role: 'alliance_admin',
-                        status: 'active',
-                        serverId: req.serverId,
-                        allianceId: req.allianceId,
-                        contact: req.contact || '',
-                        createdAt: Date.now()
-                    });
-                    const reqRef = doc(db, 'alliance_requests', req.id);
-                    await updateDoc(reqRef, { status: 'approved' });
-                    showCustomAlert(t('common.success'), t('admin.approveSuccess'), 'success');
-                } catch (error: any) {
-                    showCustomAlert(t('common.error_title'), error.message, 'error');
-                }
-            }
-        );
-    };
 
-    const handleBulkApprove = async () => {
-        if (selectedReqIds.size === 0) return;
 
-        showCustomAlert(
-            t('admin.bulkApprove'),
-            t('admin.bulkApproveConfirm', { count: selectedReqIds.size }),
-            'confirm',
-            async () => {
-                try {
-                    const batch = writeBatch(db);
-                    const selectedReqs = allRequests.filter(r => selectedReqIds.has(r.id));
-
-                    for (const req of selectedReqs) {
-                        // Create User
-                        const userRef = doc(db, 'users', req.adminId);
-                        batch.set(userRef, {
-                            uid: `admin_${req.serverId.replace('#', '')}_${req.allianceId}`,
-                            username: req.adminId,
-                            password: req.adminPassword,
-                            nickname: `${req.allianceId} 관리자`,
-                            role: 'alliance_admin',
-                            status: 'active',
-                            serverId: req.serverId,
-                            allianceId: req.allianceId,
-                            contact: req.contact || '',
-                            createdAt: Date.now()
-                        });
-
-                        // Update Request Status
-                        const reqRef = doc(db, 'alliance_requests', req.id);
-                        batch.update(reqRef, { status: 'approved' });
-                    }
-
-                    await batch.commit();
-                    setSelectedReqIds(new Set());
-                    showCustomAlert(t('common.success'), t('admin.bulkApproveSuccess'), 'success');
-                } catch (error: any) {
-                    showCustomAlert(t('common.error_title'), t('admin.bulkApproveError', { error: error.message }), 'error');
-                }
-            }
-        );
-    };
-
-    const handleResetPasswordAdmin = async (req: any) => {
-        showCustomAlert(
-            t('admin.resetPassword'),
-            t('admin.resetPwConfirm', { id: req.adminId }),
-            'confirm',
-            async () => {
-                try {
-                    const hashed = await hashPassword('1234');
-                    await updateDoc(doc(db, "users", req.adminId), {
-                        password: hashed
-                    });
-                    showCustomAlert(t('common.success'), t('admin.resetPwSuccess'), 'success');
-                } catch (e) {
-                    console.error(e);
-                    showCustomAlert(t('common.error_title'), t('admin.resetPwError'), 'error');
-                }
-            }
-        );
-    };
-
-    const handleDeleteAlliance = async (req: any) => {
-        showCustomAlert(
-            t('admin.deleteAlliance'),
-            t('admin.deleteAllianceConfirm', { id: req.allianceId }),
-            'confirm',
-            async () => {
-                try {
-                    // 1. Delete user account
-                    await deleteDoc(doc(db, "users", req.adminId));
-                    // 2. Delete alliance request (approved record)
-                    await deleteDoc(doc(db, "alliance_requests", req.id));
-                    showCustomAlert(t('common.success'), t('admin.deleteAllianceSuccess'), 'success');
-                } catch (e: any) {
-                    console.error(e);
-                    showCustomAlert(t('common.error_title'), t('admin.deleteAllianceError'), 'error');
-                }
-            }
-        );
-    };
-
-    const handleDeleteSuperAdmin = async (adminId: string, name: string) => {
-        showCustomAlert(
-            '관리자 삭제',
-            `${name}님을 삭제하시겠습니까?`,
-            'confirm',
-            async () => {
-                try {
-                    await deleteDoc(doc(db, 'users', adminId));
-                    setSuperAdminsList(prev => prev.filter(a => a.id !== adminId));
-                    showCustomAlert(t('common.success'), '삭제되었습니다.', 'success');
-                } catch (e: any) {
-                    showCustomAlert(t('common.error_title'), e.message, 'error');
-                }
-            }
-        );
-    };
-
-    const handleAddSuperAdmin = async () => {
-        if (!newAdminName.trim() || !newAdminPassword.trim()) {
-            showCustomAlert(t('common.error_title'), '아이디와 비밀번호를 입력해주세요.', 'warning');
-            return;
-        }
-
-        try {
-            const userId = newAdminName.trim();
-            const userRef = doc(db, 'users', userId);
-            const userSnap = await getDoc(userRef);
-
-            if (userSnap.exists()) {
-                showCustomAlert(t('common.error_title'), '이미 존재하는 아이디입니다.', 'error');
-                return;
-            }
-
-            const hashed = await hashPassword(newAdminPassword.trim());
-            const newAdminData = {
-                uid: `super_admin_${userId}`,
-                username: userId,
-                password: hashed,
-                nickname: userId,
-                role: 'super_admin',
-                status: 'active',
-                createdAt: Date.now()
-            };
-
-            await setDoc(userRef, newAdminData);
-            setSuperAdminsList(prev => [...prev, { id: userId, ...newAdminData }]);
-            setNewAdminName('');
-            setNewAdminPassword('');
-            showCustomAlert(t('common.success'), '슈퍼 관리자가 추가되었습니다.', 'success');
-        } catch (e: any) {
-            showCustomAlert(t('common.error_title'), e.message, 'error');
-        }
-    };
-
-    const handleRejectRequest = async (req: any) => {
-        showCustomAlert(
-            t('admin.rejectAlliance'),
-            t('admin.rejectConfirm', { server: req.serverId, alliance: req.allianceName }),
-            'confirm',
-            async () => {
-                try {
-                    const reqRef = doc(db, 'alliance_requests', req.id);
-                    await updateDoc(reqRef, { status: 'rejected' });
-                    showCustomAlert(t('common.success'), t('admin.rejectSuccess'), 'success');
-                } catch (error: any) {
-                    showCustomAlert(t('common.error_title'), error.message, 'error');
-                }
-            }
-        );
-    };
-
-    const handleBulkReject = async () => {
-        if (selectedReqIds.size === 0) return;
-
-        showCustomAlert(
-            t('admin.bulkReject'),
-            t('admin.bulkRejectConfirm', { count: selectedReqIds.size }),
-            'confirm',
-            async () => {
-                try {
-                    const batch = writeBatch(db);
-                    selectedReqIds.forEach(id => {
-                        const reqRef = doc(db, 'alliance_requests', id);
-                        batch.update(reqRef, { status: 'rejected' });
-                    });
-                    await batch.commit();
-                    setSelectedReqIds(new Set());
-                    showCustomAlert(t('common.success'), t('admin.bulkRejectSuccess'), 'success');
-                } catch (error: any) {
-                    showCustomAlert('오류', '선택 거절 중 오류가 발생했습니다: ' + error.message, 'error');
-                }
-            }
-        );
-    };
-
-    useEffect(() => {
-        const loadHistory = async () => {
-            try {
-                const savedAdminId = await AsyncStorage.getItem('lastAdminId');
-                const rServers = await AsyncStorage.getItem('recent_server');
-                const rAlliances = await AsyncStorage.getItem('recent_alliance');
-                const rUsers = await AsyncStorage.getItem('recent_userid');
-
-                if (rServers) {
-                    const parsed = JSON.parse(rServers);
-                    setRecentServers(parsed);
-                    if (parsed.length > 0) setInputServer(parsed[0]);
-                }
-                if (rAlliances) {
-                    const parsed = JSON.parse(rAlliances);
-                    setRecentAlliances(parsed);
-                    if (parsed.length > 0) setInputAlliance(parsed[0]);
-                }
-                if (rUsers) {
-                    const parsed = JSON.parse(rUsers);
-                    setRecentUserIds(parsed);
-                    if (parsed.length > 0) setInputUserId(parsed[0]);
-                }
-                if (savedAdminId) setLoginInput(savedAdminId);
-            } catch (e) {
-                console.error('Failed to load history:', e);
-            }
-        };
-        loadHistory();
-    }, []);
-
-    const handleResetSettings = async () => {
-        showCustomAlert(t('manual.resetInfo'), t('manual.resetInfoConfirm'), 'confirm', async () => {
-            try {
-                await AsyncStorage.multiRemove(['lastAdminId', 'lastAdminRole', 'recent_server', 'recent_alliance', 'recent_userid']);
-                setInputServer('');
-                setInputAlliance('');
-                setInputUserId('');
-                setInputPassword('');
-                setAllianceInfo(null, null);
-                setIsGateOpen(true);
-                showCustomAlert(t('common.success'), t('manual.resetInfoSuccess'), 'success');
-            } catch (e) {
-                console.error('Reset error:', e);
-            }
-        });
-    };
-
-    const handleEnterAlliance = async () => {
-        const forceServer = inputServer.trim() ? (inputServer.trim().startsWith('#') ? inputServer.trim() : `#${inputServer.trim()}`) : '';
-        const forceAlliance = inputAlliance.trim();
-        const inputId = inputUserId.trim();
-        const inputPw = inputPassword.trim();
-
-        setGateLoginError(null);
-        setIsLoginLoading(true);
-
-        // Simulate network delay for smooth UX
-        await new Promise(resolve => setTimeout(resolve, 600));
-
-        if (isRegisterMode) {
-            if (!forceServer || !forceAlliance) {
-                setGateLoginError(t('manual.gateLoginAndApply'));
-                setIsLoginLoading(false);
-                return;
-            }
-            if (!inputId || !inputPw) {
-                setGateLoginError(t('manual.requireAdminAuth'));
-                setIsLoginLoading(false);
-                return;
-            }
-
-            try {
-                const hashed = await hashPassword(inputPw);
-                // Instead of direct creation, we create a request for Super Admin approval
-                await setDoc(doc(collection(db, "alliance_requests")), {
-                    serverId: forceServer,
-                    allianceId: forceAlliance,
-                    allianceName: forceAlliance,
-                    adminId: inputId,
-                    adminPassword: hashed,
-                    status: 'pending',
-                    requestedAt: Date.now()
-                });
-
-                showCustomAlert(t('manual.applySuccess'), t('manual.applySuccessDesc'), 'success');
-                setIsRegisterMode(false); // Switch back to login mode
-            } catch (error: any) {
-                setGateLoginError(t('manual.applyError') + ': ' + error.message);
-            }
-            setIsLoginLoading(false);
-        } else {
-            // Normal Entry / Auth
-            if (inputId && inputPw) {
-                try {
-                    const hashed = await hashPassword(inputPw);
-                    const lowerId = inputId.toLowerCase();
-
-                    // 1. Master Admin Check (Bypass Server/Alliance check)
-                    const master = MASTER_CREDENTIALS.find(m => m.id.toLowerCase() === lowerId);
-                    if (master) {
-                        if (master.pw === hashed || master.pw === inputPw) {
-                            await login(inputId, 'master');
-
-                            // Master bypass: If no server/alliance provided, set defaults to close the gate
-                            const finalServer = forceServer || serverId || '#000';
-                            const finalAlliance = forceAlliance || allianceId || 'MASTER_SYSTEM';
-
-                            setAllianceInfo(finalServer, finalAlliance);
-
-                            await saveToHistory('server', finalServer);
-                            await saveToHistory('alliance', finalAlliance);
-                            await saveToHistory('userid', inputId);
-
-                            setIsGateOpen(false);
-                            setIsLoginLoading(false);
-                            return;
-                        } else {
-                            setGateLoginError(t('manual.masterPwError'));
-                            setIsLoginLoading(false);
-                            return;
-                        }
-                    }
-
-                    // For non-master users, Server/Alliance are required
-                    if (!forceServer || !forceAlliance) {
-                        setGateLoginError(t('manual.requireAllFields'));
-                        setIsLoginLoading(false);
-                        return;
-                    }
-
-                    // 2. Global Users Check (New system: master, super_admin, alliance_admin)
-                    let globalUserData = null;
-                    let globalUserId = inputId;
-                    const userRef = doc(db, "users", inputId);
-                    const userSnap = await getDoc(userRef);
-                    if (userSnap.exists()) {
-                        globalUserData = userSnap.data();
-                    } else {
-                        // Search by username or nickname if no direct ID match
-                        const qUsers = query(collection(db, "users"), where("username", "==", inputId));
-                        const qUsersSnap = await getDocs(qUsers);
-                        if (!qUsersSnap.empty) {
-                            globalUserData = qUsersSnap.docs[0].data();
-                            globalUserId = qUsersSnap.docs[0].id;
-                        } else {
-                            const qNick = query(collection(db, "users"), where("nickname", "==", inputId));
-                            const qNickSnap = await getDocs(qNick);
-                            if (!qNickSnap.empty) {
-                                globalUserData = qNickSnap.docs[0].data();
-                                globalUserId = qNickSnap.docs[0].id;
-                            }
-                        }
-                    }
-
-                    if (globalUserData) {
-                        const userData = globalUserData;
-                        const storedPw = userData.password?.toString();
-
-                        if (storedPw === hashed || storedPw === inputPw) {
-                            const finalServer = (userData.role === 'master' || userData.role === 'super_admin')
-                                ? (forceServer || '#000')
-                                : userData.serverId;
-                            const finalAlliance = (userData.role === 'master' || userData.role === 'super_admin')
-                                ? (forceAlliance || 'SYSTEM')
-                                : userData.allianceId;
-
-                            console.log(`[Gate Login] Auth Success. Switching to Server: ${finalServer}, Alliance: ${finalAlliance}`);
-
-                            if (finalServer && finalAlliance) {
-                                setAllianceInfo(finalServer, finalAlliance);
-                                await saveToHistory('server', finalServer);
-                                await saveToHistory('alliance', finalAlliance);
-                                await saveToHistory('userid', inputId);
-                                await login(globalUserId, userData.role || 'user');
-                                setIsGateOpen(false);
-                                setIsLoginLoading(false);
-                                return;
-                            }
-                        } else {
-                            console.log(`[Gate Login] PW Mismatch. Input: ${inputPw}, Hashed: ${hashed}`);
-                            setGateLoginError(t('auth.pwMismatchRetry'));
-                            setIsLoginLoading(false);
-                            return;
-                        }
-                    }
-
-                    // 3. Legacy Alliance Admin / Operation Admin Check (Sub-collection)
-                    let adminData = null;
-                    let finalAdminId = inputId;
-                    const adminRef = doc(db, "servers", forceServer, "alliances", forceAlliance, "admins", inputId);
-                    const adminSnap = await getDoc(adminRef);
-                    if (adminSnap.exists()) {
-                        adminData = adminSnap.data();
-                    } else {
-                        // Search by name if no direct ID match
-                        const qAdmin = query(
-                            collection(db, "servers", forceServer, "alliances", forceAlliance, "admins"),
-                            where("name", "==", inputId)
-                        );
-                        const qAdminSnap = await getDocs(qAdmin);
-                        if (!qAdminSnap.empty) {
-                            adminData = qAdminSnap.docs[0].data();
-                            finalAdminId = qAdminSnap.docs[0].id;
-                        }
-                    }
-
-                    if (adminData) {
-                        const storedPw = adminData.password?.toString();
-                        if (storedPw === hashed || storedPw === inputPw) {
-                            setAllianceInfo(forceServer, forceAlliance);
-
-                            await saveToHistory('server', forceServer);
-                            await saveToHistory('alliance', forceAlliance);
-                            await saveToHistory('userid', inputId);
-
-                            await login(finalAdminId, adminData.role || 'admin');
-                            setIsGateOpen(false);
-                            setIsLoginLoading(false);
-                            return;
-                        } else {
-                            setGateLoginError(t('auth.passwordMismatch'));
-                            setIsLoginLoading(false);
-                            return;
-                        }
-                    }
-
-                    // 3. General Member Check (Check by ID or Nickname)
-                    let memberData = null;
-                    let finalMemberId = inputId;
-
-                    const memberRef = doc(db, "servers", forceServer, "alliances", forceAlliance, "members", inputId);
-                    const memberSnap = await getDoc(memberRef);
-                    if (memberSnap.exists()) {
-                        memberData = memberSnap.data();
-                    } else {
-                        // If ID not found, search by nickname in the alliance members
-                        const q = query(
-                            collection(db, "servers", forceServer, "alliances", forceAlliance, "members"),
-                            where("nickname", "==", inputId)
-                        );
-                        const qSnap = await getDocs(q);
-                        if (!qSnap.empty) {
-                            memberData = qSnap.docs[0].data();
-                            finalMemberId = qSnap.docs[0].id;
-                        }
-                    }
-
-                    if (memberData) {
-                        const storedPw = memberData.password?.toString();
-                        if (storedPw === inputPw || storedPw === hashed) {
-                            setAllianceInfo(forceServer, forceAlliance);
-
-                            await saveToHistory('server', forceServer);
-                            await saveToHistory('alliance', forceAlliance);
-                            await saveToHistory('userid', inputId);
-
-                            await login(finalMemberId, 'user');
-                            setIsGateOpen(false);
-                            setIsLoginLoading(false);
-                            return;
-                        } else {
-                            setGateLoginError(t('auth.passwordMismatch'));
-                            setIsLoginLoading(false);
-                            return;
-                        }
-                    }
-
-                    setGateLoginError(t('auth.userNotFound'));
-                    setIsLoginLoading(false);
-                } catch (e) {
-                    console.error('Auth error:', e);
-                    setGateLoginError(t('auth.authError'));
-                    setIsLoginLoading(false);
-                }
-            } else {
-                // No ID/PW provided - requires server/alliance for anonymous entry
-                if (inputId) {
-                    setGateLoginError(t('auth.onlyIdError'));
-                    setIsLoginLoading(false);
-                    return;
-                }
-                if (!forceServer || !forceAlliance) {
-                    setGateLoginError(t('auth.requireServerAlliance'));
-                    setIsLoginLoading(false);
-                    return;
-                }
-                setAllianceInfo(forceServer, forceAlliance);
-
-                await saveToHistory('server', forceServer);
-                await saveToHistory('alliance', forceAlliance);
-
-                setIsGateOpen(false);
-                setIsLoginLoading(false);
-            }
-        }
-    };
 
     const [now, setNow] = useState(new Date());
     useEffect(() => {
@@ -1308,560 +458,50 @@ export default function Home() {
         return () => clearInterval(timer);
     }, []);
 
-    const getEventSchedule = (event: any) => {
-        if (!event) return null;
-        const id = (event.id || event.eventId || '').trim();
-        return schedules.find(s => {
-            const sid = (s.eventId || '').trim();
-            if (sid === id) return true;
+    const getEventSchedule = (event: any) => getEventScheduleUtil(event, schedules);
+    const getEventEndDate = (event: any) => getEventEndDateUtil(event, schedules, now);
+    const checkWeeklyExpired = (str: string) => checkWeeklyExpiredUtil(str, now);
+    const isEventExpired = (event: any) => isEventExpiredUtil(event, schedules, now);
+    const getRemainingSeconds = (str: string) => getRemainingSecondsUtil(str, now);
+    const getNextResetSeconds = () => getNextResetSecondsUtil(now);
+    const checkItemActive = (str: string) => checkItemActiveUtil(str, now);
+    const isVisibleInList = (event: any) => isVisibleInListUtil(event, schedules, now);
 
-            const mappings: { [key: string]: string[] } = {
-                'a_joe': ['alliance_joe'],
-                'alliance_joe': ['a_joe'],
-                'a_bear': ['alliance_bear', 'alliance_bear_title'],
-                'alliance_bear': ['a_bear'],
-                'a_weapon': ['alliance_frost_league'],
-                'alliance_frost_league': ['a_weapon'],
-                'a_operation': ['alliance_operation'],
-                'alliance_operation': ['a_operation'],
-                'a_mobilization': ['alliance_mobilization'],
-                'alliance_mobilization': ['a_mobilization', 'a_total'],
-                'a_total': ['alliance_mobilization'],
-                'a_foundry': ['alliance_foundry'],
-                'alliance_foundry': ['a_foundry'],
-                'a_fortress': ['alliance_fortress'],
-                'alliance_fortress': ['a_fortress'],
-                'a_citadel': ['alliance_citadel'],
-                'alliance_citadel': ['a_citadel'],
-                'a_canyon': ['alliance_canyon'],
-                'alliance_canyon': ['a_canyon']
-            };
+    const calculateBearHuntDay = useCallback((event: any, targetTime?: string): string =>
+        calculateBearHuntDayUtil(event, schedules, now, targetTime), [now, schedules]);
 
-            return mappings[id]?.includes(sid) || mappings[sid]?.includes(id);
-        });
-    };
+    const isEventActive = (event: any) => isEventActiveUtil(
+        event,
+        schedules,
+        now,
+        toLocal,
+        checkItemActive,
+        (e, s, n) => calculateBearHuntDayUtil(e, s, n)
+    );
 
-    const getEventEndDate = (event: any) => {
-        try {
-            const schedule = getEventSchedule(event);
-
-            const originalId = (event.originalEventId || '').trim();
-            const id = (originalId || event.id || event.eventId || '').trim();
-
-            const dayStr = schedule?.day || event.day || '';
-            const timeStr = schedule?.time || event.time || '';
-            const combined = `${dayStr} ${timeStr} `;
-
-            // 0. DATE_RANGE_IDS 이벤트는 day 필드의 날짜 범위를 우선 확인
-            const isDateRangeEvent = DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId);
-            if (isDateRangeEvent && combined.includes('~')) {
-                const rangeMatch = combined.match(/(?:(\d{4})[\.\\/-])?(\d{2})[\.\\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\\/-])?(\d{2})[\.\\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
-                if (rangeMatch) {
-                    const currentYear = now.getFullYear();
-                    const eYear = parseInt(rangeMatch[5] || currentYear.toString());
-                    const eMonth = parseInt(rangeMatch[6]) - 1;
-                    const eDay = parseInt(rangeMatch[7]);
-                    const timePart = rangeMatch[8] || '23:59';
-                    const [eH, eM] = timePart.split(':').map(Number);
-
-                    const end = new Date(eYear, eMonth, eDay, eH, eM);
-                    if (!isNaN(end.getTime())) return end;
-                }
-            }
-
-            // 1. Check startDate (for one-time weekly events, non date-range)
-            const startDate = schedule?.startDate || event.startDate;
-            if (startDate) {
-                try {
-                    const sTimeStr = schedule?.time || event.time || '00:00';
-                    const timeMatch = sTimeStr.match(/(\d{2}):(\d{2})/);
-                    const finalTime = timeMatch ? `${timeMatch[1]}:${timeMatch[2]}` : '00:00';
-                    const dateTimeStr = `${startDate}T${finalTime}:00`;
-                    const eventDateTime = new Date(dateTimeStr);
-                    if (!isNaN(eventDateTime.getTime())) {
-                        // Add 1 hour buffer
-                        return new Date(eventDateTime.getTime() + 3600000);
-                    }
-                } catch (e) { }
-            }
-
-            // 2. Fallback: Generic Date Range Match
-            const genericRangeMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{2}:\d{2})?/);
-            if (genericRangeMatch) {
-                const currentYear = now.getFullYear();
-                const eYear = parseInt(genericRangeMatch[5] || currentYear.toString());
-                const eMonth = parseInt(genericRangeMatch[6]) - 1;
-                const eDay = parseInt(genericRangeMatch[7]);
-                const timePart = genericRangeMatch[8] || '23:59';
-                const [eH, eM] = timePart.split(':').map(Number);
-
-                const end = new Date(eYear, eMonth, eDay, eH, eM);
-                if (!isNaN(end.getTime())) return end;
-            }
-
-            // 3. Single Date Match
-            const singleMatch = combined.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(?:오후|오전)?\s*(\d{1,2}):(\d{2})/);
-            if (singleMatch) {
-                const currentYear = now.getFullYear();
-                const y = parseInt(singleMatch[1] || currentYear.toString());
-                const m = parseInt(singleMatch[2]) - 1;
-                const d = parseInt(singleMatch[3]);
-                const h = parseInt(singleMatch[4]);
-                const min = parseInt(singleMatch[5]);
-                const end = new Date(y, m, d, h + 1, min); // 1 hour buffer
-                if (!isNaN(end.getTime())) return end;
-            }
-        } catch (e) { }
-        return null;
-    };
-
-    const checkWeeklyExpired = (str: string) => {
-        if (!str || str.includes('상시') || str.includes('상설')) return false;
-        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
-        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
-        // JavaScript getDay()는 일요일=0이므로 월요일=0으로 변환
-        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-        // Points
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
-        if (explicitMatches.length > 0) {
-            return explicitMatches.every(m => {
-                const dayStr = m[1];
-                const h = parseInt(m[2]);
-                const min = parseInt(m[3]);
-                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-                return scheduledDays.every(d => {
-                    const dayIdx = dayMapObj[d];
-                    if (dayIdx === undefined) return true;
-                    if (currentDay > dayIdx) return true;
-                    if (currentDay === dayIdx) return currentMinutes >= (h * 60 + min + 30);
-                    return false;
-                });
-            });
-        }
-
-        // Weekly Range
-        const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
-        if (weeklyMatch) {
-            const endDayIdx = dayMapObj[weeklyMatch[4]];
-            const endH = parseInt(weeklyMatch[5]);
-            const endMin = parseInt(weeklyMatch[6]);
-            if (currentDay > endDayIdx) return true;
-            if (currentDay === endDayIdx) return currentMinutes >= (endH * 60 + endMin);
-            return false;
-        }
-
-        return false;
-    };
-
-    const isEventExpired = (event: any) => {
-        // originalEventId를 우선 사용 (분할된 이벤트의 경우)
-        const originalId = (event.originalEventId || '').trim();
-        const id = (originalId || event.id || event.eventId || '').trim();
-
-        // 곰사냥은 반복 이벤트이므로 대시보드에서 만료된 섹션으로 보내지 않음
-        if (id === 'a_bear' || id === 'alliance_bear') return false;
-
-        const schedule = getEventSchedule(event);
-
-        // 1. startDate가 있으면 날짜 기준 판단 (우선순위 높음)
-        // 미치광이 조이, 협곡, 요새, 성채, 무기공장 등 일회성 주간 이벤트용
-        const startDate = schedule?.startDate || event.startDate;
-        const dayStr = schedule?.day || event.day || '';
-        const isRange = dayStr.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id);
-
-        if (startDate && !isRange) {
-            try {
-                const timeStr = schedule?.time || event.time || '00:00';
-                const dateTimeStr = `${startDate}T${timeStr}:00`;
-                const eventDateTime = new Date(dateTimeStr);
-                if (!isNaN(eventDateTime.getTime())) {
-                    // 이벤트 시작 후 1시간이 지나면 만료로 간주
-                    const expireTime = new Date(eventDateTime.getTime() + 3600000);
-                    return now > expireTime;
-                }
-            } catch (e) {
-                // startDate 파싱 실패 시 기존 로직으로 fallback
-            }
-        }
-
-        // 2. 기존 날짜 범위 체크
-        const end = getEventEndDate(event);
-        if (end) return now > end;
-
-        // 3. 주간 반복 일정 만료 체크 (startDate 없는 경우)
-        const timeStr = schedule?.time || event.time || '';
-        const combined = `${dayStr} ${timeStr}`;
-
-        return checkWeeklyExpired(combined);
-    };
-
-    const getRemainingSeconds = (str: string) => {
-        if (!str || str.includes('상시') || str.includes('상설')) return null;
-        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
-        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
-        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
-        const currentTotal = currentDay * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-        const totalWeekSeconds = 7 * 1440 * 60;
-
-        // 점형 일시 체크
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
-        if (explicitMatches.length > 0) {
-            let secRemaining: number | null = null;
-            explicitMatches.forEach(m => {
-                const dayStr = m[1];
-                const h = parseInt(m[2]);
-                const min = parseInt(m[3]);
-                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-
-                scheduledDays.forEach(d => {
-                    const dayOffset = dayMapObj[d];
-                    if (dayOffset === undefined) return;
-                    const startTotal = dayOffset * 1440 * 60 + h * 3600 + min * 60;
-                    let endTotal = startTotal + 1800; // 30 mins = 1800s
-
-                    if (currentTotal >= startTotal && currentTotal <= endTotal) {
-                        const rem = endTotal - currentTotal;
-                        if (secRemaining === null || rem < secRemaining) secRemaining = rem;
-                    } else if (endTotal >= totalWeekSeconds && currentTotal <= (endTotal % totalWeekSeconds)) {
-                        const rem = (endTotal % totalWeekSeconds) - currentTotal;
-                        if (secRemaining === null || rem < secRemaining) secRemaining = rem;
-                    }
-                });
-            });
-            return secRemaining;
-        }
-        return null;
-    };
-
-    const getNextResetSeconds = () => {
-        const d = new Date(now);
-        d.setHours(9, 0, 0, 0);
-        if (d <= now) d.setDate(d.getDate() + 1);
-        return Math.floor((d.getTime() - now.getTime()) / 1000);
-    };
-
-    const formatRemainingTime = (seconds: number) => {
-        const d = Math.floor(seconds / (24 * 3600));
-        const h = Math.floor((seconds % (24 * 3600)) / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-
-        let res = "";
-        if (d > 0) res += `${d}일 `;
-        if (h > 0 || d > 0) res += `${String(h).padStart(2, '0')}:`;
-        res += `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        return res;
-    };
-
-    // -- 일정 단위가 활성 상태인지 체크하는 헬퍼 함수 --
-    const checkItemActive = (str: string) => {
-        if (!str) return false;
-        // 월요일~일요일이 한 주 (월요일 00:00 리셋)
-        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
-        const currentDay = (now.getDay() + 6) % 7; // 월(0), 화(1), 수(2), 목(3), 금(4), 토(5), 일(6)
-        const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
-        const totalWeekMinutes = 7 * 1440;
-
-        if (str.includes('상시') || str.includes('상설')) return true;
-
-        // 1. 기간형 체크 (예: 2024.01.01 10:00 ~ 2024.01.03 10:00)
-        const dateRangeMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}:\d{2})?\s*~\s*(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}:\d{2})?/);
-        if (dateRangeMatch) {
-            const currentYear = now.getFullYear();
-            const sYear = dateRangeMatch[1] || currentYear.toString();
-            const sMonth = dateRangeMatch[2];
-            const sDay = dateRangeMatch[3];
-            const sTime = dateRangeMatch[4] || '00:00';
-
-            const eYear = dateRangeMatch[5] || currentYear.toString();
-            const eMonth = dateRangeMatch[6];
-            const eDay = dateRangeMatch[7];
-            const eTime = dateRangeMatch[8] || '23:59';
-
-            const [hStart, mStart] = sTime.split(':').map(Number);
-            const [hEnd, mEnd] = eTime.split(':').map(Number);
-
-            const start = new Date(parseInt(sYear), parseInt(sMonth) - 1, parseInt(sDay), hStart, mStart);
-            const end = new Date(parseInt(eYear), parseInt(eMonth) - 1, parseInt(eDay), hEnd, mEnd);
-            if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-                return now >= start && now <= end;
-            }
-        }
-
-        // 2. 단일 날짜 체크 (예: 2026-02-22 일(23:00) 또는 2026.02.22 10:00)
-        const singleDateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(?:오후|오전)?\s*(\d{1,2}):(\d{2})/);
-        if (singleDateMatch) {
-            const currentYear = now.getFullYear();
-            const y = parseInt(singleDateMatch[1] || currentYear.toString());
-            const m = parseInt(singleDateMatch[2]) - 1;
-            const d = parseInt(singleDateMatch[3]);
-            const h = parseInt(singleDateMatch[4]);
-            const min = parseInt(singleDateMatch[5]);
-
-            const start = new Date(y, m, d, h, min);
-            const end = new Date(start.getTime() + 30 * 60000); // 30 min duration
-            return now >= start && now <= end;
-        }
-
-        // 3. 주간 요일 범위 체크 (예: 월 10:00 ~ 수 10:00)
-        const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
-        if (weeklyMatch) {
-            const startTotal = dayMapObj[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
-            const endTotal = dayMapObj[weeklyMatch[4]] * 1440 + parseInt(weeklyMatch[5]) * 60 + parseInt(weeklyMatch[6]);
-            if (startTotal <= endTotal) return currentTotal >= startTotal && currentTotal <= endTotal;
-            return currentTotal >= startTotal || currentTotal <= endTotal;
-        }
-
-        // 4. 점형 일시 체크 (예: 화 23:50, 매일 10:00) - 날짜 없는 주간 반복만
-        // 날짜가 포함되어 있으면 주간 반복으로 인식하지 않음
-        const hasDateInfo = /\d{4}[\.-]\d{2}[\.-]\d{2}/.test(str);
-        if (!hasDateInfo) {
-            const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
-            if (explicitMatches.length > 0) {
-                return explicitMatches.some(m => {
-                    const dayStr = m[1];
-                    const h = parseInt(m[2]);
-                    const min = parseInt(m[3]);
-                    const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-                    return scheduledDays.some(d => {
-                        const dayOffset = dayMapObj[d];
-                        if (dayOffset === undefined) return false;
-                        const startTotal = dayOffset * 1440 + h * 60 + min;
-                        const endTotal = startTotal + 30; // 30분 지속
-                        if (startTotal <= endTotal) {
-                            return currentTotal >= startTotal && currentTotal <= endTotal;
-                        } else { // 자정 근처 주간 순환
-                            if (endTotal >= totalWeekMinutes) {
-                                return currentTotal >= startTotal || currentTotal <= (endTotal % totalWeekMinutes);
-                            }
-                        }
-                        return false;
-                    });
-                });
-            }
-        }
-        return false;
-    };
-
-    const isVisibleInList = (event: any) => {
-        const end = getEventEndDate(event);
-        if (!end) return true; // For weekly/everlasting events, keep them visible.
-
-        // For one-time events with startDate, keep visible for 7 days (rest of the week)
-        const schedule = getEventSchedule(event);
-        const hasStartDate = !!(schedule?.startDate || event.startDate);
-        const bufferDays = hasStartDate ? 7 : 2;
-
-        const bufferMs = bufferDays * 24 * 60 * 60 * 1000;
-        const threshold = new Date(end.getTime() + bufferMs);
-        return now <= threshold;
-    };
-
-    // 곰사냥 2일 단위 로테이션: 다음 이벤트 요일 계산
-    const calculateBearHuntDay = useCallback((event: any, targetTime?: string): string => {
-        const isBear = (event.eventId === 'a_bear' || event.eventId === 'alliance_bear' || event.originalEventId === 'a_bear' || event.originalEventId === 'alliance_bear');
-        const schedule = getEventSchedule(event);
-        const registeredDay = event.day || schedule?.day || '';
-        if (!isBear || !registeredDay) return registeredDay;
-
-        const dayMap: { [key: string]: number } = { '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6 };
-        const dayMapReverse: { [key: number]: string } = { 0: '일', 1: '월', 2: '화', 3: '수', 4: '목', 5: '금', 6: '토' };
-
-        // 여러 요일이 쉼표로 연결된 경우 첫 번째 요일을 기준으로 로테이션 계산
-        const firstDayMatch = registeredDay.match(/[일월화수목금토]/);
-        if (!firstDayMatch) return registeredDay;
-        const regDayNum = dayMap[firstDayMatch[0]];
-
-        const todayNum = now.getDay();
-        const daysSinceRegistered = (todayNum - regDayNum + 7) % 7;
-        const isEventDay = daysSinceRegistered % 2 === 0;
-
-        if (isEventDay) {
-            // 체크할 대상 시간 결정 (특정 팀 시간이 주어지면 그것을 사용, 아니면 이벤트 전체의 마지막 시간)
-            const checkTime = targetTime || event.time || '';
-            const allTimes = Array.from(checkTime.matchAll(/(\d{1,2}):(\d{2})/g));
-            let latestEventMinutes = -1;
-
-            for (const match of allTimes) {
-                const h = parseInt(match[1]);
-                const m = parseInt(match[2]);
-                const eventMinutes = h * 60 + m;
-                if (eventMinutes > latestEventMinutes) latestEventMinutes = eventMinutes;
-            }
-
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            // 해당 팀 시간이 이미 지났으면(30분 지속 고려) 다음 로테이션(2일 후)으로
-            if (latestEventMinutes >= 0 && currentMinutes > latestEventMinutes + 30) {
-                const nextEventNum = (todayNum + 2) % 7;
-                return dayMapReverse[nextEventNum];
-            }
-            return dayMapReverse[todayNum];
-        }
-
-        // 오늘이 이벤트 날이 아니면 다음 로테이션 요일 계산
-        const nextEventNum = (todayNum + (2 - (daysSinceRegistered % 2))) % 7;
-        return dayMapReverse[nextEventNum];
-    }, [now, getEventSchedule]);
-
-    const isEventActive = (event: any) => {
-        try {
-            const schedule = getEventSchedule(event);
-            const startDate = schedule?.startDate || event.startDate;
-
-            const originalId = (event.originalEventId || '').trim();
-            const id = (originalId || event.id || event.eventId || '').trim();
-
-            const dayStrRaw = schedule?.day || event.day || '';
-            const titleMatch = (event.title || '').includes('집결') || (event.title || '').includes('공연') || (event.title || '').includes('전당');
-            const isRange = dayStrRaw.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId) || titleMatch;
-
-            // startDate가 있고, 기간형 이벤트가 아닐 때만 단일 날짜 체크
-            if (startDate && !isRange) {
-                const eventDate = new Date(startDate);
-                const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-                // 날짜가 일치하지 않으면 진행중 아님
-                if (eventDate.getTime() !== nowDate.getTime()) {
-                    return false;
-                }
-
-                // 날짜가 일치하면 시간 체크
-                const timeStr = schedule?.time || event.time || '';
-                return checkItemActive(toLocal(timeStr));
-            }
-
-            // startDate 없으면 주간 반복 이벤트
-            const isBear = (id === 'a_bear' || id === 'alliance_bear');
-            const dayStr = isBear ? calculateBearHuntDay(event) : (schedule?.day || event.day || '');
-            const timeStr = schedule?.time || event.time || '';
-            const combinedStr = `${dayStr || ''} ${timeStr || ''}`.trim();
-
-            return checkItemActive(toLocal(combinedStr));
-        } catch (e) { return false; }
-    };
-
-    const pad = (n: number) => n.toString().padStart(2, '0');
+    const pad = (n: number) => padUtil(n);
+    const formatRemainingTime = (seconds: number) => formatRemainingTimeUtil(seconds);
+    const getKoreanDayOfWeek = (date: Date) => getKoreanDayOfWeekUtil(date, t);
+    const translateDay = (day: string) => translateDayUtil(day, t);
+    const translateLabel = (label: string) => translateLabelUtil(label, t);
+    const getBundleId = (ev: any) => getBundleIdUtil(ev);
+    const getSortTime = (ev: any) => getSortTimeUtil(ev, now);
 
     // --- Timezone Conversion Helpers ---
-    const toLocal = (kstStr: string) => {
-        const userOffset = -new Date().getTimezoneOffset();
-        const kstOffset = 540; // UTC+9
-        return processConversion(kstStr, userOffset - kstOffset);
-    };
-
-    const toUTC = (kstStr: string) => {
-        return processConversion(kstStr, -540);
-    };
+    const toLocal = (kstStr: string) => toLocalUtil(kstStr, (str, diff) => processConversion(str, diff));
+    const toUTC = (kstStr: string) => toUTCUtil(kstStr, (str, diff) => processConversion(str, diff));
 
     const convertTime = (kstStr: string) => {
         if (!kstStr) return kstStr;
         return timezone === 'LOCAL' ? toLocal(kstStr) : toUTC(kstStr);
     };
 
-    const processConversion = (str: string, diffMinutes: number) => {
-        if (!str || diffMinutes === 0) return str;
-
-        // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
-        let processed = str.replace(/(?:(\d{2,4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~\.]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
-            const currentYear = now.getFullYear();
-            let yearNum = parseInt(y || currentYear.toString());
-            if (y && y.length === 2) yearNum += 2000;
-            const date = new Date(yearNum, parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
-            if (isNaN(date.getTime())) return match;
-            const converted = new Date(date.getTime() + diffMinutes * 60000);
-
-            // Output format based on timezone setting
-            return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
-        });
-
-        // 2. Weekly Day Case (화(22:00))
-        processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {
-            const hour = parseInt(h);
-            const min = parseInt(m);
-            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
-            let dayIdx = days.indexOf(day);
-
-            if (dayIdx === -1) { // '매일'
-                let totalMin = hour * 60 + min + diffMinutes;
-                while (totalMin < 0) totalMin += 1440;
-                totalMin %= 1440;
-                const newH = Math.floor(totalMin / 60);
-                const newM = totalMin % 60;
-                return `${day}(${pad(newH)}:${pad(newM)})`;
-            }
-
-            let totalMin = dayIdx * 1440 + hour * 60 + min + diffMinutes;
-            while (totalMin < 0) totalMin += 10080;
-            totalMin %= 10080;
-
-            const newDayIdx = Math.floor(totalMin / 1440);
-            const remain = totalMin % 1440;
-            const newH = Math.floor(remain / 60);
-            const newM = remain % 60;
-            return `${days[newDayIdx]}(${pad(newH)}:${pad(newM)})`;
-        });
-
-        return processed;
-    };
+    const processConversion = (str: string, diffMinutes: number) => processConversionUtil(str, diffMinutes, t, now);
     // ------------------------------------
 
-    const splitSchedulePart = (str: string) => {
-        if (!str) return { date: '', time: '' };
+    const splitSchedulePart = (str: string) => splitSchedulePartUtil(str, t, now);
 
-        // 1. Handle full date range type (2024.01.01 10:00)
-        const fullDateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d\s~\.\/-]*\s*(\d{2}):(\d{2})/);
-        if (fullDateMatch) {
-            const currentYear = now.getFullYear();
-            const y = fullDateMatch[1] || currentYear.toString();
-            const m = fullDateMatch[2];
-            const d = fullDateMatch[3];
-            const h = fullDateMatch[4];
-            const min = fullDateMatch[5];
-            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
-            const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-            const dateStr = `${m}/${d}(${days[dateObj.getDay()]})`;
-            return { date: dateStr, time: `${pad(parseInt(h))}:${pad(parseInt(min))}` };
-        }
 
-        // 2. Handle date only (2024.01.01)
-        const justDateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})/);
-        if (justDateMatch) {
-            const currentYear = now.getFullYear();
-            const y = justDateMatch[1] || currentYear.toString();
-            const m = justDateMatch[2];
-            const d = justDateMatch[3];
-            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
-            const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-            const dateStr = `${m}/${d}(${days[dateObj.getDay()]})`;
-            return { date: dateStr, time: '' };
-        }
-
-        // 3. Handle UTC format MM/DD HH:mm
-        const utcMatch = str.match(/(\d{2})\/(\d{2})\s+(\d{2}:\d{2})/);
-        if (utcMatch) {
-            return { date: `${utcMatch[1]}/${utcMatch[2]}`, time: utcMatch[3] };
-        }
-
-        // 4. Handle UTC format MM/DD
-        const utcDateMatch = str.match(/(\d{2})\/(\d{2})/);
-        if (utcDateMatch && str.trim().length <= 5) {
-            return { date: `${utcDateMatch[1]}/${utcDateMatch[2]}`, time: '' };
-        }
-
-        // 5. Handle weekly type (월(10:00) or similar)
-        const weeklyMatch = str.match(/([일월화수목금토매일]+)\(?(\d{2}:\d{2})\)?/);
-        if (weeklyMatch) {
-            return { date: weeklyMatch[1].replace(/[()]/g, ''), time: weeklyMatch[2] };
-        }
-
-        return { date: str, time: '' };
-    };
-
-    // Gate Login States
-    const [gateLoginError, setGateLoginError] = useState<string | null>(null);
-    const [isLoginLoading, setIsLoginLoading] = useState(false);
 
     const [noticeModalVisible, setNoticeModalVisible] = useState(false);
     const [editNoticeContent, setEditNoticeContent] = useState('');
@@ -1891,164 +531,13 @@ export default function Home() {
     }, []);
 
 
-    const flickerAnim = useRef(new Animated.Value(1)).current;
-    const scaleAnim = useRef(new Animated.Value(1)).current;
-    const noticeScrollAnim = useRef(new Animated.Value(0)).current;
-    const [noticeTextWidth, setNoticeTextWidth] = useState(0);
-    const [noticeContainerWidth, setNoticeContainerWidth] = useState(0);
 
-    useEffect(() => {
-        if (notice?.content && noticeTextWidth > 0 && noticeContainerWidth > 0) {
-            // Only marquee if content is significantly long or always? User said "like billboard".
-            // Let's make it always scroll.
 
-            noticeScrollAnim.setValue(noticeContainerWidth);
 
-            const distance = noticeTextWidth + noticeContainerWidth;
-            const duration = distance * 30; // 30ms per pixel, adjust for speed
-
-            const anim = Animated.loop(
-                Animated.sequence([
-                    Animated.timing(noticeScrollAnim, {
-                        toValue: -noticeTextWidth,
-                        duration: duration,
-                        easing: Easing.linear,
-                        useNativeDriver: false,
-                    }),
-                    Animated.timing(noticeScrollAnim, {
-                        toValue: noticeContainerWidth,
-                        duration: 0,
-                        useNativeDriver: false,
-                    })
-                ])
-            );
-
-            anim.start();
-            return () => anim.stop();
-        }
-    }, [notice?.content, noticeTextWidth, noticeContainerWidth]);
-
-    useEffect(() => {
-        const createPulse = () => {
-            return Animated.sequence([
-                Animated.timing(flickerAnim, { toValue: 0.5, duration: 1000, useNativeDriver: false }),
-                Animated.timing(flickerAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
-            ]);
-        };
-
-        const createScale = () => {
-            return Animated.sequence([
-                Animated.timing(scaleAnim, { toValue: 1.05, duration: 1000, useNativeDriver: false }),
-                Animated.timing(scaleAnim, { toValue: 1, duration: 1000, useNativeDriver: false }),
-            ]);
-        };
-
-        Animated.loop(
-            Animated.parallel([
-                createPulse(),
-                createScale()
-            ])
-        ).start();
-    }, []);
 
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-    const handleLogin = async () => {
-        const input = (loginInput || '').trim();
-        const pw = (passwordInput || '').trim();
-        setLoginError('');
 
-        if (!input || !pw) {
-            setLoginError(t('auth.loginInputError'));
-            return;
-        }
-
-        try {
-            const hashed = await hashPassword(pw);
-            const lowerId = input.toLowerCase();
-
-            // 1. Master Admin Check
-            const master = MASTER_CREDENTIALS.find(m => m.id.toLowerCase() === lowerId);
-            if (master && (master.pw === hashed || master.pw === pw)) {
-                await performLogin(input, 'master');
-                return;
-            }
-
-            // 2. Global Users Check (Alliance Admins / Super Admins)
-            let globalUserData = null;
-            let globalUserId = input;
-            const userRef = doc(db, "users", input);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-                globalUserData = userSnap.data();
-            } else {
-                const qUsers = query(collection(db, "users"), where("username", "==", input));
-                const qUsersSnap = await getDocs(qUsers);
-                if (!qUsersSnap.empty) {
-                    globalUserData = qUsersSnap.docs[0].data();
-                    globalUserId = qUsersSnap.docs[0].id;
-                } else {
-                    const qNick = query(collection(db, "users"), where("nickname", "==", input));
-                    const qNickSnap = await getDocs(qNick);
-                    if (!qNickSnap.empty) {
-                        globalUserData = qNickSnap.docs[0].data();
-                        globalUserId = qNickSnap.docs[0].id;
-                    }
-                }
-            }
-
-            if (globalUserData) {
-                const userData = globalUserData;
-                const storedPw = userData.password?.toString();
-
-                if (storedPw === hashed || storedPw === pw) {
-                    console.log(`[Modal Login] Auth Success. Switching to Server: ${userData.serverId}, Alliance: ${userData.allianceId}`);
-                    // For alliance admins, update the context to their assigned alliance
-                    if (userData.serverId && userData.allianceId) {
-                        setAllianceInfo(userData.serverId, userData.allianceId);
-                    }
-                    await performLogin(globalUserId, userData.role || 'user');
-                    return;
-                } else {
-                    setLoginError(t('auth.passwordMismatch'));
-                    return;
-                }
-            }
-
-            // 3. Dynamic Admin Check (Legacy Operation Admins)
-            const dynamic = dynamicAdmins.find(a => {
-                const aNameLower = a.name.toLowerCase();
-                const aPw = (a.password || '').toLowerCase();
-                return aNameLower === lowerId && (aPw === hashed || aPw === pw.toLowerCase());
-            });
-
-            if (dynamic) {
-                await performLogin(dynamic.name, dynamic.role || 'admin');
-            } else {
-                setLoginError(t('auth.loginFailed'));
-            }
-        } catch (e) {
-            console.error('[Modal Login] Error:', e);
-            setLoginError(t('auth.authError'));
-        }
-    };
-
-    const performLogin = async (id: string, role: AdminStatus['role'] = 'admin') => {
-        try {
-            const { signInAnonymously } = require('firebase/auth');
-            const { auth: firebaseAuth } = require('../firebaseConfig');
-            signInAnonymously(firebaseAuth).catch(() => { });
-        } catch (e) { }
-
-        await AsyncStorage.setItem('lastAdminId', id);
-        await login(id, role);
-        setLoginModalVisible(false);
-        setPasswordInput('');
-        const roleName = role === 'master' ? t('auth.role_master') : role === 'alliance_admin' ? t('auth.role_alliance_admin') : role === 'admin' ? t('auth.role_op_admin') : t('auth.role_general');
-        showCustomAlert(t('auth.authSuccess'), t('auth.welcome', { id, role: roleName }), 'success');
-    };
-
-    const handleSettingsPress = () => auth.isLoggedIn ? setAdminMenuVisible(true) : setLoginModalVisible(true);
 
 
     const handleOpenNotice = () => {
@@ -2302,58 +791,7 @@ export default function Home() {
             }
         });
 
-        // Helper to get a stable group ID for bundling related events (e.g., Fortress/Citadel)
-        const getBundleId = (ev: any) => {
-            const gid = ev.originalEventId || ev.eventId;
-            if (gid === 'a_fortress' || gid === 'a_citadel' || gid === 'alliance_fortress' || gid === 'alliance_citadel') return 'fortress_bundle';
-            return gid;
-        };
 
-        // 3. Sort the final processed list
-        // Helper to get chronological sort weight for an event entry
-        const getSortTime = (ev: any) => {
-            const dStr = ev.day || '';
-            const tStr = ev.time || '';
-            const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
-
-            // 1. Date Range Priority (Single occurrence events)
-            const rangeMatch = (dStr + tStr).match(/(\d{4})[\.-](\d{2})[\.-](\d{2})/);
-            if (rangeMatch) return new Date(rangeMatch[1] + '-' + rangeMatch[2] + '-' + rangeMatch[3]).getTime();
-
-            // 2. Weekly Recurring
-            const currentDay = (now.getDay() + 6) % 7;
-            const currentMins = now.getHours() * 60 + now.getMinutes();
-
-            const matches = Array.from((dStr + ' ' + tStr).matchAll(/([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/g));
-            if (matches.length > 0) {
-                // Find first non-expired slot
-                let nextSlot = matches.find(m => {
-                    const dRaw = m[1];
-                    const [h, min] = m[2].split(':').map(Number);
-                    if (dRaw === '매일' || dRaw === '상시') return true;
-                    const dIdx = dayMap[dRaw];
-                    if (dIdx > currentDay) return true;
-                    if (dIdx === currentDay) return currentMins < (h * 60 + min + 30);
-                    return false;
-                });
-
-                // If all expired this week, show first slot of next week or just the first match
-                if (!nextSlot) nextSlot = matches[0];
-
-                const [_, dRaw, tPart] = nextSlot;
-                const [h, min] = tPart.split(':').map(Number);
-                const dIdx = dRaw === '매일' || dRaw === '상시' ? -1 : (dayMap[dRaw] ?? 9);
-                return dIdx * 86400000 + h * 3600000 + min * 60000;
-            }
-
-            const firstDay = (dStr + tStr).match(/[월화수목금토일]/)?.[0];
-            const timeMatch = (dStr + tStr).match(/(\d{2}:\d{2})/)?.[1] || '00:00';
-            if (firstDay) {
-                const [h, m] = timeMatch.split(':').map(Number);
-                return dayMap[firstDay] * 86400000 + h * 3600000 + m * 60000;
-            }
-            return 9999999999999;
-        };
 
         // Pre-calculate group-level data: minTime, hasActive, allExpired, count
         const groupData: { [key: string]: { minTime: number, hasActive: boolean, allExpired: boolean, count: number } } = {};
@@ -2451,70 +889,8 @@ export default function Home() {
         }
     };
 
-    // Pulsing Animation for Return Button
-    const returnPulseAnim = useRef(new Animated.Value(0)).current;
 
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(returnPulseAnim, {
-                    toValue: 1,
-                    duration: 1500,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(returnPulseAnim, {
-                    toValue: 0,
-                    duration: 1500,
-                    useNativeDriver: false,
-                }),
-            ])
-        ).start();
-    }, []);
 
-    // Blink Animation for Upcoming Soon
-    const blinkAnim = useRef(new Animated.Value(0)).current;
-
-    useEffect(() => {
-        Animated.loop(
-            Animated.sequence([
-                Animated.timing(blinkAnim, {
-                    toValue: 1,
-                    duration: 800,
-                    useNativeDriver: false,
-                }),
-                Animated.timing(blinkAnim, {
-                    toValue: 0.3,
-                    duration: 800,
-                    useNativeDriver: false,
-                }),
-            ])
-        ).start();
-    }, []);
-
-    // Event Time Formatting Helpers
-    const getKoreanDayOfWeek = (date: Date) => {
-        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-        return t(`events.days.${days[date.getDay()]}`);
-    };
-
-    // Translate Korean day to current language
-    const translateDay = (day: string) => {
-        const dayMap: { [key: string]: string } = {
-            '일': 'sun', '월': 'mon', '화': 'tue', '수': 'wed',
-            '목': 'thu', '금': 'fri', '토': 'sat'
-        };
-        return dayMap[day] ? t(`events.days.${dayMap[day]}`) : day;
-    };
-
-    // Translate fortress/citadel and group labels
-    const translateLabel = (label: string) => {
-        if (!label) return '';
-        return label
-            .replace(/요새\s*#?(\d+)/g, (match, num) => `${t('events.fortress')} ${num}`)
-            .replace(/성채\s*#?(\d+)/g, (match, num) => `${t('events.citadel')} ${num}`)
-            .replace(/(?:^|\s|\()1군(?:\s|\)|$)/g, (match) => match.replace('1군', t('events.team1')))
-            .replace(/(?:^|\s|\()2군(?:\s|\)|$)/g, (match) => match.replace('2군', t('events.team2')));
-    };
 
     const renderWithHighlightedDays = (str: string, isUpcomingSoon: boolean) => {
         const parts = str.split(/([일월화수목금토]|\((?:일|월|화|수|목|금|토)\))/g);
@@ -3227,570 +1603,21 @@ export default function Home() {
         );
     };
 
-    const renderHistorySuggestions = (type: 'server' | 'alliance' | 'userid') => {
-        if (activeInput !== type) return null;
-        const list = type === 'server' ? recentServers : type === 'alliance' ? recentAlliances : recentUserIds;
-        if (list.length === 0) return null;
 
+    if (isLoading || isGateOpen || !serverId || !allianceId) {
         return (
-            <View className={`absolute top-full left-0 right-0 mt-2 z-[100] rounded-2xl border overflow-hidden shadow-2xl ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
-                {list.map((item, index) => (
-                    <TouchableOpacity
-                        key={index}
-                        onPress={() => {
-                            if (type === 'server') setInputServer(item);
-                            if (type === 'alliance') setInputAlliance(item);
-                            if (type === 'userid') setInputUserId(item);
-                            setActiveInput(null);
-                        }}
-                        className={`p-4 flex-row items-center border-b ${isDark ? 'bg-slate-800 border-slate-700 active:bg-slate-700' : 'bg-white border-slate-100 active:bg-slate-50'} last:border-0`}
-                        // @ts-ignore - Web-specific property
-                        tabIndex={-1}
-                    >
-                        <Ionicons name="time-outline" size={16} color={isDark ? "#475569" : "#94a3b8"} style={{ marginRight: 10 }} />
-                        <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>{item}</Text>
-                    </TouchableOpacity>
-                ))}
-            </View>
-        );
-    };
-
-    if (isLoading) {
-        return (
-            <View className={`flex-1 ${isDark ? 'bg-[#020617]' : 'bg-slate-50'} items-center justify-center`}>
-                <ImageBackground
-                    source={require('../assets/images/selection_gate_bg.png')}
-                    style={{ position: 'absolute', width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                />
-                <View className={`absolute inset-0 ${isDark ? 'bg-slate-950/60' : 'bg-white/40'}`} />
-                <Animated.View style={{ opacity: flickerAnim, transform: [{ scale: scaleAnim }] }} className="items-center">
-                    <View className={`w-24 h-24 rounded-[40px] ${isDark ? 'bg-sky-500/20 border-sky-400/30' : 'bg-sky-100 border-sky-200'} items-center justify-center mb-8 border`}>
-                        <Ionicons name="snow" size={54} color="#38bdf8" />
-                    </View>
-                    <Text className={`font-black tracking-[0.3em] ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>{t('common.initializing').toUpperCase()}</Text>
-                    <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 24 }} />
-                </Animated.View>
-            </View>
-        );
-    }
-
-    if (isGateOpen || !serverId || !allianceId) {
-        return (
-            <View className={`flex-1 w-full h-screen ${isDark ? 'bg-[#0f172a]' : 'bg-slate-50'}`}>
-                <ImageBackground
-                    source={require('../assets/images/selection_gate_bg.png')}
-                    style={{ position: 'absolute', width: '100%', height: '100%' }}
-                    resizeMode="cover"
-                />
-                <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.7)' }} />
-                <View className="flex-1 w-full h-full justify-center items-center p-4">
-                    <BlurView intensity={isDark ? 40 : 20} tint={isDark ? "dark" : "light"} className="absolute inset-0" />
-
-                    <View className={`w-full max-w-md ${isMobile ? 'p-5' : 'p-6'} rounded-[40px] border ${isDark ? 'border-white/10 bg-slate-900/60' : 'border-slate-200 bg-white/80'} shadow-2xl overflow-hidden`}>
-                        <BlurView intensity={isDark ? 80 : 40} className="absolute inset-0" />
-
-                        <View className="items-center mb-4 relative">
-                            {/* Top Right Controls: Help & Reset */}
-                            <View className={`absolute top-0 right-0 flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-white/60 border-slate-200'} shadow-sm`} style={{ zIndex: 10 }}>
-                                <Pressable
-                                    onPress={() => openModalWithHistory(setIsGateManualVisible)}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: isMobile ? 38 : 36,
-                                            height: isMobile ? 38 : 36,
-                                            borderRadius: isMobile ? 10 : 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: hovered ? 'rgba(71, 85, 105, 0.4)' : 'transparent',
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons name="book-outline" size={20} color="#f59e0b" />
-                                </Pressable>
-
-                                {/* Temporary Theme Toggle */}
-                                <Pressable
-                                    onPress={toggleTemporaryTheme}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: isMobile ? 38 : 36,
-                                            height: isMobile ? 38 : 36,
-                                            borderRadius: isMobile ? 10 : 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: hovered ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)') : 'transparent',
-                                            marginLeft: isMobile ? 6 : 4,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons name={isDark ? "sunny" : "moon"} size={20} color="#f59e0b" />
-                                </Pressable>
-
-                                <Pressable
-                                    onPress={handleResetSettings}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: isMobile ? 38 : 36,
-                                            height: isMobile ? 38 : 36,
-                                            borderRadius: isMobile ? 10 : 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: hovered ? 'rgba(167, 139, 250, 0.2)' : 'transparent',
-                                            marginLeft: isMobile ? 6 : 4,
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                            transition: 'all 0.2s',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons name="refresh-outline" size={20} color="#a78bfa" />
-                                </Pressable>
-                            </View>
-
-                            {/* Language Toggle Switch (Icon Only) */}
-                            <View className={`absolute top-0 left-0 flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-white/60 border-slate-200'} shadow-sm`} style={{ zIndex: 10 }}>
-                                <Pressable
-                                    onPress={() => changeLanguage('ko')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: isMobile ? 38 : 36,
-                                            height: isMobile ? 38 : 36,
-                                            borderRadius: isMobile ? 10 : 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: language === 'ko'
-                                                ? '#2563eb'
-                                                : (hovered ? 'rgba(59, 130, 246, 0.2)' : 'transparent'),
-                                            borderColor: language === 'ko' ? 'transparent' : (hovered ? '#60a5fa' : 'transparent'),
-                                            borderWidth: 1,
-                                            transform: [{ scale: pressed ? 0.92 : (hovered ? 1.08 : 1) }],
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons
-                                        name="language"
-                                        size={isMobile ? 20 : 18}
-                                        color={language === 'ko' ? 'white' : '#64748b'}
-                                    />
-                                </Pressable>
-
-                                <Pressable
-                                    onPress={() => changeLanguage('en')}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            width: isMobile ? 38 : 36,
-                                            height: isMobile ? 38 : 36,
-                                            borderRadius: isMobile ? 10 : 10,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            backgroundColor: language === 'en'
-                                                ? '#2563eb'
-                                                : (hovered ? 'rgba(59, 130, 246, 0.2)' : 'transparent'),
-                                            borderColor: language === 'en' ? 'transparent' : (hovered ? '#60a5fa' : 'transparent'),
-                                            borderWidth: 1,
-                                            marginLeft: isMobile ? 6 : 4,
-                                            transform: [{ scale: pressed ? 0.92 : (hovered ? 1.08 : 1) }],
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            cursor: 'pointer'
-                                        }
-                                    ]}
-                                    // @ts-ignore
-                                    tabIndex={-1}
-                                >
-                                    <Ionicons
-                                        name="globe-outline"
-                                        size={isMobile ? 20 : 18}
-                                        color={language === 'en' ? 'white' : '#64748b'}
-                                    />
-                                </Pressable>
-                            </View>
-
-
-
-                            <View className="items-center justify-center mb-6" style={{ marginTop: isMobile ? 64 : 46 }}>
-                                <View className="w-24 h-24 rounded-[32px] bg-white/10 items-center justify-center border border-white/20 shadow-2xl overflow-hidden mb-2">
-                                    <Image
-                                        source={require('../assets/icon.png')}
-                                        style={{ width: 80, height: 80 }}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                            </View>
-                            <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'} text-center tracking-tighter`} style={{ fontSize: (isMobile ? 20 : 24) * fontSizeScale }}>{t('dashboard.title')}</Text>
-                            <Text className={`${isRegisterMode ? (isDark ? 'text-amber-400/80' : 'text-amber-600/90') : (isDark ? 'text-sky-400/80' : 'text-sky-600/90')} font-bold mt-0.5 tracking-[0.2em] uppercase`} style={{ fontSize: (isMobile ? 8 : 9) * fontSizeScale }}>{t('dashboard.subtitle')}</Text>
-                        </View>
-
-                        <View className={`flex-row ${isDark ? 'bg-slate-950/40 border-white/5' : 'bg-slate-100 border-slate-200'} p-1 rounded-2xl mb-5 border items-center`}>
-                            <Pressable
-                                onPress={() => setIsRegisterMode(false)}
-                                style={({ pressed, hovered }: any) => [
-                                    {
-                                        flex: 1,
-                                        paddingVertical: 10,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: !isRegisterMode
-                                            ? 'rgba(56, 189, 248, 0.2)'
-                                            : (hovered ? 'rgba(255,255,255,0.05)' : 'transparent'),
-                                        borderWidth: 1,
-                                        borderColor: !isRegisterMode
-                                            ? 'rgba(56, 189, 248, 0.3)'
-                                            : (hovered ? 'rgba(255,255,255,0.1)' : 'transparent'),
-                                        opacity: !isRegisterMode ? 1 : (hovered ? 0.9 : 0.7),
-                                        transform: [{ scale: pressed ? 0.98 : 1 }],
-                                        transition: 'all 0.2s',
-                                        cursor: 'pointer'
-                                    }
-                                ]}
-                                // @ts-ignore - Web-specific property
-                                tabIndex={-1}
-                            >
-                                <Text className={`font-black ${!isRegisterMode ? 'text-sky-400' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}>{t('dashboard.dashboardEntrance')}</Text>
-                            </Pressable>
-
-                            {/* Middle Divider */}
-                            <View className={`w-[1px] h-4 ${isDark ? 'bg-white/10' : 'bg-slate-300'}`} />
-
-                            <Pressable
-                                onPress={() => setIsRegisterMode(true)}
-                                style={({ pressed, hovered }: any) => [
-                                    {
-                                        flex: 1,
-                                        paddingVertical: 10,
-                                        borderRadius: 12,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        backgroundColor: isRegisterMode
-                                            ? 'rgba(245, 158, 11, 0.2)'
-                                            : (hovered ? 'rgba(255,255,255,0.05)' : 'transparent'),
-                                        borderWidth: 1,
-                                        borderColor: isRegisterMode
-                                            ? 'rgba(245, 158, 11, 0.3)'
-                                            : (hovered ? 'rgba(255,255,255,0.1)' : 'transparent'),
-                                        opacity: isRegisterMode ? 1 : (hovered ? 0.9 : 0.7),
-                                        transform: [{ scale: pressed ? 0.98 : 1 }],
-                                        transition: 'all 0.2s',
-                                        cursor: 'pointer'
-                                    }
-                                ]}
-                                // @ts-ignore
-                                tabIndex={-1}
-                            >
-                                <Text className={`font-black ${isRegisterMode ? 'text-amber-400' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}>{t('dashboard.applyAdmin')}</Text>
-                            </Pressable>
-                        </View>
-
-                        <View className="space-y-2.5">
-                            {/* Row 1: Server and Alliance */}
-                            <View className={`${isMobile ? 'flex-col' : 'flex-row'} gap-2.5`} style={{ zIndex: (activeInput === 'server' || activeInput === 'alliance') ? 100 : 50 }}>
-                                {/* Server Number */}
-                                <View className="flex-1" style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
-                                    <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
-                                        <Text className={`${isDark ? 'text-white/60' : 'text-slate-500'} font-black uppercase tracking-widest text-left`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.serverNumber')}</Text>
-                                        <Text className={`${isRegisterMode ? 'text-amber-500/80' : 'text-sky-500/80'} font-bold text-right`} style={{ fontSize: 8 * fontSizeScale }}>{t('dashboard.required')}</Text>
-                                    </View>
-                                    <View className="relative">
-                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                            <Ionicons name="server-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                        </View>
-                                        <TextInput
-                                            placeholder="#1008"
-                                            placeholderTextColor={isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(30, 41, 59, 0.4)"}
-                                            value={inputServer}
-                                            onChangeText={setInputServer}
-                                            onFocus={() => setActiveInput('server')}
-                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !inputServer.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'server' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
-                                            style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
-                                            keyboardType="number-pad"
-                                            // @ts-ignore - Web-specific property
-                                            tabIndex={1}
-                                        />
-                                        {renderHistorySuggestions('server')}
-                                    </View>
-                                </View>
-
-                                {/* Alliance Name */}
-                                <View className="flex-1" style={{ zIndex: activeInput === 'alliance' ? 100 : 40 }}>
-                                    <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
-                                        <Text className={`${isDark ? 'text-white/60' : 'text-slate-500'} font-black uppercase tracking-widest text-left`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.allianceName')}</Text>
-                                        <Text className={`${isRegisterMode ? 'text-amber-500/80' : 'text-sky-500/80'} font-bold text-right`} style={{ fontSize: 8 * fontSizeScale }}>{t('dashboard.required')}</Text>
-                                    </View>
-                                    <View className="relative">
-                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                            <Ionicons name="shield-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                        </View>
-                                        <TextInput
-                                            placeholder="WBI"
-                                            placeholderTextColor={isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(30, 41, 59, 0.4)"}
-                                            value={inputAlliance}
-                                            onChangeText={setInputAlliance}
-                                            onFocus={() => setActiveInput('alliance')}
-                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !inputAlliance.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'alliance' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
-                                            style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
-                                            autoCapitalize="characters"
-                                            // @ts-ignore - Web-specific property
-                                            tabIndex={2}
-                                        />
-                                        {renderHistorySuggestions('alliance')}
-                                    </View>
-                                </View>
-                            </View>
-
-                            {/* Row 2: Lord Name and Password */}
-                            <View className={`${isMobile ? 'flex-col' : 'flex-row'} gap-2.5`} style={{ zIndex: (activeInput === 'userid' || activeInput === 'password') ? 100 : 30 }}>
-                                {/* Lord Name */}
-                                <View className="flex-1" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
-                                    <Text className={`${isDark ? 'text-white/60' : 'text-slate-500'} font-black ml-4 mb-1.5 uppercase tracking-widest`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.lordName')}</Text>
-                                    <View className="relative">
-                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                            <Ionicons name="person-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                        </View>
-                                        <TextInput
-                                            placeholder={t('auth.onlyIdErrorPlaceholder')}
-                                            placeholderTextColor={isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(30, 41, 59, 0.4)"}
-                                            ref={gateUserIdRef}
-                                            value={inputUserId}
-                                            onChangeText={(text) => {
-                                                setInputUserId(text);
-                                                if (gateLoginError) setGateLoginError(null);
-                                            }}
-                                            onFocus={() => setActiveInput('userid')}
-                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            onSubmitEditing={() => gatePasswordRef.current?.focus()}
-                                            blurOnSubmit={false}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !!inputUserId.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'userid' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
-                                            style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
-                                            // @ts-ignore - Web-specific property
-                                            tabIndex={3}
-                                        />
-                                        {renderHistorySuggestions('userid')}
-                                    </View>
-                                </View>
-
-                                {/* Password */}
-                                <View className="flex-1" style={{ zIndex: activeInput === 'password' ? 100 : 20 }}>
-                                    <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
-                                        <Text className={`${isDark ? 'text-white/60' : 'text-slate-500'} font-black uppercase tracking-widest text-left`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.password')}</Text>
-                                        {isRegisterMode && (
-                                            <Text className="text-amber-500/80 font-bold text-right" style={{ fontSize: 8 * fontSizeScale }}>{t('dashboard.required')}</Text>
-                                        )}
-                                    </View>
-                                    <View className="relative">
-                                        <View className="absolute left-2 top-0 bottom-0 z-10 w-12 items-center justify-center">
-                                            <Ionicons name="lock-closed-outline" size={20} color={isRegisterMode ? "#fbbf24" : "#38bdf8"} />
-                                        </View>
-                                        <TextInput
-                                            ref={gatePasswordRef}
-                                            placeholder="••••••"
-                                            placeholderTextColor={isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(30, 41, 59, 0.4)"}
-                                            value={inputPassword}
-                                            onChangeText={(text) => {
-                                                setInputPassword(text);
-                                                if (gateLoginError) setGateLoginError(null);
-                                            }}
-                                            secureTextEntry={!showGatePw}
-                                            onFocus={() => setActiveInput('password')}
-                                            onBlur={() => setTimeout(() => setActiveInput(null), 200)}
-                                            onSubmitEditing={handleEnterAlliance}
-                                            className={`${isDark ? 'bg-slate-950/50 text-white border-slate-800' : 'bg-slate-100 text-slate-900 border-slate-300'} ${isMobile ? 'p-2' : 'p-2.5'} pl-14 pr-12 rounded-2xl font-black border-2 transition-all duration-200 ${(gateLoginError && !!inputPassword.trim()) ? 'border-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.3)]' : (activeInput === 'password' ? (isRegisterMode ? 'border-amber-500 shadow-[0_0_15_rgba(245,158,11,0.3)]' : 'border-sky-500 shadow-[0_0_15px_rgba(56,189,248,0.3)]') : '')}`}
-                                            style={{ fontSize: (isMobile ? 14 : 18) * fontSizeScale }}
-                                            // @ts-ignore - Web-specific property
-                                            tabIndex={4}
-                                        />
-                                        <TouchableOpacity
-                                            onPress={() => setShowGatePw(!showGatePw)}
-                                            className="absolute right-3 top-0 bottom-0 justify-center p-2"
-                                            // @ts-ignore
-                                            tabIndex={-1}
-                                        >
-                                            <Ionicons name={showGatePw ? "eye-off-outline" : "eye-outline"} size={20} color="#475569" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                            </View>
-
-                            {/* Inline Error Message */}
-                            {gateLoginError && (
-                                <View className="mt-3 flex-row items-center justify-center bg-rose-500/10 py-2 rounded-xl border border-rose-500/20">
-                                    <Ionicons name="alert-circle" size={16} color="#f43f5e" style={{ marginRight: 6 }} />
-                                    <Text className="text-rose-500 font-bold" style={{ fontSize: 12 * fontSizeScale }}>{gateLoginError}</Text>
-                                </View>
-                            )}
-
-                            <View className="flex-row items-center mt-4">
-                                <Pressable
-                                    onPress={handleEnterAlliance}
-                                    disabled={isLoginLoading}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            flex: 1,
-                                            paddingVertical: 10,
-                                            borderRadius: 16,
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            overflow: 'hidden',
-                                            transform: [{ scale: pressed ? 0.95 : (hovered ? 1.02 : 1) }],
-                                            opacity: isLoginLoading ? 0.7 : 1,
-                                            // @ts-ignore
-                                            boxShadow: isRegisterMode
-                                                ? '0 10px 30px rgba(245, 158, 11, 0.3)'
-                                                : '0 10px 30px rgba(56, 189, 248, 0.3)',
-                                            transition: 'all 0.3s ease',
-                                        }
-                                    ]}
-                                    // @ts-ignore - Web-specific property
-                                    tabIndex={5}
-                                >
-                                    <LinearGradient
-                                        colors={isRegisterMode ? ['#f59e0b', '#d97706'] : ['#38bdf8', '#0ea5e9']}
-                                        style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 1 }}
-                                    />
-                                    {isLoginLoading ? (
-                                        <ActivityIndicator color="white" size="small" />
-                                    ) : (
-                                        <Text className={`text-white font-black tracking-tight relative z-10`} style={{ fontSize: (isMobile ? 16 : 18) * fontSizeScale }}>
-                                            {isRegisterMode
-                                                ? t('dashboard.apply')
-                                                : (!inputUserId.trim() && !inputPassword.trim())
-                                                    ? t('dashboard.anonymousEntrance')
-                                                    : t('dashboard.entrance')}
-                                        </Text>
-                                    )}
-                                </Pressable>
-
-                            </View>
-
-
-                            {!!serverId && !!allianceId && (
-                                <Pressable
-                                    onPress={() => setIsGateOpen(false)}
-                                    style={({ pressed, hovered }: any) => [
-                                        {
-                                            marginTop: 24,
-                                            alignSelf: 'center',
-                                            paddingVertical: 12,
-                                            paddingHorizontal: 28,
-                                            borderRadius: 9999,
-                                            backgroundColor: hovered ? (isDark ? 'rgba(56, 189, 248, 0.1)' : 'rgba(56, 189, 248, 0.05)') : (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
-                                            borderWidth: 1,
-                                            borderColor: hovered ? '#38bdf8' : (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)'),
-                                            transform: [{ scale: pressed ? 0.95 : hovered ? 1.05 : 1 }],
-                                            // @ts-ignore - Web-specific CSS property
-                                            boxShadow: hovered
-                                                ? '0 0 5px #38bdf8, 0 0 10px #38bdf8, 0 0 20px #38bdf8, 0 0 40px #0ea5e9, 0 0 80px #0ea5e9'
-                                                : 'none',
-                                            // @ts-ignore - Web-specific CSS property
-                                            textShadow: hovered ? '0 0 10px #38bdf8, 0 0 20px #38bdf8' : 'none',
-                                            transition: 'all 0.3s ease',
-                                        }
-                                    ]}
-                                >
-                                    <Animated.View
-                                        style={{
-                                            transform: [{
-                                                scale: returnPulseAnim.interpolate({
-                                                    inputRange: [0, 1],
-                                                    outputRange: [1, 1.1]
-                                                })
-                                            }]
-                                        }}
-                                    >
-                                        <View className="flex-row items-center justify-center">
-                                            <Animated.View
-                                                style={{
-                                                    marginRight: 6,
-                                                    opacity: returnPulseAnim.interpolate({
-                                                        inputRange: [0, 1],
-                                                        outputRange: [0.6, 1]
-                                                    })
-                                                }}
-                                            >
-                                                <Ionicons
-                                                    name="arrow-back-circle-outline"
-                                                    size={16}
-                                                    color={isDark ? '#94a3b8' : '#64748b'}
-                                                />
-                                            </Animated.View>
-                                            <Animated.Text
-                                                className="font-bold tracking-tight"
-                                                style={{
-                                                    fontSize: 12 * fontSizeScale,
-                                                    color: returnPulseAnim.interpolate({
-                                                        inputRange: [0, 1],
-                                                        outputRange: isDark ? ['#94a3b8', '#ffffff'] : ['#64748b', '#0f172a']
-                                                    }),
-                                                    // @ts-ignore - Web-specific CSS property
-                                                    textShadow: isDark ? returnPulseAnim.interpolate({
-                                                        inputRange: [0, 1],
-                                                        outputRange: ['0 0 0px rgba(56, 189, 248, 0)', '0 0 10px rgba(56, 189, 248, 0.3)']
-                                                    }) : 'none'
-                                                }}
-                                            >
-                                                {t('dashboard.returnToDashboard')}
-                                            </Animated.Text>
-                                        </View>
-                                    </Animated.View>
-                                </Pressable>
-                            )}
-                        </View>
-                    </View>
-
-                </View>
-
-                {/* Gate Manual (Login Guide) */}
-                <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
-                    <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                        <BlurView intensity={40} className="absolute inset-0" />
-                        <View className={`w-full max-w-2xl h-[80%] rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                            <View className={`px-10 py-4 border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50 to-white border-slate-100'}`}>
-                                <View className="flex-row items-center justify-between">
-                                    <View className="flex-row items-center">
-                                        <View className={`w-14 h-14 rounded-2xl items-center justify-center mr-5 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                            <Ionicons name="help-circle" size={30} color="#f59e0b" />
-                                        </View>
-                                        <View>
-                                            <Text className={`font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.gateGuide')}</Text>
-                                            <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>{t('dashboard.loginGuide')}</Text>
-                                        </View>
-                                    </View>
-                                    <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`w-12 h-12 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                        <Ionicons name="close" size={24} color={isDark ? "#94a3b8" : "#64748b"} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            {renderGateManualContent()}
-                            <View className="px-10 py-4 border-t border-slate-800">
-                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className="w-full py-2 items-center justify-center">
-                                    <Text className="text-amber-500 font-black" style={{ fontSize: 18 * fontSizeScale }}>{t('dashboard.understood')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </View>
-                </Modal>
-
-            </View>
+            <GateScreen
+                isLoading={isLoading}
+                isGateOpen={isGateOpen}
+                serverId={serverId}
+                allianceId={allianceId}
+                setIsGateOpen={setIsGateOpen}
+                adminAuth={adminAuth}
+                fontSizeScale={fontSizeScale}
+                isMobile={isMobile}
+                changeLanguage={changeLanguage}
+                language={language}
+            />
         );
     }
 
@@ -3841,185 +1668,42 @@ export default function Home() {
                 {/* Section 1: Intro & Features */}
                 <View className="w-full items-center">
                     <View className="w-full max-w-6xl px-4 md:px-8">
-                        <View className="pt-4 pb-2">
-                            <View className="flex-row justify-between items-center mb-6">
-                                <View className="flex-1 mr-3">
-                                    <View className="flex-row items-center mb-1 gap-3">
-                                        <View className="flex-row items-center opacity-70">
-                                            <Ionicons name="time-outline" size={9} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 3 }} />
-                                            <Text className={`font-mono text-[9px] font-black tracking-tight ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
-                                                {now.getHours()}:{String(now.getMinutes()).padStart(2, '0')}:{String(now.getSeconds()).padStart(2, '0')}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    {/* Reset Timer Progress Bar */}
-                                    <View className="mt-1.5 flex-row items-center gap-2">
-                                        <View className={`h-1 flex-1 max-w-[120px] rounded-full overflow-hidden ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
-                                            <View
-                                                className={`h-full ${isDark ? 'bg-sky-500' : 'bg-blue-500'}`}
-                                                style={{ width: `${((86400 - getNextResetSeconds()) / 86400) * 100}%` }}
-                                            />
-                                        </View>
-                                        <View className="flex-row items-center">
-                                            <Ionicons name="refresh" size={9} color={isDark ? "#38bdf8" : "#2563eb"} style={{ marginRight: 2 }} />
-                                            <Text className={`font-mono text-[9px] font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}>
-                                                {formatRemainingTime(getNextResetSeconds())}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                {/* Header Buttons (Top Right) */}
-                                <View className="flex-row gap-2.5 md:gap-3">
-                                    <Pressable
-                                        onPress={toggleTheme}
-                                        className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.15 : 1) }],
-                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
-                                            }
-                                        ]}
-                                    >
-                                        <Ionicons name={isDark ? "sunny" : "moon"} size={18} color="#f59e0b" />
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={() => auth.isLoggedIn ? openModalWithHistory(setIsManualVisible) : openModalWithHistory(setIsGateManualVisible)}
-                                        className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.15 : 1) }],
-                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
-                                            }
-                                        ]}
-                                    >
-                                        <Ionicons name="book-outline" size={18} color="#f59e0b" />
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={handleInstallClick}
-                                        className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.15 : 1) }],
-                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
-                                            }
-                                        ]}
-                                    >
-                                        <Ionicons name="download" size={18} color={isDark ? "#38bdf8" : "#0284c7"} />
-                                    </Pressable>
-                                    <Pressable
-                                        onPress={handleSettingsPress}
-                                        className={`p-2 rounded-full border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        style={({ pressed, hovered }: any) => [
-                                            {
-                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.1 : 1) }],
-                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)',
-                                                borderColor: auth.isLoggedIn ? ((auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee') : 'transparent'
-                                            }
-                                        ]}
-                                    >
-                                        <Ionicons name="person-circle" size={20} color={auth.isLoggedIn ? ((auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee') : (isDark ? '#fff' : '#94a3b8')} />
-                                    </Pressable>
-                                </View>
-                            </View>
-
-                            <View className="mb-4 flex-row items-center">
-                                <View className={`w-16 h-16 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-white/10' : 'bg-slate-100 shadow-sm'}`}>
-                                    <Image
-                                        source={require('../assets/icon.png')}
-                                        style={{ width: 52, height: 52 }}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className={`font-bold text-[8px] md:text-xs tracking-[0.4em] mb-1 uppercase ${isDark ? 'text-sky-400' : 'text-slate-500'}`}>{t('dashboard.whiteoutSurvival')}</Text>
-                                    <Text className={`text-2xl md:text-4xl font-black tracking-tighter leading-tight ${isDark ? 'text-white' : 'text-slate-950'}`}>{t('dashboard.title')}</Text>
-                                    <View className="mt-2.5 flex-row items-center">
-                                        <View className="h-0.5 w-8 bg-brand-accent rounded-full mr-2.5" />
-                                        <Text className={`text-[11px] font-bold leading-relaxed tracking-wide ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('dashboard.subtitle')}</Text>
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-                        {!!serverId && !!allianceId && (
-                            <View className="flex-row flex-wrap items-center gap-4 mt-3 mb-6">
-                                <Pressable
-                                    onPress={() => {
-                                        setInputServer(serverId);
-                                        setInputAlliance(allianceId);
-                                        setIsGateOpen(true);
-                                    }}
-                                    className={`flex-row items-center px-4 py-3 rounded-2xl border-2 transition-all ${isDark ? 'bg-sky-500/10 border-sky-400/50' : 'bg-sky-50 border-sky-200 shadow-sm'}`}
-                                >
-                                    <View className={`mr-2.5 w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-sky-500/20' : 'bg-sky-100'}`}>
-                                        <Ionicons name="location" size={14} color={isDark ? "#38bdf8" : "#0284c7"} />
-                                    </View>
-                                    <Text className={`font-black text-xs tracking-tight ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
-                                        {serverId?.toString().startsWith('#') ? serverId : '#' + serverId} · {allianceId}
-                                    </Text>
-                                    <Ionicons name="chevron-forward" size={12} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginLeft: 8 }} />
-                                </Pressable>
-
-                            </View>
-                        )}
+                        <DashboardHeader
+                            isDark={isDark}
+                            now={now}
+                            auth={auth}
+                            serverId={serverId}
+                            allianceId={allianceId}
+                            toggleTheme={toggleTheme}
+                            handleInstallClick={handleInstallClick}
+                            handleSettingsPress={handleSettingsPress}
+                            setAdminMenuVisible={setAdminMenuVisible}
+                            setLoginModalVisible={setLoginModalVisible}
+                            setIsManualVisible={setIsManualVisible}
+                            openModalWithHistory={openModalWithHistory}
+                            setInputServer={setInputServer}
+                            setInputAlliance={setInputAlliance}
+                            setIsGateOpen={setIsGateOpen}
+                            getNextResetSeconds={getNextResetSeconds}
+                            formatRemainingTime={formatRemainingTime}
+                        />
                     </View>
 
+                    <NoticeBanner
+                        notice={notice}
+                        auth={auth}
+                        isDark={isDark}
+                        setNoticeDetailVisible={setNoticeDetailVisible}
+                        showCustomAlert={showCustomAlert}
+                        handleOpenNotice={handleOpenNotice}
+                    />
 
-                    {/* Notice Section */}
-                    {!!notice && (!!notice.visible || !!auth.isLoggedIn) && (
-                        <View className="w-full max-w-6xl px-4 md:px-8">
-                            <Pressable
-                                onPress={() => auth.isLoggedIn ? setNoticeDetailVisible(true) : showCustomAlert(t('common.member_only_title'), t('common.member_only_alert'), 'error')}
-                                className={`mb-6 p-4 rounded-[28px] border-2 flex-row items-center ${notice.visible ? (isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-50 border-amber-200 shadow-md') : (isDark ? 'bg-slate-800/40 border-slate-700 border-dashed' : 'bg-slate-50 border-slate-200 border-dashed')}`}
-                            >
-                                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 flex-shrink-0 ${notice.visible ? 'bg-amber-500/20' : 'bg-slate-700/10'}`}>
-                                    <Ionicons name={notice.visible ? "notifications" : "notifications-off"} size={20} color={notice.visible ? "#f59e0b" : "#94a3b8"} />
-                                </View>
-                                <View
-                                    className="flex-1 min-w-0 pr-2 overflow-hidden h-10 justify-center"
-                                    onLayout={(e) => setNoticeContainerWidth(e.nativeEvent.layout.width)}
-                                >
-                                    <Animated.View style={{ transform: [{ translateX: noticeScrollAnim }], width: noticeTextWidth + noticeContainerWidth + 50, flexDirection: 'row' }}>
-                                        <Text
-                                            className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-950'}`}
-                                            onLayout={(e) => setNoticeTextWidth(e.nativeEvent.layout.width)}
-                                            numberOfLines={1}
-                                        >
-                                            {notice.content || t('dashboard.notice_empty')}
-                                        </Text>
-                                    </Animated.View>
-                                </View>
-                                {!!auth.isLoggedIn && (
-                                    <TouchableOpacity onPress={(e) => { e.stopPropagation(); handleOpenNotice(); }} className="p-2.5 bg-sky-500/10 rounded-xl flex-shrink-0">
-                                        <Ionicons name="pencil" size={18} color="#38bdf8" />
-                                    </TouchableOpacity>
-                                )}
-                            </Pressable>
-                        </View>
-                    )}
-
-                    {/* Feature Cards Grid */}
-                    <View className="w-full max-w-6xl px-4 md:px-8 flex-col sm:flex-row gap-4 mb-10">
-                        {[
-                            { id: 'events', label: t('dashboard.menu_events'), desc: t('dashboard.menu_events_desc'), icon: 'calendar', path: '/growth/events', color: '#38bdf8' },
-                            { id: 'strategy', label: t('dashboard.menu_strategy'), desc: t('dashboard.menu_strategy_desc'), icon: 'map', path: '/strategy-sheet', color: '#10b981' },
-                            { id: 'hero', label: t('dashboard.menu_heroes'), desc: t('dashboard.menu_heroes_desc'), icon: 'people', path: '/hero-management', color: '#38bdf8' }
-                        ].map((card) => (
-                            <Pressable
-                                key={card.id}
-                                onPress={() => auth.isLoggedIn ? router.push(card.path as any) : showCustomAlert(t('common.member_only_title'), t('common.member_only_alert'), 'error')}
-                                className={`w-full sm:flex-1 p-4 md:p-6 rounded-3xl border-2 flex-row items-center ${isDark ? 'bg-slate-900/60 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}
-                            >
-                                <View className={`w-11 h-11 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-slate-800' : 'bg-slate-50'}`} style={{ borderColor: card.color, borderLeftWidth: 3 }}>
-                                    <Ionicons name={!auth.isLoggedIn ? 'lock-closed' : card.icon as any} size={22} color={card.color} />
-                                </View>
-                                <View>
-                                    <Text className={`text-2xl font-black ${isDark ? 'text-slate-100' : 'text-slate-950'}`}>{card.label}</Text>
-                                    <Text className={`text-[11px] font-semibold ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>{card.desc}</Text>
-                                </View>
-                            </Pressable>
-                        ))}
-                    </View>
+                    <DashboardFeatureCards
+                        isDark={isDark}
+                        auth={auth}
+                        router={router}
+                        showCustomAlert={showCustomAlert}
+                    />
                 </View>
 
                 {/* Section 2: Sticky Header (Weekly Program + Tabs) */}
@@ -4387,287 +2071,46 @@ export default function Home() {
             </ScrollView>
 
             {/* Modals */}
-            <Modal
-                visible={loginModalVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setLoginModalVisible(false)}
-            >
-                <View className="flex-1 bg-black/85 items-center justify-center p-6">
-                    <BlurView intensity={60} className="absolute inset-0" />
-                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className="items-center mb-8">
-                            <View className={`w-16 h-16 rounded-2xl items-center justify-center mb-4 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
-                                <Ionicons name="shield-checkmark" size={32} color="#38bdf8" />
-                            </View>
-                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.auth_title')}</Text>
-                            <Text className={`mt-2 text-sm font-bold text-center ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{t('admin.auth_desc')}</Text>
-                        </View>
+            <LoginModal
+                isVisible={loginModalVisible}
+                onClose={() => setLoginModalVisible(false)}
+                isDark={isDark}
+                loginInput={loginInput}
+                setLoginInput={setLoginInput}
+                passwordInput={passwordInput}
+                setPasswordInput={setPasswordInput}
+                loginError={loginError}
+                setLoginError={setLoginError}
+                showModalPw={showModalPw}
+                setShowModalPw={setShowModalPw}
+                loginPasswordRef={loginPasswordRef}
+                handleLogin={handleLogin}
+                dynamicAdmins={dynamicAdmins}
+            />
 
-                        <View className="space-y-4 mb-8">
-                            <View className="relative">
-                                <View className="absolute left-5 top-5 z-10">
-                                    <Ionicons name="person" size={20} color={isDark ? "#38bdf8" : "#2563eb"} />
-                                </View>
-                                <TextInput
-                                    placeholder={t('dashboard.lordName')}
-                                    placeholderTextColor={isDark ? "#475569" : "#64748b"}
-                                    value={loginInput}
-                                    onChangeText={(t) => { setLoginInput(t); setLoginError(''); }}
-                                    autoCapitalize="none"
-                                    onSubmitEditing={() => loginPasswordRef.current?.focus()}
-                                    blurOnSubmit={false}
-                                    className={`p-5 pl-14 rounded-[24px] font-black border-2 text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-700 border-slate-100 focus:border-blue-500'}`}
-                                />
-                            </View>
-
-                            <View className="relative mt-3">
-                                <View className="absolute left-5 top-5 z-10">
-                                    <Ionicons name="lock-closed" size={20} color={isDark ? "#38bdf8" : "#2563eb"} />
-                                </View>
-                                <TextInput
-                                    ref={loginPasswordRef}
-                                    placeholder={t('dashboard.password')}
-                                    placeholderTextColor={isDark ? "#475569" : "#64748b"}
-                                    value={passwordInput}
-                                    onChangeText={(t) => { setPasswordInput(t); setLoginError(''); }}
-                                    secureTextEntry={!showModalPw}
-                                    autoCapitalize="none"
-                                    onSubmitEditing={handleLogin}
-                                    className={`p-5 pl-14 pr-14 rounded-[24px] font-black border-2 text-lg ${isDark ? 'bg-slate-950 text-white border-slate-800 focus:border-blue-500/50' : 'bg-slate-50 text-slate-700 border-slate-100 focus:border-blue-500'}`}
-                                />
-                                <TouchableOpacity
-                                    onPress={() => setShowModalPw(!showModalPw)}
-                                    className="absolute right-5 top-0 bottom-0 justify-center p-2"
-                                >
-                                    <Ionicons name={showModalPw ? "eye-off-outline" : "eye-outline"} size={22} color="#475569" />
-                                </TouchableOpacity>
-                            </View>
-
-                            {!!loginError && (
-                                <View className="flex-row items-center mt-3 px-2">
-                                    <Ionicons name="alert-circle" size={18} color="#ef4444" style={{ marginRight: 8 }} />
-                                    <Text className="text-red-500 font-black text-sm">{loginError}</Text>
-                                </View>
-                            )}
-                        </View>
-
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity
-                                onPress={() => { setLoginModalVisible(false); setLoginError(''); setPasswordInput(''); }}
-                                className={`flex-1 py-4 rounded-[24px] border items-center justify-center active:scale-95 transition-all ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
-                            >
-                                <Text className={`text-center font-bold text-lg ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('admin.cancel_btn')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleLogin}
-                                className="flex-[2] bg-[#0091ff] py-4 rounded-[24px] shadow-lg shadow-blue-500/30 items-center justify-center active:scale-95 transition-all"
-                            >
-                                <Text className="text-white text-center font-black text-lg tracking-tight">{t('admin.login_btn')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            <Modal visible={adminMenuVisible} transparent animationType="fade" onRequestClose={() => setAdminMenuVisible(false)}>
-                <View className="flex-1 bg-black/60 items-center justify-center p-4">
-                    <BlurView intensity={40} tint="dark" className="absolute inset-0" />
-
-                    <View className={`w-full max-w-sm overflow-hidden rounded-[32px] border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white/90 border-white/50'} shadow-2xl`}>
-                        {/* Header with Close Button */}
-                        <View className="flex-row items-center justify-between p-6 pb-2">
-                            <View className="flex-row items-center gap-2">
-                                <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('settings.administration')}</Text>
-                                {/* Role Badge */}
-                                <View className={`px-2 py-0.5 rounded-md border ${auth.role === 'master' ? 'bg-rose-500/20 border-rose-500/50' :
-                                    auth.role === 'super_admin' ? 'bg-purple-500/20 border-purple-500/50' :
-                                        auth.role === 'alliance_admin' ? 'bg-blue-500/20 border-blue-500/50' :
-                                            'bg-emerald-500/20 border-emerald-500/50'
-                                    }`}>
-                                    <Text className={`text-[10px] font-black uppercase ${auth.role === 'master' ? 'text-rose-500' :
-                                        auth.role === 'super_admin' ? 'text-purple-500' :
-                                            auth.role === 'alliance_admin' ? 'text-blue-500' :
-                                                'text-emerald-500'
-                                        }`}>
-                                        {auth.role === 'master' ? 'MASTER' :
-                                            auth.role === 'super_admin' ? 'SUPER ADMIN' :
-                                                auth.role === 'alliance_admin' ? 'ALLIANCE ADMIN' : 'OP ADMIN'}
-                                    </Text>
-                                </View>
-                            </View>
-                            <TouchableOpacity
-                                onPress={() => setAdminMenuVisible(false)}
-                                className={`p-2 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}
-                            >
-                                <Ionicons name="close" size={20} color={isDark ? '#94a3b8' : '#64748b'} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <ScrollView showsVerticalScrollIndicator={false} className="p-6 pt-2">
-                            <View className="gap-3">
-                                {/* Admin Actions Grid */}
-                                {/* Admin Actions List */}
-                                <TouchableOpacity
-                                    onPress={() => setAdminDashboardVisible(true)}
-                                    className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
-                                >
-                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                        <Ionicons name="people" size={20} color="#818cf8" />
-                                    </View>
-                                    <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_members')}</Text>
-                                    <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
-                                </TouchableOpacity>
-
-                                {auth.isLoggedIn && auth.role !== 'master' && (
-                                    <TouchableOpacity
-                                        onPress={() => setIsUserPassChangeOpen(true)}
-                                        className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
-                                    >
-                                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                            <Ionicons name="key" size={20} color="#fbbf24" />
-                                        </View>
-                                        <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.change_pw')}</Text>
-                                        <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
-                                    </TouchableOpacity>
-                                )}
-
-                                {!!isSuperAdmin && (
-                                    <>
-                                        <View className={`h-[1px] w-full my-2 ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
-
-                                        <Text className={`text-[10px] font-black uppercase tracking-widest pl-1 mb-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('admin.super_admin_manage')}</Text>
-
-                                        <TouchableOpacity
-                                            onPress={() => setShowAdminList(!showAdminList)}
-                                            className={`p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
-                                        >
-                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-purple-500/20' : 'bg-purple-50'}`}>
-                                                <Ionicons name="ribbon" size={20} color="#a855f7" />
-                                            </View>
-                                            <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.manage_staff')}</Text>
-                                            <Ionicons name={showAdminList ? "chevron-up" : "chevron-forward"} size={16} color={isDark ? '#64748b' : '#94a3b8'} />
-                                        </TouchableOpacity>
-
-                                        {showAdminList && (
-                                            <View className={`mt-2 ml-4 pl-4 border-l-2 ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-                                                {loadingSuperAdmins ? (
-                                                    <ActivityIndicator size="small" color="#a855f7" className="py-4" />
-                                                ) : superAdminsList.filter(a => a.role === 'super_admin').length === 0 ? (
-                                                    <Text className={`text-xs py-2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>등록된 슈퍼 관리자가 없습니다.</Text>
-                                                ) : (
-                                                    superAdminsList.filter(a => a.role === 'super_admin').map((admin, index) => (
-                                                        <View key={admin.id || index} className={`flex-row items-center justify-between py-3 pr-2 border-b last:border-0 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                                            <View className="flex-row items-center gap-3">
-                                                                <View className={`w-8 h-8 rounded-xl bg-purple-500/10 items-center justify-center`}>
-                                                                    <Text className="text-xs font-black text-purple-500">{admin.nickname?.[0] || 'A'}</Text>
-                                                                </View>
-                                                                <View>
-                                                                    <Text className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{admin.nickname || 'Unknown'}</Text>
-                                                                    <Text className="text-[10px] text-slate-400">ID: {admin.username}</Text>
-                                                                </View>
-                                                            </View>
-                                                            {auth.role === 'master' && (
-                                                                <TouchableOpacity
-                                                                    onPress={() => handleDeleteSuperAdmin(admin.id, admin.nickname)}
-                                                                    className={`p-2 rounded-lg ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}
-                                                                >
-                                                                    <Ionicons name="trash-outline" size={14} color="#f43f5e" />
-                                                                </TouchableOpacity>
-                                                            )}
-                                                        </View>
-                                                    ))
-                                                )}
-
-                                                {/* Add Super Admin Form (Master Only) */}
-                                                {auth.role === 'master' && (
-                                                    <View className={`mt-4 pt-4 border-t ${isDark ? 'border-slate-800' : 'border-slate-200'}`}>
-                                                        <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>슈퍼 관리자 추가</Text>
-                                                        <View className="flex-row gap-2 mb-2">
-                                                            <TextInput
-                                                                className={`flex-1 p-2 rounded-lg border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-                                                                placeholder="ID / Nickname"
-                                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                                                value={newAdminName}
-                                                                onChangeText={setNewAdminName}
-                                                                autoCapitalize="none"
-                                                            />
-                                                            <TextInput
-                                                                className={`flex-1 p-2 rounded-lg border text-xs font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-900'}`}
-                                                                placeholder="Password"
-                                                                placeholderTextColor={isDark ? "#64748b" : "#94a3b8"}
-                                                                value={newAdminPassword}
-                                                                onChangeText={setNewAdminPassword}
-                                                                secureTextEntry
-                                                            />
-                                                        </View>
-                                                        <TouchableOpacity
-                                                            onPress={handleAddSuperAdmin}
-                                                            className="w-full py-2 bg-purple-500 rounded-lg items-center justify-center active:scale-95 transition-all"
-                                                        >
-                                                            <Text className="text-white text-xs font-black">관리자 추가 (Add Staff)</Text>
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                )}
-                                            </View>
-                                        )}
-
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setSuperAdminTab('pending');
-                                                setIsSuperAdminDashboardVisible(true);
-                                            }}
-                                            className={`mt-4 p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
-                                        >
-                                            <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-sky-500/20' : 'bg-sky-50'}`}>
-                                                <Ionicons name="planet" size={20} color="#38bdf8" />
-                                            </View>
-                                            <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.super_dashboard_title')}</Text>
-                                            <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
-                                        </TouchableOpacity>
-
-                                        {auth.role === 'master' && (
-                                            <TouchableOpacity
-                                                onPress={() => {
-                                                    setSuperAdminTab('settings');
-                                                    setIsSuperAdminDashboardVisible(true);
-                                                }}
-                                                className={`mt-4 p-4 rounded-2xl flex-row items-center border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white border-slate-200'}`}
-                                            >
-                                                <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                                    <Ionicons name="desktop" size={20} color="#6366f1" />
-                                                </View>
-                                                <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.screen_management')}</Text>
-                                                <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
-                                            </TouchableOpacity>
-                                        )}
-                                    </>
-                                )}
-
-                                <View className={`h-[1px] w-full my-2 ${isDark ? 'bg-slate-700/50' : 'bg-slate-200'}`} />
-
-                                {/* Logout Button */}
-                                <TouchableOpacity
-                                    onPress={async () => {
-                                        await logout();
-                                        setLoginInput('');
-                                        setPasswordInput('');
-                                        setInputUserId('');
-                                        setInputPassword('');
-                                        setAdminMenuVisible(false);
-                                        setAllianceInfo(null, null);
-                                        setIsGateOpen(true);
-                                    }}
-                                    className="p-4 rounded-2xl flex-row items-center justify-center bg-red-500 shadow-lg shadow-red-500/30 active:scale-95 transition-all"
-                                >
-                                    <Ionicons name="log-out" size={20} color="white" style={{ marginRight: 8 }} />
-                                    <Text className="font-black text-white">{t('admin.logout')}</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </ScrollView>
-                    </View>
-                </View>
-            </Modal>
+            <AdminMenuModal
+                isVisible={adminMenuVisible}
+                onClose={() => setAdminMenuVisible(false)}
+                isDark={isDark}
+                auth={auth}
+                isSuperAdmin={isSuperAdmin}
+                setAdminDashboardVisible={setAdminDashboardVisible}
+                setIsUserPassChangeOpen={setIsUserPassChangeOpen}
+                setIsSuperAdminDashboardVisible={setIsSuperAdminDashboardVisible}
+                setSuperAdminTab={setSuperAdminTab}
+                handleLogout={handleLogout}
+                setAdminMenuVisible={setAdminMenuVisible}
+                showAdminList={showAdminList}
+                setShowAdminList={setShowAdminList}
+                loadingSuperAdmins={loadingSuperAdmins}
+                superAdminsList={superAdminsList}
+                handleDeleteSuperAdmin={handleDeleteSuperAdmin}
+                newAdminName={newAdminName}
+                setNewAdminName={setNewAdminName}
+                newAdminPassword={newAdminPassword}
+                setNewAdminPassword={setNewAdminPassword}
+                handleAddSuperAdmin={handleAddSuperAdmin}
+            />
 
             <Modal
                 visible={isSuperAdminDashboardVisible}
@@ -4989,446 +2432,63 @@ export default function Home() {
                 />
             </Modal>
 
-            {/* Notice Popup Modal */}
-            <Modal visible={noticePopupVisible} transparent animationType="fade" onRequestClose={() => dismissNoticePopup()}>
-                <View className={`flex-1 bg-black/80 items-center justify-center ${isMobile ? 'p-4' : 'p-6'}`}>
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                        {/* Header */}
-                        <View className={`${isMobile ? 'px-4 py-3' : 'px-5 py-4'} border-b ${isDark ? 'bg-gradient-to-r from-amber-900/10 to-orange-900/10 border-amber-500/10' : 'bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200'}`}>
-                            <View className="flex-row items-center">
-                                <View className={`${isMobile ? 'w-10 h-10 mr-3' : 'w-12 h-12 mr-4'} rounded-xl items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
-                                    <Ionicons name="notifications" size={isMobile ? 20 : 24} color="#f59e0b" />
-                                </View>
-                                <View className="flex-1">
-                                    <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('popup.announcement')}</Text>
-                                </View>
-                            </View>
-                        </View>
+            {/* Modals extracted to components */}
+            <NoticePopup
+                isVisible={noticePopupVisible}
+                onClose={dismissNoticePopup}
+                isDark={isDark}
+                isMobile={isMobile}
+                notice={notice}
+                noticePopupDontShow={noticePopupDontShow}
+                setNoticePopupDontShow={setNoticePopupDontShow}
+                fontSize={fontSize}
+            />
 
-                        {/* Content */}
-                        <View className={`${isMobile ? 'px-4 py-4' : 'px-5 py-5'}`}>
-                            <ScrollView style={{ maxHeight: isMobile ? 250 : 300 }} showsVerticalScrollIndicator={false}>
-                                <Text className={`${isMobile ? dfs('text-base') : dfs('text-lg')} font-bold leading-7 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                                    {notice?.content || t('popup.noContent')}
-                                </Text>
-                            </ScrollView>
-                        </View>
+            <UserPassChangeModal
+                isVisible={isUserPassChangeOpen}
+                onClose={() => setIsUserPassChangeOpen(false)}
+                isDark={isDark}
+                auth={auth}
+                showCustomAlert={showCustomAlert}
+                setAdminMenuVisible={setAdminMenuVisible}
+                newPassword={newPassword}
+                setNewPassword={setNewPassword}
+                confirmPassword={confirmPassword}
+                setConfirmPassword={setConfirmPassword}
+                isChangingPassword={isChangingPassword}
+                setIsChangingPassword={setIsChangingPassword}
+            />
 
-                        {/* Options */}
-                        <View className={`px-6 py-3 border-t ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                            <TouchableOpacity
-                                onPress={() => setNoticePopupDontShow(!noticePopupDontShow)}
-                                className="flex-row items-center mb-2"
-                            >
-                                <View className={`w-5 h-5 rounded-lg border-2 mr-3 items-center justify-center ${noticePopupDontShow ? 'bg-amber-500 border-amber-500' : (isDark ? 'border-slate-600' : 'border-slate-300')}`}>
-                                    {noticePopupDontShow && <Ionicons name="checkmark" size={12} color="white" />}
-                                </View>
-                                <Text className={`font-semibold text-xs ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('popup.dontShowAgain')}</Text>
-                            </TouchableOpacity>
-                        </View>
+            <NoticeDetailModal
+                isVisible={noticeDetailVisible}
+                onClose={() => setNoticeDetailVisible(false)}
+                isDark={isDark}
+                notice={notice}
+            />
 
-                        {/* Buttons */}
-                        <View className="flex-row gap-3 px-6 pb-6">
-                            <TouchableOpacity
-                                onPress={() => dismissNoticePopup(false, true)}
-                                className={`flex-1 py-3 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
-                            >
-                                <Text className={`text-center font-bold text-[13px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('popup.dontShowToday')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => dismissNoticePopup(noticePopupDontShow, false)}
-                                className={`flex-[1.5] py-3 rounded-2xl ${isDark ? 'bg-amber-500' : 'bg-amber-500'}`}
-                            >
-                                <Text className="text-center font-black text-white text-base">{t('common.confirm')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <NoticeEditModal
+                isVisible={noticeModalVisible}
+                onClose={() => setNoticeModalVisible(false)}
+                isDark={isDark}
+                editNoticeContent={editNoticeContent}
+                setEditNoticeContent={setEditNoticeContent}
+                editNoticeVisible={editNoticeVisible}
+                setEditNoticeVisible={setEditNoticeVisible}
+                handleSaveNotice={handleSaveNotice}
+            />
 
-            {/* Password Change Modal */}
-            <Modal visible={isUserPassChangeOpen} transparent animationType="fade">
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800/60' : 'bg-white border-slate-100'}`}>
-                        <View className="items-center mb-8">
-                            <View className={`w-20 h-20 rounded-3xl items-center justify-center mb-4 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
-                                <Ionicons name="key" size={40} color="#f59e0b" />
-                            </View>
-                            <Text className={`text-2xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('auth.changePassword')}</Text>
-                            <Text className={`mt-2 text-center text-sm font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('auth.newPasswordDesc')}</Text>
-                        </View>
+            <InstallModal
+                isVisible={installModalVisible}
+                onClose={() => setInstallModalVisible(false)}
+                isDark={isDark}
+            />
 
-                        <View className="flex-col gap-4 mb-8">
-                            <View>
-                                <Text className={`text-[10px] font-black mb-2 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>New Password</Text>
-                                <View className="relative">
-                                    <TextInput
-                                        className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
-                                        placeholder={t('auth.enterNewPassword')}
-                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                        value={newPassword}
-                                        onChangeText={setNewPassword}
-                                        secureTextEntry={!showPass1}
-                                    />
-                                    <TouchableOpacity
-                                        onPressIn={() => setShowPass1(true)}
-                                        onPressOut={() => setShowPass1(false)}
-                                        activeOpacity={0.5}
-                                        className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
-                                    >
-                                        <Ionicons name={showPass1 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                            <View>
-                                <Text className={`text-[10px] font-black mb-2 mt-4 ml-1 uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Confirm Password</Text>
-                                <View className="relative">
-                                    <TextInput
-                                        className={`w-full h-16 px-6 pr-14 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 text-white border-slate-800' : 'bg-slate-50 text-slate-900 border-slate-200'}`}
-                                        placeholder={t('auth.confirmPasswordLabel')}
-                                        placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                        value={confirmPassword}
-                                        onChangeText={setConfirmPassword}
-                                        secureTextEntry={!showPass2}
-                                    />
-                                    <TouchableOpacity
-                                        onPressIn={() => setShowPass2(true)}
-                                        onPressOut={() => setShowPass2(false)}
-                                        activeOpacity={0.5}
-                                        className="absolute right-4 top-4 w-8 h-8 items-center justify-center"
-                                    >
-                                        <Ionicons name={showPass2 ? "eye-off-outline" : "eye-outline"} size={20} color={isDark ? "#475569" : "#94a3b8"} />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-                        </View>
-
-                        <View className="flex-row gap-4">
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setIsUserPassChangeOpen(false);
-                                    setNewPassword('');
-                                    setConfirmPassword('');
-                                }}
-                                className={`flex-1 h-16 rounded-2xl items-center justify-center border ${isDark ? 'border-slate-800 bg-slate-800/30' : 'border-slate-50 bg-slate-50'}`}
-                            >
-                                <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={async () => {
-                                    if (!auth.adminName) {
-                                        showCustomAlert(t('common.error'), t('auth.loginRequired'), 'error');
-                                        return;
-                                    }
-                                    if (!newPassword || !confirmPassword) {
-                                        showCustomAlert(t('common.warning'), t('common.required'), 'warning');
-                                        return;
-                                    }
-                                    if (newPassword !== confirmPassword) {
-                                        showCustomAlert(t('common.warning'), t('auth.passwordMismatch'), 'warning');
-                                        return;
-                                    }
-                                    if (newPassword.length < 4) {
-                                        showCustomAlert(t('common.warning'), t('auth.passwordLength'), 'warning');
-                                        return;
-                                    }
-
-                                    try {
-                                        setIsChangingPassword(true);
-                                        const hashed = await hashPassword(newPassword);
-                                        const userRef = doc(db, 'users', auth.adminName!);
-                                        await updateDoc(userRef, {
-                                            password: hashed,
-                                            updatedAt: Date.now()
-                                        });
-
-                                        showCustomAlert(t('common.success'), t('auth.changeSuccess'), 'success');
-                                        setIsUserPassChangeOpen(false);
-                                        setNewPassword('');
-                                        setConfirmPassword('');
-                                        setAdminMenuVisible(false);
-                                    } catch (err: any) {
-                                        showCustomAlert(t('common.error'), t('auth.changeError') + ' ' + err.message, 'error');
-                                    } finally {
-                                        setIsChangingPassword(false);
-                                    }
-                                }}
-                                disabled={isChangingPassword}
-                                className="flex-[2] h-16 bg-amber-500 rounded-2xl items-center justify-center shadow-lg shadow-amber-500/30"
-                            >
-                                {isChangingPassword ? (
-                                    <ActivityIndicator color="white" />
-                                ) : (
-                                    <Text className="text-white font-black text-lg">{t('auth.change')}</Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Notice Detail Modal */}
-            <Modal visible={noticeDetailVisible} transparent animationType="fade" onRequestClose={() => setNoticeDetailVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/10' : 'bg-amber-50'}`}>
-                                        <Ionicons name="notifications" size={24} color="#f59e0b" />
-                                    </View>
-                                    <View>
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.noticeDetail')}</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity onPress={() => setNoticeDetailVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <View className={`mx-5 mt-5 mb-2 p-6 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-emerald-50 border border-emerald-100'}`}>
-                            <ScrollView style={{ maxHeight: 550 }} showsVerticalScrollIndicator={false}>
-                                <Text className={`text-base font-normal leading-7 ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                                    {notice?.content || t('popup.noContent')}
-                                </Text>
-                            </ScrollView>
-                        </View>
-                        <View className="px-5 pb-4 items-center">
-                            <TouchableOpacity
-                                onPress={() => setNoticeDetailVisible(false)}
-                                className="py-2"
-                            >
-                                <Text className={`font-black text-lg ${isDark ? 'text-emerald-400' : 'text-slate-900'}`}>{t('common.close')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Notice Edit Modal */}
-            <Modal
-                visible={noticeModalVisible}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setNoticeModalVisible(false)}
-            >
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-md rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-5 py-4 border-b ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'}`}>
-                                        <Ionicons name="create" size={24} color="#3b82f6" />
-                                    </View>
-                                    <View>
-                                        <Text className={`text-xl font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('admin.noticeSetting')}</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity onPress={() => setNoticeModalVisible(false)} className={`w-9 h-9 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={22} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <View className={`mx-5 mt-5 mb-1 p-5 rounded-[32px] ${isDark ? 'bg-slate-950/50 border border-slate-700/50' : 'bg-slate-50 border border-slate-200'}`}>
-                            <TextInput
-                                multiline
-                                numberOfLines={12}
-                                value={editNoticeContent}
-                                onChangeText={setEditNoticeContent}
-                                className={`w-full font-bold text-base ${isDark ? 'text-white' : 'text-slate-900'}`}
-                                placeholder={t('admin.noticePlaceholder')}
-                                placeholderTextColor={isDark ? "#334155" : "#94a3b8"}
-                                style={{ textAlignVertical: 'top', minHeight: 400 }}
-                            />
-                        </View>
-
-                        <View className="flex-row items-center justify-between mt-4 px-6">
-                            <View className="flex-1 mr-4">
-                                <Text className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.dashboardExposure')}</Text>
-                                <Text className={`text-[11px] font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('admin.noticeActiveDesc')}</Text>
-                            </View>
-                            <Switch
-                                value={editNoticeVisible}
-                                onValueChange={setEditNoticeVisible}
-                                trackColor={{ false: '#334155', true: '#3b82f6' }}
-                                thumbColor={isDark ? '#fff' : '#fff'}
-                                style={{ transform: [{ scale: 1.0 }] }}
-                            />
-                        </View>
-                        <View className="flex-row gap-4 px-5 pb-6 mt-4">
-                            <TouchableOpacity
-                                onPress={() => setNoticeModalVisible(false)}
-                                className={`flex-1 py-4 rounded-[20px] border items-center justify-center ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}
-                            >
-                                <Text className={`text-center font-bold text-base ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{t('common.cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={handleSaveNotice}
-                                className="flex-[2] bg-blue-500 py-4 rounded-[20px] shadow-lg shadow-blue-500/40 items-center justify-center"
-                            >
-                                <Text className="text-center font-black text-white text-lg">{t('common.save')}</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Install Guide Modal */}
-            <Modal visible={installModalVisible} transparent animationType="fade" onRequestClose={() => setInstallModalVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-6">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-md rounded-[40px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`px-10 py-5 border-b ${isDark ? 'bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100'}`}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-100'}`}>
-                                        <Ionicons name="download" size={24} color="#3b82f6" />
-                                    </View>
-                                    <View>
-                                        <Text className={`text-[8px] font-black tracking-widest uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>PWA INSTALL</Text>
-                                        <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('install.title')}</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity onPress={() => setInstallModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={20} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        <View className="p-8 pb-4">
-                            <View className="gap-6">
-                                <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                        <Text className="text-lg font-black text-blue-500">1</Text>
-                                    </View>
-                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step1')}</Text>
-                                </View>
-                                <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                        <Text className="text-lg font-black text-blue-500">2</Text>
-                                    </View>
-                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step2')}</Text>
-                                </View>
-                                <View className="flex-row items-center">
-                                    <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-slate-800' : 'bg-slate-100 shadow-sm'}`}>
-                                        <Text className="text-lg font-black text-blue-500">3</Text>
-                                    </View>
-                                    <Text className={`flex-1 text-lg font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('install.step3')}</Text>
-                                </View>
-                            </View>
-                        </View>
-                        <View className="px-10 pb-10 pt-0 items-center justify-center">
-                            <Pressable
-                                onPress={() => setInstallModalVisible(false)}
-                                style={({ hovered, pressed }: any) => [
-                                    {
-                                        paddingHorizontal: 48,
-                                        paddingVertical: 5,
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                        opacity: pressed ? 0.8 : 1,
-                                        transition: 'all 0.2s',
-                                        // @ts-ignore
-                                        textShadow: hovered ? '0 0 12px rgba(59, 130, 246, 0.4)' : 'none'
-                                    }
-                                ]}
-                            >
-                                <Text className="text-blue-500 font-black text-lg tracking-widest">{t('common.confirm')}</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Gate Manual (Login Guide) */}
-            <Modal visible={isGateManualVisible} transparent animationType="fade" onRequestClose={() => setIsGateManualVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-4">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                        <Ionicons name="help-circle" size={isMobile ? 22 : 26} color="#f59e0b" />
-                                    </View>
-                                    <View>
-                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>Gate Guide</Text>
-                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.loginTitle')}</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity onPress={() => setIsGateManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        {renderGateManualContent()}
-                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
-                            <Pressable
-                                onPress={() => setIsGateManualVisible(false)}
-                                style={({ hovered, pressed }: any) => [
-                                    {
-                                        paddingHorizontal: isMobile ? 32 : 48,
-                                        paddingVertical: 5,
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                        opacity: pressed ? 0.8 : 1,
-                                        transition: 'all 0.2s',
-                                        // @ts-ignore
-                                        textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
-                                    }
-                                ]}
-                            >
-                                <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
-
-            {/* Main Manual (Dashboard Guide) */}
-            <Modal visible={isManualVisible} transparent animationType="fade" onRequestClose={() => setIsManualVisible(false)}>
-                <View className="flex-1 bg-black/80 items-center justify-center p-4">
-                    <BlurView intensity={40} className="absolute inset-0" />
-                    <View className={`w-full max-w-2xl ${isMobile ? 'h-[90%]' : 'h-[80%]'} rounded-[32px] border shadow-2xl overflow-hidden ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-5'} border-b ${isDark ? 'bg-gradient-to-r from-slate-950 to-slate-900 border-slate-800' : 'bg-gradient-to-r from-slate-50/80 to-white border-slate-200 shadow-sm'}`}>
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center">
-                                    <View className={`${isMobile ? 'w-10 h-10 rounded-xl mr-3' : 'w-12 h-12 rounded-2xl mr-5'} items-center justify-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-50'}`}>
-                                        <Ionicons name="book" size={isMobile ? 22 : 26} color="#f59e0b" />
-                                    </View>
-                                    <View>
-                                        <Text className={`${isMobile ? 'text-[8px]' : 'text-[9px]'} font-black tracking-[0.3em] uppercase mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>User Manual</Text>
-                                        <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('manual.mainManualTitle')}</Text>
-                                    </View>
-                                </View>
-                                <TouchableOpacity onPress={() => setIsManualVisible(false)} className={`${isMobile ? 'w-10 h-10' : 'w-12 h-12'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                    <Ionicons name="close" size={isMobile ? 20 : 24} color={isDark ? "#94a3b8" : "#64748b"} />
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                        {renderMainManualContent()}
-                        <View className={`${isMobile ? 'px-6 py-4' : 'px-10 py-6'} items-center justify-center border-t ${isDark ? 'bg-slate-950/30 border-slate-800' : 'bg-white border-slate-200'}`}>
-                            <Pressable
-                                onPress={() => setIsManualVisible(false)}
-                                style={({ hovered, pressed }: any) => [
-                                    {
-                                        paddingHorizontal: isMobile ? 32 : 48,
-                                        paddingVertical: 5,
-                                        transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
-                                        opacity: pressed ? 0.8 : 1,
-                                        transition: 'all 0.2s',
-                                        // @ts-ignore
-                                        textShadow: hovered ? '0 0 12px rgba(245, 158, 11, 0.4)' : 'none'
-                                    }
-                                ]}
-                            >
-                                <Text className={`text-amber-500 font-black text-lg tracking-widest`}>{t('common.confirm')}</Text>
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <ManualModal
+                isVisible={isManualVisible}
+                onClose={() => setIsManualVisible(false)}
+                isDark={isDark}
+                isMobile={isMobile}
+            />
         </View>
     );
 }

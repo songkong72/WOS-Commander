@@ -20,7 +20,7 @@ i18next
         interpolation: {
             escapeValue: false,
         },
-        compatibilityJSON: 'v3',
+        compatibilityJSON: 'v3' as any,
     });
 
 export default i18next;

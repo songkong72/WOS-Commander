@@ -295,7 +295,7 @@ export default function Layout() {
                                                 setCustomAlert({ ...customAlert, visible: false });
                                                 if (customAlert.onConfirm) customAlert.onConfirm();
                                             }}
-                                            className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                            className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg"
                                         >
                                             <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
                                         </TouchableOpacity>
@@ -303,7 +303,7 @@ export default function Layout() {
                                 ) : (
                                     <TouchableOpacity
                                         onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                        className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                        className="bg-sky-500 py-4 rounded-3xl shadow-lg"
                                     >
                                         <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
                                     </TouchableOpacity>

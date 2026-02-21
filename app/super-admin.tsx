@@ -487,7 +487,7 @@ export default function SuperAdminDashboard() {
                                         setCustomAlert({ ...customAlert, visible: false });
                                         if (customAlert.onConfirm) customAlert.onConfirm();
                                     }}
-                                    className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                    className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg"
                                 >
                                     <Text className="text-center font-black text-white">확인</Text>
                                 </TouchableOpacity>
@@ -495,7 +495,7 @@ export default function SuperAdminDashboard() {
                         ) : (
                             <TouchableOpacity
                                 onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                className="bg-sky-500 py-4 rounded-3xl shadow-lg shadow-sky-500/30"
+                                className="bg-sky-500 py-4 rounded-3xl shadow-lg"
                             >
                                 <Text className="text-center font-black text-white">확인</Text>
                             </TouchableOpacity>
@@ -518,11 +518,10 @@ export default function SuperAdminDashboard() {
                     backgroundColor: '#0ea5e9', // Sky 500
                     alignItems: 'center',
                     justifyContent: 'center',
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 12,
-                    elevation: 15,
+                    ...Platform.select({
+                        web: { boxShadow: '0px 4px 12px rgba(0,0,0,0.5)' },
+                        default: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.5, shadowRadius: 12, elevation: 15 }
+                    }),
                     borderWidth: 2,
                     borderColor: 'rgba(255, 255, 255, 0.3)'
                 } as any}
