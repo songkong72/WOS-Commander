@@ -139,20 +139,66 @@ const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactN
 
 const pad = (n: number | undefined | null) => (n ?? 0).toString().padStart(2, '0');
 
-const toLocal = (kstStr: string) => {
-    return kstStr;
+const toLocal = (kstStr: string, t: any, now: Date) => {
+    const userOffset = -new Date().getTimezoneOffset();
+    const kstOffset = 540; // UTC+9
+    return processConversion(kstStr, userOffset - kstOffset, t, now);
 };
-const toUTC = (kstStr: string) => {
-    return kstStr;
+
+const toUTC = (kstStr: string, t: any, now: Date) => {
+    return processConversion(kstStr, -540, t, now);
 };
-const processConversion = (str: string, diffMinutes: number) => {
-    return str;
+
+const processConversion = (str: string, diffMinutes: number, t: any, now: Date) => {
+    if (!str || diffMinutes === 0) return str;
+
+    // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
+    let processed = str.replace(/(?:(\d{2,4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~\.]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
+        const currentYear = now.getFullYear();
+        let yearNum = parseInt(y || currentYear.toString());
+        if (y && y.length === 2) yearNum += 2000;
+        const date = new Date(yearNum, parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min));
+        if (isNaN(date.getTime())) return match;
+        const converted = new Date(date.getTime() + diffMinutes * 60000);
+
+        // Output format
+        return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
+    });
+
+    // 2. Weekly Day Case (화(22:00))
+    processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {
+        const hour = parseInt(h);
+        const min = parseInt(m);
+        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map(d => t(`events.days.${d}`));
+        let dayIdx = days.indexOf(day);
+
+        if (dayIdx === -1) { // '매일'
+            let totalMin = hour * 60 + min + diffMinutes;
+            while (totalMin < 0) totalMin += 1440;
+            totalMin %= 1440;
+            const newH = Math.floor(totalMin / 60);
+            const newM = totalMin % 60;
+            return `${day}(${pad(newH)}:${pad(newM)})`;
+        }
+
+        let totalMin = dayIdx * 1440 + hour * 60 + min + diffMinutes;
+        while (totalMin < 0) totalMin += 10080;
+        totalMin %= 10080;
+
+        const newDayIdx = Math.floor(totalMin / 1440);
+        const remain = totalMin % 1440;
+        const newH = Math.floor(remain / 60);
+        const newM = remain % 60;
+        return `${days[newDayIdx]}(${pad(newH)}:${pad(newM)})`;
+    });
+
+    return processed;
 };
 
 
-const formatDisplayDate = (str: string, t: any, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
+const formatDisplayDate = (str: string, t: any, now: Date, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
     if (!str) return '';
-    const converted = mode === 'LOCAL' ? toLocal(str) : toUTC(str);
+    const converted = mode === 'LOCAL' ? toLocal(str, t, now) : toUTC(str, t, now);
 
     // YYYY.MM.DD HH:mm 형식이면 리포맷팅, 아니면 그대로 반환 (단일 날짜만 매칭되도록 앵커링)
     const match = converted.match(/^(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})$/);
@@ -181,6 +227,7 @@ interface EventCardProps {
     event: WikiEvent;
     isDark: boolean;
     timezone: 'LOCAL' | 'UTC';
+    now: Date;
     auth: any;
     isAdmin: boolean;
     isOngoing: boolean;
@@ -342,7 +389,7 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
 
 
 const EventCard = memo(({
-    event, isDark, timezone, auth, isAdmin, isOngoing, isExpired, selectedTeamTab,
+    event, isDark, timezone, now, auth, isAdmin, isOngoing, isExpired, selectedTeamTab,
     checkItemOngoing, openScheduleModal, openGuideModal, openAttendeeModal, openWikiLink,
     onSetSelectedTeamTab, onLayout
 }: EventCardProps) => {
@@ -356,7 +403,7 @@ const EventCard = memo(({
     const textColor = isExpired ? (isDark ? 'text-slate-500' : 'text-slate-400') : (isDark ? 'text-white' : 'text-slate-900');
 
     const renderStartEndPeriod = (str: string, textClass: string, isUtc = false) => {
-        const formatted = formatDisplayDate(str, t, isUtc ? 'UTC' : 'LOCAL');
+        const formatted = formatDisplayDate(str, t, now, isUtc ? 'UTC' : 'LOCAL');
 
         const renderStyledDate = (dateStr: string) => {
             // Match pattern like "02/16(월) 09:00"
@@ -386,8 +433,8 @@ const EventCard = memo(({
         );
 
         const parts = str.split('~').map(s => s.trim());
-        const startFormatted = formatDisplayDate(parts[0], t, isUtc ? 'UTC' : 'LOCAL');
-        const endFormatted = formatDisplayDate(parts[1], t, isUtc ? 'UTC' : 'LOCAL');
+        const startFormatted = formatDisplayDate(parts[0], t, now, isUtc ? 'UTC' : 'LOCAL');
+        const endFormatted = formatDisplayDate(parts[1], t, now, isUtc ? 'UTC' : 'LOCAL');
 
         return (
             <View className="gap-3">
@@ -611,7 +658,7 @@ const EventCard = memo(({
                                                         <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-[#1C2539]' : 'bg-[#E8F3FF]') : ''}`}>
                                                             <View className="flex-row items-center flex-1">
                                                                 {(() => {
-                                                                    const displayStr = formatDisplayDate(formatted, t, timezone);
+                                                                    const displayStr = formatDisplayDate(formatted, t, now, timezone);
                                                                     const dtMatch = displayStr.match(/^(.*?)([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/);
 
                                                                     if (dtMatch) {
@@ -700,7 +747,7 @@ const EventCard = memo(({
                                                     {content.split(/[,|]/).map((item: string, iIdx: number) => {
                                                         const trimmedItem = item.trim();
                                                         const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                        const displayStr = formatDisplayDate(formatted, t, timezone);
+                                                        const displayStr = formatDisplayDate(formatted, t, now, timezone);
 
                                                         // Skip detailed time display for ongoing events to achieve cleaner design emphasizing title/message
                                                         if (isOngoing) return null;
@@ -3164,6 +3211,7 @@ export default function EventTracker() {
                                                 event={event}
                                                 isDark={isDark}
                                                 timezone={timezone}
+                                                now={now}
                                                 auth={auth}
                                                 isAdmin={isAdmin}
                                                 isOngoing={isOngoingMap[event.id]}
