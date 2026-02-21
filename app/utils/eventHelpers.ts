@@ -6,7 +6,7 @@
 // --- Pure Utility Functions ---
 
 /** Pad a number to 2 digits */
-export const pad = (n: number) => n.toString().padStart(2, '0');
+export const pad = (n: number | undefined | null) => (n ?? 0).toString().padStart(2, '0');
 
 /** Format remaining time as "Xd HH:MM:SS" */
 export const formatRemainingTime = (seconds: number) => {
@@ -41,7 +41,7 @@ export const toUTC = (kstStr: string, processConversionFn: (str: string, diff: n
 export const processConversion = (str: string, diffMinutes: number, t: (key: string) => string, now: Date) => {
     if (!str || diffMinutes === 0) return str;
 
-    // 1. Full Date Range Case (2026.02.13 09:00)
+    // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
     let processed = str.replace(/(?:(\d{2,4})[\.\/\-])?(\d{2})[\.\/\-](\d{2})\s*[^\d~\.]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
         const currentYear = now.getFullYear();
         let yearNum = parseInt(y || currentYear.toString());
@@ -151,6 +151,39 @@ export const translateDay = (day: string, t: (key: string) => string) => {
         '목': 'thu', '금': 'fri', '토': 'sat'
     };
     return dayMap[day] ? t(`events.days.${dayMap[day]}`) : day;
+};
+
+/** Format display date as MM/DD(Day) HH:mm */
+export const formatDisplayDate = (str: string, t: (key: string) => string, now: Date, mode: 'LOCAL' | 'UTC' = 'LOCAL') => {
+    if (!str) return '';
+    const userOffset = -new Date().getTimezoneOffset();
+    const kstOffset = 540; // UTC+9
+    const diffMinutes = mode === 'LOCAL' ? (userOffset - kstOffset) : -kstOffset;
+
+    const converted = processConversion(str, diffMinutes, t, now);
+
+    // YYYY.MM.DD HH:mm 형식이면 리포맷팅, 아니면 그대로 반환
+    const match = converted.match(/^(\d{4})[\.-](\d{2})[\.-](\d{2})\s+(\d{1,2}:\d{2})$/);
+    if (match) {
+        const [_, y, m, d, timePart] = match;
+        const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+        const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const dayStr = t(`events.days.${days[date.getDay()]}`);
+        return `${pad(parseInt(m))}/${pad(parseInt(d))}(${dayStr}) ${timePart}`;
+    }
+    return converted;
+};
+
+/** Format time string as 12-hour AM/PM format */
+export const formatTime12h = (timeStr: string, t: (key: string) => string) => {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    const h = parseInt(hStr || '0');
+    const m = parseInt(mStr || '0');
+    const isPM = h >= 12;
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    const ampm = isPM ? t('common.pm') : t('common.am');
+    return `${ampm} ${h12}:${m.toString().padStart(2, '0')}`;
 };
 
 /** Translate fortress/citadel and group labels */
