@@ -2,6 +2,7 @@
     "common": {
         "welcome": "Welcome, Commander!",
         "loading": "Loading data...",
+        "initializing": "INITIALIZING",
         "error": "An error occurred.",
         "error_title": "Error",
         "info": "Info",
@@ -502,6 +503,8 @@
         "bearHunt": "Bear Hunt",
         "fortress_label": "Fortress",
         "citadel_label": "Citadel",
+        "timeline_view": "Timeline",
+        "list_view": "List",
         "bear1": "Team 1",
         "bear2": "Team 2",
         "crazyJoe": "Crazy Joe",

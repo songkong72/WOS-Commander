@@ -2,6 +2,7 @@
     "common": {
         "welcome": "환영합니다, 사령관님!",
         "loading": "데이터를 불러오는 중입니다...",
+        "initializing": "초기화 중",
         "error": "오류가 발생했습니다.",
         "error_title": "오류",
         "info": "안내",
@@ -498,6 +499,8 @@
         "bearHunt": "곰 사냥 작전",
         "fortress_label": "요새",
         "citadel_label": "성채",
+        "timeline_view": "타임라인",
+        "list_view": "리스트",
         "bear1": "1군",
         "bear2": "2군",
         "crazyJoe": "미친 조",

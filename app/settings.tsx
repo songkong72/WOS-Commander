@@ -105,7 +105,7 @@ export default function Settings() {
                             </View>
                             <View className="flex-1">
                                 <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 16 * fontSizeScale }}>
-                                    {isDark ? 'Dark Mode' : 'Light Mode'}
+                                    {isDark ? t('admin.darkMode') : t('admin.lightMode')}
                                 </Text>
                             </View>
                         </View>

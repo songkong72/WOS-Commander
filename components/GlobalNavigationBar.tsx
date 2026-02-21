@@ -133,22 +133,20 @@ export default function GlobalNavigationBar() {
     // Mobile Bottom Menu - Improved Visibility & Interaction
     return (
         <View
-            className={`z-[9999] ${isDark ? 'bg-slate-900' : 'bg-slate-800'}`}
+            className={`z-[9999] ${isDark ? 'bg-slate-900' : 'bg-white'}`}
             style={{
                 borderTopWidth: 1,
-                borderTopColor: 'rgba(255, 255, 255, 0.1)',
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.06)',
                 paddingBottom: Platform.OS === 'ios' ? 34 : 16,
                 paddingTop: 12,
                 height: Platform.OS === 'ios' ? 100 : 80,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: -10 },
-                shadowOpacity: 0.3,
-                shadowRadius: 20,
+                // @ts-ignore - Web CSS boxShadow
+                boxShadow: isDark ? '0 -4px 20px rgba(0, 0, 0, 0.3)' : '0 -4px 12px rgba(148, 163, 184, 0.08)',
                 elevation: 20,
             }}
         >
             {Platform.OS !== 'android' && (
-                <BlurView intensity={isDark ? 30 : 50} tint="dark" className="absolute inset-0" />
+                <BlurView intensity={isDark ? 30 : 50} tint={isDark ? 'dark' : 'light'} className="absolute inset-0" />
             )}
 
             <View className="flex-row items-center justify-around px-2">
@@ -176,11 +174,10 @@ export default function GlobalNavigationBar() {
                                     <Ionicons
                                         name={isActive ? item.activeIcon : item.icon}
                                         size={24}
-                                        color={isActive ? "#38bdf8" : "#94a3b8"}
+                                        color={isActive ? '#10b981' : (isDark ? '#94a3b8' : '#94a3b8')}
                                         style={isActive ? {
-                                            textShadowColor: 'rgba(56, 189, 248, 0.5)',
-                                            textShadowOffset: { width: 0, height: 0 },
-                                            textShadowRadius: 8,
+                                            // @ts-ignore - Web CSS textShadow
+                                            textShadow: '0 0 8px rgba(16, 185, 129, 0.5)',
                                         } : {
                                             opacity: 0.8
                                         }}
@@ -188,7 +185,7 @@ export default function GlobalNavigationBar() {
                                 </View>
 
                                 <Text
-                                    className={`font-bold tracking-tight mt-0.5 ${isActive ? 'text-sky-400' : 'text-slate-400'}`}
+                                    className={`font-bold tracking-tight mt-0.5 ${isActive ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-slate-400' : 'text-slate-500')}`}
                                     numberOfLines={1}
                                     style={{
                                         fontSize: 12 * fontSizeScale, // User requested ~12px
@@ -200,12 +197,10 @@ export default function GlobalNavigationBar() {
 
                                 {isActive && (
                                     <View
-                                        className="absolute -top-2 w-1 h-1 rounded-full bg-sky-400"
+                                        className={`absolute -top-2 w-1 h-1 rounded-full ${isDark ? 'bg-emerald-400' : 'bg-emerald-500'}`}
                                         style={{
-                                            shadowColor: '#38bdf8',
-                                            shadowOffset: { width: 0, height: 0 },
-                                            shadowOpacity: 1,
-                                            shadowRadius: 4,
+                                            // @ts-ignore - Web CSS boxShadow
+                                            boxShadow: '0 0 4px rgba(16, 185, 129, 1)',
                                         }}
                                     />
                                 )}

@@ -19,29 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 // Custom Korean Calendar Locale Constants
 // Note: Dates and days are localized using t() keys in the render logic
 
-// Web-specific scrollbar styles
-if (Platform.OS === 'web') {
-    const style = document.createElement('style');
-    style.textContent = `
-        ::-webkit-scrollbar {
-            width: 10px;
-            background: transparent;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background-color: #94a3b8;
-            border-radius: 5px;
-            border: 2px solid transparent;
-            background-clip: content-box;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background-color: #cbd5e1;
-        }
-    `;
-    document.head.appendChild(style);
-}
+// Web-specific scrollbar styles are now handled globally in global.css
 import { WikiEvent, INITIAL_WIKI_EVENTS, EventCategory } from '../../data/wiki-events';
 import { ADDITIONAL_EVENTS } from '../../data/new-events';
 import { SUPER_ADMINS } from '../../data/admin-config';

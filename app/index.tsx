@@ -2845,6 +2845,7 @@ export default function Home() {
                 ]}
             >
                 {({ hovered }: any) => {
+                    const isLocked = !auth.isLoggedIn;
                     const currentSchedule = getEventSchedule(event);
 
                     // split된 이벤트는 현재 시간 기준 가장 가까운 다음 일정을 displayDay로 사용
@@ -2934,8 +2935,16 @@ export default function Home() {
                     return isActive ? (
                         <View className={`w-full rounded-[24px] overflow-hidden shadow-toss transition-all`} style={{
                             backgroundColor: '#191F28', // Always dark/premium background for active card
-                            elevation: 5
+                            elevation: 5,
+                            opacity: isLocked ? 0.7 : 1,
                         }}>
+                            {/* Lock Overlay for non-logged-in users */}
+                            {isLocked && (
+                                <View className="absolute top-3 right-3 z-20 flex-row items-center bg-black/60 px-2.5 py-1 rounded-full">
+                                    <Ionicons name="lock-closed" size={10} color="#94a3b8" style={{ marginRight: 4 }} />
+                                    <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', fontWeight: '700' }}>{t('common.member_only_title')}</Text>
+                                </View>
+                            )}
                             <ImageBackground
                                 source={require('../assets/images/selection_gate_bg.png')}
                                 style={{ width: '100%' }}
@@ -3067,8 +3076,16 @@ export default function Home() {
                             className={`rounded-[24px] mb-3 overflow-hidden ${isDark ? 'bg-[#1e293b]/60 border border-slate-700/50' : 'bg-white border border-slate-200'}`}
                             style={{
                                 elevation: 0,
+                                opacity: isLocked ? 0.7 : 1,
                             }}
                         >
+                            {/* Lock Overlay for non-logged-in users */}
+                            {isLocked && (
+                                <View className="absolute top-3 right-3 z-20 flex-row items-center bg-black/40 px-2.5 py-1 rounded-full">
+                                    <Ionicons name="lock-closed" size={10} color="#94a3b8" style={{ marginRight: 4 }} />
+                                    <Text style={{ fontSize: 9 * fontSizeScale, color: '#94a3b8', fontWeight: '700' }}>{t('common.member_only_title')}</Text>
+                                </View>
+                            )}
                             <View className={`${windowWidth < 380 ? 'px-3' : 'px-4'} py-4 flex-row items-center`}>
                                 {/* Icon */}
                                 <View className={`${windowWidth < 380 ? 'w-11 h-11 mr-2.5' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
@@ -3251,7 +3268,7 @@ export default function Home() {
                     <View className={`w-24 h-24 rounded-[40px] ${isDark ? 'bg-sky-500/20 border-sky-400/30' : 'bg-sky-100 border-sky-200'} items-center justify-center mb-8 border`}>
                         <Ionicons name="snow" size={54} color="#38bdf8" />
                     </View>
-                    <Text className={`font-black tracking-[0.3em] ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>INITIALIZING</Text>
+                    <Text className={`font-black tracking-[0.3em] ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 24 * fontSizeScale }}>{t('common.initializing').toUpperCase()}</Text>
                     <ActivityIndicator size="large" color="#38bdf8" style={{ marginTop: 24 }} />
                 </Animated.View>
             </View>
@@ -3483,7 +3500,7 @@ export default function Home() {
 
                         <View className="space-y-2.5">
                             {/* Row 1: Server and Alliance */}
-                            <View className="flex-row gap-2.5" style={{ zIndex: (activeInput === 'server' || activeInput === 'alliance') ? 100 : 50 }}>
+                            <View className={`${isMobile ? 'flex-col' : 'flex-row'} gap-2.5`} style={{ zIndex: (activeInput === 'server' || activeInput === 'alliance') ? 100 : 50 }}>
                                 {/* Server Number */}
                                 <View className="flex-1" style={{ zIndex: activeInput === 'server' ? 100 : 50 }}>
                                     <View className="flex-row justify-between items-center ml-4 mb-1.5 ">
@@ -3540,7 +3557,7 @@ export default function Home() {
                             </View>
 
                             {/* Row 2: Lord Name and Password */}
-                            <View className="flex-row gap-2.5" style={{ zIndex: (activeInput === 'userid' || activeInput === 'password') ? 100 : 30 }}>
+                            <View className={`${isMobile ? 'flex-col' : 'flex-row'} gap-2.5`} style={{ zIndex: (activeInput === 'userid' || activeInput === 'password') ? 100 : 30 }}>
                                 {/* Lord Name */}
                                 <View className="flex-1" style={{ zIndex: activeInput === 'userid' ? 100 : 30 }}>
                                     <Text className={`${isDark ? 'text-white/60' : 'text-slate-500'} font-black ml-4 mb-1.5 uppercase tracking-widest`} style={{ fontSize: 10 * fontSizeScale }}>{t('dashboard.lordName')}</Text>
@@ -4073,10 +4090,12 @@ export default function Home() {
                                         onPress={() => setViewMode('timeline')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: windowWidth < 410 ? 10 : (isMobile ? 12 : 20),
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                paddingHorizontal: windowWidth < 410 ? 8 : (isMobile ? 10 : 16),
                                                 height: windowWidth < 410 ? 28 : (isMobile ? 32 : 40),
                                                 borderRadius: windowWidth < 410 ? 8 : 12,
-                                                alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
                                                 transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
@@ -4084,16 +4103,19 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="analytics" size={windowWidth < 410 ? 16 : 20} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
+                                        <Ionicons name="analytics" size={windowWidth < 410 ? 14 : 16} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
+                                        {windowWidth >= 410 && <Text style={{ fontSize: 11 * fontSizeScale, color: viewMode === 'timeline' ? 'white' : '#f97316', fontWeight: '800' }}>{t('events.timeline_view')}</Text>}
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setViewMode('list')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: windowWidth < 410 ? 10 : (isMobile ? 12 : 20),
+                                                flexDirection: 'row',
+                                                alignItems: 'center',
+                                                gap: 4,
+                                                paddingHorizontal: windowWidth < 410 ? 8 : (isMobile ? 10 : 16),
                                                 height: windowWidth < 410 ? 28 : (isMobile ? 32 : 40),
                                                 borderRadius: windowWidth < 410 ? 8 : 12,
-                                                alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
                                                 transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
@@ -4101,7 +4123,8 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="list" size={windowWidth < 410 ? 16 : 20} color={viewMode === 'list' ? 'white' : '#f97316'} />
+                                        <Ionicons name="list" size={windowWidth < 410 ? 14 : 16} color={viewMode === 'list' ? 'white' : '#f97316'} />
+                                        {windowWidth >= 410 && <Text style={{ fontSize: 11 * fontSizeScale, color: viewMode === 'list' ? 'white' : '#f97316', fontWeight: '800' }}>{t('events.list_view')}</Text>}
                                     </Pressable>
                                 </View>
                             </View>
@@ -4348,9 +4371,9 @@ export default function Home() {
                 </View>
 
                 {/* Modern Refined Footer */}
-                <View className="mt-24 mb-32 items-center">
+                <View className="mt-12 mb-20 items-center">
                     {/* Thin Subtle Divider */}
-                    <View className={`w-full h-[1px] mb-12 self-stretch ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/60'}`} />
+                    <View className={`w-full h-[1px] mb-8 self-stretch ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/60'}`} />
 
                     <View className="items-center px-12">
                         <Text className={`text-[10px] font-black tracking-[0.2em] uppercase text-center ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
