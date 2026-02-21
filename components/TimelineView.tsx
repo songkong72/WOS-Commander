@@ -750,6 +750,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                             flex: 1,
                                                                             borderRadius: 14,
                                                                             overflow: 'hidden',
+                                                                            opacity: p.et < now.getTime() ? 0.4 : 1, // Dim past events
                                                                             transform: [{ scale: activeHover ? 1.04 : (isActive ? 1.01 : 1) }],
                                                                             borderWidth: isActive ? 2 : 0,
                                                                             borderColor: isActive ? pulseAnim.interpolate({
@@ -757,10 +758,11 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                                 outputRange: ['rgba(255,255,255,0.4)', 'rgba(255,255,255,1)']
                                                                             }) : 'transparent',
                                                                             // @ts-ignore
-                                                                            boxShadow: activeHover ? `0 6px 20px ${cfg.gradient[1]}B0` : (isActive ? pulseAnim.interpolate({
+                                                                            boxShadow: activeHover ? `0 8px 24px ${cfg.gradient[1]}CC` : (isActive ? pulseAnim.interpolate({
                                                                                 inputRange: [0.4, 1],
                                                                                 outputRange: ['0 4px 10px rgba(255,255,255,0.3)', '0 8px 30px rgba(255,255,255,0.8)']
-                                                                            }) : `0 4px 12px ${cfg.gradient[1]}60`)
+                                                                            }) : `0 4px 12px ${cfg.gradient[1]}60`),
+                                                                            elevation: isActive ? 8 : 4
                                                                         } as any}
                                                                     >
                                                                         <LinearGradient

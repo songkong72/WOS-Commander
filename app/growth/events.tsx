@@ -20,7 +20,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 // Note: Dates and days are localized using t() keys in the render logic
 
 // Web-specific scrollbar styles
-// Web-specific scrollbar styles
 if (Platform.OS === 'web') {
     const style = document.createElement('style');
     style.textContent = `
@@ -141,15 +140,12 @@ const ShimmerIcon = memo(({ children, colors, isDark }: { children: React.ReactN
 const pad = (n: number | undefined | null) => (n ?? 0).toString().padStart(2, '0');
 
 const toLocal = (kstStr: string) => {
-    console.log(`[WOS_DEBUG] toLocal [IN]: "${kstStr}" -> [OUT]: "${kstStr}"`);
     return kstStr;
 };
 const toUTC = (kstStr: string) => {
-    console.log(`[WOS_DEBUG] toUTC [IN]: "${kstStr}" -> [OUT]: "${kstStr}"`);
     return kstStr;
 };
 const processConversion = (str: string, diffMinutes: number) => {
-    console.log(`[WOS_DEBUG] processConversion [IN]: "${str}" -> [OUT]: "${str}"`);
     return str;
 };
 
@@ -205,16 +201,12 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
     const [localActiveValue, setLocalActiveValue] = useState(value);
     const lastSyncedKey = useRef(syncKey);
     const isFirstRun = useRef(true);
-    const isLayoutReady = useRef(false);
-
-
 
     const getLabel = (opt: any) => (typeof opt === 'object' ? opt.label : opt);
     const getValue = (opt: any) => (typeof opt === 'object' ? opt.value : opt);
 
-    // Simplified to 3 blocks for better stability and predictable math
     const infiniteOptions = useMemo(() => [...options, ...options, ...options], [options]);
-    const centerOffset = options.length; // Start at the second block
+    const centerOffset = options.length;
 
     const scrollToIndex = (index: number, animated = true) => {
         if (!flatListRef.current) return;
@@ -224,7 +216,6 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
         });
     };
 
-    // Robust Sync Logic
     useEffect(() => {
         const valStr = String(value || '').trim();
         const localStr = String(localActiveValue || '').trim();
@@ -240,9 +231,10 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
 
             const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
             if (realIndex !== -1) {
-                // Since FlatList now uses initialScrollIndex and getItemLayout,
-                // we only need a lightweight sync if value externally changed after mount.
-                if (!isFirstRun.current) {
+                // Ensure scroll happens even if ref isn't immediately ready on first run
+                if (isFirstRun.current) {
+                    setTimeout(() => scrollToIndex(realIndex + centerOffset, false), 10);
+                } else {
                     scrollToIndex(realIndex + centerOffset, false);
                 }
             }
@@ -262,27 +254,17 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
             }
         }
 
-        // Web Mouse Scroll Snapping Hack
         if (Platform.OS === 'web') {
             if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
             scrollTimeout.current = setTimeout(() => {
                 if (index < 0 || index >= infiniteOptions.length) return;
                 const selectedItem = infiniteOptions[index];
                 const selectedVal = getValue(selectedItem);
-
-                if (selectedVal !== value) {
-                    onChange(selectedVal);
-                }
-
-                // Snap directly on web to ensure exact alignment
+                if (selectedVal !== value) onChange(selectedVal);
                 scrollToIndex(index, true);
-
-                // Re-center block after animation
                 const realIndex = index % options.length;
                 const targetIndex = realIndex + centerOffset;
-                if (index !== targetIndex) {
-                    setTimeout(() => scrollToIndex(targetIndex, false), 300);
-                }
+                if (index !== targetIndex) setTimeout(() => scrollToIndex(targetIndex, false), 300);
             }, 150);
         }
     };
@@ -290,100 +272,69 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
     const handleScrollEnd = (e: any) => {
         const offset = e.nativeEvent.contentOffset.y;
         const index = Math.round(offset / itemHeight);
-
         if (index < 0 || index >= infiniteOptions.length) return;
-
         const selectedItem = infiniteOptions[index];
         const selectedVal = getValue(selectedItem);
         const realIndex = index % options.length;
-
-        if (selectedVal !== value) {
-            onChange(selectedVal);
-        }
-
-        // Always snap back to the middle block
-        const targetIndex = realIndex + centerOffset;
-        if (index !== targetIndex) {
-            setTimeout(() => scrollToIndex(targetIndex, false), 10);
-        }
+        if (selectedVal !== value) onChange(selectedVal);
+        scrollToIndex(realIndex + centerOffset, true);
     };
 
-    return (
-        <View style={{ width, height: itemHeight * lines, overflow: 'hidden' }} className="relative">
-            {lines > 1 && (
-                <LinearGradient
-                    colors={[containerBgColor || (isDark ? '#0f172a' : '#ffffff'), `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, 'transparent']}
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
-                    pointerEvents="none"
-                />
-            )}
-            {lines > 1 && (
-                <LinearGradient
-                    colors={['transparent', `${containerBgColor || (isDark ? '#0f172a' : '#ffffff')}90`, containerBgColor || (isDark ? '#0f172a' : '#ffffff')]}
-                    style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight * 0.6, zIndex: 20 }}
-                    pointerEvents="none"
-                />
-            )}
-            {showHighlight && (
-                <View pointerEvents="none" style={{ position: 'absolute', top: itemHeight * Math.floor(lines / 2), left: 4, right: 4, height: itemHeight, backgroundColor: isDark ? '#38bdf815' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf830' : '#38bdf820', zIndex: 10 }} />
-            )}
+    const headerFooterHeight = itemHeight * Math.floor(lines / 2);
 
+    return (
+        <View style={{ width, height: itemHeight * lines, overflow: 'hidden', backgroundColor: containerBgColor || 'transparent' }}>
             <FlatList
                 ref={flatListRef}
                 data={infiniteOptions}
-                keyExtractor={(_, idx) => idx.toString()}
-                showsVerticalScrollIndicator={false}
-                snapToInterval={itemHeight}
-                snapToAlignment="center"
-                decelerationRate="fast"
-                disableIntervalMomentum={true}
-                contentContainerStyle={{ paddingVertical: itemHeight * Math.floor(lines / 2) }}
-                getItemLayout={(_, index) => ({
-                    length: itemHeight,
-                    offset: itemHeight * index,
-                    index,
-                })}
-                initialScrollIndex={
-                    (() => {
-                        const valStr = String(value || '').trim();
-                        const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
-                        return realIndex !== -1 ? realIndex + centerOffset : centerOffset;
-                    })()
-                }
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                onMomentumScrollEnd={handleScrollEnd}
-                onScrollEndDrag={handleScrollEnd}
-                onLayout={() => {
-                    isLayoutReady.current = true;
-                }}
                 renderItem={({ item, index }) => {
-
                     const isSelected = localActiveValue === getValue(item);
                     return (
                         <TouchableOpacity
                             onPress={() => {
-                                // WheelPicker가 부모에게 값을 전달할 때 의도치 않은 초기화를 막음
-                                if (String(value).trim() !== String(getValue(item)).trim()) {
-                                    onChange(getValue(item));
-                                }
+                                if (String(value).trim() !== String(getValue(item)).trim()) onChange(getValue(item));
                                 scrollToIndex(index, true);
                             }}
                             style={{ height: itemHeight, alignItems: 'center', justifyContent: 'center' }}
                             activeOpacity={0.7}
                         >
-                            <Text
+                            <Animated.Text
                                 className={`font-black ${isSelected ? (isDark ? 'text-sky-400 text-xl' : 'text-sky-600 text-xl') : (isDark ? 'text-white text-base' : 'text-slate-500 text-base')}`}
                                 style={{
-                                    opacity: isSelected ? 1 : 0.7,
-                                    textShadow: isDark ? '0px 1px 2px rgba(0,0,0,0.3)' : 'none'
+                                    opacity: isSelected ? 1 : 0.4,
+                                    textShadow: isDark ? '0px 1px 2px rgba(0,0,0,0.3)' : 'none',
+                                    transform: [{ scale: isSelected ? 1.1 : 0.9 }]
                                 }}
                             >
                                 {getLabel(item)}
-                            </Text>
+                            </Animated.Text>
                         </TouchableOpacity>
                     );
                 }}
+                keyExtractor={(_, i) => i.toString()}
+                showsVerticalScrollIndicator={false}
+                snapToInterval={itemHeight}
+                decelerationRate="fast"
+                onScroll={handleScroll}
+                onMomentumScrollEnd={handleScrollEnd}
+                initialScrollIndex={centerOffset + options.findIndex((o: any) => String(getValue(o)).trim() === String(value || ''))}
+                getItemLayout={(_, index) => ({ length: itemHeight, offset: itemHeight * index + headerFooterHeight, index })}
+                ListHeaderComponent={<View style={{ height: headerFooterHeight }} />}
+                ListFooterComponent={<View style={{ height: headerFooterHeight }} />}
+                scrollEventThrottle={16}
+                // @ts-ignore
+                style={{ cursor: 'pointer' }}
+            />
+            {/* Gradient Masks */}
+            <LinearGradient
+                colors={[containerBgColor || (isDark ? '#191F28' : '#ffffff'), (containerBgColor || (isDark ? '#191F28' : '#ffffff')) + '00']}
+                pointerEvents="none"
+                style={{ position: 'absolute', top: 0, left: 0, right: 0, height: itemHeight / 2, zIndex: 10 }}
+            />
+            <LinearGradient
+                colors={[(containerBgColor || (isDark ? '#191F28' : '#ffffff')) + '00', containerBgColor || (isDark ? '#191F28' : '#ffffff')]}
+                pointerEvents="none"
+                style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: itemHeight / 2, zIndex: 10 }}
             />
         </View>
     );
@@ -481,7 +432,7 @@ const EventCard = memo(({
                 className={`rounded-[24px] mb-4 overflow-hidden transition-all ${isOngoing ? (isDark ? 'bg-[#191F28] border border-blue-500/30' : 'bg-white shadow-lg shadow-blue-500/10 border border-blue-100') : (isUpcoming ? (isDark ? 'bg-[#191F28] border border-[#333D4B]' : 'bg-white border border-[#E5E8EB] shadow-sm') : (isDark ? 'bg-[#191F28]/60 border border-[#333D4B]' : 'bg-[#F9FAFB] border border-[#E5E8EB]'))}`}
             >
                 {/* Strikethrough overlay removed per request */}
-                <View className={`px-3 py-2 flex-col border-b ${isDark ? 'border-slate-800' : 'border-slate-50'}`}>
+                <View className={`px-5 py-5 flex-col border-b ${isDark ? 'border-slate-800/60' : 'border-[#F2F4F6]'}`}>
                     <View className="flex-row items-center mb-2">
                         {event.imageUrl ? (
                             <View className={`w-10 h-10 rounded-[14px] border overflow-hidden mr-3 ${isDark ? 'border-[#333D4B] bg-[#191F28]' : 'border-[#E5E8EB] bg-[#F2F4F6]'}`}>
@@ -517,7 +468,7 @@ const EventCard = memo(({
                         )}
                     </View>
                     {!!event.description && (
-                        <Text className={`mb-3 leading-6 ${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-[#B0B8C1]' : 'text-[#4E5968]')}`} numberOfLines={isOngoing ? undefined : 1} style={{ fontSize: 15 * fontSizeScale }}>
+                        <Text className={`mb-4 leading-relaxed ${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-[#8B95A1]' : 'text-[#4E5968]')}`} numberOfLines={isOngoing ? undefined : 2} style={{ fontSize: 14 * fontSizeScale }}>
                             {t(`events.${event.id}_description`, { defaultValue: event.description })}
                         </Text>
                     )}
@@ -551,7 +502,7 @@ const EventCard = memo(({
                         )}
                     </View>
                 </View>
-                <View className="px-4 pt-3 pb-4 flex-1 justify-between">
+                <View className="px-5 pt-4 pb-5 flex-1 justify-between">
                     <View className="mb-4">
                         {(!event.day && (!event.time || !event.time.trim())) ? (
                             <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-200'}`}>
@@ -809,28 +760,42 @@ const EventCard = memo(({
                             onPress={() => openGuideModal(event)}
                             onHoverIn={() => setGuideHover(true)}
                             onHoverOut={() => setGuideHover(false)}
-                            className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#333D4B]' : 'bg-violet-50'} ${guideHover ? 'opacity-80' : 'opacity-100'}`}
-                            style={({ pressed }: any) => [
+                            className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-slate-800' : 'bg-violet-50'}`}
+                            style={({ pressed, hovered }: any) => [
                                 {
-                                    transform: [{ scale: pressed ? 0.96 : 1 }],
+                                    transform: [{ scale: pressed ? 0.96 : (hovered ? 1.02 : 1) }],
+                                    opacity: pressed ? 0.8 : 1,
+                                    shadowColor: '#8b5cf6',
+                                    shadowOffset: { width: 0, height: hovered ? 4 : 0 },
+                                    shadowOpacity: hovered ? 0.2 : 0,
+                                    shadowRadius: 8,
+                                    elevation: hovered ? 4 : 0
                                 }
                             ]}
                         >
-                            <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#E5E8EB]' : 'text-violet-600'}`}>{t('events.guide')}</Text>
+                            <Ionicons name="book-outline" size={18} color={isDark ? '#a78bfa' : '#7c3aed'} style={{ marginRight: 8 }} />
+                            <Text className={`font-bold text-[15px] ${isDark ? 'text-violet-300' : 'text-violet-600'}`}>{t('events.guide')}</Text>
                         </Pressable>
                         {(event.category === '연맹' || event.category === '서버') && (
                             <Pressable
                                 onPress={() => openAttendeeModal(event, selectedTeamTab || 0)}
                                 onHoverIn={() => setAttendHover(true)}
                                 onHoverOut={() => setAttendHover(false)}
-                                className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#3182F6]/20' : 'bg-[#E8F3FF]'} ${attendHover ? 'opacity-80' : 'opacity-100'}`}
-                                style={({ pressed }: any) => [
+                                className={`flex-1 h-[52px] rounded-[16px] flex-row items-center justify-center transition-all ${isDark ? 'bg-[#1C2539]' : 'bg-[#E8F3FF]'}`}
+                                style={({ pressed, hovered }: any) => [
                                     {
-                                        transform: [{ scale: pressed ? 0.96 : 1 }],
+                                        transform: [{ scale: pressed ? 0.96 : (hovered ? 1.02 : 1) }],
+                                        opacity: pressed ? 0.8 : 1,
+                                        shadowColor: '#3182f6',
+                                        shadowOffset: { width: 0, height: hovered ? 4 : 0 },
+                                        shadowOpacity: hovered ? 0.2 : 0,
+                                        shadowRadius: 8,
+                                        elevation: hovered ? 4 : 0
                                     }
                                 ]}
                             >
-                                <Text className={`font-semibold text-[16px] ${isDark ? 'text-[#4F93F7]' : 'text-[#3182F6]'}`}>{t('events.attend')}</Text>
+                                <Ionicons name="people" size={18} color={isDark ? '#4F93F7' : '#3182F6'} style={{ marginRight: 8 }} />
+                                <Text className={`font-bold text-[15px] ${isDark ? 'text-[#4F93F7]' : 'text-[#3182F6]'}`}>{t('events.attend')}</Text>
                             </Pressable>
                         )}
                     </View>
@@ -1136,10 +1101,6 @@ const RenderDateSelector = memo(({ label, value, onChange, type, activeDateDropd
     const timePart = parts[1] || '';
     const [h, m] = timePart ? timePart.split(':') : ['00', '00'];
 
-    if (label.includes('종료')) {
-        console.log(`[WOS_DEBUG] Selector [IN] (${label}): "${value}" -> Parsed H: "${h}", M: "${m}"`);
-    }
-
     return (
         <View className="mb-6" style={{ zIndex: activeDateDropdown?.type === type ? 10000 : 1, elevation: activeDateDropdown?.type === type ? 50 : 0, overflow: 'visible' }}>
             <View className="flex-row items-center mb-3 ml-1">
@@ -1238,6 +1199,16 @@ export default function EventTracker() {
     const itemLayouts = useRef<{ [key: string]: number }>({});
     const categoryItemLayouts = useRef<{ [key: string]: { x: number, width: number } }>({});
     const [highlightId, setHighlightId] = useState<string | null>(null);
+    const catFadeAnim = useRef(new Animated.Value(1)).current;
+
+    useEffect(() => {
+        catFadeAnim.setValue(0);
+        Animated.timing(catFadeAnim, {
+            toValue: 1,
+            duration: 350,
+            useNativeDriver: false
+        }).start();
+    }, [selectedCategory, viewMode]);
 
     // Auto-centering for mobile category filter
     useEffect(() => {
@@ -1292,9 +1263,6 @@ export default function EventTracker() {
                 });
 
                 if (savedSchedule) {
-                    if (eid === 'a_operation' || eid === 'alliance_operation') {
-                        console.log(`[WOS_DEBUG] Merge Schedule - Event: ${eid}, DB_Day: "${savedSchedule.day}", DB_Time: "${savedSchedule.time}"`);
-                    }
                     return {
                         ...event,
                         day: (savedSchedule.day === '.' ? '' : (savedSchedule.day || '')),
@@ -1418,7 +1386,8 @@ export default function EventTracker() {
         title: string,
         message: string,
         type: 'success' | 'error' | 'warning' | 'confirm',
-        onConfirm?: () => void
+        onConfirm?: () => void,
+        confirmLabel?: string
     }>({
         visible: false,
         title: '',
@@ -1426,8 +1395,8 @@ export default function EventTracker() {
         type: 'error'
     });
 
-    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
-        setCustomAlert({ visible: true, title, message, type, onConfirm });
+    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void, confirmLabel?: string) => {
+        setCustomAlert({ visible: true, title, message, type, onConfirm, confirmLabel });
     };
 
     // Tab & Data States
@@ -2352,13 +2321,11 @@ export default function EventTracker() {
             const sRaw = rawParts[0] || "";
             const eRaw = rawParts.length > 1 ? rawParts[1] : "";
 
-            console.log(`[WOS_DEBUG] Open Modal - Raw: "${realDayStr}", sRaw: "${sRaw}", eRaw: "${eRaw}"`);
 
             // mStart, mEnd에 들어가는 모든 값은 Date 파싱을 거치지 않는 '문자열'이어야 함
             const forceStart = sRaw ? String(sRaw).trim() : defaultStr;
             const forceEnd = eRaw ? String(eRaw).trim() : (sRaw ? String(sRaw).trim() : defaultStr);
 
-            console.log(`[WOS_DEBUG] Final Force Values - Start: "${forceStart}", End: "${forceEnd}"`);
 
             setMStart(forceStart);
             setMEnd(forceEnd);
@@ -2496,15 +2463,7 @@ export default function EventTracker() {
 
         setSlots1(s1);
         setSlots2(s2);
-        setInitialSlots1(s1.map(s => ({ day: s.day, time: s.time })));
         setInitialSlots2(s2.map(s => ({ day: s.day, time: s.time })));
-
-        // Initialize Common/Team 1 UI states
-        setIsRecurring(!!event.isRecurring);
-        setRecurrenceValue(event.recurrenceValue || '1');
-        setRecurrenceUnit(event.recurrenceUnit || 'week');
-        setEnableStartDate(!!(event as any).startDate);
-        setEventStartDate((event as any).startDate || '');
 
         // Initialize Team 1 backing stores
         setIsRecurring1(!!event.isRecurring);
@@ -2529,10 +2488,34 @@ export default function EventTracker() {
             setEventStartDate((event as any).startDate2 || '');
         }
 
-
-
         setScheduleModalVisible(true);
-    }, [parseScheduleStr, selectedTeamTabs]);
+    }, [schedules, schedulesLoading, selectedTeamTabs, events, parseScheduleStr]);
+
+    const hasScheduleChanges = useMemo(() => {
+        const s1Changed = JSON.stringify(slots1.map(s => ({ day: s.day, time: s.time }))) !== JSON.stringify(initialSlots1);
+        const s2Changed = JSON.stringify(slots2.map(s => ({ day: s.day, time: s.time }))) !== JSON.stringify(initialSlots2);
+        return s1Changed || s2Changed;
+    }, [slots1, slots2, initialSlots1, initialSlots2]);
+
+    const handleCloseScheduleModal = useCallback(() => {
+        if (hasScheduleChanges) {
+            showCustomAlert(
+                t('common.confirm'),
+                t('events.modal.discard_changes'),
+                'confirm',
+                () => {
+                    setScheduleModalVisible(false);
+                    setEditingSlotId(null);
+                },
+                t('common.ok')
+            );
+        } else {
+            setScheduleModalVisible(false);
+            setEditingSlotId(null);
+        }
+    }, [hasScheduleChanges, t, showCustomAlert]);
+
+
 
     const toggleDay = useCallback((day: string) => {
         setSelectedDayForSlot(day);
@@ -2639,9 +2622,7 @@ export default function EventTracker() {
             try {
                 // Consolidate to a single ID for weapon league data
                 const targetId = (editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') ? 'a_weapon' : editingEvent.id;
-                console.log(`[WOS_DEBUG] Save Start - Event: ${targetId}, mStart: "${mStart}", mEnd: "${mEnd}", finalDay: "${finalDay}"`);
 
-                console.log(`[Save] DateRange: ${targetId}, day: ${finalDay}, time: ${finalTime}`);
                 setEvents(prev => prev.map(e => (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league')) ? {
                     ...e,
                     day: finalDay,
@@ -2691,7 +2672,6 @@ export default function EventTracker() {
             // Optimistic update handled by hook
 
             try {
-                console.log(`[Save] Fortress/Citadel: ${editingEvent.id}, day: ${finalDay}, time: ${timeStr}, startDate: ${enableStartDate ? eventStartDate : 'none'}`);
                 setEvents(prev => prev.map(e => e.id === editingEvent.id ? {
                     ...e,
                     day: finalDay,
@@ -2802,7 +2782,6 @@ export default function EventTracker() {
         }
 
         try {
-            console.log(`[Save] ${editingEvent.id}, T1: ${finalVal1}, T2: ${finalVal2}`);
             setEvents(prev => prev.map(e => e.id === editingEvent.id ? {
                 ...e,
                 day: finalDay || '',
@@ -3141,68 +3120,70 @@ export default function EventTracker() {
                     </View>
 
                     {/* Event Grid / Timeline View Content */}
-                    {viewMode === 'timeline' ? (
-                        <TimelineView
-                            events={timelineEvents}
-                            isDark={isDark}
-                            timezone={timezone}
-                            onEventPress={(ev) => {
-                                const target = ev._original || ev;
-                                // Resolve base event for split events to ensure correct ID is used for saving
-                                const baseEventId = target.originalEventId || (target.id ? target.id.replace(/_(?:team\d+|t?\d+(?:_\d+)?|fortress|citadel)/g, '') : target.id);
-                                const baseEvent = events.find(e => e.id === baseEventId) || target;
+                    <Animated.View style={{ flex: 1, opacity: catFadeAnim, transform: [{ translateY: catFadeAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
+                        {viewMode === 'timeline' ? (
+                            <TimelineView
+                                events={timelineEvents}
+                                isDark={isDark}
+                                timezone={timezone}
+                                onEventPress={(ev) => {
+                                    const target = ev._original || ev;
+                                    // Resolve base event for split events to ensure correct ID is used for saving
+                                    const baseEventId = target.originalEventId || (target.id ? target.id.replace(/_(?:team\d+|t?\d+(?:_\d+)?|fortress|citadel)/g, '') : target.id);
+                                    const baseEvent = events.find(e => e.id === baseEventId) || target;
 
-                                if (isAdmin) {
-                                    if (ev._teamIdx !== undefined) {
-                                        handleSetSelectedTeamTab(baseEvent.id, ev._teamIdx);
+                                    if (isAdmin) {
+                                        if (ev._teamIdx !== undefined) {
+                                            handleSetSelectedTeamTab(baseEvent.id, ev._teamIdx);
+                                        }
+                                        openScheduleModal(baseEvent);
+                                    } else {
+                                        if (ev._teamIdx !== undefined) {
+                                            handleSetSelectedTeamTab(baseEvent.id, ev._teamIdx);
+                                        }
+                                        openGuideModal(baseEvent);
                                     }
-                                    openScheduleModal(baseEvent);
-                                } else {
-                                    if (ev._teamIdx !== undefined) {
-                                        handleSetSelectedTeamTab(baseEvent.id, ev._teamIdx);
-                                    }
-                                    openGuideModal(baseEvent);
-                                }
-                            }}
-                            checkIsOngoing={checkIsOngoing}
-                        />
-                    ) : (
-                        <ScrollView ref={scrollViewRef} className="flex-1 p-3.5">
-                            <View className="flex-row flex-wrap -mx-2">
-                                {filteredEvents.length === 0 ? (
-                                    <View className="w-full py-24 items-center justify-center">
-                                        <View className={`w-24 h-24 rounded-full items-center justify-center mb-6 shadow-inner ${isDark ? 'bg-slate-800/40 border border-slate-700/50' : 'bg-slate-50 border border-slate-100'}`}>
-                                            <Ionicons name="calendar-outline" size={48} color={isDark ? "#475569" : "#94a3b8"} />
+                                }}
+                                checkIsOngoing={checkIsOngoing}
+                            />
+                        ) : (
+                            <ScrollView ref={scrollViewRef} className="flex-1 p-3.5">
+                                <View className="flex-row flex-wrap -mx-2">
+                                    {filteredEvents.length === 0 ? (
+                                        <View className="w-full py-24 items-center justify-center">
+                                            <View className={`w-24 h-24 rounded-full items-center justify-center mb-6 shadow-inner ${isDark ? 'bg-slate-800/40 border border-slate-700/50' : 'bg-slate-50 border border-slate-100'}`}>
+                                                <Ionicons name="calendar-outline" size={48} color={isDark ? "#475569" : "#94a3b8"} />
+                                            </View>
+                                            <Text className={`text-xl font-black mb-2 tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{t('events.no_ongoing_events')}</Text>
+                                            <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.select_another_category')}</Text>
                                         </View>
-                                        <Text className={`text-xl font-black mb-2 tracking-tight ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{t('events.no_ongoing_events')}</Text>
-                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.select_another_category')}</Text>
-                                    </View>
-                                ) : (
-                                    filteredEvents.map((event) => (
-                                        <EventCard
-                                            key={event.id}
-                                            event={event}
-                                            isDark={isDark}
-                                            timezone={timezone}
-                                            auth={auth}
-                                            isAdmin={isAdmin}
-                                            isOngoing={isOngoingMap[event.id]}
-                                            isExpired={isExpiredMap[event.id]}
-                                            selectedTeamTab={selectedTeamTabs[event.id] || 0}
-                                            checkItemOngoing={checkItemOngoing}
-                                            openScheduleModal={openScheduleModal}
-                                            openGuideModal={openGuideModal}
-                                            openAttendeeModal={openAttendeeModal}
-                                            openWikiLink={openWikiLink}
-                                            onSetSelectedTeamTab={(idx) => handleSetSelectedTeamTab(event.id, idx)}
-                                            onLayout={(y) => { itemLayouts.current[event.id] = y; }}
-                                        />
-                                    ))
-                                )}
-                            </View>
-                            <View className="h-20" />
-                        </ScrollView>
-                    )}
+                                    ) : (
+                                        filteredEvents.map((event) => (
+                                            <EventCard
+                                                key={event.id}
+                                                event={event}
+                                                isDark={isDark}
+                                                timezone={timezone}
+                                                auth={auth}
+                                                isAdmin={isAdmin}
+                                                isOngoing={isOngoingMap[event.id]}
+                                                isExpired={isExpiredMap[event.id]}
+                                                selectedTeamTab={selectedTeamTabs[event.id] || 0}
+                                                checkItemOngoing={checkItemOngoing}
+                                                openScheduleModal={openScheduleModal}
+                                                openGuideModal={openGuideModal}
+                                                openAttendeeModal={openAttendeeModal}
+                                                openWikiLink={openWikiLink}
+                                                onSetSelectedTeamTab={(idx) => handleSetSelectedTeamTab(event.id, idx)}
+                                                onLayout={(y) => { itemLayouts.current[event.id] = y; }}
+                                            />
+                                        ))
+                                    )}
+                                </View>
+                                <View className="h-20" />
+                            </ScrollView>
+                        )}
+                    </Animated.View>
                 </View>
 
                 {/* Guide Detail Popup Modal */}
@@ -3405,8 +3386,8 @@ export default function EventTracker() {
 
                                     </>
                                 </View>
-                                <TouchableOpacity onPress={() => setScheduleModalVisible(false)} className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
-                                    <Ionicons name="close" size={24} color={isDark ? "#B0B8C1" : "#4E5968"} />
+                                <TouchableOpacity onPress={handleCloseScheduleModal} className={`w-12 h-12 rounded-full items-center justify-center shadow-md ${isDark ? 'bg-[#333D4B]' : 'bg-white border border-[#E5E8EB]'}`}>
+                                    <Ionicons name="close" size={28} color={isDark ? "#B0B8C1" : "#191F28"} />
                                 </TouchableOpacity>
                             </View>
 
@@ -4401,7 +4382,7 @@ export default function EventTracker() {
                                         }}
                                         className="flex-1 h-[52px] items-center justify-center bg-[#E0264D] rounded-[16px]"
                                     >
-                                        <Text className="text-white text-center font-bold text-[16px]">{t('common.delete')}</Text>
+                                        <Text className="text-white text-center font-bold text-[16px]">{customAlert.confirmLabel || t('common.delete')}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ) : (
@@ -4467,7 +4448,7 @@ export default function EventTracker() {
                                             <TouchableOpacity onPress={() => changeMonth(-1)} className={`w-9 h-9 items-center justify-center rounded-[10px] ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}><Ionicons name="chevron-back" size={20} color={isDark ? "#B0B8C1" : "#4E5968"} /></TouchableOpacity>
                                             <TouchableOpacity onPress={() => changeMonth(1)} className={`w-9 h-9 items-center justify-center rounded-[10px] ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}><Ionicons name="chevron-forward" size={20} color={isDark ? "#B0B8C1" : "#4E5968"} /></TouchableOpacity>
                                         </View>
-                                    </View>\
+                                    </View>
 
                                     {/* Days Header */}
                                     <View className="flex-row px-4 pt-4">

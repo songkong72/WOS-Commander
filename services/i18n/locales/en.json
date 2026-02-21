@@ -433,6 +433,8 @@
             "warning_title": "🛎️ 10 Minute Warning: {{title}}",
             "warning_body": "{{title}} will start in 10 minutes! Get ready."
         },
+        "slot1": "Team 1",
+        "slot2": "Team 2",
         "team1_setting": "Team 1",
         "team2_setting": "Team 2",
         "bear1_setting": "Bear 1",
@@ -486,7 +488,8 @@
             "penalty_no_show": "⛔ Unannounced (Penalty)",
             "reset_status": "Reset Status",
             "ongoing_count": "Ongoing: {{count}}",
-            "tap_for_details": "Tap for details"
+            "tap_for_details": "Tap for details",
+            "discard_changes": "Are you sure you want to discard changes?"
         },
         "categories": {
             "alliance": "Alliance Events",

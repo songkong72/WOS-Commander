@@ -3275,14 +3275,14 @@ export default function Home() {
 
                         <View className="items-center mb-4 relative">
                             {/* Top Right Controls: Help & Reset */}
-                            <View className={`absolute top-0 right-0 flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-600' : 'bg-white/50 border-slate-200'}`} style={{ zIndex: 10 }}>
+                            <View className={`absolute top-0 right-0 flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-white/60 border-slate-200'} shadow-sm`} style={{ zIndex: 10 }}>
                                 <Pressable
                                     onPress={() => openModalWithHistory(setIsGateManualVisible)}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
+                                            width: isMobile ? 38 : 36,
+                                            height: isMobile ? 38 : 36,
+                                            borderRadius: isMobile ? 10 : 10,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: hovered ? 'rgba(71, 85, 105, 0.4)' : 'transparent',
@@ -3302,13 +3302,13 @@ export default function Home() {
                                     onPress={toggleTemporaryTheme}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
+                                            width: isMobile ? 38 : 36,
+                                            height: isMobile ? 38 : 36,
+                                            borderRadius: isMobile ? 10 : 10,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: hovered ? (isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)') : 'transparent',
-                                            marginLeft: 4,
+                                            marginLeft: isMobile ? 6 : 4,
                                             transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                             transition: 'all 0.2s',
                                             cursor: 'pointer'
@@ -3324,13 +3324,13 @@ export default function Home() {
                                     onPress={handleResetSettings}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
+                                            width: isMobile ? 38 : 36,
+                                            height: isMobile ? 38 : 36,
+                                            borderRadius: isMobile ? 10 : 10,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: hovered ? 'rgba(167, 139, 250, 0.2)' : 'transparent',
-                                            marginLeft: 4,
+                                            marginLeft: isMobile ? 6 : 4,
                                             transform: [{ scale: pressed ? 0.95 : (hovered ? 1.05 : 1) }],
                                             transition: 'all 0.2s',
                                             cursor: 'pointer'
@@ -3344,14 +3344,14 @@ export default function Home() {
                             </View>
 
                             {/* Language Toggle Switch (Icon Only) */}
-                            <View className={`absolute top-0 left-0 flex-row p-1 rounded-2xl border ${isDark ? 'bg-slate-800/50 border-slate-600' : 'bg-white/50 border-slate-200'}`} style={{ zIndex: 10 }}>
+                            <View className={`absolute top-0 left-0 flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-800/60 border-slate-700' : 'bg-white/60 border-slate-200'} shadow-sm`} style={{ zIndex: 10 }}>
                                 <Pressable
                                     onPress={() => changeLanguage('ko')}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
+                                            width: isMobile ? 38 : 36,
+                                            height: isMobile ? 38 : 36,
+                                            borderRadius: isMobile ? 10 : 10,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: language === 'ko'
@@ -3369,7 +3369,7 @@ export default function Home() {
                                 >
                                     <Ionicons
                                         name="language"
-                                        size={18}
+                                        size={isMobile ? 20 : 18}
                                         color={language === 'ko' ? 'white' : '#64748b'}
                                     />
                                 </Pressable>
@@ -3378,9 +3378,9 @@ export default function Home() {
                                     onPress={() => changeLanguage('en')}
                                     style={({ pressed, hovered }: any) => [
                                         {
-                                            width: 36,
-                                            height: 36,
-                                            borderRadius: 10,
+                                            width: isMobile ? 38 : 36,
+                                            height: isMobile ? 38 : 36,
+                                            borderRadius: isMobile ? 10 : 10,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: language === 'en'
@@ -3388,7 +3388,7 @@ export default function Home() {
                                                 : (hovered ? 'rgba(59, 130, 246, 0.2)' : 'transparent'),
                                             borderColor: language === 'en' ? 'transparent' : (hovered ? '#60a5fa' : 'transparent'),
                                             borderWidth: 1,
-                                            marginLeft: 4,
+                                            marginLeft: isMobile ? 6 : 4,
                                             transform: [{ scale: pressed ? 0.92 : (hovered ? 1.08 : 1) }],
                                             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                             cursor: 'pointer'
@@ -3399,18 +3399,15 @@ export default function Home() {
                                 >
                                     <Ionicons
                                         name="globe-outline"
-                                        size={18}
+                                        size={isMobile ? 20 : 18}
                                         color={language === 'en' ? 'white' : '#64748b'}
                                     />
                                 </Pressable>
-
-
-
                             </View>
 
 
 
-                            <View className="items-center justify-center mb-6" style={{ marginTop: 46 }}>
+                            <View className="items-center justify-center mb-6" style={{ marginTop: isMobile ? 64 : 46 }}>
                                 <View className="w-24 h-24 rounded-[32px] bg-white/10 items-center justify-center border border-white/20 shadow-2xl overflow-hidden mb-2">
                                     <Image
                                         source={require('../assets/icon.png')}
@@ -3856,31 +3853,55 @@ export default function Home() {
                                 </View>
 
                                 {/* Header Buttons (Top Right) */}
-                                <View className="flex-row gap-1.5 md:gap-2">
+                                <View className="flex-row gap-2.5 md:gap-3">
                                     <Pressable
                                         onPress={toggleTheme}
-                                        className={`p-1.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.15 : 1) }],
+                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
+                                            }
+                                        ]}
                                     >
-                                        <Ionicons name={isDark ? "sunny" : "moon"} size={16} color={isDark ? "#fbbf24" : "#333333"} />
+                                        <Ionicons name={isDark ? "sunny" : "moon"} size={18} color={isDark ? "#fbbf24" : "#333333"} />
                                     </Pressable>
                                     <Pressable
                                         onPress={() => auth.isLoggedIn ? openModalWithHistory(setIsManualVisible) : openModalWithHistory(setIsGateManualVisible)}
-                                        className={`p-1.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.15 : 1) }],
+                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
+                                            }
+                                        ]}
                                     >
-                                        <Ionicons name="book-outline" size={16} color="#f59e0b" />
+                                        <Ionicons name="book-outline" size={18} color="#f59e0b" />
                                     </Pressable>
                                     <Pressable
                                         onPress={handleInstallClick}
-                                        className={`p-1.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        className={`p-2.5 rounded-full border ${isDark ? 'bg-slate-900/80 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.15 : 1) }],
+                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
+                                            }
+                                        ]}
                                     >
-                                        <Ionicons name="download" size={16} color={isDark ? "#38bdf8" : "#0284c7"} />
+                                        <Ionicons name="download" size={18} color={isDark ? "#38bdf8" : "#0284c7"} />
                                     </Pressable>
                                     <Pressable
                                         onPress={handleSettingsPress}
-                                        className={`p-1.5 rounded-full border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
-                                        style={auth.isLoggedIn ? { borderColor: (auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee' } : {}}
+                                        className={`p-2 rounded-full border-2 ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}
+                                        style={({ pressed, hovered }: any) => [
+                                            {
+                                                transform: [{ scale: pressed ? 0.92 : (hovered ? 1.1 : 1) }],
+                                                transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)',
+                                                borderColor: auth.isLoggedIn ? ((auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee') : 'transparent'
+                                            }
+                                        ]}
                                     >
-                                        <Ionicons name="person-circle" size={16} color={auth.isLoggedIn ? ((auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee') : (isDark ? '#fff' : '#94a3b8')} />
+                                        <Ionicons name="person-circle" size={20} color={auth.isLoggedIn ? ((auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee') : (isDark ? '#fff' : '#94a3b8')} />
                                     </Pressable>
                                 </View>
                             </View>
@@ -3988,14 +4009,14 @@ export default function Home() {
                 <View className={`w-full items-center z-50 py-3 ${isDark ? 'bg-[#060b14]/95' : 'bg-slate-50/95'}`} style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#1e293b' : '#e2e8f0' }}>
                     <View className="w-full max-w-6xl">
                         {/* Weekly Program Title & Timezone */}
-                        <View className={`flex-row items-center justify-between px-3 md:px-6 py-3 md:py-5 border ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
+                        <View className={`flex-row items-center justify-between ${windowWidth < 410 ? 'px-2' : 'px-3'} md:px-6 py-3 md:py-5 border ${isDark ? 'bg-slate-900 shadow-2xl shadow-black border-slate-800' : 'bg-white border-slate-200 shadow-xl'}`}>
                             <View className="flex-row items-center flex-1 mr-2">
-                                <View className={`w-1 h-6 md:w-1.5 md:h-10 rounded-full ${windowWidth < 380 ? 'mr-2' : 'mr-5'} bg-[#38bdf8]`} />
+                                <View className={`w-1 h-6 md:w-1.5 md:h-10 rounded-full ${windowWidth < 410 ? 'mr-1.5' : 'mr-5'} bg-[#38bdf8]`} />
                                 <View>
                                     {windowWidth > 400 && (
                                         <Text className={`text-[11px] font-black tracking-[0.25em] uppercase mb-0.5 ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Weekly Program</Text>
                                     )}
-                                    <Text className={`font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: (windowWidth < 380 ? 20 : 24) * fontSizeScale }}>
+                                    <Text className={`font-black tracking-tighter ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: (windowWidth < 410 ? 21 : 24) * fontSizeScale }}>
                                         {t('dashboard.weekly_event_title')}
                                     </Text>
                                 </View>
@@ -4008,9 +4029,9 @@ export default function Home() {
                                         onPress={() => setTimezone('LOCAL')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 24),
-                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
-                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                paddingHorizontal: windowWidth < 410 ? 12 : (isMobile ? 12 : 24),
+                                                height: windowWidth < 410 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 410 ? 8 : 12,
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: timezone === 'LOCAL'
@@ -4028,9 +4049,9 @@ export default function Home() {
                                         onPress={() => setTimezone('UTC')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 24),
-                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
-                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                paddingHorizontal: windowWidth < 410 ? 12 : (isMobile ? 12 : 24),
+                                                height: windowWidth < 410 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 410 ? 8 : 12,
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: timezone === 'UTC'
@@ -4052,9 +4073,9 @@ export default function Home() {
                                         onPress={() => setViewMode('timeline')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 20),
-                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
-                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                paddingHorizontal: windowWidth < 410 ? 10 : (isMobile ? 12 : 20),
+                                                height: windowWidth < 410 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 410 ? 8 : 12,
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: viewMode === 'timeline' ? '#f97316' : 'transparent',
@@ -4063,15 +4084,15 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="analytics" size={windowWidth < 380 ? 16 : 20} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
+                                        <Ionicons name="analytics" size={windowWidth < 410 ? 16 : 20} color={viewMode === 'timeline' ? 'white' : '#f97316'} />
                                     </Pressable>
                                     <Pressable
                                         onPress={() => setViewMode('list')}
                                         style={({ pressed, hovered }: any) => [
                                             {
-                                                paddingHorizontal: windowWidth < 380 ? 8 : (isMobile ? 12 : 20),
-                                                height: windowWidth < 380 ? 28 : (isMobile ? 32 : 40),
-                                                borderRadius: windowWidth < 380 ? 8 : 12,
+                                                paddingHorizontal: windowWidth < 410 ? 10 : (isMobile ? 12 : 20),
+                                                height: windowWidth < 410 ? 28 : (isMobile ? 32 : 40),
+                                                borderRadius: windowWidth < 410 ? 8 : 12,
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: viewMode === 'list' ? '#f97316' : 'transparent',
@@ -4080,7 +4101,7 @@ export default function Home() {
                                             }
                                         ]}
                                     >
-                                        <Ionicons name="list" size={windowWidth < 380 ? 16 : 20} color={viewMode === 'list' ? 'white' : '#f97316'} />
+                                        <Ionicons name="list" size={windowWidth < 410 ? 16 : 20} color={viewMode === 'list' ? 'white' : '#f97316'} />
                                     </Pressable>
                                 </View>
                             </View>
