@@ -34,6 +34,8 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
         });
     };
 
+    const mid = Math.floor(lines / 2);
+
     useEffect(() => {
         const valStr = String(value || '').trim();
         const localStr = String(localActiveValue || '').trim();
@@ -43,28 +45,34 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
         const shouldSync = isFirstRun.current || forceSync || valueChanged;
 
         if (shouldSync) {
+            const wasFirstRun = isFirstRun.current;
             isFirstRun.current = false;
             lastSyncedKey.current = syncKey;
             setLocalActiveValue(value);
 
             const realIndex = options.findIndex((o: any) => String(getValue(o)).trim() === valStr);
             if (realIndex !== -1) {
-                if (isFirstRun.current) {
-                    setTimeout(() => scrollToIndex(realIndex + centerOffset, false), 10);
+                // Scroll so that (realIndex + centerOffset) is at row 'mid'
+                const targetTopIndex = realIndex + centerOffset - mid;
+                if (wasFirstRun) {
+                    setTimeout(() => scrollToIndex(targetTopIndex, false), 50);
                 } else {
-                    scrollToIndex(realIndex + centerOffset, false);
+                    scrollToIndex(targetTopIndex, false);
                 }
             }
         }
+
     }, [value, syncKey, options]);
 
     const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
 
     const handleScroll = (e: any) => {
         const offset = e.nativeEvent.contentOffset.y;
-        const index = Math.round(offset / itemHeight);
-        if (index >= 0 && index < infiniteOptions.length) {
-            const currentItem = infiniteOptions[index];
+        const topIndex = Math.round(offset / itemHeight);
+        const centerIndex = topIndex + mid;
+
+        if (centerIndex >= 0 && centerIndex < infiniteOptions.length) {
+            const currentItem = infiniteOptions[centerIndex];
             const currentVal = getValue(currentItem);
             if (currentVal !== localActiveValue) {
                 setLocalActiveValue(currentVal);
@@ -74,33 +82,36 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
         if (Platform.OS === 'web') {
             if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
             scrollTimeout.current = setTimeout(() => {
-                if (index < 0 || index >= infiniteOptions.length) return;
-                const selectedItem = infiniteOptions[index];
+                if (centerIndex < 0 || centerIndex >= infiniteOptions.length) return;
+                const selectedItem = infiniteOptions[centerIndex];
                 const selectedVal = getValue(selectedItem);
                 if (selectedVal !== value) onChange(selectedVal);
-                scrollToIndex(index, true);
-                const realIndex = index % options.length;
-                const targetIndex = realIndex + centerOffset;
-                if (index !== targetIndex) setTimeout(() => scrollToIndex(targetIndex, false), 300);
+                scrollToIndex(topIndex, true);
+
+                const realIndex = centerIndex % options.length;
+                const targetTopIndex = realIndex + centerOffset - mid;
+                if (topIndex !== targetTopIndex) setTimeout(() => scrollToIndex(targetTopIndex, false), 300);
             }, 150);
         }
     };
 
     const handleScrollEnd = (e: any) => {
         const offset = e.nativeEvent.contentOffset.y;
-        const index = Math.round(offset / itemHeight);
-        if (index < 0 || index >= infiniteOptions.length) return;
+        const topIndex = Math.round(offset / itemHeight);
+        const centerIndex = topIndex + mid;
 
-        const selectedItem = infiniteOptions[index];
+        if (centerIndex < 0 || centerIndex >= infiniteOptions.length) return;
+
+        const selectedItem = infiniteOptions[centerIndex];
         const selectedVal = getValue(selectedItem);
         if (selectedVal !== value) onChange(selectedVal);
 
-        scrollToIndex(index, true);
+        scrollToIndex(topIndex, true);
 
-        const realIndex = index % options.length;
-        const targetIndex = realIndex + centerOffset;
-        if (index !== targetIndex) {
-            setTimeout(() => scrollToIndex(targetIndex, false), 50);
+        const realIndex = centerIndex % options.length;
+        const targetTopIndex = realIndex + centerOffset - mid;
+        if (topIndex !== targetTopIndex) {
+            setTimeout(() => scrollToIndex(targetTopIndex, false), 50);
         }
     };
 
@@ -110,7 +121,7 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                 <View
                     style={{
                         position: 'absolute',
-                        top: itemHeight * Math.floor(lines / 2),
+                        top: itemHeight * mid,
                         left: 10,
                         right: 10,
                         height: itemHeight,
@@ -135,8 +146,8 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                     >
                         <Text
                             style={{
-                                fontSize: 16,
-                                fontWeight: getValue(item) === localActiveValue ? '700' : '400',
+                                fontSize: 18,
+                                fontWeight: getValue(item) === localActiveValue ? '900' : '400',
                                 color: getValue(item) === localActiveValue
                                     ? (isDark ? '#fff' : '#000')
                                     : (isDark ? '#64748b' : '#94a3b8'),
@@ -156,8 +167,9 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                     offset: itemHeight * index,
                     index,
                 })}
-                initialScrollIndex={centerOffset}
+                initialScrollIndex={centerOffset - mid}
             />
+
         </View>
     );
 };

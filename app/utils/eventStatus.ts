@@ -4,26 +4,44 @@
  */
 
 export const DATE_RANGE_IDS = [
-    'a_castle', 'server_castle', 'a_operation', 'alliance_operation',
-    'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon',
+    'a_castle', 'server_castle', 'a_operation', 'alliance_operation', 'alliance_champion', 'a_champ', 'a_weapon',
     'alliance_frost_league', 'server_svs_prep', 'server_svs_battle',
     'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization',
     'p26'
 ];
 
+export const SINGLE_SLOT_IDS = [
+    'a_center', 'alliance_center', 'p29_center',
+    'alliance_champion', 'a_champ',
+
+    'a_mercenary', 'alliance_mercenary',
+    'a_immigrate', 'alliance_immigrate', 'server_immigrate',
+    'a_trade', 'alliance_trade',
+    'a_mobilization', 'alliance_mobilization',
+    'a_merge', 'alliance_merge', 'server_merge',
+    'a_svs', 'alliance_svs', 'server_svs_prep', 'server_svs_battle',
+    'a_dragon', 'alliance_dragon', 'server_dragon',
+    'a_joe', 'alliance_joe',
+    'alliance_frost_league', 'a_weapon'
+];
+
 /** Get schedule data for a specific event */
 export const getEventSchedule = (event: any, schedules: any[]) => {
     if (!event || !schedules) return null;
-    const id = (event.id || event.eventId || '').trim();
+    const rawId = (event.id || event.eventId || '').trim();
+    const cleanId = (event.originalEventId || rawId).replace(/(_team\d+|_fortress|_citadel|_bundle)\s*$/g, '').trim();
+
     return schedules.find(s => {
         const sid = (s.eventId || '').trim();
-        if (sid === id) return true;
+        if (sid === cleanId || sid === rawId) return true;
 
         const mappings: { [key: string]: string[] } = {
             'a_joe': ['alliance_joe'],
             'alliance_joe': ['a_joe'],
             'a_bear': ['alliance_bear', 'alliance_bear_title'],
             'alliance_bear': ['a_bear'],
+            'a_champ': ['alliance_champion'],
+            'alliance_champion': ['a_champ'],
             'a_weapon': ['alliance_frost_league'],
             'alliance_frost_league': ['a_weapon'],
             'a_operation': ['alliance_operation'],
@@ -41,7 +59,10 @@ export const getEventSchedule = (event: any, schedules: any[]) => {
             'alliance_canyon': ['a_canyon']
         };
 
-        return mappings[id]?.includes(sid) || mappings[sid]?.includes(id);
+        const targetId = mappings[cleanId] ? cleanId : (mappings[rawId] ? rawId : null);
+        if (!targetId) return false;
+
+        return mappings[targetId]?.includes(sid) || mappings[sid]?.includes(targetId);
     });
 };
 
@@ -53,8 +74,9 @@ export const getEventEndDate = (event: any, schedules: any[], now: Date) => {
         const originalId = (event.originalEventId || '').trim();
         const id = (originalId || event.id || event.eventId || '').trim();
 
-        const dayStr = schedule?.day || event.day || '';
-        const timeStr = schedule?.time || event.time || '';
+        const isSplit = !!(event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit || event.isFortressSplit);
+        const dayStr = isSplit ? event.day : (schedule?.day || event.day || '');
+        const timeStr = isSplit ? event.time : (schedule?.time || event.time || '');
         const combined = `${dayStr} ${timeStr} `;
 
         // 0. DATE_RANGE_IDS 이벤트는 day 필드의 날짜 범위를 우선 확인
@@ -123,11 +145,14 @@ export const getEventEndDate = (event: any, schedules: any[], now: Date) => {
 /** Check if a weekly recurring event string is expired */
 export const checkWeeklyExpired = (str: string, now: Date) => {
     if (!str || str.includes('상시') || str.includes('상설')) return false;
-    const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+    const dayMapObj: { [key: string]: number } = {
+        '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+    };
     const currentDay = (now.getDay() + 6) % 7;
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
     if (explicitMatches.length > 0) {
         return explicitMatches.every(m => {
             const dayStr = m[1];
@@ -135,10 +160,10 @@ export const checkWeeklyExpired = (str: string, now: Date) => {
             const min = parseInt(m[3]);
             const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
             return scheduledDays.every(d => {
-                const dayIdx = dayMapObj[d];
+                const dayIdx = dayMapObj[d.toLowerCase()];
                 if (dayIdx === undefined) return true;
                 if (currentDay > dayIdx) return true;
-                if (currentDay === dayIdx) return currentMinutes >= (h * 60 + min + 30);
+                if (currentDay === dayIdx) return currentMinutes >= (h * 60 + min + 60);
                 return false;
             });
         });
@@ -166,12 +191,13 @@ export const isEventExpired = (event: any, schedules: any[], now: Date) => {
 
     const schedule = getEventSchedule(event, schedules);
     const startDate = schedule?.startDate || event.startDate;
-    const dayStr = schedule?.day || event.day || '';
+    const isSplit = !!(event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit || event.isFortressSplit);
+    const dayStr = isSplit ? event.day : (schedule?.day || event.day || '');
     const isRange = dayStr.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id);
 
     if (startDate && !isRange) {
         try {
-            const timeStr = schedule?.time || event.time || '00:00';
+            const timeStr = isSplit ? event.time : (schedule?.time || event.time || '00:00');
             const dateTimeStr = `${startDate}T${timeStr}:00`;
             const eventDateTime = new Date(dateTimeStr);
             if (!isNaN(eventDateTime.getTime())) {
@@ -184,33 +210,46 @@ export const isEventExpired = (event: any, schedules: any[], now: Date) => {
     const end = getEventEndDate(event, schedules, now);
     if (end) return now > end;
 
-    const timeStr = schedule?.time || event.time || '';
+    const timeStr = isSplit ? event.time : (schedule?.time || event.time || '');
     const combined = `${dayStr} ${timeStr}`;
     return checkWeeklyExpired(combined, now);
 };
 
 /** Get remaining seconds for a recurring event slot */
-export const getRemainingSeconds = (str: string, now: Date) => {
+export const getRemainingSeconds = (str: string, now: Date, eventId?: string) => {
     if (!str || str.includes('상시') || str.includes('상설')) return null;
-    const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+    const dayMapObj: { [key: string]: number } = {
+        '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+    };
     const currentDay = (now.getDay() + 6) % 7;
     const currentTotal = currentDay * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
     const totalWeekSeconds = 7 * 1440 * 60;
 
-    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
     if (explicitMatches.length > 0) {
         let secRemaining: number | null = null;
         explicitMatches.forEach(m => {
             const dayStr = m[1];
             const h = parseInt(m[2]);
             const min = parseInt(m[3]);
-            const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+            const scheduledDays = (dayStr === '매일' || dayStr === 'daily') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+
+            const normalizedStr = (str + ' ' + (eventId || '')).toLowerCase();
+            const isLongEvent =
+                normalizedStr.includes('협곡') || normalizedStr.includes('무기') || normalizedStr.includes('공장') ||
+                normalizedStr.includes('요새') || normalizedStr.includes('성채') || normalizedStr.includes('전투') ||
+                normalizedStr.includes('canyon') || normalizedStr.includes('foundry') ||
+                normalizedStr.includes('fortress') || normalizedStr.includes('citadel') ||
+                normalizedStr.includes('battle');
+            const isBear = normalizedStr.includes('곰') || normalizedStr.includes('bear');
+            const durationSec = (isLongEvent && !isBear) ? 3600 : 1800;
 
             scheduledDays.forEach(d => {
-                const dayOffset = dayMapObj[d];
+                const dayOffset = dayMapObj[d.toLowerCase()];
                 if (dayOffset === undefined) return;
                 const startTotal = dayOffset * 1440 * 60 + h * 3600 + min * 60;
-                let endTotal = startTotal + 1800;
+                let endTotal = startTotal + durationSec;
 
                 if (currentTotal >= startTotal && currentTotal <= endTotal) {
                     const rem = endTotal - currentTotal;
@@ -235,9 +274,12 @@ export const getNextResetSeconds = (now: Date) => {
 };
 
 /** Check if a specific schedule item is active */
-export const checkItemActive = (str: string, now: Date) => {
+export const checkItemActive = (str: string, now: Date, eventId?: string) => {
     if (!str) return false;
-    const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+    const dayMapObj: { [key: string]: number } = {
+        '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+    };
     const currentDay = (now.getDay() + 6) % 7;
     const currentTotal = currentDay * 1440 + now.getHours() * 60 + now.getMinutes();
     const totalWeekMinutes = 7 * 1440;
@@ -277,7 +319,7 @@ export const checkItemActive = (str: string, now: Date) => {
         const min = parseInt(singleDateMatch[5]);
 
         const start = new Date(y, m, d, h, min);
-        const end = new Date(start.getTime() + 30 * 60000);
+        const end = new Date(start.getTime() + 60 * 60000); // Unified to 60 minutes
         return now >= start && now <= end;
     }
 
@@ -291,25 +333,34 @@ export const checkItemActive = (str: string, now: Date) => {
 
     const hasDateInfo = /\d{4}[\.-]\d{2}[\.-]\d{2}/.test(str);
     if (!hasDateInfo) {
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
         if (explicitMatches.length > 0) {
             return explicitMatches.some(m => {
                 const dayStr = m[1];
                 const h = parseInt(m[2]);
                 const min = parseInt(m[3]);
                 const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
+
                 return scheduledDays.some(d => {
-                    const dayOffset = dayMapObj[d];
+                    const dayOffset = dayMapObj[d.toLowerCase()];
                     if (dayOffset === undefined) return false;
                     const startTotal = dayOffset * 1440 + h * 60 + min;
-                    const endTotal = startTotal + 30;
-                    if (startTotal <= endTotal) {
-                        return currentTotal >= startTotal && currentTotal <= endTotal;
-                    } else {
-                        if (endTotal >= totalWeekMinutes) {
-                            return currentTotal >= startTotal || currentTotal <= (endTotal % totalWeekMinutes);
-                        }
-                    }
+
+                    // 점형 일시 이벤트 지속 시간 설정
+                    const normalizedStr = (str + ' ' + (eventId || '')).toLowerCase();
+                    const isLongEvent =
+                        normalizedStr.includes('협곡') || normalizedStr.includes('무기') || normalizedStr.includes('공장') ||
+                        normalizedStr.includes('요새') || normalizedStr.includes('성채') || normalizedStr.includes('전투') ||
+                        normalizedStr.includes('canyon') || normalizedStr.includes('foundry') ||
+                        normalizedStr.includes('fortress') || normalizedStr.includes('citadel') ||
+                        normalizedStr.includes('battle');
+
+                    const isBear = normalizedStr.includes('곰') || normalizedStr.includes('bear');
+                    const duration = (isLongEvent && !isBear) ? 60 : 30;
+                    const endTotal = startTotal + duration;
+
+                    if (currentTotal >= startTotal && currentTotal <= endTotal) return true;
+                    if (endTotal >= totalWeekMinutes && currentTotal <= (endTotal % totalWeekMinutes)) return true;
                     return false;
                 });
             });
@@ -334,7 +385,8 @@ export const isVisibleInList = (event: any, schedules: any[], now: Date) => {
 
 /** Calculate Bear Hunt rotation day */
 export const calculateBearHuntDay = (event: any, schedules: any[], now: Date, targetTime?: string): string => {
-    const isBear = (event.eventId === 'a_bear' || event.eventId === 'alliance_bear' || event.originalEventId === 'a_bear' || event.originalEventId === 'alliance_bear');
+    const rawId = (event.id || event.eventId || '').trim();
+    const isBear = rawId.includes('bear') || (event.originalEventId || '').includes('bear');
     const schedule = getEventSchedule(event, schedules);
     const registeredDay = event.day || schedule?.day || '';
     if (!isBear || !registeredDay) return registeredDay;
@@ -375,7 +427,7 @@ export const calculateBearHuntDay = (event: any, schedules: any[], now: Date, ta
 };
 
 /** Check if event is currently active */
-export const isEventActive = (event: any, schedules: any[], now: Date, toLocalFn: (str: string) => string, checkItemActiveFn: (str: string, now: Date) => boolean, calculateBearHuntDayFn: (e: any, s: any[], n: Date) => string) => {
+export const isEventActive = (event: any, schedules: any[], now: Date, toLocalFn: (str: string) => string, checkItemActiveFn: (str: string, now: Date, eventId?: string) => boolean, calculateBearHuntDayFn: (e: any, s: any[], n: Date) => string) => {
     try {
         const schedule = getEventSchedule(event, schedules);
         const startDate = schedule?.startDate || event.startDate;
@@ -388,21 +440,28 @@ export const isEventActive = (event: any, schedules: any[], now: Date, toLocalFn
         const isRange = dayStrRaw.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId) || titleMatch;
 
         if (startDate && !isRange) {
-            const eventDate = new Date(startDate);
+            const [y, m, d] = startDate.split(/[-.]/).map(Number);
+            const eventDate = new Date(y, (m || 1) - 1, d || 1);
             const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
             if (eventDate.getTime() !== nowDate.getTime()) return false;
 
             const timeStr = schedule?.time || event.time || '';
-            return checkItemActiveFn(toLocalFn(timeStr), now);
+            // Fix: Include date info to ensure matches singleDateMatch/checkItemActive
+            const dateStr = startDate.includes('-') ? startDate.replace(/-/g, '.') : startDate;
+            const combinedWithDate = `${dateStr} ${timeStr}`;
+            return checkItemActiveFn(toLocalFn(combinedWithDate), now);
         }
 
-        const isBear = (id === 'a_bear' || id === 'alliance_bear');
-        const dayStr = isBear ? calculateBearHuntDayFn(event, schedules, now) : (schedule?.day || event.day || '');
-        const timeStr = schedule?.time || event.time || '';
+        const isBear = (id.includes('bear') || id === 'a_bear' || id === 'alliance_bear');
+        const isSplit = !!(event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit || event.isFortressSplit);
+
+        // For split events, use THEIR specific day/time to avoid raw schedule label issues
+        const dayStr = isSplit ? event.day : (isBear ? calculateBearHuntDayFn(event, schedules, now) : (schedule?.day || event.day || ''));
+        const timeStr = isSplit ? event.time : (schedule?.time || event.time || '');
         const combinedStr = `${dayStr || ''} ${timeStr || ''}`.trim();
 
-        return checkItemActiveFn(toLocalFn(combinedStr), now);
+        return checkItemActiveFn(toLocalFn(combinedStr), now, id);
     } catch (e) { return false; }
 };
 

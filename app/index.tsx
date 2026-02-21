@@ -78,12 +78,10 @@ import { NoticeEditModal } from '../components/modals/NoticeEditModal';
 import { InstallModal } from '../components/modals/InstallModal';
 import { UserPassChangeModal } from '../components/modals/UserPassChangeModal';
 import { NoticePopup } from '../components/dashboard/NoticePopup';
-import { DashboardHeader } from '../components/dashboard/DashboardHeader';
-import { NoticeBanner } from '../components/dashboard/NoticeBanner';
-import { DashboardFeatureCards } from '../components/dashboard/DashboardFeatureCards';
 import { EventCard } from '../components/events/EventCard';
 import { SuperAdminModal } from '../components/modals/SuperAdminModal';
 import { EventSectionList } from '../components/dashboard/EventSectionList';
+import { DashboardCards } from '../components/dashboard/DashboardCards';
 
 
 export default function Home() {
@@ -469,9 +467,9 @@ export default function Home() {
     const getEventEndDate = (event: any) => getEventEndDateUtil(event, schedules, now);
     const checkWeeklyExpired = (str: string) => checkWeeklyExpiredUtil(str, now);
     const isEventExpired = (event: any) => isEventExpiredUtil(event, schedules, now);
-    const getRemainingSeconds = (str: string) => getRemainingSecondsUtil(str, now);
+    const getRemainingSeconds = (str: string, eventId?: string) => getRemainingSecondsUtil(str, now, eventId);
     const getNextResetSeconds = () => getNextResetSecondsUtil(now);
-    const checkItemActive = (str: string) => checkItemActiveUtil(str, now);
+    const checkItemActive = (str: string, targetNow: Date, eventId?: string) => checkItemActiveUtil(str, targetNow, eventId);
     const isVisibleInList = (event: any) => isVisibleInListUtil(event, schedules, now);
 
     const calculateBearHuntDay = useCallback((event: any, targetTime?: string): string =>
@@ -596,7 +594,8 @@ export default function Home() {
         // 2. Split Bear Hunt into separate cards for Team 1 and Team 2
         const processedList: any[] = [];
         rawList.forEach(e => {
-            if (e.eventId === 'a_bear' || e.eventId === 'alliance_bear') {
+            const isBear = (e.eventId === 'a_bear' || e.eventId === 'alliance_bear' || e.eventId.includes('bear'));
+            if (isBear) {
                 // 곰사냥 2일 단위 로테이션으로 실제 요일 계산
                 const parts = (e.time || '').split(/\s*\/\s*/);
                 if (parts.length > 0) {
@@ -629,7 +628,7 @@ export default function Home() {
 
                         processedList.push({
                             ...e,
-                            eventId: `${e.eventId}_team${idx + 1} `,
+                            eventId: `${e.eventId}_team${idx + 1}`,
                             originalEventId: e.eventId,
                             title: t('events.alliance_bear_title'),
                             day: actualTeamDay, // 각 팀별 실제 요일
@@ -930,7 +929,16 @@ export default function Home() {
                     showCustomAlert(t('auth.memberOnly'), t('auth.memberOnlyDesc'), 'error');
                     return;
                 }
-                router.push({ pathname: '/growth/events', params: { focusId: ev.originalEventId || ev.eventId, viewMode: viewMode } });
+                const teamMatch = ev.eventId?.match(/_team(\d+)/);
+                const teamIdx = teamMatch ? parseInt(teamMatch[1]) - 1 : undefined;
+                router.push({
+                    pathname: '/growth/events',
+                    params: {
+                        focusId: ev.originalEventId || ev.eventId,
+                        viewMode: viewMode,
+                        teamIdx: teamIdx !== undefined ? String(teamIdx) : undefined
+                    }
+                });
             }}
         />
     );
@@ -998,45 +1006,30 @@ export default function Home() {
                 }}
             >
                 {/* Section 1: Intro & Features */}
-                <View className="w-full items-center">
-                    <View className="w-full max-w-6xl px-4 md:px-8">
-                        <DashboardHeader
-                            isDark={isDark}
-                            now={now}
-                            auth={auth}
-                            serverId={serverId}
-                            allianceId={allianceId}
-                            toggleTheme={toggleTheme}
-                            handleInstallClick={handleInstallClick}
-                            handleSettingsPress={handleSettingsPress}
-                            setAdminMenuVisible={setAdminMenuVisible}
-                            setLoginModalVisible={setLoginModalVisible}
-                            setIsManualVisible={setIsManualVisible}
-                            openModalWithHistory={openModalWithHistory}
-                            setInputServer={setInputServer}
-                            setInputAlliance={setInputAlliance}
-                            setIsGateOpen={setIsGateOpen}
-                            getNextResetSeconds={getNextResetSeconds}
-                            formatRemainingTime={formatRemainingTime}
-                        />
-                    </View>
-
-                    <NoticeBanner
-                        notice={notice}
-                        auth={auth}
-                        isDark={isDark}
-                        setNoticeDetailVisible={setNoticeDetailVisible}
-                        showCustomAlert={showCustomAlert}
-                        handleOpenNotice={handleOpenNotice}
-                    />
-
-                    <DashboardFeatureCards
-                        isDark={isDark}
-                        auth={auth}
-                        router={router}
-                        showCustomAlert={showCustomAlert}
-                    />
-                </View>
+                <DashboardCards
+                    isDark={isDark}
+                    now={now}
+                    auth={auth}
+                    serverId={serverId}
+                    allianceId={allianceId}
+                    toggleTheme={toggleTheme}
+                    handleInstallClick={handleInstallClick}
+                    handleSettingsPress={handleSettingsPress}
+                    setAdminMenuVisible={setAdminMenuVisible}
+                    setLoginModalVisible={setLoginModalVisible}
+                    setIsManualVisible={setIsManualVisible}
+                    openModalWithHistory={openModalWithHistory}
+                    setInputServer={setInputServer}
+                    setInputAlliance={setInputAlliance}
+                    setIsGateOpen={setIsGateOpen}
+                    getNextResetSeconds={getNextResetSeconds}
+                    formatRemainingTime={formatRemainingTime}
+                    notice={notice}
+                    setNoticeDetailVisible={setNoticeDetailVisible}
+                    showCustomAlert={showCustomAlert}
+                    handleOpenNotice={handleOpenNotice}
+                    router={router}
+                />
 
                 <EventSectionList
                     isDark={isDark}

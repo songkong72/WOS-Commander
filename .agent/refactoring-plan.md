@@ -17,7 +17,8 @@
 | ~~1-4~~ | ~~**Warning Modal** → `WarningModal`~~ | ~~41줄~~ | ✅ 완료 |
 | ~~1-5~~ | ~~**미사용 import/state 정리** (BlurView, FlatList 등)~~ | ~~30줄~~ | ✅ 완료 |
 
-📊 **events.tsx: 3,170줄 → 2,268줄** (902줄 감소, 28%)
+📊 **events.tsx: 3,170줄 → 1,611줄** (1,559줄 감소, 49%)
+
 
 ### ~~index.tsx 세션 1: 유틸 함수 분리~~
 
@@ -55,21 +56,21 @@
 
 | 함수명 | 라인 | 설명 |
 |:---|:---:|:---|
-| `renderEventCard` | 2763-3228 | 이벤트 카드 전체 (465줄) |
-| `formatEventTimeCompact` | 2540-2761 | 시간 포맷 (220줄) |
-| `renderWithHighlightedDays` | 2519-2538 | 요일 하이라이트 |
+| `renderEventCard` | 904-936 | 이벤트 카드 래퍼 (32줄) | ✅ 완료 |
+| `formatEventTimeCompact` | - | (이전 세션에서 정리됨) | ✅ 완료 |
+| `renderWithHighlightedDays` | - | (이전 세션에서 정리됨) | ✅ 완료 |
 
-**새 파일**: `app/components/EventSectionHeader.tsx`
+**새 파일**: `components/dashboard/EventSectionHeader.tsx`
 
-추출 범위: 4025-4130줄
-- Section 2: Sticky Header (Weekly Program + Tabs)
+추출 범위: `EventSectionList.tsx` 상단 헤더
+- Section 2: Sticky Header (Weekly Program + Tabs) | ✅ 완료 |
 - Timezone 토글
 - View Mode 토글
 
-**새 파일**: `app/components/DashboardCards.tsx`
+**새 파일**: `components/dashboard/DashboardCards.tsx`
 
-추출 범위: 3770-4023줄
-- Feature Cards (이벤트, 전략, 영웅)
+추출 범위: `index.tsx` 상단 섹션
+- Feature Cards (이벤트, 전략, 영웅) | ✅ 완료 |
 - Welcome 헤더
 - 로그인 가이드
 
@@ -95,7 +96,8 @@
 
 | # | 대상 | 현재 위치 | 상태 |
 |---|---|---|---|
-| 3-1 | `useScheduleEditor` hook | events.tsx (~20개 state) | ⬜ 대기 |
+| ~~3-1~~ | ~~`useScheduleEditor` hook~~ | ~~events.tsx (~20개 state)~~ | ✅ 완료 |
+
 | 3-2 | `useAttendeeManager` hook | events.tsx (벌크 참가자 관리) | ⬜ 대기 |
 | 3-3 | `useEventFilter` hook | events.tsx (카테고리, 검색, 필터) | ⬜ 대기 |
 | 3-4 | `useDashboard` hook | index.tsx (36개 useState) | ⬜ 대기 |
@@ -115,8 +117,11 @@
 ## 📁 현재 파일 크기
 
 ```
-app/growth/events.tsx        2,268줄 (원래 3,170줄)
-app/index.tsx                1,225줄 (원래 5,435줄)
+app/growth/events.tsx        1,611줄
+
+app/index.tsx                1,170줄 (모듈화 완료)
+components/dashboard/EventSectionList.tsx  250줄
+components/events/EventCard.tsx            415줄
 components/TimelineView.tsx    913줄
 components/AdminManagement.tsx 878줄
 app/screens/GateScreen.tsx     863줄

@@ -20,5 +20,7 @@ export interface WikiEvent {
     startDate2?: string;
     isBearSplit?: boolean;
     isFoundrySplit?: boolean;
+    originalEventId?: string;
     updatedAt?: number;
+
 }

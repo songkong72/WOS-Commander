@@ -21,6 +21,15 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     const [selectedBarId, setSelectedBarId] = useState<string | null>(null);
     const [hoveredBarId, setHoveredBarId] = useState<string | null>(null);
 
+    const isTouch = useMemo(() => {
+        if (Platform.OS !== 'web') return true;
+        if (typeof window === 'undefined') return false;
+        // Don't treat desktops with touch screens as pure touch devices to keep hover working
+        const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        return hasTouch && isMobileDevice;
+    }, []);
+
     const pulseAnim = useRef(new Animated.Value(0.4)).current;
     const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -50,22 +59,22 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
     const dayMs = 24 * 60 * 60 * 1000;
     const totalMs = 7 * dayMs; // 7 days (exactly 1 week) to prevent day duplicates
 
-    // Fixed Baseline calculation - Align to the start of the current week (Monday)
+    // Fixed Baseline calculation - Align to the start of the current week window
     const getBaseline = () => {
         const d = new Date(now.getTime());
+        // Use UTC or Local methods depending on selection
         if (timezone === 'UTC') {
             d.setUTCHours(0, 0, 0, 0);
-            // 오늘이 3번째 위치에 오도록 2일 전부터 시작
-            d.setUTCDate(d.getUTCDate() - 2);
+            d.setUTCDate(d.getUTCDate() - 2); // Start 2 days back to keep "today" visible
         } else {
             d.setHours(0, 0, 0, 0);
-            // 오늘이 3번째 위치에 오도록 2일 전부터 시작
             d.setDate(d.getDate() - 2);
         }
         const start = d.getTime();
         const end = start + totalMs;
         return { start, end };
     };
+
 
     const { start: winStart, end: winEnd } = getBaseline();
 
@@ -190,12 +199,22 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     const intervalMs = (recurrenceUnit === 'week' ? recurrenceValue * 7 : recurrenceValue) * dayMs;
 
                     const targetIdx = KR_DAYS_PARSER.indexOf(registeredDay);
+                    // Use a specific date aligned to the selected timezone
                     const anchorDate = new Date(winStart);
-                    anchorDate.setHours(0, 0, 0, 0);
+                    if (timezone === 'UTC') {
+                        anchorDate.setUTCHours(0, 0, 0, 0);
+                    } else {
+                        anchorDate.setHours(0, 0, 0, 0);
+                    }
 
-                    const startIdx = anchorDate.getDay();
+                    const startIdx = (timezone === 'UTC') ? anchorDate.getUTCDay() : anchorDate.getDay();
                     const diffDays = (targetIdx - startIdx + 7) % 7;
-                    anchorDate.setDate(anchorDate.getDate() + diffDays);
+
+                    if (timezone === 'UTC') {
+                        anchorDate.setUTCDate(anchorDate.getUTCDate() + diffDays);
+                    } else {
+                        anchorDate.setDate(anchorDate.getDate() + diffDays);
+                    }
 
                     let label = part.split(/[월화수목금토일\d]/)[0].replace(':', '').trim();
                     const anchorTs = anchorDate.getTime();
@@ -209,7 +228,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     const rangeEnd = winEnd + (2 * dayMs);
 
                     while (currentDate < rangeEnd) {
-                        const st = currentDate + sh * 3600000 + sm * 60000;
+                        // All data is in KST, so we shift it specifically for UTC view
+                        const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
+                        const st = currentDate + sh * 3600000 + sm * 60000 + kstShift;
                         const duration = isBearHunt ? 1800000 : 3600000;
                         const et = st + duration;
 
@@ -231,6 +252,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                         currentDate += intervalMs;
                     }
                 }
+
             }
 
             if (handledByRecurrence) return; // Skip generic parsers if handled
@@ -278,14 +300,14 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                         if (targetIdx !== -1) {
                             const [sh, sm] = timeStr.split(':').map(Number);
                             for (let i = 0; i < 8; i++) {
-                                const dAtWin = new Date(localStart + i * dayMs);
-                                if (dAtWin.getDay() === targetIdx) {
-                                    const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                                    // Bear Hunt: 30 minutes, Others: 1 hour
+                                const dAtWin = new Date(winStart + i * dayMs);
+                                const currentDayIdx = (timezone === 'UTC') ? dAtWin.getUTCDay() : dAtWin.getDay();
+                                if (currentDayIdx === targetIdx) {
+                                    const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
+                                    const st = winStart + i * dayMs + sh * 3600000 + sm * 60000 + kstShift;
                                     const duration = isBearHunt ? 1800000 : 3600000;
                                     const et = st + duration;
 
-                                    // Add directly to res
                                     const s = Math.max(st, winStart);
                                     const e = Math.min(et, winEnd);
                                     if (s < e) {
@@ -308,26 +330,24 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 if (specificHandled) return; // Skip generic parsers
             }
 
-            // 1. ISO/Fixed Range (e.g., 2026.02.13 09:00 ~ 2026.02.15 09:00 or 2026.02.13(금) ~ 02.15(일))
-            // This regex handles: optional years, dots/dashes/slashes, optional day-of-week in parens, and optional times
+            // 1. ISO/Fixed Range
             const mIsoRange = part.match(/(\d{2,4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2})\s*(?:\([^)]+\))?\s*(\d{1,2}:\d{2})?\s*~\s*(\d{2,4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2})?\s*(?:\([^)]+\))?\s*(\d{1,2}:\d{2})?/);
             if (mIsoRange) {
-                const sDate = mIsoRange[1];
-                const sTime = mIsoRange[2] || '00:00';
-                const eRawDate = mIsoRange[3];
-                const eTime = mIsoRange[4] || '23:59';
-
-                const s = parseDateVal(sDate, sTime);
-                // If end date is missing (e.g. "2026.01.01 09:00 ~ 11:00"), use start date
-                const e = parseDateVal(eRawDate || sDate, eTime);
-
-                if (s && e) add(s, e, true, mIsoRange[0]);
+                const sDate = mIsoRange[1], sTime = mIsoRange[2] || '00:00', eRawDate = mIsoRange[3], eTime = mIsoRange[4] || '23:59';
+                const s = parseDateVal(sDate, sTime), e = parseDateVal(eRawDate || sDate, eTime);
+                if (s && e) {
+                    const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
+                    add(s + kstShift, e + kstShift, true, mIsoRange[0]);
+                }
             }
             else {
                 const mIsoSingle = part.match(/(\d{2,4}[.\-/]\s*\d{1,2}[.\-/]\s*\d{1,2})\s*(?:\([^)]+\))?\s*(\d{1,2}:\d{2})?/);
                 if (mIsoSingle) {
                     const s = parseDateVal(mIsoSingle[1], mIsoSingle[2] || '00:00');
-                    if (s) add(s, s + 3600000, false, mIsoSingle[0]);
+                    if (s) {
+                        const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
+                        add(s + kstShift, s + 3600000 + kstShift, false, mIsoSingle[0]);
+                    }
                 }
             }
 
@@ -336,100 +356,97 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
             if (mDayRange) {
                 const sD = parseInt(mDayRange[1]), sT = mDayRange[2] || '00:00', eD = parseInt(mDayRange[3]), eT = mDayRange[4] || '23:59';
                 const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
+                const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
                 for (let o = -1; o <= 1; o++) {
                     const s = new Date(now.getFullYear(), now.getMonth() + o, sD, sh, sm, 0).getTime();
                     let e = new Date(now.getFullYear(), now.getMonth() + o, eD, eh, em, 59).getTime();
                     if (e < s) e = new Date(now.getFullYear(), now.getMonth() + o + 1, eD, eh, em, 59).getTime();
-                    add(s, e, true, mDayRange[0]);
+                    add(s + kstShift, e + kstShift, true, mDayRange[0]);
                 }
             }
             else {
                 const mDaySingle = part.match(/(\d{1,2})일\s*(\d{1,2}:\d{2})/);
                 if (mDaySingle) {
                     const sD = parseInt(mDaySingle[1]), [sh, sm] = mDaySingle[2].split(':').map(Number);
+                    const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
                     for (let o = -1; o <= 1; o++) {
                         const s = new Date(now.getFullYear(), now.getMonth() + o, sD, sh, sm, 0).getTime();
-                        add(s, s + 3600000, false, mDaySingle[0]);
+                        add(s + kstShift, s + 3600000 + kstShift, false, mDaySingle[0]);
                     }
                 }
             }
 
-            // 2.5 Multi-Day Single Time (e.g., "월, 화, 수 22:00")
-            // This handles cases where multiple days share one time, preventing the "unused days" from becoming a label.
+            // 2.5 Multi-Day Single Time
             let handledByMultiDay = false;
             const mMultiDay = part.match(/([일월화수목금토](?:\s*,\s*[일월화수목금토])+)\s*(\d{1,2}:\d{2})/);
             if (mMultiDay) {
                 handledByMultiDay = true;
-                const daysStr = mMultiDay[1];
-                const timeStr = mMultiDay[2];
-                const days = daysStr.split(',').map(d => d.trim());
-                const [sh, sm] = timeStr.split(':').map(Number);
-
+                const days = mMultiDay[1].split(',').map(d => d.trim());
+                const [sh, sm] = mMultiDay[2].split(':').map(Number);
                 days.forEach(dName => {
                     const targetIdx = KR_DAYS_PARSER.indexOf(dName);
                     if (targetIdx !== -1) {
                         for (let i = 0; i < 8; i++) {
-                            const dAtWin = new Date(localStart + i * dayMs);
-                            if (dAtWin.getDay() === targetIdx) {
-                                const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                                // Bear Hunt: 30 minutes, Others: 1 hour
+                            const dAtWin = new Date(winStart + i * dayMs);
+                            const currentDayIdx = (timezone === 'UTC') ? dAtWin.getUTCDay() : dAtWin.getDay();
+                            if (currentDayIdx === targetIdx) {
+                                const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
+                                const st = winStart + i * dayMs + sh * 3600000 + sm * 60000 + kstShift;
                                 const duration = isBearHunt ? 1800000 : 3600000;
-                                const et = st + duration;
-                                add(st, et, true, mMultiDay[0]);
+                                add(st, st + duration, true, mMultiDay[0]);
                             }
                         }
                     }
                 });
             }
 
-            // 3. Recurring (Lowest Priority) - Only if not already handled by Multi-Day
+            // 3. Recurring (Lowest Priority)
             if (!handledByMultiDay) {
                 const mRec = /(?:^|[^\d])([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?(?:\s*~\s*([일월화수목금토]|[매일])\s*\(?(\d{1,2}:\d{2})\)?)?/g;
                 let match;
                 while ((match = mRec.exec(part)) !== null) {
-                    const sW = match[1], sT = match[2], eW = match[3] || sW, eT = match[4] || sT, isR = !!match[3];
+                    const sW = match[1], sT = match[2], eW = match[3] || sW, eT = match[4] || sT, isRangeMatch = !!match[3];
                     const [sh, sm] = sT.split(':').map(Number), [eh, em] = eT.split(':').map(Number);
+                    const kstShift = (timezone === 'UTC') ? -9 * 3600000 : 0;
 
                     if (sW === '매일') {
                         for (let i = 0; i < 8; i++) {
-                            const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                            let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
-                            if (isR && et <= st) et += dayMs;
+                            const st = winStart + i * dayMs + sh * 3600000 + sm * 60000 + kstShift;
+                            let et = winStart + i * dayMs + eh * 3600000 + em * 60000 + kstShift;
+                            if (isRangeMatch && et <= st) et += dayMs;
                             const duration = isBearHunt ? 1800000 : 3600000;
-                            add(st, isR ? et : st + duration, isR, match![0], true);
+                            add(st, isRangeMatch ? et : st + duration, isRangeMatch, match![0], true);
                         }
                     } else {
                         const targetIdx = KR_DAYS_PARSER.indexOf(sW);
                         if (targetIdx !== -1) {
                             for (let i = 0; i < 8; i++) {
-                                const dAtWin = new Date(localStart + i * dayMs);
-                                if (dAtWin.getDay() === targetIdx) {
-                                    const st = localStart + i * dayMs + sh * 3600000 + sm * 60000;
-                                    let et = winStart + i * dayMs + eh * 3600000 + em * 60000;
-                                    if (isR) {
+                                const dAtWin = new Date(winStart + i * dayMs);
+                                const currentDayIdx = (timezone === 'UTC') ? dAtWin.getUTCDay() : dAtWin.getDay();
+                                if (currentDayIdx === targetIdx) {
+                                    const st = winStart + i * dayMs + sh * 3600000 + sm * 60000 + kstShift;
+                                    let et = winStart + i * dayMs + eh * 3600000 + em * 60000 + kstShift;
+                                    if (isRangeMatch) {
                                         if (eW !== sW) {
                                             const d = (KR_DAYS_PARSER.indexOf(eW) - KR_DAYS_PARSER.indexOf(sW) + 7) % 7;
                                             et += d * dayMs;
                                         } else if (et <= st) et += dayMs;
                                     }
                                     const duration = isBearHunt ? 1800000 : 3600000;
-                                    add(st, isR ? et : st + duration, isR, match![0], true);
+                                    add(st, isRangeMatch ? et : st + duration, isRangeMatch, match![0], true);
                                 }
                             }
                         }
                     }
                 }
-            } // End of: if (!handledByMultiDay)
+            }
 
-            // Calculate label for this part (remove matched date strings)
+            // Calculate label for this part
             let label = part;
-            // Remove all unique matched strings
             const uniqueMatches = Array.from(new Set(partBars.map(b => b.matchedStr)));
-            uniqueMatches.forEach(mStr => {
-                label = label.replace(mStr, '').trim();
-            });
-            // Cleanup common prefixes/punctuation (e.g., "Fortress: Fortress7" -> "Fortress7")
+            uniqueMatches.forEach(mStr => { label = label.replace(mStr, '').trim(); });
             label = label.replace(/.*(요새전|성채전|Fortress|Citadel)[:\s：]*/g, '').replace(/^[:，,：\-\s]+/, '').replace(/[:，,：\-\s]+$/, '').trim();
+
 
             // Filter out redundant day labels (e.g. "화, 목", "월, 화, 수", "월,화,수,목,금,토(22:00)")
             const isDayTimeLabel = label && /^[일월화수목금토\s,]+(\(\d{1,2}:\d{2}\))?$/.test(label);
@@ -508,7 +525,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     let label = i === 0 ? t('events.team1') : t('events.team2');
                     if (baseId.includes('bear')) label = i === 0 ? t('events.bear1') : t('events.bear2');
 
-                    const subId = `${baseId}_t${i}_${globalIdx}`;
+                    const subId = `${baseId}_t${i + 1}_${globalIdx}`;
                     const translatedTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
 
                     // Create a sub-event with normalized day and time for this specific part
@@ -619,12 +636,20 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
 
             <ScrollView
                 className="flex-1"
-                contentContainerStyle={{ paddingBottom: 60, paddingTop: 50 }}
+                contentContainerStyle={{ paddingBottom: 60, paddingTop: 50, minHeight: '100%' }}
                 onScroll={() => setSelectedBarId(null)}
                 scrollEventThrottle={16}
             >
+                {/* Background Pressable to clear selection when clicking on empty areas */}
                 <Pressable
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, minHeight: '100%' }}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundColor: 'transparent'
+                    }}
                     onPress={() => setSelectedBarId(null)}
                 />
                 <View className="absolute inset-x-0 top-0 bottom-0 flex-row pointer-events-none">
@@ -663,12 +688,13 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                     <View
                                         key={`${ev.id}-${ck}-${evIdx}`}
                                         className="h-14 relative mb-3 justify-center"
-                                        style={{ zIndex: isRowHovered ? 1000 : 1 }}
+                                        style={{ zIndex: (isRowHovered || selectedBarId?.startsWith(`bar-${ev.id}-`)) ? 2000 : 1 }}
                                     >
                                         <Pressable
                                             key={`rail-${ev.id}`}
                                             onPress={() => setSelectedBarId(null)}
-                                            className={`absolute inset-x-0 h-11 rounded-2xl ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/40'}`}
+                                            className={`absolute inset-x-0 h-full rounded-2xl ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/40'}`}
+                                            style={{ zIndex: 0 }}
                                         />
                                         {ev._bars.map((p: any, bi: number) => {
                                             const barKey = `bar-${ev.id}-${bi}`;
@@ -690,7 +716,6 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                     <Pressable
                                                         onPress={(e) => {
                                                             e.stopPropagation(); // prevent underlying scroll/pressable from clearing selection
-                                                            const isTouch = Platform.OS !== 'web' || (typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
                                                             if (!isTouch) {
                                                                 // Desktop interaction: single click opens modal
                                                                 onEventPress(ev);
@@ -705,9 +730,9 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                             }
                                                         }}
                                                         // @ts-ignore
-                                                        onMouseEnter={() => setHoveredBarId(barKey)}
+                                                        onMouseEnter={() => !isTouch && setHoveredBarId(barKey)}
                                                         // @ts-ignore
-                                                        onMouseLeave={() => setHoveredBarId(null)}
+                                                        onMouseLeave={() => !isTouch && setHoveredBarId(null)}
                                                         style={{
                                                             position: 'absolute',
                                                             left: isFloatingIcon ? -40 : 0,
@@ -718,7 +743,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                         }}
                                                     >
                                                         {({ hovered }: any) => {
-                                                            const activeHover = hovered || hoveredBarId === barKey || selectedBarId === barKey;
+                                                            const activeHover = (isTouch ? (selectedBarId === barKey) : (hovered || hoveredBarId === barKey || selectedBarId === barKey));
                                                             return (
                                                                 <View key="bar-inner-wrap" style={{ position: 'absolute', left: isFloatingIcon ? 40 : 0, right: 0, top: 0, bottom: 0, overflow: 'visible' }}>
                                                                     {/* Floating Icon */}
@@ -790,73 +815,102 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                     </Animated.View>
 
                                                                     {activeHover && (
-                                                                        <Pressable
-                                                                            onPress={() => onEventPress(ev)}
-                                                                            className={`absolute ${isTopRow ? 'top-12' : '-top-32'} border p-5 rounded-[28px] shadow-2xl z-[200]`}
+                                                                        <View
+                                                                            key="tooltip-container"
+                                                                            className="absolute z-[2100]"
                                                                             style={{
-                                                                                minWidth: 280,
-                                                                                pointerEvents: 'auto',
-                                                                                backgroundColor: isDark ? '#1e293b' : '#ffffff',
-                                                                                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                                                                                left: parseFloat(p.left) > 70 ? 'auto' : 0,
-                                                                                right: parseFloat(p.left) > 70 ? 0 : 'auto'
+                                                                                [isTopRow ? 'top' : 'bottom']: 60,
+                                                                                left: parseFloat(p.left) > 65 ? 'auto' : '50%',
+                                                                                right: parseFloat(p.left) > 65 ? 0 : 'auto',
+                                                                                transform: [{ translateX: parseFloat(p.left) > 65 ? 0 : -140 }],
+                                                                                width: 280,
+                                                                                backgroundColor: 'transparent',
+                                                                                pointerEvents: 'box-none'
                                                                             }}
                                                                         >
-                                                                            <View className="flex-row items-center mb-4">
-                                                                                <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}>
-                                                                                    {!!ev.imageUrl ? (
-                                                                                        <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-7 h-7 rounded-full" />
-                                                                                    ) : (
-                                                                                        <Ionicons name="calendar" size={20} color={cfg.color} />
-                                                                                    )}
-                                                                                </View>
-                                                                                <View className="flex-1">
-                                                                                    <Text className={`font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>
-                                                                                        {(() => {
-                                                                                            const eventId = ev._original?.id || ev.id || ev.eventId || '';
-                                                                                            const baseId = eventId.replace(/_(?:team\d+|t?\d+(?:_\d+)?)/g, '');
-                                                                                            const teamMatch = eventId.match(/_team(\d+)/);
-                                                                                            let displayTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
-                                                                                            if (teamMatch) {
-                                                                                                const teamIdx = parseInt(teamMatch[1]);
-                                                                                                const teamLabel = teamIdx === 0 ? t('events.team1') : t('events.team2');
-                                                                                                displayTitle += ` (${teamLabel})`;
-                                                                                            }
-                                                                                            return displayTitle;
-                                                                                        })()}
-                                                                                    </Text>
-                                                                                    <Text className={`font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>
-                                                                                        {cfg.label} Event
-                                                                                    </Text>
-                                                                                </View>
-                                                                            </View>
-
-                                                                            <View className={`flex-row items-center p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
-                                                                                <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
-                                                                                <Text
-                                                                                    className={`font-mono font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
-                                                                                    numberOfLines={1}
-                                                                                    style={{ fontSize: 12 * fontSizeScale }}
-                                                                                >
-                                                                                    {p.timeText}
-                                                                                </Text>
-                                                                            </View>
-
-                                                                            <View className="mt-4 flex-row items-center justify-between">
-                                                                                <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
-                                                                                    {t('events.modal.tap_for_details')}
-                                                                                </Text>
-                                                                                <Ionicons name="chevron-forward" size={14} color={isDark ? '#475569' : '#cbd5e1'} />
-                                                                            </View>
-
-                                                                            <View
-                                                                                className={`absolute -bottom-1 w-3 h-3 rotate-45 border-b border-r ${isDark ? 'bg-[#1e293b] border-white/10' : 'bg-white border-black/5'}`}
+                                                                            <Pressable
+                                                                                onPress={() => onEventPress(ev)}
+                                                                                className="border p-5 rounded-[28px] shadow-2xl"
                                                                                 style={{
-                                                                                    left: parseFloat(p.left) > 70 ? 'auto' : 20,
-                                                                                    right: parseFloat(p.left) > 70 ? 20 : 'auto'
+                                                                                    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                                                                                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                                                                                    pointerEvents: 'auto'
+                                                                                }}
+                                                                            >
+                                                                                <View className="flex-row items-center mb-4">
+                                                                                    <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-3 ${isDark ? 'bg-white/10' : 'bg-slate-100'}`}>
+                                                                                        {!!ev.imageUrl ? (
+                                                                                            <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-7 h-7 rounded-full" />
+                                                                                        ) : (
+                                                                                            <Ionicons name="calendar" size={20} color={cfg.color} />
+                                                                                        )}
+                                                                                    </View>
+                                                                                    <View className="flex-1">
+                                                                                        <Text className={`font-black leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>
+                                                                                            {(() => {
+                                                                                                const eventId = ev.id || ev._original?.id || ev.eventId || '';
+                                                                                                const baseId = eventId.replace(/_(?:team\d+|t\d+(?:_\d+)?)/g, '');
+                                                                                                const teamMatch = eventId.match(/_(?:team|t)(\d+)/i);
+                                                                                                let displayTitle = t(`events.${baseId}_title`, { defaultValue: ev.title });
+
+                                                                                                if (teamMatch) {
+                                                                                                    const teamNum = parseInt(teamMatch[1]);
+                                                                                                    const teamLabel = teamNum === 2 ? t('events.team2') : t('events.team1');
+
+                                                                                                    if (!displayTitle.includes(teamLabel)) {
+                                                                                                        displayTitle += ` (${teamLabel})`;
+                                                                                                    }
+                                                                                                }
+                                                                                                return displayTitle;
+                                                                                            })()}
+                                                                                        </Text>
+                                                                                        <Text className={`font-bold mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                                                            {cfg.label} Event
+                                                                                        </Text>
+                                                                                    </View>
+                                                                                </View>
+
+                                                                                <View className={`flex-row items-center p-3 rounded-2xl ${isDark ? 'bg-slate-800/60' : 'bg-slate-50'}`}>
+                                                                                    <Ionicons name="time-outline" size={14} color={isDark ? '#94a3b8' : '#64748b'} style={{ marginRight: 8 }} />
+                                                                                    <Text
+                                                                                        className={`font-mono font-black ${isDark ? 'text-sky-400' : 'text-blue-600'}`}
+                                                                                        numberOfLines={1}
+                                                                                        style={{ fontSize: 12 * fontSizeScale }}
+                                                                                    >
+                                                                                        {p.timeText}
+                                                                                    </Text>
+                                                                                </View>
+
+                                                                                <View className="mt-4 flex-row items-center justify-between">
+                                                                                    <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
+                                                                                        {t('events.modal.tap_for_details')}
+                                                                                    </Text>
+                                                                                    <Ionicons name="chevron-forward" size={12} color={isDark ? '#475569' : '#94a3b8'} />
+                                                                                </View>
+                                                                            </Pressable>
+
+                                                                            {/* Tooltip Tail (Triangle) */}
+                                                                            <View
+                                                                                style={{
+                                                                                    position: 'absolute',
+                                                                                    [isTopRow ? 'top' : 'bottom']: -8,
+                                                                                    left: parseFloat(p.left) > 65 ? 'auto' : '50%',
+                                                                                    right: parseFloat(p.left) > 65 ? 20 : 'auto',
+                                                                                    marginLeft: parseFloat(p.left) > 65 ? 0 : -8,
+                                                                                    width: 0,
+                                                                                    height: 0,
+                                                                                    backgroundColor: 'transparent',
+                                                                                    borderStyle: 'solid',
+                                                                                    borderLeftWidth: 8,
+                                                                                    borderRightWidth: 8,
+                                                                                    [isTopRow ? 'borderBottomWidth' : 'borderTopWidth']: 8,
+                                                                                    borderLeftColor: 'transparent',
+                                                                                    borderRightColor: 'transparent',
+                                                                                    [isTopRow ? 'borderBottomColor' : 'borderTopColor']: isDark ? '#1e293b' : '#ffffff',
+                                                                                    zIndex: 2101
                                                                                 }}
                                                                             />
-                                                                        </Pressable>
+                                                                        </View>
                                                                     )}
                                                                 </View>
                                                             );
@@ -873,8 +927,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 })}
 
                 {/* Current Time Indicator */}
-                <View key="indicator" className="absolute top-0 bottom-0 w-[4px] bg-orange-500 z-50 pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
-                    <View key="indicator-label" className="absolute -top-12 -left-12 bg-orange-600 px-3 py-1.5 rounded-xl shadow-2xl flex-row items-center border border-white/30">
+                <View key="indicator" className="absolute top-0 bottom-0 w-[4px] bg-orange-500 z-[2500] pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
+                    <View key="indicator-label" className="absolute -top-12 -left-12 bg-orange-600 px-3 py-1.5 rounded-xl shadow-2xl flex-row items-center border border-white/30 pointer-events-none">
                         {/* Live Dot */}
                         <View className="w-2 h-2 rounded-full bg-white animate-pulse mr-2" />
                         <Text className="text-white font-black tracking-tighter" style={{ fontSize: 11 * fontSizeScale }}>
@@ -885,7 +939,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     </View>
 
                     {/* Pulse Effect Dot */}
-                    <View key="indicator-dot-wrap" className="absolute top-0 -left-[10px] items-center justify-center">
+                    <View key="indicator-dot-wrap" className="absolute top-0 -left-[10px] items-center justify-center pointer-events-none">
                         <Animated.View
                             style={{
                                 position: 'absolute',
@@ -905,8 +959,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     {/* Vertical Glow */}
                     <View key="indicator-glow" className="absolute h-full w-[20px] -left-[8px] bg-orange-500/15" />
                 </View>
-            </ScrollView>
-        </View>
+            </ScrollView >
+        </View >
     );
 };
 

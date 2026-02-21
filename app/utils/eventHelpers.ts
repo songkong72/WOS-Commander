@@ -39,7 +39,9 @@ export const toUTC = (kstStr: string, processConversionFn: (str: string, diff: n
 
 /** Core timezone conversion logic */
 export const processConversion = (str: string, diffMinutes: number, t: (key: string) => string, now: Date) => {
-    if (!str || diffMinutes === 0) return str;
+    if (!str) return str;
+    // Note: Removed (diffMinutes === 0) guard to allow standardization of date formats even when no shift is needed.
+
 
     // 1. Full Date Range Case (2026.02.13 09:00) - '/' 및 연도 생략 대응 + 요일 마커 대응
     let processed = str.replace(/(?:(\d{2,4})[\.\/\-])?(\d{2})[\.\/\-](\d{2})\s*[^\d~\.]*\s*(\d{1,2}):(\d{2})/g, (match, y, m, d, h, min) => {
@@ -50,8 +52,11 @@ export const processConversion = (str: string, diffMinutes: number, t: (key: str
         if (isNaN(date.getTime())) return match;
         const converted = new Date(date.getTime() + diffMinutes * 60000);
 
-        return `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
+        const result = `${converted.getFullYear()}.${pad(converted.getMonth() + 1)}.${pad(converted.getDate())} ${pad(converted.getHours())}:${pad(converted.getMinutes())}`;
+        return result;
     });
+
+
 
     // 2. Weekly Day Case (화(22:00))
     processed = processed.replace(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g, (match, day, h, m) => {

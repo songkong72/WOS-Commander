@@ -4,17 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../app/context';
 import { WikiEvent } from '../../data/wiki-events';
-import { formatDisplayDate } from '../../app/utils/eventHelpers';
+import { formatDisplayDate, formatRemainingTime } from '../../app/utils/eventHelpers';
 import ShimmerIcon from '../common/ShimmerIcon';
 import { LinearGradient } from 'expo-linear-gradient';
 
-// Constants inherited from events.tsx
-const DATE_RANGE_IDS = [
-    'a_castle', 'server_castle', 'a_operation', 'alliance_operation',
-    'a_trade', 'alliance_trade', 'alliance_champion', 'a_weapon',
-    'alliance_frost_league', 'server_svs_prep', 'server_svs_battle',
-    'server_immigrate', 'server_merge', 'a_mobilization', 'alliance_mobilization'
-];
+import { DATE_RANGE_IDS } from '../../app/utils/eventStatus';
+
+
 
 interface GrowthEventCardProps {
     event: WikiEvent;
@@ -27,18 +23,19 @@ interface GrowthEventCardProps {
     isExpired: boolean;
     selectedTeamTab: number;
     checkItemOngoing: (str: string) => boolean;
-    openScheduleModal: (event: WikiEvent) => void;
-    openGuideModal: (event: WikiEvent) => void;
+    openScheduleModal: (event: WikiEvent, initialTabIdx?: number) => void;
+    openGuideModal: (event: WikiEvent, initialTabIdx?: number) => void;
     openAttendeeModal: (event: WikiEvent, groupIndex?: number) => void;
     openWikiLink: (url: string) => void;
     onSetSelectedTeamTab: (idx: number) => void;
+    remSoonSeconds?: number | null;
     onLayout: (y: number) => void;
 }
 
 const GrowthEventCard = memo(({
     event, isDark, timezone, now, auth, isAdmin, isOngoing, isExpired, selectedTeamTab,
     checkItemOngoing, openScheduleModal, openGuideModal, openAttendeeModal, openWikiLink,
-    onSetSelectedTeamTab, onLayout
+    onSetSelectedTeamTab, onLayout, remSoonSeconds
 }: GrowthEventCardProps) => {
     const { t } = useTranslation();
     const { fontSizeScale } = useTheme();
@@ -190,6 +187,13 @@ const GrowthEventCard = memo(({
                                 <View className={`w-1.5 h-1.5 rounded-full bg-[#3182F6] dark:bg-[#4F93F7] mr-1.5 ${Platform.OS === 'web' ? 'animate-pulse' : ''}`} />
                                 <Text className="text-[#3182F6] font-black tracking-wide dark:text-[#4F93F7]" style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ongoing')}</Text>
                             </View>
+                        ) : remSoonSeconds !== undefined && remSoonSeconds !== null ? (
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                                <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
+                                <Text className={`font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                    SOON ({formatRemainingTime(remSoonSeconds)})
+                                </Text>
+                            </View>
                         ) : isExpired ? (
                             <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#2C3544]' : 'bg-slate-200'}`}>
                                 <Text className={`font-bold ${isDark ? 'text-[#8B95A1]' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ended')}</Text>
@@ -200,7 +204,7 @@ const GrowthEventCard = memo(({
                             </View>
                         )}
                         {isAdmin && (
-                            <ShimmerScheduleButton onPress={() => openScheduleModal(event)} isDark={isDark} />
+                            <ShimmerScheduleButton onPress={() => openScheduleModal(event, selectedTeamTab)} isDark={isDark} />
                         )}
                     </View>
                 </View>
@@ -304,7 +308,7 @@ const GrowthEventCard = memo(({
                                         </View>
                                         <View className={`rounded-[16px] overflow-hidden ${isDark ? 'bg-black/20' : 'bg-[#F9FAFB]'}`}>
                                             <View className="flex-col">
-                                                {selectedContent ? selectedContent.split(/[,|]/).map((item: string, iIdx: number) => {
+                                                {selectedContent ? selectedContent.split(/[,|]/).map(s => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).map((item: string, iIdx: number) => {
                                                     const trimmedItem = item.trim();
                                                     const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                     const isSlotOngoing = checkItemOngoing(trimmedItem);
@@ -395,7 +399,7 @@ const GrowthEventCard = memo(({
                                                     </View>
                                                 )}
                                                 <View className="flex-col">
-                                                    {content.split(/[,|]/).map((item: string, iIdx: number) => {
+                                                    {content.split(/[,|]/).map(s => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).map((item: string, iIdx: number) => {
                                                         const trimmedItem = item.trim();
                                                         const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                         const displayStr = formatDisplayDate(formatted, t, now, timezone);

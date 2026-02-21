@@ -57,7 +57,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
     const [hoveredRow, setHoveredRow] = useState<string | null>(null);
     const [hoveredStaffBtn, setHoveredStaffBtn] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<'members' | 'strategy' | 'settings'>('members');
+    const [activeTab, setActiveTab] = useState<'members' | 'strategy'>('members');
 
     // Custom Alert State
     const [customAlert, setCustomAlert] = useState<{
@@ -512,61 +512,9 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                         <Ionicons name="document-text" size={isMobile ? 16 : 20} color={activeTab === 'strategy' ? (isDark ? 'white' : '#d97706') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
                         <Text className={`font-black ${activeTab === 'strategy' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.strategyDocumentTab')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => setActiveTab('settings')}
-                        className={`flex-1 flex-row items-center justify-center ${isMobile ? 'py-3' : 'py-4'} rounded-[20px] transition-all duration-300 ${activeTab === 'settings' ? (isDark ? 'bg-slate-600 shadow-lg shadow-slate-500/20' : 'bg-white shadow-md') : ''}`}
-                    >
-                        <Ionicons name="settings" size={isMobile ? 16 : 20} color={activeTab === 'settings' ? (isDark ? 'white' : '#475569') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
-                        <Text className={`font-black ${activeTab === 'settings' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.manageSettings', '설정')}</Text>
-                    </TouchableOpacity>
                 </View>
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-                    {activeTab === 'settings' && (
-                        <View className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            {/* App Settings Section */}
-                            <View className={`${isMobile ? 'p-4' : 'p-6'} rounded-3xl border shadow-xl mb-6 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
-                                <View className={`flex-row items-center mb-6 border-b pb-4 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-                                    <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
-                                        <Ionicons name="settings-outline" size={isMobile ? 18 : 22} color={isDark ? "#818cf8" : "#4f46e5"} />
-                                    </View>
-                                    <Text className={`font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 18 : 20) * fontSizeScale }}>{t('admin.appSettings', '앱 설정 관리')}</Text>
-                                </View>
-
-                                <View className={`p-4 rounded-xl border mb-6 ${isDark ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-indigo-50/50 border-indigo-100'}`}>
-                                    <View className="flex-row items-center mb-2">
-                                        <Ionicons name="color-palette-outline" size={18} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
-                                        <Text className={`font-bold ${isDark ? 'text-indigo-500' : 'text-indigo-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.themeSettings', '테마 설정')}</Text>
-                                    </View>
-                                    <Text className={`leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`} style={{ fontSize: (isMobile ? 9 : 11) * fontSizeScale }}>
-                                        {t('admin.themeSettingsDesc', '앱의 기본 테마 모드를 설정합니다. 사용자가 수동으로 변경하기 전까지 이 테마가 적용됩니다.')}
-                                    </Text>
-                                </View>
-
-                                <View className={`p-5 rounded-2xl border shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
-                                    <Text className={`font-bold mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 9 : 12) * fontSizeScale }}>{t('admin.defaultThemeMode', '기본 테마 모드')}</Text>
-                                    <View className="flex-row gap-4">
-                                        <TouchableOpacity
-                                            onPress={() => handleSaveDefaultTheme('dark')}
-                                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 transition-all ${themeConfig?.defaultMode === 'dark' ? (isDark ? 'bg-indigo-600 border-indigo-400' : 'bg-slate-800 border-slate-600') : (isDark ? 'bg-slate-900 border-slate-700 opacity-50' : 'bg-white border-slate-200 opacity-50')}`}
-                                        >
-                                            <Ionicons name="moon" size={20} color="white" style={{ marginRight: 8 }} />
-                                            <Text className="text-white font-black" style={{ fontSize: 14 * fontSizeScale }}>{t('admin.darkMode', '다크 모드')}</Text>
-                                            {themeConfig?.defaultMode === 'dark' && <Ionicons name="checkmark-circle" size={18} color="#4ade80" style={{ marginLeft: 8 }} />}
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={() => handleSaveDefaultTheme('light')}
-                                            className={`flex-1 flex-row items-center justify-center py-4 rounded-2xl border-2 transition-all ${themeConfig?.defaultMode === 'light' ? (isDark ? 'bg-indigo-600 border-indigo-400' : 'bg-white border-slate-300') : (isDark ? 'bg-slate-900 border-slate-700 opacity-50' : 'bg-white border-slate-200 opacity-50')}`}
-                                        >
-                                            <Ionicons name="sunny" size={20} color={themeConfig?.defaultMode === 'light' && !isDark ? "#f59e0b" : (isDark ? "white" : "#64748b")} style={{ marginRight: 8 }} />
-                                            <Text className={`font-black ${themeConfig?.defaultMode === 'light' && !isDark ? 'text-slate-900' : 'text-white'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('admin.lightMode', '라이트 모드')}</Text>
-                                            {themeConfig?.defaultMode === 'light' && <Ionicons name="checkmark-circle" size={18} color="#4ade80" style={{ marginLeft: 8 }} />}
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
-                    )}
 
                     {activeTab === 'strategy' && (
                         <View className="animate-in fade-in slide-in-from-bottom-2 duration-500">

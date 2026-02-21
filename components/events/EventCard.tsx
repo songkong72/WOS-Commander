@@ -23,7 +23,7 @@ interface EventCardProps {
     onPress: (event: any) => void;
     isEventActive: (event: any) => boolean;
     isEventExpired: (event: any) => boolean;
-    getRemainingSeconds: (str: string) => number | null;
+    getRemainingSeconds: (str: string, eventId?: string) => number | null;
     getEventEndDate: (event: any) => Date | null;
     toLocal: (kstStr: string) => string;
     toUTC: (kstStr: string) => string;
@@ -87,12 +87,42 @@ export const EventCard: React.FC<EventCardProps> = ({
 
     const getSoonRemainingSeconds = (str: string) => {
         if (!str) return null;
-        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        const dayMapObj: { [key: string]: number } = {
+            '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+            'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+        };
         const currentDay = (now.getDay() + 6) % 7;
         const currentTotalSec = currentDay * 86400 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
         const totalWeekSec = 7 * 86400;
 
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일])\s*\(?(\d{1,2}):(\d{2})\)?/g));
+        // 1. Date Range Support (e.g. 2026.02.22 10:00 ~ ...)
+        const rangeMatch = str.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~/);
+        if (rangeMatch) {
+            try {
+                const startStr = `${rangeMatch[1].replace(/\./g, '-')}T${rangeMatch[2]}:00`;
+                const startDate = new Date(startStr);
+                if (!isNaN(startDate.getTime())) {
+                    const diff = (startDate.getTime() - now.getTime()) / 1000;
+                    if (diff > 0 && diff <= 1800) return Math.floor(diff);
+                }
+            } catch (e) { }
+        }
+
+        // 2. Weekly Range Support (e.g. 월 10:00 ~ 수 10:00)
+        const weeklyMatch = str.match(/([일월화수목금토]|sun|mon|tue|wed|thu|fri|sat)\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토]|sun|mon|tue|wed|thu|fri|sat)\s*(\d{2}):(\d{2})/i);
+        if (weeklyMatch) {
+            const dayOffset = dayMapObj[weeklyMatch[1].toLowerCase()];
+            if (dayOffset !== undefined) {
+                const h = parseInt(weeklyMatch[2]);
+                const min = parseInt(weeklyMatch[3]);
+                const startTotalSec = dayOffset * 86400 + h * 3600 + min * 60;
+                let diff = startTotalSec - currentTotalSec;
+                if (diff < 0) diff += totalWeekSec;
+                if (diff > 0 && diff <= 1800) return Math.floor(diff);
+            }
+        }
+
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
         if (explicitMatches.length > 0) {
             let minDiff: number | null = null;
             explicitMatches.forEach(m => {
@@ -101,12 +131,14 @@ export const EventCard: React.FC<EventCardProps> = ({
                 const min = parseInt(m[3]);
                 const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
                 scheduledDays.forEach(d => {
-                    const dayOffset = dayMapObj[d];
+                    const dayOffset = dayMapObj[d.toLowerCase()];
                     if (dayOffset === undefined) return;
                     let startTotalSec = dayOffset * 86400 + h * 3600 + min * 60;
                     let diff = startTotalSec - currentTotalSec;
                     if (diff < 0) diff += totalWeekSec;
-                    if (diff > 0 && diff <= 1800) {
+                    const durationSec = 1800; // Strictly 30 minutes before as per user request
+
+                    if (diff > 0 && diff <= durationSec) {
                         if (minDiff === null || diff < minDiff) minDiff = diff;
                     }
                 });
@@ -126,19 +158,22 @@ export const EventCard: React.FC<EventCardProps> = ({
 
     // next slot logic for split events
     if (event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) {
-        const dayMap: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        const dayMap: { [key: string]: number } = {
+            '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+            'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+        };
         const currentDay = (now.getDay() + 6) % 7;
         const currentMins = now.getHours() * 60 + now.getMinutes();
-        const matches = Array.from(displayTime.matchAll(/([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/g));
+        const matches = Array.from(displayTime.matchAll(/([일월화수목금토매일상시]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}:\d{2})\)?/gi));
 
         if (matches.length > 0) {
             const nextSlot = matches.find(m => {
                 const dRaw = m[1];
                 const [h, min] = m[2].split(':').map(Number);
                 if (dRaw === '매일' || dRaw === '상시') return true;
-                const dIdx = dayMap[dRaw];
+                const dIdx = dayMap[dRaw.toLowerCase()];
                 if (dIdx > currentDay) return true;
-                if (dIdx === currentDay) return currentMins < (h * 60 + min + 30);
+                if (dIdx === currentDay) return currentMins < (h * 60 + min + 60);
                 return false;
             });
             if (nextSlot) {
@@ -147,9 +182,9 @@ export const EventCard: React.FC<EventCardProps> = ({
                     const dRaw = m[1];
                     const [h, min] = m[2].split(':').map(Number);
                     if (dRaw === '매일' || dRaw === '상시') return true;
-                    const dIdx = dayMap[dRaw];
+                    const dIdx = dayMap[dRaw.toLowerCase()];
                     if (dIdx > currentDay) return true;
-                    if (dIdx === currentDay) return currentMins < (h * 60 + min + 30);
+                    if (dIdx === currentDay) return currentMins < (h * 60 + min + 60);
                     return false;
                 });
                 if (upcomingMatches.length > 0) {
@@ -160,11 +195,14 @@ export const EventCard: React.FC<EventCardProps> = ({
     }
 
     const getFormattedDateRange = () => {
-        const dayMapObj: { [key: string]: number } = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6 };
+        const dayMapObj: { [key: string]: number } = {
+            '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+            'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+        };
         const currentDay = (now.getDay() + 6) % 7;
         let targetDayStr = displayDay;
         let targetTimeStr = displayTime;
-        let dIdx = dayMapObj[targetDayStr];
+        let dIdx = dayMapObj[targetDayStr.toLowerCase()];
         if (dIdx !== undefined) {
             const [h, m] = (targetTimeStr.match(/(\d{1,2}):(\d{2})/) || []).slice(1).map(Number);
             if (!isNaN(h)) {
@@ -173,7 +211,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                 targetDate.setDate(now.getDate() + diffDays);
                 targetDate.setHours(h, m, 0, 0);
                 const endDate = new Date(targetDate);
-                endDate.setMinutes(endDate.getMinutes() + 30);
+                endDate.setMinutes(endDate.getMinutes() + 60);
                 const kstFormat = (d: Date) => `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
                 const kstStr = `${kstFormat(targetDate)} ~ ${kstFormat(endDate)}`;
                 return convertTime(kstStr).replace(/20(\d{2})[\.\/-]/g, '$1.');
@@ -241,14 +279,14 @@ export const EventCard: React.FC<EventCardProps> = ({
                                     </View>
                                     <View className="ml-2 w-2 h-2 rounded-full bg-green-400" />
                                 </View>
-                                <Text className="font-black tracking-tight text-white" style={{ fontSize: 22 * fontSizeScale, lineHeight: 26 * fontSizeScale }} numberOfLines={2}>
+                                <Text className="font-black tracking-tight text-white" style={{ fontSize: 22 * fontSizeScale, lineHeight: 26 * fontSizeScale }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
                                     {renderEventTitle()}
                                 </Text>
                             </View>
 
                             <View className="w-full items-end mb-2">
                                 {(() => {
-                                    let remSeconds = getRemainingSeconds(toLocal(displayDay)) || getRemainingSeconds(toLocal(displayTime));
+                                    let remSeconds = getRemainingSeconds(toLocal(displayDay), event.eventId) || getRemainingSeconds(toLocal(displayTime), event.eventId);
                                     if (remSeconds === null) {
                                         const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
                                         if (endDate && now < endDate) {
@@ -357,7 +395,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                         </View>
                     )}
                     <View className="flex-row items-center mb-1">
-                        <Text className={`flex-1 font-bold tracking-tighter ${isDark ? 'text-slate-100' : 'text-slate-900'}`} style={{ fontSize: (windowWidth < 380 ? 14 : 18) * fontSizeScale }} numberOfLines={1}>
+                        <Text className={`flex-1 font-bold ${isDark ? 'text-slate-100' : 'text-slate-900'}`} style={{ fontSize: (windowWidth < 380 ? 14 : 18) * fontSizeScale, lineHeight: (windowWidth < 380 ? 18 : 22) * fontSizeScale }} numberOfLines={2}>
                             {renderEventTitle()}
                         </Text>
                     </View>
@@ -371,7 +409,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                                     if (!event.isFortressSplit) rawStr = `${displayDay} ${displayTime}`;
                                 }
                                 let finalStr = convertTime(rawStr).replace(/20(\d{2})[\.\/-]/g, '$1.').replace(/성채전\s*:\s*/g, '').replace(/,\s*/g, '\n');
-                                const lines = finalStr.split('\n');
+                                const lines = Array.from(new Set(finalStr.split('\n').map(l => l.trim()).filter(Boolean)));
                                 return (
                                     <View>
                                         {lines.map((line, idx) => {
