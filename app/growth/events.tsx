@@ -349,7 +349,9 @@ const WheelPicker = ({ options, value, onChange, isDark, width, showHighlight = 
                                 className={`font-black ${isSelected ? (isDark ? 'text-sky-400 text-xl' : 'text-sky-600 text-xl') : (isDark ? 'text-white text-base' : 'text-slate-500 text-base')}`}
                                 style={{
                                     opacity: isSelected ? 1 : 0.4,
-                                    textShadow: isDark ? '0px 1px 2px rgba(0,0,0,0.3)' : 'none',
+                                    textShadowColor: isDark ? 'rgba(0,0,0,0.3)' : 'transparent',
+                                    textShadowOffset: { width: 0, height: 1 },
+                                    textShadowRadius: 2,
                                     transform: [{ scale: isSelected ? 1.1 : 0.9 }]
                                 }}
                             >
@@ -1214,6 +1216,7 @@ export default function EventTracker() {
     const isDesktop = width > 768; // Simple breakdown for Desktop layout
 
     const [selectedCategory, setSelectedCategory] = useState<EventCategory>('전체');
+    const [viewMode, setViewMode] = useState<'card' | 'timeline'>('card');
     const [timezone, setTimezone] = useState<'LOCAL' | 'UTC'>('LOCAL');
     const [events, setEvents] = useState<WikiEvent[]>([...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS].map(e => ({ ...e, day: '', time: '' })));
     const { auth, serverId, allianceId } = useAuth();
@@ -1279,7 +1282,6 @@ export default function EventTracker() {
     // Firebase Event Schedules removed from here (moved up)
 
     const [isSaving, setIsSaving] = useState(false);
-    const [viewMode, setViewMode] = useState<'card' | 'timeline'>('card');
 
     // Merge Firebase schedules with initial events
     useEffect(() => {
