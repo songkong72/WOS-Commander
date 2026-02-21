@@ -3069,9 +3069,9 @@ export default function Home() {
                                 elevation: 0,
                             }}
                         >
-                            <View className={`${windowWidth < 380 ? 'px-2' : 'px-4'} py-4 flex-row items-center`}>
+                            <View className={`${windowWidth < 410 ? 'px-3' : 'px-4'} py-4 flex-row items-center`}>
                                 {/* Icon */}
-                                <View className={`${windowWidth < 380 ? 'w-11 h-11 mr-2' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
+                                <View className={`${windowWidth < 410 ? 'w-11 h-11 mr-2.5' : 'w-14 h-14 mr-4'} rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80' : 'bg-slate-100'}`}>
                                     {eventImageUrl ? (
                                         <Image
                                             source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl}
@@ -3097,7 +3097,7 @@ export default function Home() {
                                             numberOfLines={1}
                                             adjustsFontSizeToFit={true}
                                             minimumFontScale={0.5}
-                                            style={{ fontFamily: 'Pretendard-Bold', fontSize: (windowWidth < 380 ? 14 : (windowWidth < 400 ? 16 : 18)) * fontSizeScale }}
+                                            style={{ fontFamily: 'Pretendard-Bold', fontSize: (windowWidth < 385 ? 13 : (windowWidth < 410 ? 15 : 18)) * fontSizeScale }}
                                         >
                                             {(() => {
                                                 const eventId = event.eventId || '';
@@ -3197,8 +3197,8 @@ export default function Home() {
                                             <Text className={`text-xs font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>Ended</Text>
                                         </View>
                                     ) : (
-                                        <View className={`w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
-                                            <Ionicons name="chevron-forward" size={18} color={isDark ? '#cbd5e1' : '#64748b'} />
+                                        <View className={`${windowWidth < 410 ? 'w-8 h-8' : 'w-10 h-10'} rounded-full items-center justify-center ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                            <Ionicons name="chevron-forward" size={windowWidth < 410 ? 15 : 18} color={isDark ? '#cbd5e1' : '#64748b'} />
                                         </View>
                                     )}
                                 </View>
