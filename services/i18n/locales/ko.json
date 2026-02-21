@@ -115,7 +115,9 @@
         "role_master": "마스터 관리자",
         "role_alliance_admin": "연맹 관리자",
         "role_op_admin": "운영 관리자",
-        "role_general": "일반 영주"
+        "role_general": "일반 영주",
+        "memberOnly": "연맹원 전용",
+        "memberOnlyDesc": "연맹원 전용 기능입니다.\n연맹원 로그인이 필요합니다."
     },
     "dashboard": {
         "title": "WOS-COMMANDER",

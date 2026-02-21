@@ -115,7 +115,9 @@
         "role_master": "System Master",
         "role_alliance_admin": "Alliance Admin",
         "role_op_admin": "Operation Admin",
-        "role_general": "General Lord"
+        "role_general": "General Lord",
+        "memberOnly": "Alliance Members Only",
+        "memberOnlyDesc": "This feature is for alliance members only. Please login first."
     },
     "dashboard": {
         "notice": "Notice",
