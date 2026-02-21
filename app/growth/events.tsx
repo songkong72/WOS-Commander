@@ -491,7 +491,7 @@ const EventCard = memo(({
                             </View>
                         )}
                         <Text className={`font-bold flex-1 ${textColor}`} numberOfLines={1} style={{ letterSpacing: -0.5, fontSize: 20 * fontSizeScale }}>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
-                        {event.wikiUrl && (
+                        {!!event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
                                 style={({ pressed, hovered }: any) => [
@@ -572,7 +572,7 @@ const EventCard = memo(({
                                 </View>
                             ) : null
                         )}
-                        {event.time && (() => {
+                        {!!event.time && (() => {
                             const isBearOrFoundry = event.id === 'a_bear' || event.id === 'alliance_bear' || event.id === 'a_foundry' || event.id === 'alliance_foundry' || event.id === 'alliance_canyon';
                             const parts = event.time.split(' / ').filter((p: string) => p.trim());
                             const hasMultipleParts = parts.length > 1;
@@ -674,7 +674,7 @@ const EventCard = memo(({
 
                                                                         return (
                                                                             <View className="flex-row items-center">
-                                                                                {!!prefix && prefix.trim() && (
+                                                                                {!!prefix && !!prefix.trim() && (
                                                                                     <Text className={`${isDark ? 'text-slate-100' : 'text-slate-900'} font-bold text-base mr-2`}>
                                                                                         {prefix.trim()
                                                                                             .replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`)
@@ -768,7 +768,7 @@ const EventCard = memo(({
                                                             return (
                                                                 <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0`}>
                                                                     <View className="flex-row items-center flex-1">
-                                                                        {!!prefix && prefix.trim() && (
+                                                                        {!!prefix && !!prefix.trim() && (
                                                                             <Text className={`${isDark ? 'text-slate-100' : 'text-slate-900'} font-bold text-base mr-2`}>
                                                                                 {prefix.trim()
                                                                                     .replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`)

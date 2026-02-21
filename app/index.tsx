@@ -4880,7 +4880,7 @@ export default function Home() {
                                                                             <Text className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1">{req.serverId}</Text>
                                                                             <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`}>{req.allianceId}</Text>
                                                                         </View>
-                                                                        {req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{req.allianceName}</Text>}
+                                                                        {!!req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{req.allianceName}</Text>}
                                                                     </View>
 
                                                                     {superAdminTab === 'pending' ? (
