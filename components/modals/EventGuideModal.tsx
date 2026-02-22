@@ -46,7 +46,7 @@ const EventGuideModal = memo(({
                                 <BlurView intensity={20} className="absolute inset-0 bg-black/50" />
                             )}
                             <View className="absolute bottom-4 left-6 flex-row items-center">
-                                <View className="w-12 h-12 rounded-xl border border-white/20 overflow-hidden mr-4">
+                                <View className="w-8 h-8 rounded-xl border border-white/20 overflow-hidden mr-3 shadow-md bg-black/40">
                                     <ImageBackground source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl} className="w-full h-full" />
                                 </View>
                                 <View>
