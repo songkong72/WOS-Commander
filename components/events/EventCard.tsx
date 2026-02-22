@@ -145,7 +145,7 @@ export const EventCard: React.FC<EventCardProps> = ({
         };
         const currentDay = (now.getDay() + 6) % 7;
         const currentMins = now.getHours() * 60 + now.getMinutes();
-        const matches = Array.from(displayTime.matchAll(/([일월화수목금토매일상시]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}:\d{2})\)?/gi));
+        const matches = Array.from(displayTime.matchAll(/([일월화수목금토](?:요일)?|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}:\d{2})\)?/gi));
 
         if (matches.length > 0) {
             const nextSlot = matches.find(m => {
@@ -178,6 +178,7 @@ export const EventCard: React.FC<EventCardProps> = ({
     const getFormattedDateRange = () => {
         const dayMapObj: { [key: string]: number } = {
             '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+            '월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6,
             'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
         };
         const currentDay = (now.getDay() + 6) % 7;
@@ -203,7 +204,8 @@ export const EventCard: React.FC<EventCardProps> = ({
     };
 
     const formattedDateRange = getFormattedDateRange();
-    const remSoonSeconds = !isActive && !isExpired ? (getRemainingSeconds(displayDay, event.eventId) ?? getRemainingSeconds(displayTime, event.eventId)) : null;
+    const mergedIdAndTitle = `${event.eventId || ''} ${event.title || ''}`;
+    const remSoonSeconds = !isActive && !isExpired ? (getRemainingSeconds(displayDay, mergedIdAndTitle) ?? getRemainingSeconds(displayTime, mergedIdAndTitle)) : null;
     const isUpcomingSoon = remSoonSeconds !== null;
 
     const renderEventTitle = () => {
@@ -217,11 +219,10 @@ export const EventCard: React.FC<EventCardProps> = ({
 
         if ((event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) && event.teamLabel) {
             const translatedTeam = event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'));
-            // Use word-joiner (\u2060) to keep "(1군)" together as a single unit
-            const teamBadge = `\u2060(\u2060${translatedTeam}\u2060)\u2060`;
+            const teamBadge = `(${translatedTeam})`;
 
-            // Only move to next line if REALLY narrow (below 340px)
-            if (windowWidth < 340) {
+            // If narrow screen OR timer likely present (Upcoming soon), use newline for better fit
+            if (windowWidth < 380 || isUpcomingSoon) {
                 return `${baseTitle}\n${teamBadge}`;
             }
             return `${baseTitle} ${teamBadge}`;
@@ -295,7 +296,7 @@ export const EventCard: React.FC<EventCardProps> = ({
 
                         <View className="items-end pl-2">
                             {(() => {
-                                let remSeconds = getRemainingSeconds(toLocal(displayDay), event.eventId) || getRemainingSeconds(toLocal(displayTime), event.eventId);
+                                let remSeconds = getRemainingSeconds(toLocal(displayDay), mergedIdAndTitle) || getRemainingSeconds(toLocal(displayTime), mergedIdAndTitle);
                                 if (remSeconds === null) {
                                     const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
                                     if (endDate && now < endDate) {
@@ -425,9 +426,9 @@ export const EventCard: React.FC<EventCardProps> = ({
                             <Text
                                 className={`flex-1 font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
                                 style={{ fontSize: 16 * fontSizeScale }}
-                                numberOfLines={1}
+                                numberOfLines={2}
                                 adjustsFontSizeToFit
-                                minimumFontScale={0.75}
+                                minimumFontScale={0.8}
                             >
                                 {renderEventTitle()}
                             </Text>

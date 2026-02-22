@@ -21,6 +21,7 @@ export interface WikiEvent {
     isBearSplit?: boolean;
     isFoundrySplit?: boolean;
     originalEventId?: string;
+    teamLabel?: string;
     updatedAt?: number;
 
 }

@@ -158,12 +158,13 @@ export const checkWeeklyExpired = (str: string, now: Date) => {
     if (!str || str.includes('상시') || str.includes('상설')) return false;
     const dayMapObj: { [key: string]: number } = {
         '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        '월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6,
         'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
     };
     const currentDay = (now.getDay() + 6) % 7;
     const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
-    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
+    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토](?:요일)?|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
     if (explicitMatches.length > 0) {
         return explicitMatches.every(m => {
             const dayStr = m[1];
@@ -173,9 +174,21 @@ export const checkWeeklyExpired = (str: string, now: Date) => {
             return scheduledDays.every(d => {
                 const dayIdx = dayMapObj[d.toLowerCase()];
                 if (dayIdx === undefined) return true;
-                if (currentDay > dayIdx) return true;
-                if (currentDay === dayIdx) return currentMinutes >= (h * 60 + min + 60);
-                return false;
+
+                // Nearest occurrence logic:
+                // We want to know if 'dayIdx' (0-6) refers to a past or future event relative to 'currentDay' (0-6).
+                // Example: Today is Monday(0). Sunday(6) has diff = 6 - 0 = 6. 
+                // In a circular 7-day week, 6 is the same as -1.
+                // We treat -3 to +3 as the 'current' window.
+                let diff = dayIdx - currentDay;
+                while (diff > 3) diff -= 7;
+                while (diff < -3) diff += 7;
+
+                if (diff < 0) return true; // Past occurrence
+                if (diff > 0) return false; // Future occurrence
+
+                // Today: check time
+                return currentMinutes >= (h * 60 + min + 60); // 1h buffer
             });
         });
     }
@@ -193,6 +206,40 @@ export const checkWeeklyExpired = (str: string, now: Date) => {
     return false;
 };
 
+/** Get the absolute date for a weekly recurring event based on a baseline date. */
+export const getAbsoluteDateFromWeekly = (dayStr: string, timeStr: string, baseline: Date): Date | null => {
+    const dayMapObj: { [key: string]: number } = {
+        '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        '월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6,
+        'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
+    };
+
+    const targetDay = dayMapObj[dayStr.toLowerCase()];
+    if (targetDay === undefined) return null;
+
+    const [h, m] = timeStr.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return null;
+
+    const resultDate = new Date(baseline);
+    resultDate.setHours(h, m, 0, 0);
+
+    const currentDayOfWeek = (baseline.getDay() + 6) % 7; // 0 for Mon, 6 for Sun
+
+    // Calculate difference in days
+    let dayDiff = targetDay - currentDayOfWeek;
+
+    // If the target day is earlier in the week than the current day,
+    // or if it's the same day but the time has already passed,
+    // then it refers to the next week's occurrence.
+    if (dayDiff < 0 || (dayDiff === 0 && resultDate.getTime() < baseline.getTime())) {
+        dayDiff += 7;
+    }
+
+    resultDate.setDate(resultDate.getDate() + dayDiff);
+
+    return resultDate;
+};
+
 /** Determine if an event is currently expired */
 export const isEventExpired = (event: any, schedules: any[], now: Date) => {
     const originalId = (event.originalEventId || '').trim();
@@ -201,10 +248,20 @@ export const isEventExpired = (event: any, schedules: any[], now: Date) => {
     if (id === 'a_bear' || id === 'alliance_bear') return false;
 
     const schedule = getEventSchedule(event, schedules);
-    const startDate = schedule?.startDate || event.startDate;
     const isSplit = !!(event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit || event.isFortressSplit);
+    const isTeam2 = (event._teamIdx === 1 || (event.id || '').includes('_team2') || (event.eventId || '').includes('_team2'));
+
+    // Prioritize team-specific startDate
+    const startDate = isTeam2 ? (schedule?.startDate2 || event.startDate) : (schedule?.startDate || event.startDate);
     const dayStr = isSplit ? event.day : (schedule?.day || event.day || '');
-    const isRange = dayStr.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id);
+    const timeStrRaw = isSplit ? event.time : (schedule?.time || event.time || '');
+    const titleMatch = (event.title || '').includes('집결') || (event.title || '').includes('공연') || (event.title || '').includes('전당');
+    const isWeekly = /([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)/i.test(dayStr) || /([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)/i.test(timeStrRaw);
+    const isBear = (id.includes('bear') || id === 'a_bear' || id === 'alliance_bear');
+    const isRecurring = !!(isTeam2 ? (schedule?.isRecurring2 ?? event.isRecurring) : (schedule?.isRecurring ?? event.isRecurring));
+
+    // Range events or ongoing indefinite events
+    const isRange = dayStr.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id) || titleMatch || (isWeekly && (isRecurring || isBear));
 
     if (startDate && !isRange) {
         try {
@@ -223,20 +280,46 @@ export const isEventExpired = (event: any, schedules: any[], now: Date) => {
 
     const timeStr = isSplit ? event.time : (schedule?.time || event.time || '');
     const combined = `${dayStr} ${timeStr}`;
-    return checkWeeklyExpired(combined, now);
+
+    // For non-recurring weekly events, if we don't have a startDate, 
+    // we can use 'updatedAt' to guess the intended occurrence.
+    if (isWeekly && !isRecurring && !isBear) {
+        const updatedAt = schedule?.updatedAt || event.updatedAt;
+        if (updatedAt) {
+            const explicitMatch = combined.match(/([일월화수목금토](?:요일)?|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/i);
+            if (explicitMatch) {
+                const dayRaw = explicitMatch[1];
+                const timeStr = explicitMatch[2] + ":" + explicitMatch[3];
+                const baseline = new Date(updatedAt);
+                const absDate = getAbsoluteDateFromWeekly(dayRaw, timeStr, baseline);
+                if (absDate) {
+                    // One hour buffer
+                    const expireTime = new Date(absDate.getTime() + 3600000);
+                    return now > expireTime;
+                }
+            }
+        }
+        return checkWeeklyExpired(combined, now);
+    }
+
+    return false;
 };
 
 /** Get remaining seconds for a recurring or date-specific event slot */
-export const getRemainingSeconds = (str: string, now: Date, eventId?: string) => {
-    if (!str || str.includes('상시') || str.includes('상설')) return null;
+export const getRemainingSeconds = (str: string, now: Date, eventId?: string, schedules?: any[]) => {
     const dayMapObj: { [key: string]: number } = {
         '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        '월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6,
         'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
     };
+    // 1. One-time Date Specific Check
 
     // 1. One-time Date Specific Check (YYYY.MM.DD HH:mm)
     const dateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}:\d{2})/);
-    if (dateMatch) {
+    // Explicitly exclude day-of-week only formats like "일(23:00)" from being matched as purely date-specific if they don't have YYYY.MM.DD
+    const hasDateInfo = /\d{4}[\.-]\d{2}[\.-]\d{2}/.test(str) || /\d{2}[\.-]\d{2}/.test(str);
+
+    if (hasDateInfo && dateMatch) {
         const currentYear = now.getFullYear();
         const y = parseInt(dateMatch[1] || currentYear.toString());
         const m = parseInt(dateMatch[2]) - 1;
@@ -255,7 +338,9 @@ export const getRemainingSeconds = (str: string, now: Date, eventId?: string) =>
             const isLongEvent = normalizedStr.includes('협곡') || normalizedStr.includes('무기') || normalizedStr.includes('공장') || normalizedStr.includes('요새') || normalizedStr.includes('성채') || normalizedStr.includes('전투');
             const durationSec = isLongEvent ? 3600 : 1800;
             const endSec = Math.floor((startTime.getTime() + durationSec * 1000 - now.getTime()) / 1000);
-            if (diffSec <= 0 && endSec > 0) return endSec;
+
+            // If it's currently active (diffSec <= 0 && endSec > 0), return null so it's not marked as upcoming
+            if (diffSec <= 0 && endSec > 0) return null;
         }
     }
 
@@ -264,7 +349,7 @@ export const getRemainingSeconds = (str: string, now: Date, eventId?: string) =>
     const currentTotal = currentDay * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
     const totalWeekSeconds = 7 * 1440 * 60;
 
-    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
+    const explicitMatches = Array.from(str.matchAll(/([일월화수목금토](?:요일)?|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
     if (explicitMatches.length > 0) {
         let nearestResult: number | null = null;
         explicitMatches.forEach(m => {
@@ -292,12 +377,24 @@ export const getRemainingSeconds = (str: string, now: Date, eventId?: string) =>
                 // Case: Active (currently running)
                 if ((currentTotal >= startTotal && currentTotal <= endTotal) ||
                     (endTotal >= totalWeekSeconds && currentTotal <= (endTotal % totalWeekSeconds))) {
-                    const rem = currentTotal >= startTotal ? (endTotal - currentTotal) : ((endTotal % totalWeekSeconds) - currentTotal);
-                    if (nearestResult === null || rem < nearestResult) nearestResult = rem;
+                    // Do not return remaining seconds for active events, return null so it's not treated as 'upcoming'
+                    return;
                 } else {
                     // Case: Upcoming (Starts in...)
                     let diff = startTotal - currentTotal;
-                    if (diff < 0) diff += totalWeekSeconds; // Next week's occurrence
+
+                    const canonicalId = getCanonicalEventId(eventId || '');
+                    const schedule = schedules?.find(s => s.eventId === (canonicalId || eventId));
+                    const isTeam2 = eventId?.includes('_team2');
+                    const isRecurring = !!(isTeam2 ? schedule?.isRecurring2 : schedule?.isRecurring);
+
+                    if (diff < 0) {
+                        if (isRecurring) {
+                            diff += totalWeekSeconds; // Next week's occurrence
+                        } else {
+                            return null; // Past non-recurring event
+                        }
+                    }
 
                     if (diff <= 86400) { // 24 hours threshold
                         if (nearestResult === null || diff < nearestResult) nearestResult = diff;
@@ -323,6 +420,7 @@ export const checkItemActive = (str: string, now: Date, eventId?: string) => {
     if (!str) return false;
     const dayMapObj: { [key: string]: number } = {
         '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
+        '월요일': 0, '화요일': 1, '수요일': 2, '목요일': 3, '금요일': 4, '토요일': 5, '일요일': 6,
         'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
     };
     const currentDay = (now.getDay() + 6) % 7;
@@ -368,7 +466,7 @@ export const checkItemActive = (str: string, now: Date, eventId?: string) => {
         return now >= start && now <= end;
     }
 
-    const weeklyMatch = str.match(/([일월화수목금토])\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토])\s*(\d{2}):(\d{2})/);
+    const weeklyMatch = str.match(/([일월화수목금토](?:요일)?)\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토](?:요일)?)\s*(\d{2}):(\d{2})/);
     if (weeklyMatch) {
         const startTotal = dayMapObj[weeklyMatch[1]] * 1440 + parseInt(weeklyMatch[2]) * 60 + parseInt(weeklyMatch[3]);
         const endTotal = dayMapObj[weeklyMatch[4]] * 1440 + parseInt(weeklyMatch[5]) * 60 + parseInt(weeklyMatch[6]);
@@ -378,7 +476,7 @@ export const checkItemActive = (str: string, now: Date, eventId?: string) => {
 
     const hasDateInfo = /\d{4}[\.-]\d{2}[\.-]\d{2}/.test(str);
     if (!hasDateInfo) {
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
+        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토](?:요일)?|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
         if (explicitMatches.length > 0) {
             return explicitMatches.some(m => {
                 const dayStr = m[1];
@@ -475,14 +573,24 @@ export const calculateBearHuntDay = (event: any, schedules: any[], now: Date, ta
 export const isEventActive = (event: any, schedules: any[], now: Date, toLocalFn: (str: string) => string, checkItemActiveFn: (str: string, now: Date, eventId?: string) => boolean, calculateBearHuntDayFn: (e: any, s: any[], n: Date) => string) => {
     try {
         const schedule = getEventSchedule(event, schedules);
-        const startDate = schedule?.startDate || event.startDate;
-
         const originalId = (event.originalEventId || '').trim();
         const id = (originalId || event.id || event.eventId || '').trim();
+        const isTeam2 = (event._teamIdx === 1 || (event.id || '').includes('_team2') || (event.eventId || '').includes('_team2'));
 
-        const dayStrRaw = schedule?.day || event.day || '';
+        const startDate = isTeam2 ? (schedule?.startDate2 || event.startDate) : (schedule?.startDate || event.startDate);
+
+        if (!event.day && !event.time && !schedule?.day && !schedule?.time && !startDate) {
+            return false;
+        }
+
+        const dayStrRaw = isTeam2 ? (event.day || schedule?.day || '') : (schedule?.day || event.day || '');
+        const timeStrRaw = isTeam2 ? (event.time || schedule?.time || '') : (schedule?.time || event.time || '');
         const titleMatch = (event.title || '').includes('집결') || (event.title || '').includes('공연') || (event.title || '').includes('전당');
-        const isRange = dayStrRaw.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId) || titleMatch;
+        const isWeekly = /([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)/i.test(dayStrRaw) || /([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)/i.test(timeStrRaw);
+        const isBear = (id.includes('bear') || id === 'a_bear' || id === 'alliance_bear');
+
+        const isRecurring = !!(isTeam2 ? (schedule?.isRecurring2 ?? event.isRecurring) : (schedule?.isRecurring ?? event.isRecurring));
+        const isRange = dayStrRaw.includes('~') || event.category === '개인' || DATE_RANGE_IDS.includes(id) || DATE_RANGE_IDS.includes(event.eventId) || titleMatch || (isWeekly && (!startDate || isRecurring || isBear));
 
         if (startDate && !isRange) {
             const [y, m, d] = startDate.split(/[-.]/).map(Number);
@@ -495,10 +603,10 @@ export const isEventActive = (event: any, schedules: any[], now: Date, toLocalFn
             // Fix: Include date info to ensure matches singleDateMatch/checkItemActive
             const dateStr = startDate.includes('-') ? startDate.replace(/-/g, '.') : startDate;
             const combinedWithDate = `${dateStr} ${timeStr}`;
-            return checkItemActiveFn(toLocalFn(combinedWithDate), now);
+            const identifier = `${id} ${event.title || ''}`;
+            return checkItemActiveFn(toLocalFn(combinedWithDate), now, identifier);
         }
 
-        const isBear = (id.includes('bear') || id === 'a_bear' || id === 'alliance_bear');
         const isSplit = !!(event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit || event.isFortressSplit);
 
         // For split events, use THEIR specific day/time to avoid raw schedule label issues
@@ -506,7 +614,8 @@ export const isEventActive = (event: any, schedules: any[], now: Date, toLocalFn
         const timeStr = isSplit ? event.time : (schedule?.time || event.time || '');
         const combinedStr = `${dayStr || ''} ${timeStr || ''}`.trim();
 
-        return checkItemActiveFn(toLocalFn(combinedStr), now, id);
+        const identifier = `${id} ${event.title || ''}`;
+        return checkItemActiveFn(toLocalFn(combinedStr), now, identifier);
     } catch (e) { return false; }
 };
 

@@ -103,7 +103,12 @@ const ScheduleModal = memo(({
                             </View>
                             <View className="flex-col items-start">
                                 <Text className={`text-[10px] font-bold opacity-60 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ letterSpacing: 1.5 }}>{t('events.set_schedule')}</Text>
-                                <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5`}>{editingEvent ? t(`events.${editingEvent.id}_title`, { defaultValue: editingEvent.title }) : ''}</Text>
+                                <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5`}>
+                                    {editingEvent ? t(`events.${editingEvent.id}_title`, { defaultValue: editingEvent.title }) : ''}
+                                    {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(editingEvent.id) && (
+                                        ` (${activeTab === 1 ? t('events.team1') : t('events.team2')})`
+                                    )}
+                                </Text>
                                 <View className={`mt-1.5 px-2 py-0.5 rounded-md ${isDark ? 'bg-sky-500/20' : 'bg-sky-100'}`}>
                                     <Text className={`text-[9px] font-black ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
                                         {timezone === 'UTC' ? 'UTC' : `GMT${new Date().getTimezoneOffset() <= 0 ? '+' : '-'}${Math.abs(new Date().getTimezoneOffset() / 60)}`}
@@ -554,7 +559,7 @@ const ScheduleModal = memo(({
                                         >
                                             <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color="white" style={{ marginRight: 8 }} />
                                             <Text className="text-white font-bold text-base">
-                                                {editingSlotId ? t('events.modal.update_schedule') : t('events.modal.add_time_slot')}
+                                                {editingSlotId ? t('common.update') : t('events.modal.add_time_slot')}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>

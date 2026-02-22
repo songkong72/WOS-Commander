@@ -652,7 +652,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                     {activeTab === 'members' && (
                         <View className="animate-in fade-in slide-in-from-bottom-2 duration-500">
                             {/* Member Management Section */}
-                            <View className={`${isMobile ? 'p-3' : 'p-6'} rounded-3xl border shadow-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                            <View className={`${isMobile ? 'p-3' : 'p-6'} rounded-3xl border shadow-xl ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-300 shadow-slate-300/60'}`}>
                                 <View className={`flex-row items-center justify-between mb-4 border-b pb-2 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
                                     <View className="flex-row items-center">
                                         <View className={`w-7 h-7 rounded-lg items-center justify-center mr-2 ${isDark ? 'bg-indigo-500/20' : 'bg-indigo-50'}`}>
@@ -663,7 +663,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                     <Text className={`font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} style={{ fontSize: (isMobile ? 10 : 14) * fontSizeScale }}>{t('admin.totalMembers', { count: members.length })}</Text>
                                 </View>
 
-                                <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                                     <View className="flex-row items-center mb-3">
                                         <Ionicons name="documents" size={14} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
                                         <Text className={`font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.bulkRegister')}</Text>
@@ -674,29 +674,29 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         onDragOver={(e: any) => { e.preventDefault(); setIsDragOver(true); }}
                                         onDragLeave={() => setIsDragOver(false)}
                                         onDrop={handleDrop}
-                                        className={`items-center justify-center ${isMobile ? 'py-5' : 'py-8'} px-3 rounded-xl border-2 border-dashed mb-3 ${isDragOver ? (isDark ? 'bg-indigo-500/15 border-indigo-400' : 'bg-indigo-50 border-indigo-400') : (isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-200')}`}
+                                        className={`items-center justify-center ${isMobile ? 'py-5' : 'py-8'} px-3 rounded-xl border-2 border-dashed mb-3 ${isDragOver ? (isDark ? 'bg-indigo-500/15 border-indigo-400' : 'bg-indigo-100/50 border-indigo-400') : (isDark ? 'bg-slate-900/50 border-slate-700' : 'bg-white border-slate-300')}`}
                                     >
                                         <Ionicons name={isDragOver ? "cloud-upload" : "document-text-outline"} size={20} color={isDark ? "#64748b" : "#94a3b8"} className="mb-1" />
                                         <Text className={`text-center font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: (isMobile ? 8 : 10) * fontSizeScale }}>{t('admin.dragAndDropExcel')}</Text>
                                     </View>
 
                                     <View className="flex-row gap-2">
-                                        <TouchableOpacity onPress={handleExcelUpload} disabled={uploading} className={`flex-1 py-2.5 rounded-lg border items-center flex-row justify-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-white border-slate-200'}`}>
-                                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.selectFile')}</Text>
+                                        <TouchableOpacity onPress={handleExcelUpload} disabled={uploading} className={`flex-1 py-2.5 rounded-lg border items-center flex-row justify-center ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-slate-50 border-slate-300 shadow-sm'}`}>
+                                            <Text className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.selectFile')}</Text>
                                         </TouchableOpacity>
                                         {previewData.length > 0 ? (
-                                            <TouchableOpacity onPress={handleSaveMembers} className="flex-1 bg-indigo-600 py-2.5 rounded-lg items-center flex-row justify-center">
+                                            <TouchableOpacity onPress={handleSaveMembers} className="flex-1 bg-indigo-600 py-2.5 rounded-lg items-center flex-row justify-center shadow-sm shadow-indigo-500/30">
                                                 <Text className={`text-white font-bold`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('common.save', '저장')} ({previewData.length})</Text>
                                             </TouchableOpacity>
                                         ) : (
-                                            <TouchableOpacity onPress={downloadTemplate} className={`flex-1 py-2.5 rounded-lg border items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-indigo-500/30' : 'bg-white border-indigo-100'}`}>
+                                            <TouchableOpacity onPress={downloadTemplate} className={`flex-1 py-2.5 rounded-lg border items-center flex-row justify-center ${isDark ? 'bg-slate-800 border-indigo-500/30' : 'bg-indigo-50/50 border-indigo-200 shadow-sm'}`}>
                                                 <Text className={`font-bold ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.downloadTemplate')}</Text>
                                             </TouchableOpacity>
                                         )}
                                     </View>
                                 </View>
 
-                                <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-50 border-indigo-100'}`}>
+                                <View className={`mb-4 ${isMobile ? 'p-3' : 'p-5'} rounded-2xl border ${isDark ? 'bg-indigo-500/5 border-indigo-500/20' : 'bg-indigo-100/40 border-indigo-200'}`}>
                                     <View className="flex-row items-center mb-3">
                                         <Ionicons name="person-add" size={14} color={isDark ? "#818cf8" : "#4f46e5"} className="mr-2" />
                                         <Text className={`font-bold ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.individualRegister')}</Text>
@@ -705,14 +705,14 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <View className="flex-row gap-2 w-full">
                                             <TextInput
                                                 style={{ flex: isMobile ? 1 : 1.5, minWidth: 0, fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
-                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold shadow-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
                                                 placeholder={`${t('admin.nicknameLabel')} *`}
                                                 value={manualNick}
                                                 onChangeText={setManualNick}
                                             />
                                             <TextInput
                                                 style={{ flex: 1, minWidth: 0, fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
-                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                className={`${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold shadow-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
                                                 placeholder={t('admin.idLabel')}
                                                 value={manualId}
                                                 onChangeText={setManualId}
@@ -722,13 +722,13 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         <View className="flex-row gap-2">
                                             <TextInput
                                                 style={{ fontSize: (isMobile ? 11 : 12) * fontSizeScale }}
-                                                className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-200'}`}
+                                                className={`flex-1 ${isMobile ? 'h-11' : 'h-12'} px-3 rounded-xl border font-bold shadow-sm ${isDark ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-slate-300'}`}
                                                 placeholder={t('admin.passwordLabel')}
                                                 value={manualPw}
                                                 onChangeText={setManualPw}
                                                 secureTextEntry
                                             />
-                                            <TouchableOpacity onPress={handleManualAdd} className={`bg-indigo-600 ${isMobile ? 'w-16 h-11' : 'px-8 h-12'} rounded-xl items-center justify-center`}>
+                                            <TouchableOpacity onPress={handleManualAdd} className={`bg-indigo-600 ${isMobile ? 'w-16 h-11' : 'px-8 h-12'} rounded-xl items-center justify-center shadow-sm shadow-indigo-500/30`}>
                                                 <Text className={`text-white font-black`} style={{ fontSize: (isMobile ? 10 : 14) * fontSizeScale }}>{t('admin.register')}</Text>
                                             </TouchableOpacity>
                                         </View>
@@ -739,7 +739,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                 <View className="mb-4">
                                     <View className={`flex-row items-center justify-between gap-3 ${isMobile ? 'flex-col items-stretch' : ''}`}>
                                         {/* Search Input */}
-                                        <View className={`${isMobile ? '' : 'flex-[0.4]'} flex-row items-center rounded-xl ${isMobile ? 'px-3 py-2.5 h-10' : 'px-4 py-2 h-10'} border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                        <View className={`${isMobile ? '' : 'flex-[0.4]'} flex-row items-center rounded-xl ${isMobile ? 'px-3 py-2.5 h-10' : 'px-4 py-2 h-10'} border shadow-sm ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-300'}`}>
                                             <Ionicons name="search" size={isMobile ? 14 : 16} color={isDark ? "#94a3b8" : "#64748b"} className="mr-2" />
                                             <TextInput
                                                 placeholder={t('dashboard.search', '검색...')}
@@ -757,7 +757,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         </View>
 
                                         {/* Filter Tabs (Redesigned as Segmented Tabs) */}
-                                        <View className={`${isMobile ? '' : 'flex-[0.6]'} flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+                                        <View className={`${isMobile ? '' : 'flex-[0.6]'} flex-row p-1.5 rounded-2xl border shadow-sm ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
                                             {[
                                                 { id: 'all', label: t('admin.all'), icon: 'apps' },
                                                 { id: 'staff', label: t('admin.staff'), icon: 'shield-checkmark' },
@@ -785,9 +785,9 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                     </View>
                                 </View>
 
-                                <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                <View className={`rounded-2xl border overflow-hidden ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-300 shadow-sm'}`}>
                                     {/* List Header */}
-                                    <View className={`flex-row items-center ${isMobile ? 'px-3 py-2.5' : 'px-4 py-3'} border-b ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                    <View className={`flex-row items-center ${isMobile ? 'px-3 py-2.5' : 'px-4 py-3'} border-b ${isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
                                         <TouchableOpacity onPress={toggleSelectAll} className={`w-4.5 h-4.5 rounded-md items-center justify-center border-2 mr-2 ${selectedIds.length === filteredMembers.length && filteredMembers.length > 0 ? 'bg-indigo-500 border-indigo-500' : (isDark ? 'bg-slate-900 border-slate-600' : 'bg-white border-slate-300')}`}>
                                             {selectedIds.length === filteredMembers.length && filteredMembers.length > 0 && <Ionicons name="checkmark" size={10} color="white" />}
                                         </TouchableOpacity>

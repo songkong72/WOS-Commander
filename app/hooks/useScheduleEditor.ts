@@ -2,8 +2,15 @@ import { useState, useCallback, useMemo } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { WikiEvent } from '../../data/wiki-events';
-import { SINGLE_SLOT_IDS, DATE_RANGE_IDS, getEventSchedule } from '../utils/eventStatus';
-import { pad, processConversion } from '../utils/eventHelpers';
+import { SINGLE_SLOT_IDS, DATE_RANGE_IDS, getEventSchedule, getCanonicalEventId } from '../utils/eventStatus';
+import {
+    pad,
+    processConversion,
+    getNextOccurrenceDate,
+    translateDay as translateDayUtil,
+    translateLabel as translateLabelUtil,
+    getRegistrationWeekDate
+} from '../utils/eventHelpers';
 
 
 interface UseScheduleEditorProps {
@@ -142,6 +149,7 @@ export const useScheduleEditor = ({
             setEventStartDate(eventSD2);
         }
 
+        setEditingSlotId(null);
         setActiveTab(targetTab);
     }, [activeTab, isRecurring, recurrenceValue, recurrenceUnit, enableStartDate, eventStartDate,
         isRecurring1, recValue1, recUnit1, enableSD1, eventSD1,
@@ -314,15 +322,31 @@ export const useScheduleEditor = ({
         // Standard Schedule
         let s1: any[] = [];
         let s2: any[] = [];
-        if ((event.category === '연맹' || event.category === '서버') && !SINGLE_SLOT_IDS.includes(event.id)) {
-            const parts = (event.time || '').split(' / ');
+        const canonicalId = getCanonicalEventId(event.originalEventId || event.id);
+        const isSplitCapable = (canonicalId === 'a_foundry' || canonicalId === 'alliance_foundry' ||
+            canonicalId === 'alliance_canyon' ||
+            canonicalId === 'a_bear' || canonicalId === 'alliance_bear');
+
+        // For split-capable events, get the full original schedule string to populate both tabs correctly
+        let scheduleTime = event.time || '';
+        if (isSplitCapable) {
+            const canonicalId = getCanonicalEventId(event.originalEventId || event.id);
+            const savedSchedule = schedules.find(s => getCanonicalEventId(s.eventId) === canonicalId);
+            if (savedSchedule && savedSchedule.time && savedSchedule.time !== '.') {
+                scheduleTime = savedSchedule.time;
+            }
+        }
+
+        if (isSplitCapable || ((event.category === '연맹' || event.category === '서버') && !SINGLE_SLOT_IDS.includes(event.id))) {
+            const parts = scheduleTime.split(' / ');
             parts.forEach(p => {
                 if (p.startsWith('1군:') || p.startsWith('Team1:')) s1 = parseScheduleStr(p.replace(/^(1군:|Team1:)\s*/, ''));
                 if (p.startsWith('2군:') || p.startsWith('Team2:')) s2 = parseScheduleStr(p.replace(/^(2군:|Team2:)\s*/, ''));
             });
-            if (s1.length === 0 && s2.length === 0) s1 = parseScheduleStr(event.time || '');
+            // If no labels were found but it's a split event, try to parse the whole string as Team 1
+            if (s1.length === 0 && s2.length === 0) s1 = parseScheduleStr(scheduleTime);
         } else {
-            s1 = parseScheduleStr(event.time || '');
+            s1 = parseScheduleStr(scheduleTime);
         }
 
         setSlots1(s1);
@@ -471,10 +495,63 @@ export const useScheduleEditor = ({
 
     const handleDeleteSchedule = useCallback(async () => {
         if (!editingEvent) return;
+
+        const canonicalId = getCanonicalEventId(editingEvent.originalEventId || editingEvent.id);
+        const targetId = canonicalId;
+        const isSplitCapable = (canonicalId === 'a_foundry' || canonicalId === 'alliance_foundry' ||
+            canonicalId === 'alliance_canyon' ||
+            canonicalId === 'a_bear' || canonicalId === 'alliance_bear');
+
+        if (isSplitCapable) {
+            // Only clear the slots for the active tab
+            if (activeTab === 1) setSlots1([]);
+            else setSlots2([]);
+
+            // Get the state of slots *after* clearing the active tab's slots
+            const currentSlots1 = activeTab === 1 ? [] : slots1;
+            const currentSlots2 = activeTab === 2 ? [] : slots2;
+
+            // If the other tab still has data, we should update instead of deleting the entire record
+            if (currentSlots1.length > 0 || currentSlots2.length > 0) {
+                setIsSaving(true);
+                try {
+                    const s1Str = currentSlots1.map(s => `${s.day}(${s.time})`).join(', ');
+                    const s2Str = currentSlots2.map(s => `${s.day}(${s.time})`).join(', ');
+
+                    const finalTime = `1군: ${s1Str || '.'} / 2군: ${s2Str || '.'}`;
+                    const finalDay = (currentSlots1[0]?.day || currentSlots2[0]?.day || '');
+
+                    await updateSchedule({
+                        eventId: targetId,
+                        day: finalDay || '.',
+                        time: finalTime,
+                        strategy: editingEvent.strategy || '',
+                        // Preserve recurrence settings for the remaining team
+                        isRecurring: isRecurring1,
+                        recurrenceValue: recValue1,
+                        recurrenceUnit: recUnit1,
+                        startDate: enableSD1 ? eventSD1 : undefined,
+                        isRecurring2: isRecurring2,
+                        recurrenceValue2: recValue2,
+                        recurrenceUnit2: recUnit2,
+                        startDate2: enableSD2 ? eventSD2 : undefined,
+                    });
+                    setScheduleModalVisible(false);
+                    showCustomAlert(t('common.completed'), t('events.schedule_updated', { title: editingEvent.title }), 'success');
+                } catch (error: any) {
+                    showCustomAlert(t('common.error'), t('events.save_error', { error: error.message }), 'error');
+                } finally {
+                    setIsSaving(false);
+                }
+                return; // Exit after updating
+            }
+        }
+
+        // Default behavior for non-split events or when both teams are empty after clearing
         setIsSaving(true);
         try {
             await updateSchedule({
-                eventId: editingEvent.id,
+                eventId: targetId,
                 day: '.',
                 time: '.',
                 strategy: editingEvent.strategy || ''
@@ -486,16 +563,17 @@ export const useScheduleEditor = ({
         } finally {
             setIsSaving(false);
         }
-    }, [editingEvent, updateSchedule, t, showCustomAlert]);
+    }, [editingEvent, updateSchedule, t, showCustomAlert, activeTab, slots1, slots2, isRecurring1, recValue1, recUnit1, enableSD1, eventSD1, isRecurring2, recValue2, recUnit2, enableSD2, eventSD2]);
 
     const saveSchedule = useCallback(async (setEvents: any) => {
         if (!editingEvent) return;
         setIsSaving(true);
 
         try {
+            const canonicalId = getCanonicalEventId(editingEvent.originalEventId || editingEvent.id);
+            const targetId = canonicalId;
             let finalDay = '';
             let finalTime = '';
-            const targetId = (editingEvent.id === 'alliance_frost_league' || editingEvent.id === 'a_weapon') ? 'a_weapon' : editingEvent.id;
 
             if (editingEvent.category === '개인' || DATE_RANGE_IDS.includes(editingEvent.id)) {
                 let startVal = mStart;
@@ -527,7 +605,18 @@ export const useScheduleEditor = ({
                 const s1Str = slots1.map(s => `${s.day}(${s.time})`).join(', ');
                 const s2Str = slots2.map(s => `${s.day}(${s.time})`).join(', ');
 
-                if (s1Str && s2Str) {
+                // Events that naturally support 1군/2군 splitting
+                const canonicalId = getCanonicalEventId(editingEvent.originalEventId || editingEvent.id);
+                const isSplitCapable = (canonicalId === 'a_foundry' || canonicalId === 'alliance_foundry' ||
+                    canonicalId === 'alliance_canyon' ||
+                    canonicalId === 'a_bear' || canonicalId === 'alliance_bear');
+
+                if (isSplitCapable) {
+                    // Always enforce labels for split-capable events to prevent data from shifting to the wrong team during parsing
+                    finalTime = `1군: ${s1Str || '.'} / 2군: ${s2Str || '.'}`;
+                    finalDay = (slots1[0]?.day || slots2[0]?.day || '');
+                } else if (s1Str && s2Str) {
+                    // Fallback for other events that might have been saved with labels
                     finalTime = `1군: ${s1Str} / 2군: ${s2Str}`;
                     finalDay = `${slots1[0]?.day || ''}, ${slots2[0]?.day || ''}`;
                 } else {
@@ -536,24 +625,19 @@ export const useScheduleEditor = ({
                 }
             }
 
-            // Sync backing stores for currently active tab
-            let team2Data = {};
-            if (activeTab === 1) {
-                // Current tab is 1, so use its states and save tab 2 backing store
-                team2Data = {
-                    isRecurring2: isRecurring2,
-                    recurrenceValue2: recValue2,
-                    recurrenceUnit2: recUnit2,
-                    startDate2: enableSD2 ? eventSD2 : undefined
-                };
-            } else {
-                // Current tab is 2, use its states and save tab 1 backing store
-                team2Data = {
-                    isRecurring1: isRecurring1,
-                    recurrenceValue1: recValue1,
-                    recurrenceUnit1: recUnit1,
-                    startDate1: enableSD1 ? eventSD1 : undefined
-                };
+            const finalIsRecurring1 = activeTab === 1 ? isRecurring : isRecurring1;
+            const finalIsRecurring2 = activeTab === 2 ? isRecurring : isRecurring2;
+
+            let finalSD1 = activeTab === 1 ? (enableStartDate ? eventStartDate : undefined) : (enableSD1 ? eventSD1 : undefined);
+            let finalSD2 = activeTab === 2 ? (enableStartDate ? eventStartDate : undefined) : (enableSD2 ? eventSD2 : undefined);
+
+            // Auto-fill startDate for non-recurring events if not manually set
+            const now = currentNow || new Date();
+            if (!finalIsRecurring1 && !finalSD1 && slots1.length > 0) {
+                finalSD1 = getRegistrationWeekDate(slots1[0].day, now) || undefined;
+            }
+            if (!finalIsRecurring2 && !finalSD2 && slots2.length > 0) {
+                finalSD2 = getRegistrationWeekDate(slots2[0].day, now) || undefined;
             }
 
             const updateData = {
@@ -561,21 +645,45 @@ export const useScheduleEditor = ({
                 day: finalDay,
                 time: finalTime,
                 strategy: editingEvent.strategy || '',
-                startDate: enableStartDate ? eventStartDate : undefined,
-                isRecurring,
-                recurrenceValue,
-                recurrenceUnit,
-                ...team2Data
+                // Team 1 fields
+                isRecurring: finalIsRecurring1,
+                recurrenceValue: activeTab === 1 ? recurrenceValue : recValue1,
+                recurrenceUnit: activeTab === 1 ? recurrenceUnit : recUnit1,
+                startDate: finalSD1,
+                // Team 2 fields
+                isRecurring2: finalIsRecurring2,
+                recurrenceValue2: activeTab === 2 ? recurrenceValue : recValue2,
+                recurrenceUnit2: activeTab === 2 ? recurrenceUnit : recUnit2,
+                startDate2: finalSD2,
             };
 
             await updateSchedule(updateData);
 
             // Optimistic Update
-            setEvents((prev: WikiEvent[]) => prev.map(e =>
-                (e.id === editingEvent.id || (editingEvent.id === 'alliance_frost_league' && e.id === 'a_weapon') || (editingEvent.id === 'a_weapon' && e.id === 'alliance_frost_league'))
-                    ? { ...e, day: finalDay, time: finalTime, startDate: enableStartDate ? eventStartDate : e.startDate, isRecurring, recurrenceValue, recurrenceUnit, updatedAt: Date.now() }
-                    : e
-            ));
+            setEvents((prev: WikiEvent[]) => prev.map(e => {
+                const isMatch = e.id === targetId || e.originalEventId === targetId ||
+                    (targetId === 'a_weapon' && (e.id === 'alliance_frost_league' || e.originalEventId === 'alliance_frost_league'));
+
+                if (isMatch) {
+                    return {
+                        ...e,
+                        day: finalDay,
+                        time: finalTime,
+                        // Team 1
+                        isRecurring: updateData.isRecurring,
+                        recurrenceValue: updateData.recurrenceValue,
+                        recurrenceUnit: updateData.recurrenceUnit,
+                        startDate: updateData.startDate,
+                        // Team 2
+                        isRecurring2: updateData.isRecurring2,
+                        recurrenceValue2: updateData.recurrenceValue2,
+                        recurrenceUnit2: updateData.recurrenceUnit2,
+                        startDate2: updateData.startDate2,
+                        updatedAt: Date.now()
+                    };
+                }
+                return e;
+            }));
 
             // Notifications
             if (Platform.OS !== 'web') {

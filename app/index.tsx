@@ -417,7 +417,7 @@ export default function Home() {
                 router.push({
                     pathname: '/growth/events',
                     params: {
-                        focusId: ev.originalEventId || ev.eventId,
+                        focusId: ev.eventId, // Use full split ID for precise scrolling
                         viewMode: viewMode,
                         teamIdx: teamIdx !== undefined ? String(teamIdx) : undefined
                     }

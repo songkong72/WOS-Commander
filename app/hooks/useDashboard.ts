@@ -190,7 +190,7 @@ export const useDashboard = ({
     const getEventSchedule = useCallback((event: any) => getEventScheduleUtil(event, schedules), [schedules]);
     const getEventEndDate = useCallback((event: any) => getEventEndDateUtil(event, schedules, now), [schedules, now]);
     const isEventExpiredStatus = useCallback((event: any) => isEventExpired(event, schedules, now), [schedules, now]);
-    const getRemainingSeconds = useCallback((str: string, eventId?: string) => getRemainingSecondsUtil(str, now, eventId), [now]);
+    const getRemainingSeconds = useCallback((str: string, eventId?: string) => getRemainingSecondsUtil(str, now, eventId, schedules), [now, schedules]);
     const getNextResetSeconds = useCallback(() => getNextResetSecondsUtil(now), [now]);
     const checkItemActiveStatus = useCallback((str: string, targetNow: Date, eventId?: string) => checkItemActive(str, targetNow, eventId), []);
     const isVisibleInListStatus = useCallback((event: any) => isVisibleInList(event, schedules, now), [schedules, now]);
@@ -296,11 +296,15 @@ export const useDashboard = ({
                         const trimmed = part.trim();
                         if (!trimmed) return;
                         const colonIdx = trimmed.indexOf(':');
+                        const timeMatch = trimmed.match(/\d{1,2}:\d{2}/);
+                        const timeIdx = timeMatch ? timeMatch.index : -1;
+                        const isLabelColon = colonIdx > -1 && (timeIdx === -1 || colonIdx < timeIdx);
+
                         const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const rawLabel = isLabelColon ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
                         const cleanLabel = rawLabel ? (rawLabel.replace(/곰|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
-                        const dayMatch = teamTime.match(/^([일월화수목금토])/);
+                        const teamTime = isLabelColon ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                        const dayMatch = teamTime.match(/^([일월화수목금토](?:요일)?)/);
                         const registeredTeamDay = dayMatch ? dayMatch[1] : (e.day || '월');
                         const actualTeamDay = calculateBearHuntDay({ ...e, day: registeredTeamDay }, teamTime);
                         let simplifiedTime = teamTime.split(/[,|]/).map(t => t.replace(/출격|귀환|시작|종료/g, '').trim()).join(', ');
@@ -312,13 +316,22 @@ export const useDashboard = ({
                             eventId: `${e.eventId}_team${idx + 1}`,
                             originalEventId: e.eventId,
                             title: t('events.alliance_bear_title'),
-                            day: actualTeamDay,
-                            time: simplifiedTime,
+                            day: (simplifiedTime && simplifiedTime !== '.') ? actualTeamDay : '',
+                            time: (simplifiedTime && simplifiedTime !== '.') ? simplifiedTime : '',
                             isBearSplit: true,
                             teamLabel: cleanLabel,
-                            teamIcon: '🐻'
+                            teamIcon: '🐻',
+                            _teamIdx: idx,
+                            // Map team-specific fields
+                            isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
+                            startDate: idx === 0 ? e.startDate : e.startDate2,
+                            recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
+                            recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
                         });
                     });
+                    if (processedList.filter(pe => pe.originalEventId === e.eventId).length === 0) {
+                        processedList.push(e);
+                    }
                 } else {
                     const actualDay = calculateBearHuntDay(e);
                     const dayMatch = (e.time || '').match(/^([일월화수목금토])/);
@@ -327,28 +340,39 @@ export const useDashboard = ({
                     processedList.push({ ...e, day: actualDay, time: updatedTime });
                 }
             } else if (e.eventId === 'a_foundry' || e.eventId === 'alliance_foundry') {
-                const parts = (e.time || '').split(/\s*\/\s*/);
+                const rawTime = e.time || '';
+                const parts = rawTime ? rawTime.split(/\s*\/\s*/) : ['', ''];
                 if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                    const numTeams = Math.max(parts.length, 2);
+                    for (let idx = 0; idx < numTeams; idx++) {
+                        const part = (parts[idx] || '').trim();
+                        const colonIdx = part.indexOf(':');
+                        const timeMatch = part.match(/\d{1,2}:\d{2}/);
+                        const timeIdx = timeMatch ? timeMatch.index : -1;
+                        const isLabelColon = colonIdx > -1 && (timeIdx === -1 || colonIdx < timeIdx);
+
+                        const rawLabel = isLabelColon ? part.substring(0, colonIdx).trim() : `${idx + 1}군`;
                         const cleanLabel = rawLabel ? (rawLabel.replace(/팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                        const teamTime = isLabelColon ? part.substring(colonIdx + 1).trim() : part;
                         const simplifiedTime = teamTime.split(/[,|]/).map(t => t.replace(/출격|귀환|시작|종료/g, '').trim()).join(', ');
                         processedList.push({
                             ...e,
-                            eventId: `${e.eventId}_team${idx + 1}`,
-                            originalEventId: e.eventId,
-                            title: t('events.alliance_foundry_title'),
-                            time: simplifiedTime,
+                            id: `${e.id}_team${idx + 1}`,
+                            originalEventId: e.id,
+                            title: t('events.foundry_title'),
+                            day: (simplifiedTime && simplifiedTime !== '.') ? e.day : '',
+                            time: (simplifiedTime && simplifiedTime !== '.') ? simplifiedTime : '',
                             isFoundrySplit: true,
                             teamLabel: cleanLabel,
-                            teamIcon: '🏭'
+                            teamIcon: '🏭',
+                            _teamIdx: idx,
+                            // Map team-specific fields
+                            isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
+                            startDate: idx === 0 ? e.startDate : e.startDate2,
+                            recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
+                            recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
                         });
-                    });
+                    }
                 } else {
                     processedList.push(e);
                 }
@@ -382,22 +406,33 @@ export const useDashboard = ({
                 }
                 if (fortressParts.length === 0 && citadelParts.length === 0) processedList.push(e);
             } else if (e.eventId === 'alliance_canyon') {
-                const parts = (e.time || '').split(/\s*\/\s*/);
+                const rawTime = e.time || '';
+                const parts = rawTime ? rawTime.split(/\s*\/\s*/) : ['', ''];
                 if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                    const numTeams = Math.max(parts.length, 2);
+                    for (let idx = 0; idx < numTeams; idx++) {
+                        const part = (parts[idx] || '').trim();
+                        const colonIdx = part.indexOf(':');
+                        const timeMatch = part.match(/\d{1,2}:\d{2}/);
+                        const timeIdx = timeMatch ? timeMatch.index : -1;
+                        const isLabelColon = colonIdx > -1 && (timeIdx === -1 || colonIdx < timeIdx);
+
+                        const rawLabel = isLabelColon ? part.substring(0, colonIdx).trim() : `${idx + 1}군`;
                         const cleanLabel = rawLabel ? (rawLabel.replace(/협곡|전투|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                        const teamTime = isLabelColon ? part.substring(colonIdx + 1).trim() : part;
                         const simplifiedTime = teamTime.split(/[,|]/).map(t => t.replace(/출격|귀환|시작|종료/g, '').trim()).join(', ');
                         processedList.push({
-                            ...e, eventId: `${e.eventId}_team${idx + 1}`, originalEventId: e.eventId, title: t('events.canyon_title'),
-                            time: simplifiedTime, isCanyonSplit: true, teamLabel: cleanLabel, teamIcon: '⛰️'
+                            ...e, id: `${e.id}_team${idx + 1}`, originalEventId: e.id, title: t('events.canyon_title'),
+                            day: (simplifiedTime && simplifiedTime !== '.') ? e.day : '',
+                            time: (simplifiedTime && simplifiedTime !== '.') ? simplifiedTime : '', isCanyonSplit: true, teamLabel: cleanLabel, teamIcon: '⛰️',
+                            _teamIdx: idx,
+                            // Map team-specific fields
+                            isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
+                            startDate: idx === 0 ? e.startDate : e.startDate2,
+                            recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
+                            recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
                         });
-                    });
+                    }
                 } else {
                     processedList.push(e);
                 }

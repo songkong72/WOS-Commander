@@ -30,12 +30,13 @@ interface GrowthEventCardProps {
     onSetSelectedTeamTab: (idx: number) => void;
     remSoonSeconds?: number | null;
     onLayout: (y: number) => void;
+    isHighlighted?: boolean;
 }
 
 const GrowthEventCard = memo(({
     event, isDark, timezone, now, auth, isAdmin, isOngoing, isExpired, selectedTeamTab,
     checkItemOngoing, openScheduleModal, openGuideModal, openAttendeeModal, openWikiLink,
-    onSetSelectedTeamTab, onLayout, remSoonSeconds
+    onSetSelectedTeamTab, onLayout, remSoonSeconds, isHighlighted
 }: GrowthEventCardProps) => {
     const { t } = useTranslation();
     const { fontSizeScale } = useTheme();
@@ -123,22 +124,22 @@ const GrowthEventCard = memo(({
                 style={({ hovered }: any) => [
                     {
                         height: '100%',
-                        transform: [{ scale: hovered ? 1.02 : 1 }],
+                        transform: [{ scale: (hovered || isHighlighted) ? 1.02 : 1 }],
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        zIndex: hovered ? 10 : 1,
+                        zIndex: (hovered || isHighlighted) ? 10 : 1,
                         ...Platform.select({
-                            web: { boxShadow: hovered ? '0 12px 16px rgba(59, 130, 246, 0.3)' : '0 4px 4px rgba(59, 130, 246, 0)' },
+                            web: { boxShadow: (hovered || isHighlighted) ? `0 12px 16px ${isHighlighted ? 'rgba(59, 130, 246, 0.6)' : 'rgba(59, 130, 246, 0.3)'}` : '0 4px 4px rgba(59, 130, 246, 0)' },
                             default: {
                                 shadowColor: '#3b82f6',
-                                shadowOffset: { width: 0, height: hovered ? 12 : 4 },
-                                shadowOpacity: hovered ? 0.3 : 0,
-                                shadowRadius: hovered ? 16 : 4,
-                                elevation: hovered ? 10 : 0
+                                shadowOffset: { width: 0, height: (hovered || isHighlighted) ? 12 : 4 },
+                                shadowOpacity: (hovered || isHighlighted) ? (isHighlighted ? 0.6 : 0.3) : 0,
+                                shadowRadius: (hovered || isHighlighted) ? 16 : 4,
+                                elevation: (hovered || isHighlighted) ? 10 : 0
                             }
                         })
                     }
                 ]}
-                className={`rounded-[24px] mb-4 overflow-hidden transition-all ${isOngoing ? (isDark ? 'bg-[#191F28] border border-blue-500/30' : 'bg-white shadow-lg shadow-blue-500/10 border border-blue-100') : (isUpcoming ? (isDark ? 'bg-[#191F28] border border-[#333D4B]' : 'bg-white border border-[#E5E8EB] shadow-sm') : (isDark ? 'bg-[#191F28]/60 border border-[#333D4B]' : 'bg-[#F9FAFB] border border-[#E5E8EB]'))}`}
+                className={`rounded-[24px] mb-4 overflow-hidden transition-all ${isHighlighted ? (isDark ? 'border-2 border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.6)]' : 'border-2 border-blue-500 shadow-xl shadow-blue-500/30') : (isOngoing ? (isDark ? 'bg-[#191F28] border border-blue-500/30' : 'bg-white shadow-lg shadow-blue-500/10 border border-blue-100') : (isUpcoming ? (isDark ? 'bg-[#191F28] border border-[#333D4B]' : 'bg-white border border-[#E5E8EB] shadow-sm') : (isDark ? 'bg-[#191F28]/60 border border-[#333D4B]' : 'bg-[#F9FAFB] border border-[#E5E8EB]')))}`}
             >
                 <View className={`px-5 py-5 flex-col border-b ${isDark ? 'border-slate-800/60' : 'border-[#F2F4F6]'}`}>
                     <View className="flex-row items-center mb-2">
@@ -155,10 +156,13 @@ const GrowthEventCard = memo(({
                             className={`font-bold flex-1 ${textColor}`}
                             numberOfLines={2}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.8}
-                            style={{ letterSpacing: -0.5, fontSize: 20 * fontSizeScale }}
+                            minimumFontScale={0.6}
+                            style={{ letterSpacing: -1.0, fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }}
                         >
                             {t(`events.${event.id}_title`, { defaultValue: event.title })}
+                            {!!event.teamLabel && (
+                                <Text className="text-[#3182F6] font-black" style={{ fontSize: 13 * fontSizeScale }}> ({event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'))})</Text>
+                            )}
                         </Text>
                         {!!event.wikiUrl && (
                             <Pressable
@@ -226,7 +230,7 @@ const GrowthEventCard = memo(({
                             </View>
                         )}
                         {isAdmin && (
-                            <ShimmerScheduleButton onPress={() => openScheduleModal(event, selectedTeamTab)} isDark={isDark} />
+                            <ShimmerScheduleButton onPress={() => openScheduleModal(event, (event as any)._teamIdx !== undefined ? (event as any)._teamIdx : selectedTeamTab)} isDark={isDark} />
                         )}
                     </View>
                 </View>
@@ -254,11 +258,11 @@ const GrowthEventCard = memo(({
                             ) : null
                         )}
                         {!!event.time && (() => {
-                            const isBearOrFoundry = event.id === 'a_bear' || event.id === 'alliance_bear' || event.id === 'a_foundry' || event.id === 'alliance_foundry' || event.id === 'alliance_canyon';
+                            const isBearOrFoundry = event.id.includes('bear') || event.id.includes('foundry') || event.id.includes('canyon') || event.id.includes('fortress') || event.id.includes('citadel') || event.id.includes('a_weapon');
                             const parts = event.time.split(' / ').filter((p: string) => p.trim());
                             const hasMultipleParts = parts.length > 1;
                             const selectedTab = selectedTeamTab || 0;
-                            if (isBearOrFoundry && hasMultipleParts) {
+                            if (isBearOrFoundry && (hasMultipleParts || event.id.includes('team'))) {
                                 const getTabLabel = (part: string, idx: number) => {
                                     const trimmed = part.trim();
                                     const cleaned = trimmed.replace(/.*(요새전|성채전)[:\s：]*/, '').trim();
@@ -308,93 +312,104 @@ const GrowthEventCard = memo(({
                                         if (!isTimeColon) return formatted.substring(colonIdx + 1).trim();
                                     }
                                     return formatted;
-                                })(parts[selectedTab]);
+                                })(parts[selectedTab] || event.time);
                                 return (
                                     <View className="w-full gap-3">
-                                        <View className="flex-row gap-2">
-                                            {parts.map((p: string, idx: number) => (
-                                                <Pressable
-                                                    key={idx}
-                                                    onPress={() => onSetSelectedTeamTab(idx)}
-                                                    className={`flex-1 py-2.5 rounded-xl items-center justify-center transition-all ${idx === selectedTab ? 'bg-blue-600' : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}
-                                                    style={({ pressed, hovered }: any) => [
-                                                        {
-                                                            transform: [{ scale: pressed ? 0.98 : (hovered ? 1.02 : 1) }],
-                                                            cursor: 'pointer'
-                                                        }
-                                                    ]}
-                                                >
-                                                    <Text className={`text-xs font-bold ${idx === selectedTab ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{getTabLabel(p, idx)}</Text>
-                                                </Pressable>
-                                            ))}
-                                        </View>
+                                        {hasMultipleParts && (
+                                            <View className="flex-row gap-2">
+                                                {parts.map((p: string, idx: number) => (
+                                                    <Pressable
+                                                        key={idx}
+                                                        onPress={() => onSetSelectedTeamTab(idx)}
+                                                        className={`flex-1 py-2.5 rounded-xl items-center justify-center transition-all ${idx === selectedTab ? 'bg-blue-600' : (isDark ? 'bg-slate-800/60' : 'bg-slate-100')}`}
+                                                        style={({ pressed, hovered }: any) => [
+                                                            {
+                                                                transform: [{ scale: pressed ? 0.98 : (hovered ? 1.02 : 1) }],
+                                                                cursor: 'pointer'
+                                                            }
+                                                        ]}
+                                                    >
+                                                        <Text className={`text-xs font-bold ${idx === selectedTab ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>{getTabLabel(p, idx)}</Text>
+                                                    </Pressable>
+                                                ))}
+                                            </View>
+                                        )}
                                         <View className={`rounded-[16px] overflow-hidden ${isDark ? 'bg-black/20' : 'bg-[#F9FAFB]'}`}>
                                             <View className="flex-col">
-                                                {selectedContent ? selectedContent.split(/[,|]/).map(s => s.trim()).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).map((item: string, iIdx: number) => {
-                                                    const trimmedItem = item.trim();
-                                                    const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
-                                                    const isSlotOngoing = checkItemOngoing(trimmedItem);
-                                                    return (
-                                                        <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-[#1C2539]' : 'bg-[#E8F3FF]') : ''}`}>
-                                                            <View className="flex-row items-center flex-1">
-                                                                {(() => {
-                                                                    const displayStr = formatDisplayDate(formatted, t, now, timezone);
-                                                                    const dtMatch = displayStr.match(/^(.*?)([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/);
-
-                                                                    if (dtMatch) {
-                                                                        const [_, prefix, dRaw, tPart] = dtMatch;
-                                                                        const dStr = dRaw === '매일' ? t('events.days.daily')
-                                                                            : dRaw === '상시' ? t('events.days.always')
-                                                                                : (() => {
-                                                                                    const krDays = ['일', '월', '화', '수', '목', '금', '토'];
-                                                                                    const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-                                                                                    const idx = krDays.indexOf(dRaw);
-                                                                                    return idx !== -1 ? t(`events.days.${enKeys[idx]}`) : dRaw;
-                                                                                })();
-
-                                                                        return (
-                                                                            <View className="flex-row items-center">
-                                                                                {!!prefix && !!prefix.trim() && (
-                                                                                    <Text className={`${isDark ? 'text-slate-100' : 'text-slate-900'} font-bold text-base mr-2`}>
-                                                                                        {prefix.trim()
-                                                                                            .replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`)
-                                                                                            .replace(/성채\s*(\d+)/, `${t('events.citadel')} $1`)
-                                                                                            .replace(/곰\s*(\d+)/, `${t('events.bear1').replace(/1|1군|Team\s*1/i, '')} $1`)
-                                                                                        }
-                                                                                    </Text>
-                                                                                )}
-                                                                                <Text className={`${isDark ? 'text-[#3182F6]' : 'text-[#3182F6]'} font-bold text-[15px]`}>{dStr}</Text>
-                                                                                <Text className={`mx-2 ${isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]'}`}>·</Text>
-                                                                                <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{tPart}</Text>
-                                                                            </View>
-                                                                        );
-                                                                    }
-                                                                    return (
-                                                                        <View className="flex-row items-center">
-                                                                            <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{displayStr}</Text>
-                                                                        </View>
-                                                                    );
-                                                                })()}
-                                                            </View>
-                                                            {isSlotOngoing && (
-                                                                <View
-                                                                    className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a]"
-                                                                    style={Platform.select({
-                                                                        web: { boxShadow: '0 0 10px rgba(0,255,136,0.5)' },
-                                                                        default: { shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }
-                                                                    }) as any}
-                                                                >
-                                                                    <Ionicons name="flash" size={8} color="#0f172a" style={{ marginRight: 2 }} />
-                                                                    <Text className="text-[#333D4B] text-[10px] font-bold ml-0.5">{t('events.status.ongoing')}</Text>
-                                                                </View>
-                                                            )}
+                                                {(() => {
+                                                    const items = selectedContent ? selectedContent.split(/[,|]/).map(s => s.trim()).filter(s => s && s !== '.').filter((v, i, a) => a.indexOf(v) === i) : [];
+                                                    if (items.length === 0) return (
+                                                        <View className="px-4 py-8 items-center justify-center">
+                                                            <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.schedule_empty')}</Text>
                                                         </View>
                                                     );
-                                                }) : (
-                                                    <View className="px-4 py-8 items-center justify-center">
-                                                        <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.schedule_empty')}</Text>
-                                                    </View>
-                                                )}
+
+                                                    return items.map((item: string, iIdx: number) => {
+                                                        const trimmedItem = item.trim();
+                                                        const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
+                                                        const isSlotOngoing = checkItemOngoing(trimmedItem);
+                                                        return (
+                                                            <View key={iIdx} className={`px-4 py-3 border-b flex-row items-center justify-between ${isDark ? 'border-[#333D4B]/50' : 'border-[#E5E8EB]'} last:border-0 ${isSlotOngoing ? (isDark ? 'bg-[#1C2539]' : 'bg-[#E8F3FF]') : ''}`}>
+                                                                <View className="flex-row items-center flex-1">
+                                                                    {(() => {
+                                                                        const displayStr = formatDisplayDate(formatted, t, now, timezone);
+                                                                        const dtMatch = displayStr.match(/^(.*?)\(?([일월화수목금토매일상시])\)?(?:\s*\(?(\d{1,2}:\d{2})\)?)?/);
+
+                                                                        if (dtMatch) {
+                                                                            const [_, prefix, dRaw, tPart] = dtMatch;
+                                                                            const dStr = dRaw === '매일' ? t('events.days.daily')
+                                                                                : dRaw === '상시' ? t('events.days.always')
+                                                                                    : (() => {
+                                                                                        const krDays = ['일', '월', '화', '수', '목', '금', '토'];
+                                                                                        const enKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+                                                                                        const idx = krDays.indexOf(dRaw);
+                                                                                        return idx !== -1 ? t(`events.days.${enKeys[idx]}`) : dRaw;
+                                                                                    })();
+
+                                                                            return (
+                                                                                <View className="flex-row items-center">
+                                                                                    {!!prefix && !!prefix.trim() && (
+                                                                                        <Text className={`${isDark ? 'text-slate-100' : 'text-slate-900'} font-bold text-base mr-2`}>
+                                                                                            {prefix.trim()
+                                                                                                .replace(/요새\s*(\d+)/, `${t('events.fortress')} $1`)
+                                                                                                .replace(/성채\s*(\d+)/, `${t('events.citadel')} $1`)
+                                                                                                .replace(/곰\s*(\d+)/, `${t('events.bear1').replace(/1|1군|Team\s*1/i, '')} $1`)
+                                                                                            }
+                                                                                        </Text>
+                                                                                    )}
+                                                                                    <Text className={`${isDark ? 'text-[#3182F6]' : 'text-[#3182F6]'} font-bold text-[15px]`}>{dStr}</Text>
+                                                                                    <>
+                                                                                        <Text className={`mx-2 ${isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]'}`}>·</Text>
+                                                                                        <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>
+                                                                                            {tPart || `(${t('dashboard.unassigned')})`}
+                                                                                        </Text>
+                                                                                    </>
+                                                                                </View>
+                                                                            );
+                                                                        }
+                                                                        return (
+                                                                            <View className="flex-row items-center">
+                                                                                <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{displayStr}</Text>
+                                                                            </View>
+                                                                        );
+                                                                    })()}
+                                                                </View>
+                                                                {isSlotOngoing && (
+                                                                    <View
+                                                                        className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a]"
+                                                                        style={Platform.select({
+                                                                            web: { boxShadow: '0 0 10px rgba(0,255,136,0.5)' },
+                                                                            default: { shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }
+                                                                        }) as any}
+                                                                    >
+                                                                        <Ionicons name="flash" size={8} color="#0f172a" style={{ marginRight: 2 }} />
+                                                                        <Text className="text-[#333D4B] text-[10px] font-bold ml-0.5">{t('events.status.ongoing')}</Text>
+                                                                    </View>
+                                                                )}
+                                                            </View>
+                                                        );
+                                                    });
+                                                })()}
                                             </View>
                                         </View>
                                     </View>
@@ -432,9 +447,8 @@ const GrowthEventCard = memo(({
                                                         const formatted = trimmedItem.replace(/([일월화수목금토])\s*(\d{1,2}:\d{2})/g, '$1($2)');
                                                         const displayStr = formatDisplayDate(formatted, t, now, timezone);
 
-                                                        if (isOngoing) return null;
 
-                                                        const dtMatch = displayStr.match(/^(.*?)([일월화수목금토매일상시])\s*\(?(\d{1,2}:\d{2})\)?/);
+                                                        const dtMatch = displayStr.match(/^(.*?)([일월화수목금토매일상시])(?:\s*\(?(\d{1,2}:\d{2})\)?)?/);
 
                                                         if (dtMatch) {
                                                             const [_, prefix, dRaw, tPart] = dtMatch;
@@ -460,8 +474,12 @@ const GrowthEventCard = memo(({
                                                                             </Text>
                                                                         )}
                                                                         <Text className={`${isDark ? 'text-[#3182F6]' : 'text-[#3182F6]'} font-bold text-[15px]`}>{dStr}</Text>
-                                                                        <Text className={`mx-2 ${isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]'}`}>·</Text>
-                                                                        <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>{tPart}</Text>
+                                                                        <>
+                                                                            <Text className={`mx-2 ${isDark ? 'text-[#6B7684]' : 'text-[#8B95A1]'}`}>·</Text>
+                                                                            <Text className={`${isDark ? 'text-[#F2F4F6]' : 'text-[#333D4B]'} font-bold text-[15px]`}>
+                                                                                {tPart || `(${t('dashboard.unassigned')})`}
+                                                                            </Text>
+                                                                        </>
                                                                     </View>
                                                                 </View>
                                                             );

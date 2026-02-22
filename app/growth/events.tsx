@@ -178,7 +178,13 @@ export default function EventTracker() {
             }
 
             setTimeout(() => {
-                const yPos = itemLayouts.current[focusId];
+                let yPos = itemLayouts.current[focusId];
+                if (yPos === undefined) {
+                    // Fallback: If focusId is a base ID, try to find the first split team card
+                    const splitId = Object.keys(itemLayouts.current).find(k => k.startsWith(`${focusId}_`));
+                    if (splitId) yPos = itemLayouts.current[splitId];
+                }
+
                 if (yPos !== undefined && scrollViewRef.current) {
                     scrollViewRef.current.scrollTo({ y: yPos - 20, animated: true });
                 }
@@ -493,9 +499,9 @@ export default function EventTracker() {
         try {
             const combined = `${event.day || ''} ${event.time || ''}`.trim();
             const localized = toLocalUtil(combined, (s, d) => processConversionUtil(s, d, t, now));
-            return getRemainingSecondsUtil(localized, now, event.id);
+            return getRemainingSecondsUtil(localized, now, event.id, schedules);
         } catch (e) { return null; }
-    }, [t, now]);
+    }, [t, now, schedules]);
 
     const checkIsOngoing = useCallback((event: WikiEvent) => {
         const toLocal = (str: string) => toLocalUtil(str, (s, d) => processConversionUtil(s, d, t, now));
@@ -527,10 +533,14 @@ export default function EventTracker() {
                         const trimmed = part.trim();
                         if (!trimmed) return;
                         const colonIdx = trimmed.indexOf(':');
+                        const timeMatch = trimmed.match(/\d{1,2}:\d{2}/);
+                        const timeIdx = timeMatch ? timeMatch.index : -1;
+                        const isLabelColon = colonIdx > -1 && (timeIdx === -1 || colonIdx < timeIdx);
+
                         const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                        const rawLabel = isLabelColon ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
                         const cleanLabel = rawLabel ? (rawLabel.replace(/곰|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                        const teamTime = isLabelColon ? trimmed.substring(colonIdx + 1).trim() : trimmed;
                         const simplifiedTime = teamTime.split(/[,|]/).map(t => t.replace(/출격|귀환|시작|종료/g, '').trim()).join(', ');
 
                         processedList.push({
@@ -538,16 +548,21 @@ export default function EventTracker() {
                             id: `${e.id}_team${idx + 1}`,
                             originalEventId: e.id,
                             title: t('events.alliance_bear_title'),
-                            time: simplifiedTime,
+                            day: (simplifiedTime && simplifiedTime !== '.') ? e.day : '',
+                            time: (simplifiedTime && simplifiedTime !== '.') ? simplifiedTime : '',
                             isBearSplit: true,
                             teamLabel: cleanLabel,
                             teamIcon: '🐻',
+                            _teamIdx: idx,
                             isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
                             recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
                             recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
                             startDate: idx === 0 ? e.startDate : e.startDate2
                         });
                     });
+                    if (processedList.filter(pe => pe.originalEventId === e.id).length === 0) {
+                        processedList.push(e);
+                    }
                 } else { processedList.push(e); }
             } else if (canonicalId === 'a_fortress' || canonicalId === 'a_citadel') {
                 const rawTime = (e.time || '').replace(/\s*\/\s*/g, ', ');
@@ -565,17 +580,21 @@ export default function EventTracker() {
                     processedList.push({ ...e, id: `${e.id}_citadel`, originalEventId: e.id, title: t('events.citadel_battle_title'), day: t('events.citadel'), time: citadelParts.join(', '), isFortressSplit: true });
                 }
                 if (fortressParts.length === 0 && citadelParts.length === 0) processedList.push(e);
-            } else if (canonicalId === 'alliance_canyon') {
-                const parts = (e.time || '').split(/\s*\/\s*/);
+            } else if (e.id === 'alliance_canyon') {
+                const rawTime = e.time || '';
+                const parts = rawTime ? rawTime.split(/\s*\/\s*/) : ['', ''];
                 if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                    const numTeams = Math.max(parts.length, 2);
+                    for (let idx = 0; idx < numTeams; idx++) {
+                        const part = (parts[idx] || '').trim();
+                        const colonIdx = part.indexOf(':');
+                        const timeMatch = part.match(/\d{1,2}:\d{2}/);
+                        const timeIdx = timeMatch ? timeMatch.index : -1;
+                        const isLabelColon = colonIdx > -1 && (timeIdx === -1 || colonIdx < timeIdx);
+
+                        const rawLabel = isLabelColon ? part.substring(0, colonIdx).trim() : `${idx + 1}군`;
                         const cleanLabel = rawLabel ? (rawLabel.replace(/협곡|전투|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                        const teamTime = isLabelColon ? part.substring(colonIdx + 1).trim() : part;
                         const simplifiedTime = teamTime.split(/[,|]/).map(t => t.replace(/출격|귀환|시작|종료/g, '').trim()).join(', ');
 
                         processedList.push({
@@ -583,28 +602,34 @@ export default function EventTracker() {
                             id: `${e.id}_team${idx + 1}`,
                             originalEventId: e.id,
                             title: t('events.alliance_canyon_title'),
-                            time: simplifiedTime,
+                            day: (simplifiedTime && simplifiedTime !== '.') ? e.day : '',
+                            time: (simplifiedTime && simplifiedTime !== '.') ? simplifiedTime : '',
                             isCanyonSplit: true,
                             teamLabel: cleanLabel,
                             teamIcon: '⛰️',
+                            _teamIdx: idx,
                             isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
                             recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
                             recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
                             startDate: idx === 0 ? e.startDate : e.startDate2
                         });
-                    });
+                    }
                 } else { processedList.push(e); }
-            } else if (canonicalId === 'alliance_foundry') {
-                const parts = (e.time || '').split(/\s*\/\s*/);
+            } else if (e.id === 'a_foundry' || e.id === 'alliance_foundry') {
+                const rawTime = e.time || '';
+                const parts = rawTime ? rawTime.split(/\s*\/\s*/) : ['', ''];
                 if (parts.length > 0) {
-                    parts.forEach((part, idx) => {
-                        const trimmed = part.trim();
-                        if (!trimmed) return;
-                        const colonIdx = trimmed.indexOf(':');
-                        const isSingleTeam = parts.length === 1;
-                        const rawLabel = colonIdx > -1 ? trimmed.substring(0, colonIdx).trim() : (isSingleTeam ? '' : `${idx + 1}군`);
+                    const numTeams = Math.max(parts.length, 2);
+                    for (let idx = 0; idx < numTeams; idx++) {
+                        const part = (parts[idx] || '').trim();
+                        const colonIdx = part.indexOf(':');
+                        const timeMatch = part.match(/\d{1,2}:\d{2}/);
+                        const timeIdx = timeMatch ? timeMatch.index : -1;
+                        const isLabelColon = colonIdx > -1 && (timeIdx === -1 || colonIdx < timeIdx);
+
+                        const rawLabel = isLabelColon ? part.substring(0, colonIdx).trim() : `${idx + 1}군`;
                         const cleanLabel = rawLabel ? (rawLabel.replace(/무기|공장|팀|군/g, '').trim() + '군') : '';
-                        const teamTime = colonIdx > -1 ? trimmed.substring(colonIdx + 1).trim() : trimmed;
+                        const teamTime = isLabelColon ? part.substring(colonIdx + 1).trim() : part;
                         const simplifiedTime = teamTime.split(/[,|]/).map(t => t.replace(/출격|귀환|시작|종료/g, '').trim()).join(', ');
 
                         processedList.push({
@@ -612,16 +637,18 @@ export default function EventTracker() {
                             id: `${e.id}_team${idx + 1}`,
                             originalEventId: e.id,
                             title: t('events.alliance_foundry_title'),
-                            time: simplifiedTime,
+                            day: (simplifiedTime && simplifiedTime !== '.') ? e.day : '',
+                            time: (simplifiedTime && simplifiedTime !== '.') ? simplifiedTime : '',
                             isFoundrySplit: true,
                             teamLabel: cleanLabel,
                             teamIcon: '🔥',
+                            _teamIdx: idx,
                             isRecurring: idx === 0 ? e.isRecurring : e.isRecurring2,
                             recurrenceValue: idx === 0 ? e.recurrenceValue : e.recurrenceValue2,
                             recurrenceUnit: idx === 0 ? e.recurrenceUnit : e.recurrenceUnit2,
                             startDate: idx === 0 ? e.startDate : e.startDate2
                         });
-                    });
+                    }
                 } else { processedList.push(e); }
             } else {
                 processedList.push(e);
@@ -1176,6 +1203,7 @@ export default function EventTracker() {
                                                 openAttendeeModal={openAttendeeModal}
                                                 openWikiLink={openWikiLink}
                                                 onSetSelectedTeamTab={(idx) => handleSetSelectedTeamTab(event.id, idx)}
+                                                isHighlighted={highlightId === event.id}
                                                 onLayout={(y) => { itemLayouts.current[event.id] = y; }}
                                             />
                                         ))

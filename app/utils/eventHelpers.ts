@@ -200,3 +200,59 @@ export const translateLabel = (label: string, t: (key: string) => string) => {
         .replace(/(?:^|\s|\()1군(?:\s|\)|$)/g, (match) => match.replace('1군', t('events.team1')))
         .replace(/(?:^|\s|\()2군(?:\s|\)|$)/g, (match) => match.replace('2군', t('events.team2')));
 };
+
+/**
+ * Get the next occurrence of a specific day of the week and time.
+ * Returns ISO date string (YYYY-MM-DD).
+ */
+export const getNextOccurrenceDate = (dayRaw: string, timeStr: string, now: Date) => {
+    const dayMap: { [key: string]: number } = {
+        '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6,
+        'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6,
+        '일요일': 0, '월요일': 1, '화요일': 2, '수요일': 3, '목요일': 4, '금요일': 5, '토요일': 6
+    };
+
+    const targetDay = dayMap[dayRaw.toLowerCase().trim()];
+    if (targetDay === undefined) return null;
+
+    const [h, m] = (timeStr.match(/(\d{1,2}):(\d{2})/) || ['0', '0', '0']).slice(1).map(Number);
+
+    const result = new Date(now);
+    const currentDay = result.getDay();
+
+    let diff = targetDay - currentDay;
+    if (diff < 0) diff += 7;
+    else if (diff === 0) {
+        // If it's today, check if time has already passed (plus 1h buffer for safety)
+        const currentMins = result.getHours() * 60 + result.getMinutes();
+        const targetMins = h * 60 + m;
+        if (currentMins > targetMins + 60) {
+            diff = 7;
+        }
+    }
+
+    result.setDate(result.getDate() + diff);
+    return `${result.getFullYear()}-${pad(result.getMonth() + 1)}-${pad(result.getDate())}`;
+};
+
+/**
+ * Get the date of a specific weekday within the same week as 'now' (Sunday to Saturday).
+ * Returns ISO date string (YYYY-MM-DD).
+ */
+export const getRegistrationWeekDate = (dayRaw: string, now: Date) => {
+    const dayMap: { [key: string]: number } = {
+        '일': 0, '월': 1, '화': 2, '수': 3, '목': 4, '금': 5, '토': 6,
+        'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6,
+        '일요일': 0, '월요일': 1, '화요일': 2, '수요일': 3, '목요일': 4, '금요일': 5, '토요일': 6
+    };
+
+    const targetDay = dayMap[dayRaw.toLowerCase().trim()];
+    if (targetDay === undefined) return null;
+
+    const result = new Date(now);
+    const currentDay = result.getDay();
+    const diff = targetDay - currentDay;
+
+    result.setDate(result.getDate() + diff);
+    return `${result.getFullYear()}-${pad(result.getMonth() + 1)}-${pad(result.getDate())}`;
+};

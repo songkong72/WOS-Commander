@@ -410,6 +410,8 @@
         "save_success": "Saved to server.",
         "save_error": "Error while saving: {{error}}",
         "schedule_saved": "Schedule for {{title}} saved.",
+        "schedule_updated": "Schedule for {{title}} updated.",
+        "schedule_deleted": "Schedule for {{title}} deleted.",
         "schedule_reset_title": "Reset Schedule",
         "schedule_reset_confirm": "Do you really want to delete schedule settings for this event?",
         "schedule_reset_success": "Schedule has been reset.",
