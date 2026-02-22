@@ -98,7 +98,7 @@ export const EventSectionList: React.FC<EventSectionListProps> = ({
                                                     >
                                                         <View className="w-1.5 h-6 bg-emerald-500 rounded-full mr-3" />
                                                         <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 20 * fontSizeScale }}>{t('dashboard.event_active')}</Text>
-                                                        <Ionicons name={isActiveExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
+                                                        <Ionicons name={isActiveExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#94a3b8' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                     </TouchableOpacity>
                                                 </View>
                                                 {isActiveExpanded && (
@@ -127,7 +127,7 @@ export const EventSectionList: React.FC<EventSectionListProps> = ({
                                                     >
                                                         <View className="w-1.5 h-6 bg-sky-500 rounded-full mr-3" />
                                                         <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.event_upcoming')}</Text>
-                                                        <Ionicons name={isUpcomingExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
+                                                        <Ionicons name={isUpcomingExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#94a3b8' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                     </TouchableOpacity>
                                                 </View>
                                                 {isUpcomingExpanded && (
@@ -156,7 +156,7 @@ export const EventSectionList: React.FC<EventSectionListProps> = ({
                                                     >
                                                         <View className="w-1.5 h-6 bg-slate-500 rounded-full mr-3" />
                                                         <Text className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('dashboard.event_expired')}</Text>
-                                                        <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#475569' : '#94a3b8'} style={{ marginLeft: 6 }} />
+                                                        <Ionicons name={isExpiredExpanded ? "chevron-up" : "chevron-down"} size={20} color={isDark ? '#94a3b8' : '#94a3b8'} style={{ marginLeft: 6 }} />
                                                     </TouchableOpacity>
                                                 </View>
                                                 {isExpiredExpanded ? (
