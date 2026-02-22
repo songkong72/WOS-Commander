@@ -121,7 +121,7 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
                                     />
                                     {showViewModeLabel && (
                                         <Text
-                                            className={`ml-1.5 font-black ${viewMode === mode.id ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}
+                                            className={`ml-1.5 font-black ${viewMode === mode.id ? (isDark ? 'text-white' : 'text-slate-800') : (isDark ? 'text-slate-500' : 'text-slate-400')}`}
                                             style={{ fontSize: (windowWidth < 380 ? 10 : 12) * fontSizeScale }}
                                         >
                                             {mode.label}
