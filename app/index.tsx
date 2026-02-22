@@ -564,17 +564,14 @@ export default function Home() {
                 />
 
                 {/* Modern Refined Footer */}
-                <View className="mt-32 mb-24 items-center">
+                <View className="mt-12 mb-10 items-center">
                     {/* Thin Subtle Divider */}
-                    <View className={`w-full h-[1px] mb-8 self-stretch ${isDark ? 'bg-slate-800/40' : 'bg-slate-200/60'}`} />
+                    <View className={`w-[85%] h-[1px] mb-5 ${isDark ? 'bg-slate-800/50' : 'bg-slate-200/80'}`} />
 
-                    <View className="items-center px-12">
-                        <Text className={`text-[10px] font-black tracking-[0.2em] uppercase text-center ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                    <View className="items-center px-8">
+                        <Text className={`text-[9px] font-black tracking-[0.2em] uppercase text-center ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
                             © 2026 WOS Studio  —  Designed by SSJ
                         </Text>
-
-                        {/* Optional: Subtle Underline/Accent */}
-                        <View className={`mt-4 w-6 h-0.5 rounded-full ${isDark ? 'bg-sky-500/20' : 'bg-sky-500/10'}`} />
                     </View>
                 </View>
             </ScrollView>
