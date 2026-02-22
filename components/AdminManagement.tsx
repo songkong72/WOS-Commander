@@ -739,7 +739,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                 <View className="mb-4">
                                     <View className={`flex-row items-center justify-between gap-3 ${isMobile ? 'flex-col items-stretch' : ''}`}>
                                         {/* Search Input */}
-                                        <View className={`flex-1 flex-row items-center rounded-xl ${isMobile ? 'px-3 py-2.5 h-10' : 'px-4 py-2 h-10'} border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                                        <View className={`${isMobile ? '' : 'flex-[0.4]'} flex-row items-center rounded-xl ${isMobile ? 'px-3 py-2.5 h-10' : 'px-4 py-2 h-10'} border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
                                             <Ionicons name="search" size={isMobile ? 14 : 16} color={isDark ? "#94a3b8" : "#64748b"} className="mr-2" />
                                             <TextInput
                                                 placeholder={t('dashboard.search', '검색...')}
@@ -757,7 +757,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                         </View>
 
                                         {/* Filter Tabs (Redesigned as Segmented Tabs) */}
-                                        <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+                                        <View className={`${isMobile ? '' : 'flex-[0.6]'} flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
                                             {[
                                                 { id: 'all', label: t('admin.all'), icon: 'apps' },
                                                 { id: 'staff', label: t('admin.staff'), icon: 'shield-checkmark' },
