@@ -214,11 +214,11 @@ export const DashboardHeader = ({
             </View>
 
             <View className="mb-4 flex-row items-center">
-                <View className="w-16 h-16 md:w-20 md:h-20 items-center justify-center mr-3 overflow-hidden rounded-2xl shadow-sm border border-slate-800/30">
+                <View className="w-16 h-16 md:w-20 md:h-20 items-center justify-center mr-3">
                     <Image
                         source={require('../../assets/icon.png')}
-                        style={{ width: '100%', height: '100%' }}
-                        resizeMode="cover"
+                        style={{ width: '120%', height: '120%' }}
+                        resizeMode="contain"
                     />
                 </View>
                 <View className="flex-1">
