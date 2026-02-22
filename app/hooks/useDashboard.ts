@@ -6,15 +6,16 @@ import {
     getEventSchedule as getEventScheduleUtil,
     getEventEndDate as getEventEndDateUtil,
     checkWeeklyExpired as checkWeeklyExpiredUtil,
-    isEventExpired as isEventExpiredUtil,
+    isEventExpired,
     getRemainingSeconds as getRemainingSecondsUtil,
     getNextResetSeconds as getNextResetSecondsUtil,
-    checkItemActive as checkItemActiveUtil,
-    isVisibleInList as isVisibleInListUtil,
+    checkItemActive,
+    isVisibleInList,
     calculateBearHuntDay as calculateBearHuntDayUtil,
-    isEventActive as isEventActiveUtil,
+    isEventActive,
     getBundleId as getBundleIdUtil,
-    getSortTime as getSortTimeUtil
+    getSortTime,
+    getCanonicalEventId
 } from '../utils/eventStatus';
 import {
     pad as padUtil,
@@ -176,19 +177,19 @@ export const useDashboard = ({
 
     const getEventSchedule = useCallback((event: any) => getEventScheduleUtil(event, schedules), [schedules]);
     const getEventEndDate = useCallback((event: any) => getEventEndDateUtil(event, schedules, now), [schedules, now]);
-    const isEventExpired = useCallback((event: any) => isEventExpiredUtil(event, schedules, now), [schedules, now]);
+    const isEventExpiredStatus = useCallback((event: any) => isEventExpired(event, schedules, now), [schedules, now]);
     const getRemainingSeconds = useCallback((str: string, eventId?: string) => getRemainingSecondsUtil(str, now, eventId), [now]);
     const getNextResetSeconds = useCallback(() => getNextResetSecondsUtil(now), [now]);
-    const checkItemActive = useCallback((str: string, targetNow: Date, eventId?: string) => checkItemActiveUtil(str, targetNow, eventId), []);
-    const isVisibleInList = useCallback((event: any) => isVisibleInListUtil(event, schedules, now), [schedules, now]);
+    const checkItemActiveStatus = useCallback((str: string, targetNow: Date, eventId?: string) => checkItemActive(str, targetNow, eventId), []);
+    const isVisibleInListStatus = useCallback((event: any) => isVisibleInList(event, schedules, now), [schedules, now]);
 
     const calculateBearHuntDay = useCallback((event: any, targetTime?: string): string =>
         calculateBearHuntDayUtil(event, schedules, now, targetTime), [schedules, now]);
 
-    const isEventActive = useCallback((event: any) => isEventActiveUtil(
+    const isEventActiveStatus = useCallback((event: any) => isEventActive(
         event, schedules, now,
         (str) => toLocalUtil(str, (s, d) => processConversionUtil(s, d, t, now)),
-        (s, n, id) => checkItemActiveUtil(s, n, id),
+        (s, n, id) => checkItemActive(s, n, id),
         (e, s, n) => calculateBearHuntDayUtil(e, s, n)
     ), [schedules, now]);
 
@@ -253,19 +254,7 @@ export const useDashboard = ({
         const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
 
         const rawList = schedules.map(s => {
-            let searchId = s.eventId;
-            if (s.eventId === 'alliance_frost_league' || s.eventId === 'a_weapon') searchId = 'a_weapon';
-            if (s.eventId === 'alliance_operation' || s.eventId === 'a_operation') searchId = 'alliance_operation';
-            if (s.eventId === 'alliance_trade' || s.eventId === 'a_trade') searchId = 'alliance_trade';
-            if (s.eventId === 'alliance_champion' || s.eventId === 'a_champ') searchId = 'alliance_champion';
-            if (s.eventId === 'alliance_bear' || s.eventId === 'a_bear') searchId = 'alliance_bear';
-            if (s.eventId === 'alliance_joe' || s.eventId === 'a_joe') searchId = 'alliance_joe';
-            if (s.eventId === 'alliance_center' || s.eventId === 'a_center') searchId = 'alliance_center';
-            if (s.eventId === 'alliance_fortress' || s.eventId === 'a_fortress') searchId = 'a_fortress';
-            if (s.eventId === 'alliance_canyon' || s.eventId === 'a_canyon') searchId = 'alliance_canyon';
-            if (s.eventId === 'alliance_foundry' || s.eventId === 'a_foundry') searchId = 'alliance_foundry';
-            if (s.eventId === 'alliance_citadel' || s.eventId === 'a_citadel') searchId = 'a_citadel';
-            if (s.eventId === 'alliance_mobilization' || s.eventId === 'a_mobilization' || s.eventId === 'a_total') searchId = 'alliance_mobilization';
+            let searchId = getCanonicalEventId(s.eventId);
 
             const eventInfo = allBaseEvents.find(e => e.id === searchId);
             const cleanDay = (s.day === '.' || s.day?.trim() === '.') ? '' : (s.day || '');
@@ -282,7 +271,7 @@ export const useDashboard = ({
         }).filter(e => {
             if (e.title === '알 수 없는 이벤트') return false;
             if (!(!!e.day || !!e.time)) return false;
-            return isVisibleInList(e);
+            return isVisibleInListStatus(e);
         });
 
         const processedList: any[] = [];
@@ -445,10 +434,10 @@ export const useDashboard = ({
         // Export Helpers
         getEventSchedule,
         getEventEndDate,
-        isEventExpired,
+        isEventExpired: isEventExpiredStatus,
         getRemainingSeconds,
         getNextResetSeconds,
-        isEventActive,
+        isEventActive: isEventActiveStatus,
         formatRemainingTime,
         toLocal,
         toUTC,

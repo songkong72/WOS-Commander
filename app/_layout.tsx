@@ -9,6 +9,7 @@ import { BlurView } from 'expo-blur';
 import { useTranslation } from 'react-i18next';
 import Head from 'expo-router/head';
 import { AuthContext, ThemeContext, LanguageContext, Language } from './context';
+import { CustomAlert } from '../components/modals/AlertModals';
 import "../global.css";
 import GlobalNavigationBar from '../components/GlobalNavigationBar';
 import '../services/i18n';
@@ -254,63 +255,15 @@ export default function Layout() {
                         </View>
                         {!isGateOpen && <GlobalNavigationBar />}
                     </View>
-                    {/* Custom Alert Modal (Global) */}
-                    <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert({ ...customAlert, visible: false })}>
-                        <View className="flex-1 bg-black/60 items-center justify-center p-6">
-                            <BlurView intensity={20} className="absolute inset-0" />
-                            <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                                <View className="items-center mb-6">
-                                    <View className={`w-16 h-16 rounded-3xl items-center justify-center mb-4 ${customAlert.type === 'success' ? 'bg-emerald-500/20' :
-                                        customAlert.type === 'error' ? 'bg-red-500/20' :
-                                            customAlert.type === 'warning' ? 'bg-amber-500/20' : 'bg-sky-500/20'
-                                        }`}>
-                                        <Ionicons
-                                            name={
-                                                customAlert.type === 'success' ? 'checkmark-circle' :
-                                                    customAlert.type === 'error' ? 'alert-circle' :
-                                                        customAlert.type === 'warning' ? 'warning' : 'help-circle'
-                                            }
-                                            size={32}
-                                            color={
-                                                customAlert.type === 'success' ? '#10b981' :
-                                                    customAlert.type === 'error' ? '#ef4444' :
-                                                        customAlert.type === 'warning' ? '#f59e0b' : '#0ea5e9'
-                                            }
-                                        />
-                                    </View>
-                                    <Text className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                                    <Text className={`mt-4 text-center text-lg font-medium leading-7 ${isDark ? 'text-slate-100' : 'text-slate-600'}`}>{customAlert.message}</Text>
-                                </View>
-
-                                {customAlert.type === 'confirm' ? (
-                                    <View className="flex-row gap-3">
-                                        <TouchableOpacity
-                                            onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                            className={`flex-1 py-4 rounded-3xl border ${isDark ? 'border-slate-800' : 'border-slate-100'}`}
-                                        >
-                                            <Text className={`text-center font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.cancel')}</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            onPress={() => {
-                                                setCustomAlert({ ...customAlert, visible: false });
-                                                if (customAlert.onConfirm) customAlert.onConfirm();
-                                            }}
-                                            className="flex-[2] bg-sky-500 py-4 rounded-3xl shadow-lg"
-                                        >
-                                            <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                ) : (
-                                    <TouchableOpacity
-                                        onPress={() => setCustomAlert({ ...customAlert, visible: false })}
-                                        className="bg-sky-500 py-4 rounded-3xl shadow-lg"
-                                    >
-                                        <Text className="text-center font-bold text-white">{t('common.confirm')}</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    </Modal>
+                    <CustomAlert
+                        visible={customAlert.visible}
+                        title={customAlert.title}
+                        message={customAlert.message}
+                        type={customAlert.type}
+                        isDark={isDark}
+                        onConfirm={customAlert.onConfirm}
+                        onClose={() => setCustomAlert({ ...customAlert, visible: false })}
+                    />
 
                 </LanguageContext.Provider>
             </ThemeContext.Provider>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform, ActivityIndicator, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ScrollView, Platform, ActivityIndicator, Modal, useWindowDimensions, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth, useTheme } from '../app/context';
 import { useFirestoreMembers } from '../hooks/useFirestoreMembers';
@@ -14,6 +14,8 @@ import { hashPassword } from '../utils/crypto';
 import { db } from '../firebaseConfig';
 import { collection, getDocs, query, writeBatch, doc, where } from 'firebase/firestore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFirestoreNotificationSettings } from '../hooks/useFirestoreNotificationSettings';
+import { sendWebhookNotification, createAllianceRegistrationMessage } from '../services/NotificationService';
 
 interface AdminManagementProps {
     serverId: string | null;
@@ -23,7 +25,7 @@ interface AdminManagementProps {
 
 export default function AdminManagement({ serverId, allianceId, onBack }: AdminManagementProps) {
     const { t } = useTranslation();
-    const { auth } = useAuth();
+    const { auth, showCustomAlert } = useAuth();
     const { theme, fontSizeScale } = useTheme();
     const isDark = theme === 'dark';
     const { width } = useWindowDimensions();
@@ -35,6 +37,7 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
     const { members, loading: membersLoading, saveMembers, clearAllMembers, deleteMember, updateMemberPassword } = useFirestoreMembers(targetServerId, targetAllianceId);
     const { sheetData, saveSheetUrl, uploadStrategyFile } = useFirestoreStrategySheet(targetServerId, targetAllianceId);
     const { themeConfig, saveDefaultMode } = useFirestoreThemeConfig(targetServerId, targetAllianceId);
+    const { settings: notificationSettings, saveWebhookUrl: saveAllianceWebhook } = useFirestoreNotificationSettings(targetServerId, targetAllianceId);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -57,21 +60,33 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
     const [hoveredRow, setHoveredRow] = useState<string | null>(null);
     const [hoveredStaffBtn, setHoveredStaffBtn] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<'members' | 'strategy'>('members');
+    const [activeTab, setActiveTab] = useState<'members' | 'strategy' | 'settings'>('members');
+    const [sharingId, setSharingId] = useState<string | null>(null);
 
-    // Custom Alert State
-    const [customAlert, setCustomAlert] = useState<{
-        visible: boolean,
-        title: string,
-        message: string,
-        type: 'success' | 'error' | 'warning' | 'confirm',
-        onConfirm?: () => void
-    }>({
-        visible: false,
-        title: '',
-        message: '',
-        type: 'error'
-    });
+    const handleShareInvite = async (member: any) => {
+        setSharingId(member.id);
+        const appUrl = 'https://wos-commander.web.app';
+        const inviteMessage = `[WOS 커맨더 초대장]\n\n🏰 대시보드 주소: ${appUrl}\n👤 아이디: ${member.nickname}\n🔑 초기 비밀번호: 1234\n\n지금 접속해서 전략과 일정을 확인하세요!`;
+
+        try {
+            if (Platform.OS === 'web') {
+                if (navigator.clipboard) {
+                    await navigator.clipboard.writeText(inviteMessage);
+                    showCustomAlert(t('common.success'), t('admin.invite_copy_success', '초대 문구가 클립보드에 복사되었습니다. 대상에게 붙여넣기(Ctrl+V) 하세요!'), 'success');
+                }
+            } else {
+                await Share.share({
+                    message: inviteMessage,
+                    title: 'WOS 커맨더 초대'
+                });
+            }
+        } catch (error) {
+            console.error('Share error:', error);
+        } finally {
+            setSharingId(null);
+        }
+    };
+
 
     const [allServers, setAllServers] = useState<string[]>([]);
     const [allAlliances, setAllAlliances] = useState<{ id: string, serverId: string }[]>([]);
@@ -114,9 +129,6 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
         }
     }, [targetServerId, allAlliances]);
 
-    const showCustomAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' | 'confirm' = 'error', onConfirm?: () => void) => {
-        setCustomAlert({ visible: true, title, message, type, onConfirm });
-    };
 
     useEffect(() => {
         if (sheetData?.url) {
@@ -255,6 +267,13 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
         if (previewData.length === 0) return;
         try {
             await saveMembers(previewData);
+
+            // Send Notification
+            if (notificationSettings?.webhookUrl) {
+                const message = createAllianceRegistrationMessage(targetAllianceId || '', targetServerId || '', previewData.length);
+                sendWebhookNotification(notificationSettings.webhookUrl, message);
+            }
+
             setPreviewData([]);
             showCustomAlert(t('common.success'), t('admin.members_save_success', { count: previewData.length }), 'success');
         } catch (error) {
@@ -274,6 +293,13 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                 nickname: manualNick.trim(),
                 password: manualPw.trim() || '1234'
             }]);
+
+            // Send Notification
+            if (notificationSettings?.webhookUrl) {
+                const message = createAllianceRegistrationMessage(targetAllianceId || '', targetServerId || '', 1);
+                sendWebhookNotification(notificationSettings.webhookUrl, message);
+            }
+
             setManualNick('');
             setManualId('');
             setManualPw('');
@@ -512,6 +538,13 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                         <Ionicons name="document-text" size={isMobile ? 16 : 20} color={activeTab === 'strategy' ? (isDark ? 'white' : '#d97706') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
                         <Text className={`font-black ${activeTab === 'strategy' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.strategyDocumentTab')}</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setActiveTab('settings')}
+                        className={`flex-1 flex-row items-center justify-center ${isMobile ? 'py-3' : 'py-4'} rounded-[20px] transition-all duration-300 ${activeTab === 'settings' ? (isDark ? 'bg-rose-500 shadow-lg shadow-rose-500/20' : 'bg-white shadow-md') : ''}`}
+                    >
+                        <Ionicons name="settings" size={isMobile ? 16 : 20} color={activeTab === 'settings' ? (isDark ? 'white' : '#f43f5e') : (isDark ? '#475569' : '#94a3b8')} style={{ marginRight: 8 }} />
+                        <Text className={`font-black ${activeTab === 'settings' ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 12 : 14) * fontSizeScale }}>{t('admin.settingsTab', '설정')}</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
@@ -568,6 +601,48 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                 </View>
                                             </View>
                                         )}
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <View className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            {/* Notification Settings Section */}
+                            <View className={`${isMobile ? 'p-4' : 'p-6'} rounded-3xl border shadow-xl mb-6 ${isDark ? 'bg-slate-900/80 border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'}`}>
+                                <View className={`flex-row items-center mb-6 border-b pb-4 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+                                    <View className={`w-8 h-8 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
+                                        <Ionicons name="notifications-outline" size={isMobile ? 18 : 22} color={isDark ? "#fb7185" : "#e11d48"} />
+                                    </View>
+                                    <Text className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('admin.alarmSettings', '알림 설정')}</Text>
+                                </View>
+
+                                <View className={`p-4 rounded-xl border mb-6 ${isDark ? 'bg-rose-500/10 border-rose-500/30' : 'bg-rose-50/50 border-rose-100'}`}>
+                                    <View className="flex-row items-center mb-2">
+                                        <Ionicons name="information-circle" size={18} color={isDark ? "#fb7185" : "#e11d48"} className="mr-2" />
+                                        <Text className={`font-bold ${isDark ? 'text-rose-500' : 'text-rose-600'}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>{t('admin.webhookGuideTitle', '디스코드/텔레그램 연동')}</Text>
+                                    </View>
+                                    <Text className={`leading-5 font-medium ${isDark ? 'text-slate-300' : 'text-slate-500'}`} style={{ fontSize: (isMobile ? 9 : 11) * fontSizeScale }}>
+                                        {t('admin.webhookGuideDesc', '연맹원 등록 알림을 받을 디스코드나 텔레그램의 웹훅 URL을 입력해주세요. 등록 시 즉시 알림이 전송됩니다.')}
+                                    </Text>
+                                </View>
+
+                                <View className={`p-4 rounded-2xl border shadow-inner ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-100'}`}>
+                                    <Text className={`font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`} style={{ fontSize: (isMobile ? 9 : 10) * fontSizeScale }}>{t('admin.webhookUrlLabel', '웹훅 URL (Webhook URL)')}</Text>
+                                    <View className="space-y-4">
+                                        <TextInput
+                                            className={`${isMobile ? 'p-3.5 h-12' : 'p-4 h-14'} rounded-xl border font-semibold ${isDark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+                                            placeholder="https://discord.com/api/webhooks/..."
+                                            placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                            value={notificationSettings?.webhookUrl || ''}
+                                            onChangeText={(val) => saveAllianceWebhook(val)}
+                                            style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}
+                                        />
+                                        <View className="mt-4 flex-row items-center gap-2">
+                                            <Ionicons name="shield-checkmark" size={14} color="#10b981" />
+                                            <Text className="text-[10px] text-emerald-500 font-bold">입력 시 자동 저장됩니다. (Auto-saved)</Text>
+                                        </View>
                                     </View>
                                 </View>
                             </View>
@@ -681,16 +756,28 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                             )}
                                         </View>
 
-                                        {/* Filter Tabs */}
-                                        <View className={`flex-row p-1 rounded-xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
-                                            {(['all', 'staff', 'general'] as const).map((filter) => (
+                                        {/* Filter Tabs (Redesigned as Segmented Tabs) */}
+                                        <View className={`flex-row p-1.5 rounded-2xl border ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
+                                            {[
+                                                { id: 'all', label: t('admin.all'), icon: 'apps' },
+                                                { id: 'staff', label: t('admin.staff'), icon: 'shield-checkmark' },
+                                                { id: 'general', label: t('admin.general'), icon: 'people' }
+                                            ].map((filter) => (
                                                 <TouchableOpacity
-                                                    key={filter}
-                                                    onPress={() => setRoleFilter(filter)}
-                                                    className={`px-3 py-1.5 rounded-lg items-center justify-center ${roleFilter === filter ? (isDark ? 'bg-indigo-500' : 'bg-indigo-500 shadow-sm') : ''}`}
+                                                    key={filter.id}
+                                                    onPress={() => setRoleFilter(filter.id as any)}
+                                                    activeOpacity={0.7}
+                                                    className={`flex-1 flex-row items-center justify-center py-2.5 rounded-[14px] transition-all duration-300 ${roleFilter === filter.id ?
+                                                        (isDark ? 'bg-indigo-600 shadow-lg shadow-indigo-500/20' : 'bg-white shadow-sm') : ''}`}
                                                 >
-                                                    <Text className={`font-black ${roleFilter === filter ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>
-                                                        {filter === 'all' ? t('admin.all') : filter === 'staff' ? t('admin.staff') : t('admin.general')}
+                                                    <Ionicons
+                                                        name={filter.icon as any}
+                                                        size={isMobile ? 12 : 14}
+                                                        color={roleFilter === filter.id ? (isDark ? 'white' : '#4f46e5') : (isDark ? '#475569' : '#94a3b8')}
+                                                        style={{ marginRight: 6 }}
+                                                    />
+                                                    <Text className={`font-black ${roleFilter === filter.id ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-500' : 'text-slate-400')}`} style={{ fontSize: (isMobile ? 10 : 12) * fontSizeScale }}>
+                                                        {filter.label}
                                                     </Text>
                                                 </TouchableOpacity>
                                             ))}
@@ -733,10 +820,20 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                                                             </View>
                                                         </View>
                                                         <View className="flex-row gap-1.5">
+                                                            <TouchableOpacity
+                                                                onPress={(e) => { e.stopPropagation(); handleShareInvite(m); }}
+                                                                className={`${isMobile ? 'w-8 h-8' : 'w-9 h-9'} rounded-lg items-center justify-center border ${isDark ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50 border-sky-100'}`}
+                                                            >
+                                                                {sharingId === m.id ? (
+                                                                    <ActivityIndicator size="small" color="#0ea5e9" />
+                                                                ) : (
+                                                                    <Ionicons name="share-social-outline" size={isMobile ? 14 : 16} color="#0ea5e9" />
+                                                                )}
+                                                            </TouchableOpacity>
                                                             <TouchableOpacity onPress={(e) => { e.stopPropagation(); toggleStaff(m); }} className={`${isMobile ? 'w-8 h-8' : 'w-9 h-9'} rounded-lg items-center justify-center border ${isRowStaff ? 'bg-indigo-600 border-indigo-500' : (isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200')}`}>
                                                                 <Ionicons name={isRowStaff ? "shield-checkmark" : "shield-outline"} size={isMobile ? 14 : 16} color={isRowStaff ? "white" : (isDark ? "#64748b" : "#94a3b8")} />
                                                             </TouchableOpacity>
-                                                            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showCustomAlert('삭제', `${m.nickname}님을 삭제?`, 'confirm', () => deleteMember(m.id)); }} className={`${isMobile ? 'w-8 h-8' : 'w-9 h-9'} rounded-lg items-center justify-center border ${isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-100'}`}>
+                                                            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showCustomAlert(t('common.delete'), `${m.nickname}님을 삭제하시겠습니까?`, 'confirm', () => deleteMember(m.id)); }} className={`${isMobile ? 'w-8 h-8' : 'w-9 h-9'} rounded-lg items-center justify-center border ${isDark ? 'bg-rose-500/10 border-rose-500/20' : 'bg-rose-50 border-rose-100'}`}>
                                                                 <Ionicons name="trash-outline" size={isMobile ? 14 : 16} color="#f43f5e" />
                                                             </TouchableOpacity>
                                                         </View>
@@ -772,55 +869,6 @@ export default function AdminManagement({ serverId, allianceId, onBack }: AdminM
                 }
             </View >
 
-            {/* Modals & Alerts */}
-            < Modal visible={customAlert.visible} transparent animationType="fade" >
-                <View className="flex-1 bg-black/60 items-center justify-center p-6 text-center">
-                    <View className={`w-full max-w-sm p-8 rounded-[40px] border shadow-2xl items-center ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
-                        <View className={`w-16 h-16 rounded-full items-center justify-center mb-5 ${customAlert.type === 'success' ? (isDark ? 'bg-emerald-500/20' : 'bg-emerald-50') :
-                            customAlert.type === 'error' ? (isDark ? 'bg-rose-500/20' : 'bg-rose-50') :
-                                customAlert.type === 'warning' ? (isDark ? 'bg-amber-500/20' : 'bg-amber-50') :
-                                    (isDark ? 'bg-red-500/20' : 'bg-red-50')
-                            }`}>
-                            <Ionicons
-                                name={
-                                    customAlert.type === 'success' ? 'checkmark-circle' :
-                                        customAlert.type === 'error' ? 'close-circle' :
-                                            customAlert.type === 'warning' ? 'warning' :
-                                                'alert-circle'
-                                }
-                                size={36}
-                                color={
-                                    customAlert.type === 'success' ? '#10b981' :
-                                        customAlert.type === 'error' ? '#f43f5e' :
-                                            customAlert.type === 'warning' ? '#f59e0b' :
-                                                '#ef4444'
-                                }
-                            />
-                        </View>
-                        <Text className={`text-2xl font-black mb-3 text-center ${isDark ? 'text-white' : 'text-slate-900'}`}>{customAlert.title}</Text>
-                        <Text className={`text-center mb-8 text-sm font-medium leading-5 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{customAlert.message}</Text>
-                        <View className="flex-row gap-3 w-full">
-                            {customAlert.type === 'confirm' && (
-                                <TouchableOpacity onPress={() => setCustomAlert({ ...customAlert, visible: false })} className={`flex-1 py-4 rounded-2xl border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'}`}>
-                                    <Text className={`text-center font-bold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>취소</Text>
-                                </TouchableOpacity>
-                            )}
-                            <TouchableOpacity
-                                onPress={() => { setCustomAlert({ ...customAlert, visible: false }); customAlert.onConfirm?.(); }}
-                                className={`flex-1 py-4 rounded-2xl ${customAlert.type === 'confirm' ? 'bg-red-500' :
-                                    customAlert.type === 'success' ? 'bg-emerald-500' :
-                                        customAlert.type === 'warning' ? 'bg-amber-500' :
-                                            'bg-blue-600'
-                                    }`}
-                            >
-                                <Text className={`text-center font-bold ${customAlert.type === 'warning' ? 'text-black' : 'text-white'}`}>
-                                    {customAlert.type === 'confirm' ? t('admin.delete_short', '삭제') : t('common.confirm_btn', '확인')}
-                                </Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal >
         </View >
     );
 }

@@ -27,6 +27,7 @@ interface DashboardCardsProps {
     showCustomAlert: (title: string, message: string, type: string) => void;
     handleOpenNotice: () => void;
     router: any;
+    pendingCount?: number;
 }
 
 export const DashboardCards: React.FC<DashboardCardsProps> = ({
@@ -51,7 +52,8 @@ export const DashboardCards: React.FC<DashboardCardsProps> = ({
     setNoticeDetailVisible,
     showCustomAlert,
     handleOpenNotice,
-    router
+    router,
+    pendingCount = 0
 }) => {
     return (
         <View className="w-full items-center">
@@ -74,6 +76,7 @@ export const DashboardCards: React.FC<DashboardCardsProps> = ({
                     setIsGateOpen={setIsGateOpen}
                     getNextResetSeconds={getNextResetSeconds}
                     formatRemainingTime={formatRemainingTime}
+                    pendingCount={pendingCount}
                 />
             </View>
 

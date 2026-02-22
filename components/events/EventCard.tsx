@@ -85,69 +85,6 @@ export const EventCard: React.FC<EventCardProps> = ({
         return 'calendar-clear-outline';
     };
 
-    const getSoonRemainingSeconds = (str: string) => {
-        if (!str) return null;
-        const dayMapObj: { [key: string]: number } = {
-            '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
-            'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
-        };
-        const currentDay = (now.getDay() + 6) % 7;
-        const currentTotalSec = currentDay * 86400 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-        const totalWeekSec = 7 * 86400;
-
-        // 1. Date Range Support (e.g. 2026.02.22 10:00 ~ ...)
-        const rangeMatch = str.match(/(\d{4}\.\d{2}\.\d{2})\s*(?:\([^\)]+\))?\s*(\d{2}:\d{2})\s*~/);
-        if (rangeMatch) {
-            try {
-                const startStr = `${rangeMatch[1].replace(/\./g, '-')}T${rangeMatch[2]}:00`;
-                const startDate = new Date(startStr);
-                if (!isNaN(startDate.getTime())) {
-                    const diff = (startDate.getTime() - now.getTime()) / 1000;
-                    if (diff > 0 && diff <= 1800) return Math.floor(diff);
-                }
-            } catch (e) { }
-        }
-
-        // 2. Weekly Range Support (e.g. 월 10:00 ~ 수 10:00)
-        const weeklyMatch = str.match(/([일월화수목금토]|sun|mon|tue|wed|thu|fri|sat)\s*(\d{2}):(\d{2})\s*~\s*([일월화수목금토]|sun|mon|tue|wed|thu|fri|sat)\s*(\d{2}):(\d{2})/i);
-        if (weeklyMatch) {
-            const dayOffset = dayMapObj[weeklyMatch[1].toLowerCase()];
-            if (dayOffset !== undefined) {
-                const h = parseInt(weeklyMatch[2]);
-                const min = parseInt(weeklyMatch[3]);
-                const startTotalSec = dayOffset * 86400 + h * 3600 + min * 60;
-                let diff = startTotalSec - currentTotalSec;
-                if (diff < 0) diff += totalWeekSec;
-                if (diff > 0 && diff <= 1800) return Math.floor(diff);
-            }
-        }
-
-        const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
-        if (explicitMatches.length > 0) {
-            let minDiff: number | null = null;
-            explicitMatches.forEach(m => {
-                const dayStr = m[1];
-                const h = parseInt(m[2]);
-                const min = parseInt(m[3]);
-                const scheduledDays = (dayStr === '매일') ? ['일', '월', '화', '수', '목', '금', '토'] : [dayStr];
-                scheduledDays.forEach(d => {
-                    const dayOffset = dayMapObj[d.toLowerCase()];
-                    if (dayOffset === undefined) return;
-                    let startTotalSec = dayOffset * 86400 + h * 3600 + min * 60;
-                    let diff = startTotalSec - currentTotalSec;
-                    if (diff < 0) diff += totalWeekSec;
-                    const durationSec = 1800; // Strictly 30 minutes before as per user request
-
-                    if (diff > 0 && diff <= durationSec) {
-                        if (minDiff === null || diff < minDiff) minDiff = diff;
-                    }
-                });
-            });
-            return minDiff;
-        }
-        return null;
-    };
-
     const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
     const eventInfo = allBaseEvents.find(e => e.id === (event.originalEventId || event.eventId));
     const eventImageUrl = eventInfo?.imageUrl;
@@ -202,7 +139,7 @@ export const EventCard: React.FC<EventCardProps> = ({
         const currentDay = (now.getDay() + 6) % 7;
         let targetDayStr = displayDay;
         let targetTimeStr = displayTime;
-        let dIdx = dayMapObj[targetDayStr.toLowerCase()];
+        let dIdx = dayMapObj[targetDayStr?.toLowerCase() || ''];
         if (dIdx !== undefined) {
             const [h, m] = (targetTimeStr.match(/(\d{1,2}):(\d{2})/) || []).slice(1).map(Number);
             if (!isNaN(h)) {
@@ -217,12 +154,12 @@ export const EventCard: React.FC<EventCardProps> = ({
                 return convertTime(kstStr).replace(/20(\d{2})[\.\/-]/g, '$1.');
             }
         }
-        let finalStr = convertTime(`${displayDay} ${displayTime}`);
+        let finalStr = convertTime(`${displayDay || ''} ${displayTime || ''}`);
         return finalStr.replace(/20(\d{2})[\.\/-]/g, '$1.');
     };
 
     const formattedDateRange = getFormattedDateRange();
-    const remSoonSeconds = !isActive && !isExpired ? (getSoonRemainingSeconds(displayDay) ?? getSoonRemainingSeconds(displayTime)) : null;
+    const remSoonSeconds = !isActive && !isExpired ? (getRemainingSeconds(displayDay, event.eventId) ?? getRemainingSeconds(displayTime, event.eventId)) : null;
     const isUpcomingSoon = remSoonSeconds !== null;
 
     const renderEventTitle = () => {

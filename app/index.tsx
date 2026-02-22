@@ -185,6 +185,7 @@ export default function Home() {
         gateUserIdRef, gatePasswordRef, loginPasswordRef,
         allRequests, setAllRequests,
         selectedReqIds, setSelectedReqIds,
+        pendingCount, setPendingCount,
         superAdminTab, setSuperAdminTab,
         isSuperAdminLoading, setIsSuperAdminLoading,
         superAdminsList, setSuperAdminsList,
@@ -207,7 +208,9 @@ export default function Home() {
         handleDeleteAlliance,
         handleDeleteSuperAdmin,
         handleAddSuperAdmin,
-        toggleSelectRequest
+        toggleSelectRequest,
+        notificationSettings,
+        saveWebhookUrl
     } = adminAuth;
 
     const pad = (n: number) => padUtil(n);
@@ -312,11 +315,11 @@ export default function Home() {
 
     // -- Super Admin Dashboard Logic --
     useEffect(() => {
-        if (isSuperAdmin && isSuperAdminDashboardVisible) {
+        if (isSuperAdmin) {
             const unsubscribe = fetchRequests();
             return () => unsubscribe();
         }
-    }, [isSuperAdmin, isSuperAdminDashboardVisible]);
+    }, [isSuperAdmin]);
 
     useEffect(() => {
         if (showAdminList) {
@@ -507,6 +510,7 @@ export default function Home() {
                     showCustomAlert={showCustomAlert}
                     handleOpenNotice={handleOpenNotice}
                     router={router}
+                    pendingCount={pendingCount}
                 />
 
                 <EventSectionHeader
@@ -612,6 +616,7 @@ export default function Home() {
                 newAdminPassword={newAdminPassword}
                 setNewAdminPassword={setNewAdminPassword}
                 handleAddSuperAdmin={handleAddSuperAdmin}
+                pendingCount={pendingCount}
             />
 
             <SuperAdminModal
@@ -638,6 +643,8 @@ export default function Home() {
                 setFontSize={setFontSize}
                 fontSize={fontSize}
                 toggleSelectRequest={toggleSelectRequest}
+                notificationSettings={notificationSettings}
+                saveWebhookUrl={saveWebhookUrl}
             />
 
             <Modal visible={adminDashboardVisible} animationType="slide" onRequestClose={() => setAdminDashboardVisible(false)}>
@@ -668,7 +675,6 @@ export default function Home() {
                 onClose={() => setIsUserPassChangeOpen(false)}
                 isDark={isDark}
                 auth={auth}
-                showCustomAlert={showCustomAlert}
                 setAdminMenuVisible={setAdminMenuVisible}
                 newPassword={newPassword}
                 setNewPassword={setNewPassword}

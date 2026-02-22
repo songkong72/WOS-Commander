@@ -14,12 +14,13 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebaseConfig';
 import { hashPassword } from '../../utils/crypto';
 
+import { useAuth } from '../../app/context';
+
 interface UserPassChangeModalProps {
     isVisible: boolean;
     onClose: () => void;
     isDark: boolean;
     auth: any;
-    showCustomAlert: (title: string, message: string, type: 'success' | 'warning' | 'error') => void;
     setAdminMenuVisible: (v: boolean) => void;
     newPassword: string;
     setNewPassword: (v: string) => void;
@@ -34,7 +35,6 @@ export const UserPassChangeModal = ({
     onClose,
     isDark,
     auth,
-    showCustomAlert,
     setAdminMenuVisible,
     newPassword,
     setNewPassword,
@@ -44,6 +44,7 @@ export const UserPassChangeModal = ({
     setIsChangingPassword
 }: UserPassChangeModalProps) => {
     const { t } = useTranslation();
+    const { showCustomAlert } = useAuth();
     const [showPass1, setShowPass1] = useState(false);
     const [showPass2, setShowPass2] = useState(false);
 

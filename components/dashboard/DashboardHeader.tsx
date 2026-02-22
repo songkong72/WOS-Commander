@@ -21,6 +21,7 @@ interface DashboardHeaderProps {
     setIsGateOpen: (v: boolean) => void;
     getNextResetSeconds: () => number;
     formatRemainingTime: (s: number) => string;
+    pendingCount?: number;
 }
 
 export const DashboardHeader = ({
@@ -41,6 +42,7 @@ export const DashboardHeader = ({
     setIsGateOpen,
     getNextResetSeconds,
     formatRemainingTime,
+    pendingCount = 0
 }: DashboardHeaderProps) => {
     const { t } = useTranslation();
     const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
@@ -169,6 +171,11 @@ export const DashboardHeader = ({
                             ]}
                         >
                             <Ionicons name="person-circle" size={20} color={auth.isLoggedIn ? ((auth.role === 'super_admin' || auth.role === 'master') ? '#fb7185' : auth.role === 'alliance_admin' ? '#818cf8' : '#22d3ee') : (isDark ? '#fff' : '#94a3b8')} />
+                            {auth.isLoggedIn && (auth.role === 'master' || auth.role === 'super_admin') && pendingCount > 0 && (
+                                <View className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-slate-900 items-center justify-center">
+                                    <View className="w-1.5 h-1.5 bg-white rounded-full" />
+                                </View>
+                            )}
                         </Pressable>
                         {Platform.OS === 'web' && hoveredBtn === 'profile' && (
                             <View className={`absolute top-full mt-2 w-max px-2.5 py-1.5 rounded-lg shadow-xl z-[999] ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'}`} style={{ width: 70, left: '50%', transform: [{ translateX: -35 }] }}>

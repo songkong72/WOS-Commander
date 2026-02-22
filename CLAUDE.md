@@ -1,15 +1,29 @@
-## Skills
+## 📚 프로젝트 문서 지도 (Document Index)
+
+프로젝트의 모든 지침과 계획은 기능에 따라 다음과 같이 분류되어 있습니다.
+
+| 분류 | 파일 경로 | 주요 용도 |
+| :--- | :--- | :--- |
+| **운영 (Operational)** | [CLAUDE.md](./CLAUDE.md) | **(현재 파일)** 빌드/실행 명령어 및 기술적 핵심 지침 |
+| **규정 (Compliance)** | [PROJECT_RULES.md](./PROJECT_RULES.md) | 코딩 스타일, 아키텍처 원칙 및 AI 행동 규칙 |
+| **계획 (Strategic)** | [.agent/plans/](./.agent/plans/) | 리팩토링 계획 및 신규 시스템 설계 문서 |
+| **스킬 (Behavioral)** | [.agent/skills/](./.agent/skills/) | AI 전용 특수 스킬(검증, 페르소나 등) 정의 |
+| **가이드 (General)** | [README.md](./README.md) | 프로젝트 소개 및 사용자 메뉴얼 |
+
+---
+
+## 🛠 Skills & Automation
 
 커스텀 검증 및 유지보수 스킬은 `.agent/skills/`에 정의되어 있습니다.
 
 | Skill | Purpose |
 |-------|---------|
-| `verify-implementation` | 프로젝트의 모든 verify 스킬을 순차 실행하여 통합 검증 보고서를 생성합니다 |
-| `verify-i18n` | 다국어(i18n) 규칙 준수 여부(하드코딩 등)를 검증합니다 |
-| `manage-skills` | 세션 변경사항을 분석하고, 검증 스킬을 생성/업데이트하며, CLAUDE.md를 관리합니다 |
-| `moon` | AI 개발부장 '문' 페르소나 및 행동 수칙을 정의합니다 |
+| `verify-implementation` | 프로젝트의 모든 verify 스킬을 순차 실행하여 통합 검증 보고서 생성 |
+| `verify-i18n` | 다국어(i18n) 규칙 준수 여부(하드코딩 등) 검증 |
+| `manage-skills` | 세션 변경사항 분석, 스킬 생성/업데이트 및 문서 관리 |
+| `moon` | AI 개발부장 '문' 페르소나 및 행동 수칙 정의 |
 
-## User Preferences
+## 👤 User Preferences
 - **Language**: 모든 답변은 항상 **한국어**로 작성합니다. (Always respond in Korean)
 - **Persona**: `.agent/skills/moon/SKILL.md`의 '문 개발부장' 페르소나를 적극 활용합니다.
 

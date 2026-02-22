@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, ActivityIndicator, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Modal, ActivityIndicator, Image, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface SuperAdminModalProps {
@@ -26,6 +26,8 @@ interface SuperAdminModalProps {
     setFontSize: (size: 'small' | 'medium' | 'large') => void;
     fontSize: 'small' | 'medium' | 'large';
     toggleSelectRequest: (id: string) => void;
+    notificationSettings?: any;
+    saveWebhookUrl?: (url: string) => Promise<void>;
 }
 
 export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
@@ -51,7 +53,9 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
     setTheme,
     setFontSize,
     fontSize,
-    toggleSelectRequest
+    toggleSelectRequest,
+    notificationSettings,
+    saveWebhookUrl
 }) => {
     return (
         <Modal
@@ -96,38 +100,37 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
                         </TouchableOpacity>
                     </View>
 
-                    {/* Stats / Interactive Tabs - Only show for Alliance Management */}
-                    {superAdminTab !== 'settings' && (
-                        <View className="flex-row gap-2 mb-8 px-5">
-                            {[
-                                { id: 'pending', label: t('admin.pending_count'), count: allRequests.filter(r => r.status === 'pending').length, icon: 'time-outline', color: 'sky' },
-                                { id: 'alliances', label: t('admin.approved_count'), count: allRequests.filter(r => r.status === 'approved').length, icon: 'business-outline', color: 'emerald' },
-                            ].map((tab) => (
-                                <TouchableOpacity
-                                    key={tab.id}
-                                    onPress={() => setSuperAdminTab(tab.id as any)}
-                                    activeOpacity={0.7}
-                                    className={`flex-1 p-3 rounded-[24px] border transition-all ${superAdminTab === tab.id ?
-                                        `border-${tab.color}-500 bg-${tab.color}-500/10 shadow-lg shadow-${tab.color}-500/20` :
-                                        (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
-                                >
-                                    <View className="flex-row items-center justify-between mb-1">
-                                        <View className={`w-8 h-8 rounded-xl items-center justify-center ${superAdminTab === tab.id ? `bg-${tab.color}-500` : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>
-                                            <Ionicons name={tab.icon as any} size={16} color={superAdminTab === tab.id ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
-                                        </View>
-                                        {tab.count !== undefined && (
-                                            <Text className={`text-xl font-black ${superAdminTab === tab.id ? (isDark ? `text-${tab.color}-400` : `text-${tab.color}-500`) : (isDark ? 'text-slate-700' : 'text-slate-400')}`} style={{ fontSize: 20 * fontSizeScale }}>
-                                                {tab.count}
-                                            </Text>
-                                        )}
+                    {/* Stats / Interactive Tabs */}
+                    <View className="flex-row gap-2 mb-8 px-5">
+                        {[
+                            { id: 'pending', label: t('admin.pending_count'), count: allRequests.filter(r => r.status === 'pending').length, icon: 'time-outline', color: 'sky' },
+                            { id: 'alliances', label: t('admin.approved_count'), count: allRequests.filter(r => r.status === 'approved').length, icon: 'business-outline', color: 'emerald' },
+                            { id: 'settings', label: t('common.settings', '설정'), icon: 'settings-outline', color: 'indigo' },
+                        ].map((tab) => (
+                            <TouchableOpacity
+                                key={tab.id}
+                                onPress={() => setSuperAdminTab(tab.id as any)}
+                                activeOpacity={0.7}
+                                className={`flex-1 p-3 rounded-[24px] border transition-all ${superAdminTab === tab.id ?
+                                    `border-${tab.color}-500 bg-${tab.color}-500/10 shadow-lg shadow-${tab.color}-500/20` :
+                                    (isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100 shadow-sm')}`}
+                            >
+                                <View className="flex-row items-center justify-between mb-1">
+                                    <View className={`w-8 h-8 rounded-xl items-center justify-center ${superAdminTab === tab.id ? `bg-${tab.color}-500` : (isDark ? 'bg-slate-800' : 'bg-slate-50')}`}>
+                                        <Ionicons name={tab.icon as any} size={16} color={superAdminTab === tab.id ? 'white' : (isDark ? '#64748b' : '#94a3b8')} />
                                     </View>
-                                    <Text className={`text-[10px] font-black uppercase tracking-tight ${superAdminTab === tab.id ? `text-${tab.color}-500` : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
-                                        {tab.label}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    )}
+                                    {tab.count !== undefined && (
+                                        <Text className={`text-xl font-black ${superAdminTab === tab.id ? (isDark ? `text-${tab.color}-400` : `text-${tab.color}-500`) : (isDark ? 'text-slate-700' : 'text-slate-400')}`} style={{ fontSize: 20 * fontSizeScale }}>
+                                            {tab.count}
+                                        </Text>
+                                    )}
+                                </View>
+                                <Text className={`text-[10px] font-black uppercase tracking-tight ${superAdminTab === tab.id ? `text-${tab.color}-500` : (isDark ? 'text-slate-500' : 'text-slate-500')}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>
+                                    {tab.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
                     <View className="flex-row items-center justify-between mb-6 px-6">
                         <View>
@@ -235,7 +238,8 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
                                             </View>
                                         </View>
 
-                                        <View className={`p-5 rounded-[32px] border ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                        {/* Font Settings */}
+                                        <View className={`p-5 rounded-[32px] border mb-6 ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
                                             <View className="flex-row items-center mb-6">
                                                 <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-blue-500/20' : 'bg-blue-50'}`}>
                                                     <Ionicons name="text" size={20} color={isDark ? "#60a5fa" : "#2563eb"} />
@@ -255,6 +259,38 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
                                                         <Text className={`font-black text-[10px] ${fontSize === size ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-500')}`}>{size.toUpperCase()}</Text>
                                                     </TouchableOpacity>
                                                 ))}
+                                            </View>
+                                        </View>
+
+                                        {/* Global Notification Settings */}
+                                        <View className={`p-5 rounded-[32px] border mb-6 ${isDark ? 'bg-slate-900/40 border-slate-800' : 'bg-white border-slate-100 shadow-sm'}`}>
+                                            <View className="flex-row items-center mb-6">
+                                                <View className={`w-10 h-10 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-rose-500/20' : 'bg-rose-50'}`}>
+                                                    <Ionicons name="notifications" size={20} color={isDark ? "#fb7185" : "#e11d48"} />
+                                                </View>
+                                                <View>
+                                                    <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale }}>{t('admin.masterAlarmSettings', '마스터 알림 설정')}</Text>
+                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Master Alert System</Text>
+                                                </View>
+                                            </View>
+
+                                            <View className={`p-4 rounded-xl border mb-4 ${isDark ? 'bg-rose-500/5 border-rose-500/20' : 'bg-rose-50/30 border-rose-100'}`}>
+                                                <Text className={`leading-5 font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                    신규 연맹 관리자 신청이 들어왔을 때 실시간으로 알림을 받을 디스코드/텔레그램 웹훅 URL을 입력하세요.
+                                                </Text>
+                                            </View>
+
+                                            <TextInput
+                                                className={`p-4 rounded-2xl border font-bold ${isDark ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}
+                                                placeholder="https://discord.com/api/webhooks/..."
+                                                placeholderTextColor={isDark ? "#475569" : "#94a3b8"}
+                                                value={notificationSettings?.webhookUrl || ''}
+                                                onChangeText={(val) => saveWebhookUrl?.(val)}
+                                                style={{ fontSize: 12 * fontSizeScale }}
+                                            />
+                                            <View className="mt-4 flex-row items-center gap-2">
+                                                <Ionicons name="shield-checkmark" size={14} color="#10b981" />
+                                                <Text className="text-[10px] text-emerald-500 font-bold">자동 저장됨 (Auto-saved)</Text>
                                             </View>
                                         </View>
                                     </View>
@@ -351,8 +387,8 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
                             </View>
                         )}
                     </View>
-                </ScrollView>
-            </View>
-        </Modal>
+                </ScrollView >
+            </View >
+        </Modal >
     );
 };

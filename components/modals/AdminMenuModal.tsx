@@ -34,6 +34,7 @@ interface AdminMenuModalProps {
     newAdminPassword: string;
     setNewAdminPassword: (v: string) => void;
     handleAddSuperAdmin: () => void;
+    pendingCount?: number;
 }
 
 export const AdminMenuModal = ({
@@ -57,7 +58,8 @@ export const AdminMenuModal = ({
     setNewAdminName,
     newAdminPassword,
     setNewAdminPassword,
-    handleAddSuperAdmin
+    handleAddSuperAdmin,
+    pendingCount = 0
 }: AdminMenuModalProps) => {
     const { t } = useTranslation();
 
@@ -213,6 +215,11 @@ export const AdminMenuModal = ({
                                             <Ionicons name="planet" size={20} color="#38bdf8" />
                                         </View>
                                         <Text className={`flex-1 font-bold ${isDark ? 'text-slate-200' : 'text-slate-700'}`}>{t('admin.super_dashboard_title')}</Text>
+                                        {pendingCount > 0 && (
+                                            <View className="bg-rose-500 px-2 py-0.5 rounded-full mr-2">
+                                                <Text className="text-[10px] font-black text-white">{pendingCount}</Text>
+                                            </View>
+                                        )}
                                         <Ionicons name="chevron-forward" size={16} color={isDark ? '#64748b' : '#94a3b8'} />
                                     </TouchableOpacity>
 

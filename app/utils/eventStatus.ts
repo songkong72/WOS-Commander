@@ -25,44 +25,55 @@ export const SINGLE_SLOT_IDS = [
     'alliance_frost_league', 'a_weapon'
 ];
 
+/** Get the canonical ID for an event to handle legacy/alternate IDs */
+export const getCanonicalEventId = (id: string): string => {
+    if (!id) return '';
+    const cleanId = id.trim();
+
+    const mappings: { [key: string]: string } = {
+        'a_weapon': 'a_weapon',
+        'alliance_frost_league': 'a_weapon',
+        'a_operation': 'alliance_operation',
+        'alliance_operation': 'alliance_operation',
+        'a_joe': 'alliance_joe',
+        'alliance_joe': 'alliance_joe',
+        'a_champ': 'alliance_champion',
+        'alliance_champion': 'alliance_champion',
+        'a_citadel': 'a_citadel',
+        'alliance_citadel': 'a_citadel',
+        'a_fortress': 'a_fortress',
+        'alliance_fortress': 'a_fortress',
+        'a_bear': 'alliance_bear',
+        'alliance_bear': 'alliance_bear',
+        'a_canyon': 'alliance_canyon',
+        'alliance_canyon': 'alliance_canyon',
+        'a_foundry': 'alliance_foundry',
+        'alliance_foundry': 'alliance_foundry',
+        'a_trade': 'alliance_trade',
+        'alliance_trade': 'alliance_trade',
+        'a_center': 'alliance_center',
+        'alliance_center': 'alliance_center',
+        'a_mobilization': 'alliance_mobilization',
+        'alliance_mobilization': 'alliance_mobilization',
+        'a_total': 'alliance_mobilization',
+        'a_mercenary': 'alliance_mercenary',
+        'alliance_mercenary': 'alliance_mercenary'
+    };
+
+    return mappings[cleanId] || cleanId;
+};
+
 /** Get schedule data for a specific event */
 export const getEventSchedule = (event: any, schedules: any[]) => {
     if (!event || !schedules) return null;
     const rawId = (event.id || event.eventId || '').trim();
     const cleanId = (event.originalEventId || rawId).replace(/(_team\d+|_fortress|_citadel|_bundle)\s*$/g, '').trim();
 
+    const canonicalId = getCanonicalEventId(cleanId);
+
     return schedules.find(s => {
         const sid = (s.eventId || '').trim();
-        if (sid === cleanId || sid === rawId) return true;
-
-        const mappings: { [key: string]: string[] } = {
-            'a_joe': ['alliance_joe'],
-            'alliance_joe': ['a_joe'],
-            'a_bear': ['alliance_bear', 'alliance_bear_title'],
-            'alliance_bear': ['a_bear'],
-            'a_champ': ['alliance_champion'],
-            'alliance_champion': ['a_champ'],
-            'a_weapon': ['alliance_frost_league'],
-            'alliance_frost_league': ['a_weapon'],
-            'a_operation': ['alliance_operation'],
-            'alliance_operation': ['a_operation'],
-            'a_mobilization': ['alliance_mobilization'],
-            'alliance_mobilization': ['a_mobilization', 'a_total'],
-            'a_total': ['alliance_mobilization'],
-            'a_foundry': ['alliance_foundry'],
-            'alliance_foundry': ['a_foundry'],
-            'a_fortress': ['alliance_fortress'],
-            'alliance_fortress': ['a_fortress'],
-            'a_citadel': ['alliance_citadel'],
-            'alliance_citadel': ['a_citadel'],
-            'a_canyon': ['alliance_canyon'],
-            'alliance_canyon': ['a_canyon']
-        };
-
-        const targetId = mappings[cleanId] ? cleanId : (mappings[rawId] ? rawId : null);
-        if (!targetId) return false;
-
-        return mappings[targetId]?.includes(sid) || mappings[sid]?.includes(targetId);
+        return getCanonicalEventId(sid) === canonicalId;
     });
 };
 

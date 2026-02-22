@@ -7,6 +7,8 @@ import { hashPassword } from '../../utils/crypto';
 import { MASTER_CREDENTIALS, AdminStatus } from '../../data/admin-config';
 import { useAuth } from '../context';
 import { useTranslation } from 'react-i18next';
+import { useFirestoreNotificationSettings } from '../../hooks/useFirestoreNotificationSettings';
+import { sendWebhookNotification, createAdminApplicationMessage } from '../../services/NotificationService';
 
 interface UseAdminAuthProps {
     auth?: any;
@@ -62,6 +64,10 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
     const [loadingSuperAdmins, setLoadingSuperAdmins] = useState(false);
     const [newAdminName, setNewAdminName] = useState('');
     const [newAdminPassword, setNewAdminPassword] = useState('');
+    const [pendingCount, setPendingCount] = useState(0);
+
+    // --- Notification Settings ---
+    const { settings: notificationSettings, saveWebhookUrl } = useFirestoreNotificationSettings(null, null);
 
     // --- Refs ---
     const gateUserIdRef = useRef<TextInput>(null);
@@ -146,16 +152,57 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
             }
 
             try {
+                // 1. Check if ID already exists in users collection
+                const userRef = doc(db, "users", inputId.toLowerCase());
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    setGateLoginError(t('admin.idExists') || '이미 존재하는 아이디입니다.');
+                    setIsLoginLoading(false);
+                    return;
+                }
+
+                // 2. Also check in pending requests to prevent duplicates
+                const qReq = query(collection(db, "alliance_requests"), where("adminId", "==", inputId));
+                const qReqSnap = await getDocs(qReq);
+                if (!qReqSnap.empty) {
+                    setGateLoginError(t('admin.idExists') || '이미 신청 및 대기 중인 아이디입니다.');
+                    setIsLoginLoading(false);
+                    return;
+                }
+
                 const hashed = await hashPassword(inputPw);
-                await setDoc(doc(collection(db, "alliance_requests")), {
+                const userId = inputId.toLowerCase();
+
+                // 1. Create User Account Immediately (Status: pending)
+                // This allows the login check to catch the 'pending' status and show appropriate feedback
+                const userData = {
+                    uid: `admin_${forceServer.replace('#', '')}_${forceAlliance}_${Date.now()}`,
+                    username: userId,
+                    password: hashed,
+                    nickname: `${forceAlliance} 관리자`,
+                    role: 'alliance_admin',
+                    status: 'pending',
                     serverId: forceServer,
                     allianceId: forceAlliance,
-                    allianceName: forceAlliance,
-                    adminId: inputId,
+                    createdAt: Date.now()
+                };
+                await setDoc(doc(db, "users", userId), userData);
+
+                // 2. Create tracking request (for Super Admin dashboard)
+                await setDoc(doc(collection(db, "alliance_requests")), {
+                    ...userData,
+                    id: userId,
+                    adminId: userId,
                     adminPassword: hashed,
-                    status: 'pending',
+                    allianceName: forceAlliance,
                     requestedAt: Date.now()
                 });
+
+                // 3. Send Webhook Notification to Master
+                if (notificationSettings?.webhookUrl) {
+                    const message = createAdminApplicationMessage(forceAlliance, forceServer, userId);
+                    sendWebhookNotification(notificationSettings.webhookUrl, message);
+                }
 
                 showCustomAlert(t('manual.applySuccess'), t('manual.applySuccessDesc'), 'success');
                 setIsRegisterMode(false);
@@ -221,6 +268,19 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
 
                     if (globalUserData) {
                         const userData = globalUserData;
+
+                        // Check status
+                        if (userData.status === 'pending') {
+                            setGateLoginError(t('manual.applySuccessDesc') || '현재 승인 대기 중입니다.');
+                            setIsLoginLoading(false);
+                            return;
+                        }
+                        if (userData.status === 'rejected') {
+                            setGateLoginError(t('admin.rejectSuccess') || '가입이 거절되었습니다.');
+                            setIsLoginLoading(false);
+                            return;
+                        }
+
                         const storedPw = userData.password?.toString();
 
                         if (storedPw === hashed || storedPw === inputPw) {
@@ -426,6 +486,7 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
         return onSnapshot(q, (snap) => {
             const reqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             setAllRequests(reqs);
+            setPendingCount(reqs.filter((r: any) => r.status === 'pending').length);
             if (onUpdate) onUpdate(reqs);
             setIsSuperAdminLoading(false);
         }, (err) => {
@@ -751,6 +812,7 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
         gateUserIdRef, gatePasswordRef, loginPasswordRef,
         allRequests, setAllRequests,
         selectedReqIds, setSelectedReqIds,
+        pendingCount, setPendingCount,
         superAdminTab, setSuperAdminTab,
         isSuperAdminLoading, setIsSuperAdminLoading,
         superAdminsList, setSuperAdminsList,
@@ -778,6 +840,9 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
         seedSuperAdmin,
         login,
         logout,
+        // Notification
+        notificationSettings,
+        saveWebhookUrl,
         // Compatibility Aliases
         user: auth,
         loading: isLoginLoading
