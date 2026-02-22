@@ -84,13 +84,25 @@ const GrowthEventCard = memo(({
         return (
             <View className="gap-3">
                 <View className="flex-row items-center">
-                    <View className={`px-2.5 py-1.5 rounded-xl border mr-3 items-center justify-center shadow-sm ${isDark ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-50 border-emerald-100'}`} style={{ shadowColor: '#10b981', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 4, elevation: 2 }}>
+                    <View
+                        className={`px-2.5 py-1.5 rounded-xl border mr-3 items-center justify-center shadow-sm ${isDark ? 'bg-emerald-500/20 border-emerald-500/40' : 'bg-emerald-50 border-emerald-100'}`}
+                        style={Platform.select({
+                            web: { boxShadow: `0 2px 4px ${isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.1)'}` },
+                            default: { shadowColor: '#10b981', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 4, elevation: 2 }
+                        }) as any}
+                    >
                         <Text className={`font-black ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('common.start')}</Text>
                     </View>
                     {renderStyledDate(startFormatted)}
                 </View>
                 <View className="flex-row items-center">
-                    <View className={`px-2.5 py-1.5 rounded-xl border mr-3 items-center justify-center shadow-sm ${isDark ? 'bg-rose-500/20 border-rose-500/40' : 'bg-rose-50 border-rose-100'}`} style={{ shadowColor: '#f43f5e', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 4, elevation: 2 }}>
+                    <View
+                        className={`px-2.5 py-1.5 rounded-xl border mr-3 items-center justify-center shadow-sm ${isDark ? 'bg-rose-500/20 border-rose-500/40' : 'bg-rose-50 border-rose-100'}`}
+                        style={Platform.select({
+                            web: { boxShadow: `0 2px 4px ${isDark ? 'rgba(244, 63, 94, 0.3)' : 'rgba(244, 63, 94, 0.1)'}` },
+                            default: { shadowColor: '#f43f5e', shadowOpacity: isDark ? 0.3 : 0.1, shadowRadius: 4, elevation: 2 }
+                        }) as any}
+                    >
                         <Text className={`font-black ${isDark ? 'text-rose-300' : 'text-rose-600'}`} style={{ fontSize: 10 * fontSizeScale }}>{t('common.end')}</Text>
                     </View>
                     {renderStyledDate(endFormatted)}
@@ -114,11 +126,16 @@ const GrowthEventCard = memo(({
                         transform: [{ scale: hovered ? 1.02 : 1 }],
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         zIndex: hovered ? 10 : 1,
-                        shadowColor: '#3b82f6',
-                        shadowOffset: { width: 0, height: hovered ? 12 : 4 },
-                        shadowOpacity: hovered ? 0.3 : 0,
-                        shadowRadius: hovered ? 16 : 4,
-                        elevation: hovered ? 10 : 0
+                        ...Platform.select({
+                            web: { boxShadow: hovered ? '0 12px 16px rgba(59, 130, 246, 0.3)' : '0 4px 4px rgba(59, 130, 246, 0)' },
+                            default: {
+                                shadowColor: '#3b82f6',
+                                shadowOffset: { width: 0, height: hovered ? 12 : 4 },
+                                shadowOpacity: hovered ? 0.3 : 0,
+                                shadowRadius: hovered ? 16 : 4,
+                                elevation: hovered ? 10 : 0
+                            }
+                        })
                     }
                 ]}
                 className={`rounded-[24px] mb-4 overflow-hidden transition-all ${isOngoing ? (isDark ? 'bg-[#191F28] border border-blue-500/30' : 'bg-white shadow-lg shadow-blue-500/10 border border-blue-100') : (isUpcoming ? (isDark ? 'bg-[#191F28] border border-[#333D4B]' : 'bg-white border border-[#E5E8EB] shadow-sm') : (isDark ? 'bg-[#191F28]/60 border border-[#333D4B]' : 'bg-[#F9FAFB] border border-[#E5E8EB]'))}`}
@@ -150,11 +167,16 @@ const GrowthEventCard = memo(({
                                     {
                                         transform: [{ scale: pressed ? 0.9 : (hovered ? 1.15 : 1) }],
                                         backgroundColor: hovered ? (isDark ? '#3b82f6' : '#2563eb') : (isDark ? '#1e293b' : '#f1f5f9'),
-                                        shadowColor: '#3b82f6',
-                                        shadowOffset: { width: 0, height: hovered ? 4 : 0 },
-                                        shadowOpacity: hovered ? 0.5 : 0,
-                                        shadowRadius: 8,
-                                        elevation: hovered ? 5 : 0,
+                                        ...Platform.select({
+                                            web: { boxShadow: hovered ? '0 4px 8px rgba(59, 130, 246, 0.5)' : 'none' },
+                                            default: {
+                                                shadowColor: '#3b82f6',
+                                                shadowOffset: { width: 0, height: hovered ? 4 : 0 },
+                                                shadowOpacity: hovered ? 0.5 : 0,
+                                                shadowRadius: 8,
+                                                elevation: hovered ? 5 : 0,
+                                            }
+                                        }),
                                         cursor: 'pointer'
                                     }
                                 ]}
@@ -355,7 +377,13 @@ const GrowthEventCard = memo(({
                                                                 })()}
                                                             </View>
                                                             {isSlotOngoing && (
-                                                                <View className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a] shadow-[0_0_10px_rgba(0,255,136,0.5)]" style={{ shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }}>
+                                                                <View
+                                                                    className="bg-[#00ff88] px-2 py-0.5 rounded-full flex-row items-center ml-2 border border-[#00cc6a]"
+                                                                    style={Platform.select({
+                                                                        web: { boxShadow: '0 0 10px rgba(0,255,136,0.5)' },
+                                                                        default: { shadowColor: '#00ff88', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 6, elevation: 3 }
+                                                                    }) as any}
+                                                                >
                                                                     <Ionicons name="flash" size={8} color="#0f172a" style={{ marginRight: 2 }} />
                                                                     <Text className="text-[#333D4B] text-[10px] font-bold ml-0.5">{t('events.status.ongoing')}</Text>
                                                                 </View>
@@ -544,11 +572,16 @@ const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, 
                     transform: [{ scale: pressed ? 0.95 : (hovered ? 1.08 : 1) }],
                     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     cursor: 'pointer',
-                    shadowColor: hovered ? (isDark ? '#818cf8' : '#6366f1') : 'transparent',
-                    shadowOffset: { width: 0, height: hovered ? 4 : 0 },
-                    shadowOpacity: hovered ? 0.6 : 0,
-                    shadowRadius: hovered ? 12 : 0,
-                    elevation: hovered ? 6 : 0,
+                    ...Platform.select({
+                        web: { boxShadow: hovered ? `0 4px 12px ${isDark ? 'rgba(129, 140, 248, 0.6)' : 'rgba(99, 102, 241, 0.6)'}` : 'none' },
+                        default: {
+                            shadowColor: hovered ? (isDark ? '#818cf8' : '#6366f1') : 'transparent',
+                            shadowOffset: { width: 0, height: hovered ? 4 : 0 },
+                            shadowOpacity: hovered ? 0.6 : 0,
+                            shadowRadius: hovered ? 12 : 0,
+                            elevation: hovered ? 6 : 0,
+                        }
+                    })
                 }
             ]}
         >

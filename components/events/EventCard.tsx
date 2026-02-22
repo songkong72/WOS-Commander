@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, Image, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, Pressable, Image, ImageBackground, Dimensions, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { INITIAL_WIKI_EVENTS } from '../../data/wiki-events';
@@ -201,10 +201,15 @@ export const EventCard: React.FC<EventCardProps> = ({
                         opacity: pressed ? 0.98 : 1,
                         transform: [{ scale: (hovered && !isLocked) ? 1.02 : 1 }],
                         marginBottom: 12,
-                        shadowColor: '#10b981',
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: isDark ? 0.2 : 0.1,
-                        shadowRadius: 8,
+                        ...Platform.select({
+                            web: { boxShadow: `0 4px 8px ${isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)'}` },
+                            default: {
+                                shadowColor: '#10b981',
+                                shadowOffset: { width: 0, height: 4 },
+                                shadowOpacity: isDark ? 0.2 : 0.1,
+                                shadowRadius: 8,
+                            }
+                        })
                     }
                 ]}
             >
