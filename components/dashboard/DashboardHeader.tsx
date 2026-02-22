@@ -187,10 +187,10 @@ export const DashboardHeader = ({
             </View>
 
             <View className="mb-4 flex-row items-center">
-                <View className={`w-16 h-16 rounded-2xl items-center justify-center mr-4 ${isDark ? 'bg-white/10' : 'bg-slate-100 shadow-sm'}`}>
+                <View className="w-20 h-20 items-center justify-center mr-2">
                     <Image
                         source={require('../../assets/icon.png')}
-                        style={{ width: 52, height: 52 }}
+                        style={{ width: '120%', height: '120%' }}
                         resizeMode="contain"
                     />
                 </View>
