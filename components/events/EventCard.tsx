@@ -361,11 +361,7 @@ export const EventCard: React.FC<EventCardProps> = ({
                 {/* 메인 타이틀 & 날짜 영역 (플렉스 컨테이너 확장 제어) */}
                 <View className="flex-1 pr-2 justify-center overflow-hidden">
                     <View className="flex-row items-center mb-1">
-                        {isUpcomingSoon && !isExpired && (
-                            <View className={`mr-1.5 px-1.5 py-0.5 rounded-[4px] border ${isDark ? 'bg-amber-500/10 border-amber-500/30' : 'bg-amber-100 border-amber-200'}`}>
-                                <Text className={`text-[9px] font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>SOON</Text>
-                            </View>
-                        )}
+                        {/* SOON 뱃지는 우측 타이머(STARTS IN)와 의미가 중복되어 제거함 */}
                         <Text
                             className={`flex-1 font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
                             style={{ fontSize: 16 * fontSizeScale }}
