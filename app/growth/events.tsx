@@ -937,7 +937,13 @@ export default function EventTracker() {
                         <View className={`flex-row items-center flex-wrap mb-2`}>
                             <View className={`flex-row items-center ${isDesktop ? 'flex-1' : 'w-full'} mr-3 mb-2`}>
                                 <TouchableOpacity
-                                    onPress={() => router.replace({ pathname: '/', params: { viewMode: params.viewMode } })}
+                                    onPress={() => {
+                                        if (router.canGoBack()) {
+                                            router.back();
+                                        } else {
+                                            router.replace({ pathname: '/', params: { viewMode: params.viewMode } });
+                                        }
+                                    }}
                                     className={`mr-3 w-10 h-10 rounded-full items-center justify-center ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}
                                 >
                                     <Ionicons name="arrow-back" size={20} color={isDark ? "#B0B8C1" : "#4E5968"} />
