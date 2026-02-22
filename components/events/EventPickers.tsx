@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Dimensions, Ionicons as IoniconsType } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
-import { HERO_NAMES } from '../../data/wiki-events';
+import heroesData from '../../data/heroes.json';
+
+const HERO_NAMES = heroesData.map(h => h.name);
 
 // --- HeroPicker ---
 export const HeroPicker = memo(({ value, onSelect, num, isDark }: { value: string, onSelect: (v: string) => void, num: number, isDark: boolean }) => {
@@ -115,10 +117,14 @@ export const MemberPicker = memo(({ value, onSelect, members, isAdmin, setOverla
         }
     }, [value]);
 
-    const filteredMembers = useMemo(() => members.filter(m =>
-        m.nickname.toLowerCase().includes(search.toLowerCase()) ||
-        m.id.toLowerCase().includes(search.toLowerCase())
-    ), [members, search]);
+    const filteredMembers = useMemo(() => {
+        if (!members || !Array.isArray(members)) return [];
+        const safeSearch = (search || '').toLowerCase();
+        return members.filter(m =>
+            (m?.nickname || '').toLowerCase().includes(safeSearch) ||
+            (m?.id || '').toLowerCase().includes(safeSearch)
+        );
+    }, [members, search]);
 
     const updateOverlay = useCallback(() => {
         if (!isAdmin || !isFocused || filteredMembers.length === 0) {
