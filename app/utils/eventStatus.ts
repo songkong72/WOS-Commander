@@ -226,20 +226,47 @@ export const isEventExpired = (event: any, schedules: any[], now: Date) => {
     return checkWeeklyExpired(combined, now);
 };
 
-/** Get remaining seconds for a recurring event slot */
+/** Get remaining seconds for a recurring or date-specific event slot */
 export const getRemainingSeconds = (str: string, now: Date, eventId?: string) => {
     if (!str || str.includes('상시') || str.includes('상설')) return null;
     const dayMapObj: { [key: string]: number } = {
         '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
         'mon': 0, 'tue': 1, 'wed': 2, 'thu': 3, 'fri': 4, 'sat': 5, 'sun': 6
     };
+
+    // 1. One-time Date Specific Check (YYYY.MM.DD HH:mm)
+    const dateMatch = str.match(/(?:(\d{4})[\.\/-])?(\d{2})[\.\/-](\d{2})\s*[^\d~]*\s*(\d{1,2}:\d{2})/);
+    if (dateMatch) {
+        const currentYear = now.getFullYear();
+        const y = parseInt(dateMatch[1] || currentYear.toString());
+        const m = parseInt(dateMatch[2]) - 1;
+        const d = parseInt(dateMatch[3]);
+        const [h, min] = dateMatch[4].split(':').map(Number);
+        const startTime = new Date(y, m, d, h, min);
+
+        if (!isNaN(startTime.getTime())) {
+            const diffSec = Math.floor((startTime.getTime() - now.getTime()) / 1000);
+
+            // Upcoming within 24 hours (86400 seconds)
+            if (diffSec > 0 && diffSec <= 86400) return diffSec;
+
+            // Active check (within duration)
+            const normalizedStr = (str + ' ' + (eventId || '')).toLowerCase();
+            const isLongEvent = normalizedStr.includes('협곡') || normalizedStr.includes('무기') || normalizedStr.includes('공장') || normalizedStr.includes('요새') || normalizedStr.includes('성채') || normalizedStr.includes('전투');
+            const durationSec = isLongEvent ? 3600 : 1800;
+            const endSec = Math.floor((startTime.getTime() + durationSec * 1000 - now.getTime()) / 1000);
+            if (diffSec <= 0 && endSec > 0) return endSec;
+        }
+    }
+
+    // 2. Weekly Recurring Check
     const currentDay = (now.getDay() + 6) % 7;
     const currentTotal = currentDay * 1440 * 60 + now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
     const totalWeekSeconds = 7 * 1440 * 60;
 
     const explicitMatches = Array.from(str.matchAll(/([일월화수목금토]|[매일]|sun|mon|tue|wed|thu|fri|sat|daily)\s*\(?(\d{1,2}):(\d{2})\)?/gi));
     if (explicitMatches.length > 0) {
-        let secRemaining: number | null = null;
+        let nearestResult: number | null = null;
         explicitMatches.forEach(m => {
             const dayStr = m[1];
             const h = parseInt(m[2]);
@@ -262,16 +289,23 @@ export const getRemainingSeconds = (str: string, now: Date, eventId?: string) =>
                 const startTotal = dayOffset * 1440 * 60 + h * 3600 + min * 60;
                 let endTotal = startTotal + durationSec;
 
-                if (currentTotal >= startTotal && currentTotal <= endTotal) {
-                    const rem = endTotal - currentTotal;
-                    if (secRemaining === null || rem < secRemaining) secRemaining = rem;
-                } else if (endTotal >= totalWeekSeconds && currentTotal <= (endTotal % totalWeekSeconds)) {
-                    const rem = (endTotal % totalWeekSeconds) - currentTotal;
-                    if (secRemaining === null || rem < secRemaining) secRemaining = rem;
+                // Case: Active (currently running)
+                if ((currentTotal >= startTotal && currentTotal <= endTotal) ||
+                    (endTotal >= totalWeekSeconds && currentTotal <= (endTotal % totalWeekSeconds))) {
+                    const rem = currentTotal >= startTotal ? (endTotal - currentTotal) : ((endTotal % totalWeekSeconds) - currentTotal);
+                    if (nearestResult === null || rem < nearestResult) nearestResult = rem;
+                } else {
+                    // Case: Upcoming (Starts in...)
+                    let diff = startTotal - currentTotal;
+                    if (diff < 0) diff += totalWeekSeconds; // Next week's occurrence
+
+                    if (diff <= 86400) { // 24 hours threshold
+                        if (nearestResult === null || diff < nearestResult) nearestResult = diff;
+                    }
                 }
             });
         });
-        return secRemaining;
+        return nearestResult;
     }
     return null;
 };
