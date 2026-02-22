@@ -1276,32 +1276,33 @@ export default function EventTracker() {
                 />
 
                 {/* Wiki Browser Modal (Web Only) */}
-                <Modal visible={browserVisible && Platform.OS === 'web'} animationType="slide" transparent={false}>
-                    <View className="flex-1 bg-white">
-                        <View className="h-16 bg-slate-900 flex-row items-center justify-between px-4 border-b border-slate-700">
-                            <View className="flex-row items-center flex-1 mr-4">
-                                <Text className="text-white font-semibold mr-2">��� {t('events.wiki')}</Text>
-                                <Text className="text-slate-400 text-xs truncate flex-1" numberOfLines={1}>{currentWikiUrl}</Text>
+                {browserVisible && Platform.OS === 'web' && (
+                    <View style={{ position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, elevation: 9999, backgroundColor: '#ffffff' }}>
+                        <View className="flex-1 bg-white">
+                            <View className="h-16 bg-slate-900 flex-row items-center justify-between px-4 border-b border-slate-700">
+                                <View className="flex-row items-center flex-1 mr-4">
+                                    <Text className="text-white font-semibold mr-2">��� {t('events.wiki')}</Text>
+                                    <Text className="text-slate-400 text-xs truncate flex-1" numberOfLines={1}>{currentWikiUrl}</Text>
+                                </View>
+                                <TouchableOpacity
+                                    onPress={() => setBrowserVisible(false)}
+                                    className="bg-slate-700 px-4 py-2 rounded-lg hover:bg-slate-600"
+                                >
+                                    <Text className="text-white font-semibold text-sm">{t('common.close')} ✖️</Text>
+                                </TouchableOpacity>
                             </View>
-                            <TouchableOpacity
-                                onPress={() => setBrowserVisible(false)}
-                                className="bg-slate-700 px-4 py-2 rounded-lg hover:bg-slate-600"
-                            >
-                                <Text className="text-white font-semibold text-sm">{t('common.close')} ✖️</Text>
-                            </TouchableOpacity>
-                        </View>
-                        <View className="flex-1 bg-slate-100">
-                            {Platform.OS === 'web' && (
-                                React.createElement('iframe', {
-                                    src: currentWikiUrl,
-                                    style: { width: '100%', height: '100%', border: 'none' },
-                                    title: "Wiki Content"
-                                })
-                            )}
+                            <View className="flex-1 bg-slate-100">
+                                {Platform.OS === 'web' && (
+                                    React.createElement('iframe', {
+                                        src: currentWikiUrl,
+                                        style: { width: '100%', height: '100%', border: 'none' },
+                                        title: "Wiki Content"
+                                    })
+                                )}
+                            </View>
                         </View>
                     </View>
-                </Modal>
-
+                )}
 
                 {/* Date Picker Modal */}
                 <DatePickerModal
