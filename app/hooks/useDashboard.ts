@@ -134,7 +134,18 @@ export const useDashboard = ({
         changeFontSize(scale);
     }, [fontSize]);
 
-    // Handle viewMode restoration (could be simplified if router params are handled in Home)
+    // Handle viewMode restoration
+    useEffect(() => {
+        AsyncStorage.getItem('settings_viewMode').then(val => {
+            if (val && (val === 'list' || val === 'timeline')) {
+                setViewMode(val as any);
+            }
+        });
+    }, []);
+
+    useEffect(() => {
+        AsyncStorage.setItem('settings_viewMode', viewMode);
+    }, [viewMode]);
 
     // Scroll Restoration
     useEffect(() => {
