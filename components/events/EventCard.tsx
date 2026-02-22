@@ -1,46 +1,82 @@
+/**
+ * 리액트(React) 컴포넌트 구조와 타입스크립트(TypeScript) 입문을 위한 핵심 파일입니다.
+ * 
+ * 1. 컴포넌트(Component): 레고 블록처럼 화면의 일부분(여기서는 '이벤트 카드' 하나)을 담당하는 단위입니다.
+ * 2. 상태(State)와 훅(Hook): 화면 안에서 계속 변하는 값(예: 남은 시간 타이머)을 관리합니다.
+ */
 import React, { useState, useEffect } from 'react';
+// --- 리액트 네이티브(앱) 기본 UI 태그들 ---
+// View: 보이지 않는 네모 박스 (HTML의 div 역할)
+// Text: 글자를 렌더링하는 태그
+// Pressable: 터치(클릭)가 가능한 투명한 버튼
+// Image, ImageBackground: 이미지 출력용 태그
+// Dimensions, Platform: 현재 기기의 화면 크기나 종류(웹/iOS/안드로이드)를 확인할 때 사용
 import { View, Text, Pressable, Image, ImageBackground, Dimensions, Platform } from 'react-native';
+
+// --- 엑스포(Expo) 아이콘 꾸러미 ---
+// Ionicons: 수천 개의 무료 아이콘 세트. 아이콘 이름만 지정하면 화면에 멋진 그림이 나옵니다.
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+
+// --- 외부 데이터(Data) 불러오기 ---
+// import { 가져올_변수명 } from '파일_위치': 다른 파츠에서 정의해둔 데이터를 이 파일로 가져옵니다.
+// ../ 기호는 "지금 내 폴더에서 한 칸 위로(상위 폴더로) 가라"는 뜻입니다.
+// INITIAL_WIKI_EVENTS: 기존 위키 사이트에서 가져왔던 기본 이벤트 데이터 목록
+//import { ... } from ... (가져오기)
+//ADDITIONAL_EVENTS (가져올 물건의 이름)
+//'../../data/new-events' (물건이 있는 위치/주소)
 import { INITIAL_WIKI_EVENTS } from '../../data/wiki-events';
+// ADDITIONAL_EVENTS: 최근에 프로젝트에 새롭게 추가된 신규 이벤트 데이터 목록
 import { ADDITIONAL_EVENTS } from '../../data/new-events';
 
+/**
+ * 인터페이스(interface): 타입스크립트의 핵심 기능으로, 이 컴포넌트가 부모로부터 넘겨받아야 할
+ * 데이터(Props)들의 '모양(타입)'을 엄격하게 정의하는 설명서입니다.
+ * 예: "event는 아무거나(any) 받아도 되지만, isDark는 무조건 boolean(참/거짓)이어야 해!"
+ */
 interface EventCardProps {
-    event: any;
-    isDark: boolean;
-    isMobile: boolean;
-    fontSizeScale: number;
-    windowWidth: number;
-    now: Date;
-    timezone: 'LOCAL' | 'UTC';
-    viewMode: 'list' | 'timeline';
-    t: (key: string, options?: any) => string;
+    event: any;                         // 표시할 이벤트의 상세 정보 (이름, 시간 등)
+    isDark: boolean;                    // 다크모드 여부 (true면 다크모드)
+    isMobile: boolean;                  // 현재 화면이 모바일 화면 크기인지 여부
+    fontSizeScale: number;              // 폰트 크기 배율 (모바일 최적화용)
+    windowWidth: number;                // 현재 기기의 가로 너비
+    now: Date;                          // 현재 시간
+    timezone: 'LOCAL' | 'UTC';          // 시간대 (내 지역 시간인지, 국제 표준 UTC인지)
+    viewMode: 'list' | 'timeline';      // 카드를 보여줄 방식 (리스트형 vs 타임라인형)
+
+    // 함수형 Props: 부모가 자식에게 "너 이거 클릭되면 이 함수를 실행해!"라고 넘겨주는 리모컨 역할
+    t: (key: string, options?: any) => string; // 언어 번역 함수 (예: t('events.title'))
     auth: {
-        isLoggedIn: boolean;
+        isLoggedIn: boolean;            // 로그인 여부 (락(Lock) 아이콘 표시용)
         adminName?: string | null;
         role?: any;
     };
-    onPress: (event: any) => void;
-    isEventActive: (event: any) => boolean;
-    isEventExpired: (event: any) => boolean;
-    getRemainingSeconds: (str: string, eventId?: string) => number | null;
+    onPress: (event: any) => void;      // 카드를 클릭했을 때 실행할 함수
+    isEventActive: (event: any) => boolean; // 현재 이벤트가 "진행 중(ONGOING)"인지 판별하는 함수
+    isEventExpired: (event: any) => boolean; // 이벤트가 "끝났는지" 판별하는 함수
+    getRemainingSeconds: (str: string, eventId?: string) => number | null; // 시작까지 남은 초(Second) 계산
     getEventEndDate: (event: any) => Date | null;
-    toLocal: (kstStr: string) => string;
-    toUTC: (kstStr: string) => string;
-    pad: (n: number) => string;
+    toLocal: (kstStr: string) => string; // 한국 시간을 내 지역 시간으로 변환
+    toUTC: (kstStr: string) => string;   // 한국 시간을 UTC로 변환
+    pad: (n: number) => string;          // 숫자 앞에 0을 붙여주는 함수 (예: 9 -> 09)
     translateDay: (day: string) => string;
     translateLabel: (label: string) => string;
     getEventSchedule: (event: any) => any;
-    formatRemainingTime: (seconds: number) => string;
+    formatRemainingTime: (seconds: number) => string; // 120초 -> "02:00" 형태로 변환
 }
 
+/**
+ * EventCard 컴포넌트 선언부
+ * React.FC<EventCardProps> : "이 EventCard는 함수형 컴포넌트(FC)인데, 아까 정의한 EventCardProps 규칙을 따를거야" 라는 뜻입니다.
+ * ({ ... }) : 부모가 넘겨준 물건들(Props)을 하나하나 이름표를 붙여서 꺼내쓰는 문법(비구조화 할당)입니다.
+ */
 export const EventCard: React.FC<EventCardProps> = ({
     event,
     isDark,
     isMobile,
     fontSizeScale,
     windowWidth,
-    now: initialNow,
+    now: initialNow, // 부모가 준 'now'라는 이름을 여기서는 'initialNow'로 바꿔서 쓸게! 라는 뜻
     timezone,
     viewMode,
     t,
@@ -58,13 +94,21 @@ export const EventCard: React.FC<EventCardProps> = ({
     getEventSchedule,
     formatRemainingTime,
 }) => {
+    // useState: 컴포넌트 안에서 '변하는 값'을 담는 바구니입니다.
+    // [현재값, 값을바꾸는함수] = useState(초기값)
     const [now, setNow] = useState(initialNow);
 
-    // Internal ticker for countdowns
+    // useEffect: 이 컴포넌트가 화면에 '나타날 때', '사라질 때', 혹은 '특정 값이 변할 때' 일을 시키는 훅(Hook)입니다.
+    // 두 번째 인자로 빈 배열 []을 주면 "처음 화면에 뜰 때 딱 한 번만 실행해!" 라는 의미입니다.
     useEffect(() => {
+        // 1초(1000ms)마다 setInterval 안의 화살표 함수가 실행됩니다.
         const timer = setInterval(() => {
+            // setNow를 호출하면 -> now 값이 바뀜 -> 리액트가 그걸 눈치채고 화면을 1초마다 다시 그려줍니다!
             setNow(new Date());
         }, 1000);
+
+        // 컴포넌트가 화면에서 사라질 때(언마운트) 타이머를 끄는 청소(Cleanup) 작업입니다. 
+        // 안 끄면 타이머가 좀비처럼 계속 돌아서 폰이 느려집니다.
         return () => clearInterval(timer);
     }, []);
 
@@ -185,10 +229,13 @@ export const EventCard: React.FC<EventCardProps> = ({
         return baseTitle;
     };
 
+    // 여기서부터가 실제 화면에 그려지는 부분(View)입니다.
+    // 리액트에서는 HTML과 비슷하게 생긴 JSX(타입스크립트는 TSX) 문법을 씁니다.
     if (isActive) {
         return (
+            // Pressable: 터치(클릭)가 가능한 영역을 만드는 투명한 버튼 박스입니다.
             <Pressable
-                onPress={() => onPress(event)}
+                onPress={() => onPress(event)} // 누르면 부모가 준 onPress 함수를 실행합니다.
                 style={({ pressed, hovered }: any) => [
                     {
                         width: '100%',
@@ -213,6 +260,10 @@ export const EventCard: React.FC<EventCardProps> = ({
                     }
                 ]}
             >
+                {/* 
+                  중괄호 {} 안에는 자바스크립트/타입스크립트 코드를 적을 수 있습니다.
+                  isLocked && (UI) 문법은 "isLocked가 참(true)일 때만 뒤의 UI를 그려라!" 라는 단축 문법입니다.
+                */}
                 {isLocked && (
                     <View className={`absolute top-3 right-3 z-20 flex-row items-center px-2 py-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-600'}`}>
                         <Ionicons name="lock-closed" size={10} color="#fbbf24" style={{ marginRight: 4 }} />
@@ -235,6 +286,8 @@ export const EventCard: React.FC<EventCardProps> = ({
                                     <Text className="text-[9px] font-black uppercase tracking-wider text-white">ONGOING</Text>
                                 </View>
                             </View>
+                            {/* numberOfLines={1}: 글자가 1줄을 넘어가면 뒷부분을 ...으로 잘라줍니다 (말줄임표) */}
+                            {/* adjustsFontSizeToFit: 공간이 모자라면 폰트 크기를 스스로 줄여서 1줄 안에 다 맞춰넣는 신기한 속성입니다! */}
                             <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                                 {renderEventTitle()}
                             </Text>

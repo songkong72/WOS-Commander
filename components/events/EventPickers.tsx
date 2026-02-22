@@ -1,9 +1,16 @@
+/**
+ * 예약이나 관리자 권한 부여 등 다양한 화면에서 공통으로 사용되는 '선택 창(Picker)'들을 모아둔 파일입니다.
+ * - HeroPicker: 영웅(캐릭터) 이름을 검색하고 선택하는 드롭다운
+ * - OptionPicker: 여러 개의 선택지 중 하나를 고르는 기본 드롭다운
+ * - MemberPicker: 연맹원 이름을 검색하고 선택하는 자동완성 드롭다운
+ */
 import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import heroesData from '../../data/heroes.json';
 
+// 영웅 원본 데이터(JSON)에서 'name(이름)'만 쏙 뽑아서 배열(Array) 리스트로 만듭니다.
 const HERO_NAMES = heroesData.map(h => h.name);
 
 // --- HeroPicker ---
@@ -12,8 +19,9 @@ export const HeroPicker = memo(({ value, onSelect, num, isDark }: { value: strin
     const [showDropdown, setShowDropdown] = useState(false);
     const [search, setSearch] = useState(value);
 
+    // useMemo: 검색어(search)나 원본 영웅 목록(HERO_NAMES)이 바뀔 때만 다시 필터링(계산)하게 하여 앱 속도를 높입니다.
     const filteredHeroes = useMemo(() => HERO_NAMES.filter(name =>
-        name.toLowerCase().includes(search.toLowerCase())
+        name.toLowerCase().includes(search.toLowerCase()) // 대소문자 구분 없이 문자열이 포함(includes)되었는지 확인
     ), [search]);
 
     useEffect(() => {
@@ -117,11 +125,20 @@ export const MemberPicker = memo(({ value, onSelect, members, isAdmin, setOverla
         }
     }, [value]);
 
+    // [방어 코드 추가] members 배열에서 검색어와 일치하는 연맹원만 골라냅니다.
     const filteredMembers = useMemo(() => {
+        // 1. 만약 members(명단) 데이터가 아직 도착하지 않았거나, 올바른 배열(리스트) 형태가 아니라면 
+        // 앱이 튕기거나(Crash) 에러가 나지 않도록 곧바로 빈 리스트([])를 돌려줍니다.
         if (!members || !Array.isArray(members)) return [];
+
+        // 2. 검색어가 비어있을 수도 있으니 강제로 소문자 문자열로 안전하게 변환합니다.
         const safeSearch = (search || '').toLowerCase();
+
+        // 3. filter(필터) 함수를 사용해 조건을 1개라도 만족하는 연맹원만 남깁니다.
         return members.filter(m =>
+            // 닉네임에 검색어가 포함되어 있거나 (m?.nickname 은 m 안의 nickname이 있는지 안전하게 확인하는 문법입니다)
             (m?.nickname || '').toLowerCase().includes(safeSearch) ||
+            // 게임 ID에 검색어가 포함되어 있으면 통과!
             (m?.id || '').toLowerCase().includes(safeSearch)
         );
     }, [members, search]);

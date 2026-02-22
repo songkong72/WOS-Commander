@@ -1,3 +1,8 @@
+/**
+ * 커스텀 훅(Custom Hook)의 교과서적인 파일입니다.
+ * 리액트에서는 화면(UI)을 그리는 컴포넌트 파일과, 데이터를 조작하는 로직(Hook) 파일을 따로 분리하는 것이 좋습니다.
+ * 이 파일은 "관리자의 로그인, 권한 체크, 입력값 상태" 등 관리자 기능에 필요한 모든 변수와 함수를 하나로 모아둔 곳입니다.
+ */
 import { useState, useRef, useEffect } from 'react';
 import { TextInput, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,6 +28,10 @@ interface UseAdminAuthProps {
     onLoginSuccess?: () => void;
 }
 
+/**
+ * useAdminAuth 훅(함수) 선언부입니다.
+ * Hook 이름은 무조건 `use`로 시작해야 리액트가 "아! 이건 상태를 다루는 훅이구나" 하고 인식합니다.
+ */
 export const useAdminAuth = (props?: UseAdminAuthProps) => {
     const authCtx = useAuth();
     const { t: tI18n } = useTranslation();
@@ -38,7 +47,9 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
     const showCustomAlert = props?.showCustomAlert || authCtx.showCustomAlert;
     const t = props?.t || tI18n;
 
-    // --- States ---
+    // --- States (상태 관리) ---
+    // useState: 컴포넌트가 기억해야 할 데이터들입니다. 값이 바뀌면 연결된 화면이 자동으로 새로고침됩니다.
+    // 예) 사용자가 아이디 칸에 글자를 입력하면 inputServer 값이 바뀌고, 화면에 그 글자가 즉시 표시됩니다.
     const [loginInput, setLoginInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
     const [loginError, setLoginError] = useState('');
@@ -69,24 +80,32 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
     // --- Notification Settings ---
     const { settings: notificationSettings, saveWebhookUrl } = useFirestoreNotificationSettings(null, null);
 
-    // --- Refs ---
+    // --- Refs (참조) ---
+    // useRef: 화면을 다시 그리게(재렌더링) 만들지 않으면서 값을 기억하거나, 화면의 특정 요소(input 태그 등)를 직접 가리킬 때 씁니다.
+    // 여기서는 사용자가 엔터를 쳤을 때 다음 입력칸으로 포커스(커서)를 자동으로 넘겨주기 위해 사용합니다.
     const gateUserIdRef = useRef<TextInput>(null);
     const gatePasswordRef = useRef<TextInput>(null);
     const loginPasswordRef = useRef<TextInput>(null);
 
-    // --- Initial History Load ---
+    // --- Initial History Load (앱 시작 시 최근 정보 불러오기) ---
+    // useEffect: 이 훅이 처음 불려질 때(보통 화면이 뜰 때) 딱 한 번만(빈 배열 []) 실행할 코드를 적습니다.
     useEffect(() => {
+        // async/await: 데이터를 가져오는 데 시간이 걸리니까, "가져올 때까지 잠깐 기다려라!"라는 명령어입니다.
         const loadHistory = async () => {
             try {
+                // 핸드폰/브라우저의 저장소(AsyncStorage)에서 예전에 입력했던 로그인 기록들을 전부 꺼내옵니다.
                 const [servers, alliances, userIds] = await Promise.all([
                     AsyncStorage.getItem('recent_server'),
                     AsyncStorage.getItem('recent_alliance'),
                     AsyncStorage.getItem('recent_userid'),
                 ]);
+                // 꺼내온 글자(문자열) 형태의 데이터를 진짜 배열(Array) 객체로 번역(JSON.parse)해서 State에 저장합니다.
                 if (servers) setRecentServers(JSON.parse(servers));
                 if (alliances) setRecentAlliances(JSON.parse(alliances));
                 if (userIds) setRecentUserIds(JSON.parse(userIds));
-            } catch (e) { }
+            } catch (e) {
+                // 에러가 나도 아무것도 안 하고 넘어갑니다. (최근 기록을 못 불러올 뿐 앱이 죽으면 안 되니까요)
+            }
         };
         loadHistory();
     }, []);
@@ -127,12 +146,15 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
         });
     };
 
+    // --- 연맹 입장(로그인 및 가입) 버튼을 눌렀을 때 실행되는 메인 함수 ---
     const handleEnterAlliance = async () => {
+        // 1. 입력 양식 정리 (앞뒤 공백 제거, 서버 번호 앞에 '#' 자동으로 붙이기 등)
         const forceServer = inputServer.trim() ? (inputServer.trim().startsWith('#') ? inputServer.trim() : `#${inputServer.trim()}`) : '';
         const forceAlliance = inputAlliance.trim();
         const inputId = inputUserId.trim();
         const inputPw = inputPassword.trim();
 
+        // 에러 메시지 초기화 및 "로딩 중" 상태 켜기 (버튼이 빙글빙글 돌게 만듭니다)
         setGateLoginError(null);
         setIsLoginLoading(true);
 
@@ -152,13 +174,16 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
             }
 
             try {
-                // 1. Check if ID already exists in users collection
+                // 파이어베이스(Firebase) 데이터베이스 통신 구역입니다.
+                // 1. users(유저 목록) 컬렉션에서 방금 입력한 아이디(inputId)가 이미 존재하는지 문서를 가져와(getDoc) 확인합니다.
                 const userRef = doc(db, "users", inputId.toLowerCase());
                 const userSnap = await getDoc(userRef);
+
+                // 만약 존재한다면(exists), 이미 누가 쓰고 있는 아이디이므로 에러를 띄웁니다.
                 if (userSnap.exists()) {
                     setGateLoginError(t('admin.idExists') || '이미 존재하는 아이디입니다.');
                     setIsLoginLoading(false);
-                    return;
+                    return; // 함수 실행을 여기서 멈춥니다.
                 }
 
                 // 2. Also check in pending requests to prevent duplicates
@@ -170,18 +195,19 @@ export const useAdminAuth = (props?: UseAdminAuthProps) => {
                     return;
                 }
 
+                // 비밀번호를 그대로 저장하면 위험하므로, 암호화(Hash) 함수를 거친 뒤 저장합니다.
                 const hashed = await hashPassword(inputPw);
                 const userId = inputId.toLowerCase();
 
-                // 1. Create User Account Immediately (Status: pending)
-                // This allows the login check to catch the 'pending' status and show appropriate feedback
+                // 2. 관리자 승인을 받기 전까지는 임시 상태('pending')로 가입 처리합니다.
+                // 이 정보를 담아 users 컬렉션에 새 문서(가입 정보)를 만듭니다 (setDoc).
                 const userData = {
                     uid: `admin_${forceServer.replace('#', '')}_${forceAlliance}_${Date.now()}`,
                     username: userId,
                     password: hashed,
                     nickname: `${forceAlliance} 관리자`,
                     role: 'alliance_admin',
-                    status: 'pending',
+                    status: 'pending', // 아직 승인 대기 중!
                     serverId: forceServer,
                     allianceId: forceAlliance,
                     createdAt: Date.now()

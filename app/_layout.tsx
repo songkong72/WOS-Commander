@@ -33,7 +33,12 @@ const detectSystemLanguage = (): Language => {
     return 'en';
 };
 
+/**
+ * 앱의 메인 레이아웃이자 시작점(Entry Point)입니다.
+ * 앱이 켜질 때 제일 먼저 실행되어 "테마, 로그인 정보, 언어" 등 전역적인 설정을 불러옵니다.
+ */
 export default function Layout() {
+    // 앱 전체에서 공통으로 쓰일 전역 변수들(State)을 여기서 준비합니다.
     const [auth, setAuth] = useState<AdminStatus>({ isLoggedIn: false, adminName: null, role: null });
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const [serverId, setServerId] = useState<string | null>(null);
@@ -44,6 +49,8 @@ export default function Layout() {
     const [isLayoutReady, setIsLayoutReady] = useState(false);
     const [isGateOpen, setIsGateOpen] = useState(true);
     const mainScrollRef = useRef<ScrollView>(null);
+
+    // 다국어 번역 함수 (locale 키를 통해 문자열을 가져옴)
     const { t } = useTranslation();
 
     // Custom Alert State
@@ -65,9 +72,12 @@ export default function Layout() {
     };
     const isDark = theme === 'dark'; // Moved up for context
 
+    // --- 앱 초기 세팅 로직 ---
+    // 제일 처음 앱이 렌더링될 때(Mount), 저장소에 기억해뒀던 과거 설정값들을 불러옵니다.
     useEffect(() => {
         const restoreSession = async () => {
             try {
+                // AsyncStorage = 휴대폰/브라우저 하드디스크에 반영구적으로 저장된 값
                 const savedAdminId = await AsyncStorage.getItem('lastAdminId');
                 const savedRole = await AsyncStorage.getItem('lastAdminRole');
                 const savedTheme = await AsyncStorage.getItem('theme');
@@ -76,6 +86,7 @@ export default function Layout() {
                 const savedAlliance = await AsyncStorage.getItem('allianceId');
                 const savedFontSize = await AsyncStorage.getItem('fontSizeScale');
 
+                // 불러온 값이 있으면 다시 State(바구니)에 넣어줘서 셋팅을 복구합니다.
                 if (savedAdminId) {
                     setAuth({ isLoggedIn: true, adminName: savedAdminId, role: savedRole as any });
                 }
@@ -201,16 +212,23 @@ export default function Layout() {
     const { width } = useWindowDimensions();
     const isPC = width >= 1024;
 
+    // 아직 옛날 저장소 설정값을 다 못 불러왔다면 화면에 아무것도 그리지 않고 기다립니다(null).
     if (!isLayoutReady) return null;
 
     return (
+        // Context.Provider: 
+        // 리액트에서 데이터를 자식 컴포넌트들에게 건네주려면 원래 Props를 통해서 한 단계씩 내려줘야 합니다. (Props Drilling)
+        // 하지만 Context를 쓰면, 이 태그로 감싸진 앱 안의 **모든 하위 화면**에서 한 번에 저 value 값들(로그인 정보 등)을 꺼내쓸 수 있습니다!
         <AuthContext.Provider value={{
             auth, login, logout, serverId, allianceId, setAllianceInfo,
             dashboardScrollY, setDashboardScrollY, mainScrollRef, isGateOpen, setIsGateOpen,
             showCustomAlert
         }}>
+            {/* ThemeContext: 다크모드/라이트모드, 폰트 크기 설정을 전역으로 뿌려줍니다. */}
             <ThemeContext.Provider value={{ theme, setTheme: handleSetTheme, toggleTheme, setTemporaryTheme, toggleTemporaryTheme, fontSizeScale, changeFontSize }}>
+                {/* LanguageContext: 한국어/영어 언어 설정을 앱 전체에 전파합니다. */}
                 <LanguageContext.Provider value={{ language, changeLanguage }}>
+                    {/* Platform.OS === 'web': 우리 앱이 지금 웹 브라우저에서 켜졌을 때만 이 <Head> 태그를 HTML에 주입하라는 뜻입니다. */}
                     {Platform.OS === 'web' && (
                         <Head>
                             <meta name="mobile-web-app-capable" content="yes" />
