@@ -161,7 +161,7 @@ export const EventSectionList: React.FC<EventSectionListProps> = ({
                                                 </View>
                                                 {isExpiredExpanded ? (
                                                     expiredEvents.length > 0 ? (
-                                                        <View className="flex-col gap-y-2 opacity-60 px-1">
+                                                        <View className="flex-col gap-y-2 px-1">
                                                             {expiredEvents.map((event, idx) => renderEventCard(event, `expired-${idx}`))}
                                                         </View>
                                                     ) : (
