@@ -798,8 +798,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                                                                             className="h-full flex-row items-center px-4 shadow-lg"
                                                                         >
                                                                             {(p.et - p.st > 3600000 && !(ev.id && ev.id.includes('castle'))) && (
-                                                                                <View className="w-6 h-6 rounded-full bg-white/30 items-center justify-center mr-2.5 shadow-sm border border-white/20">
-                                                                                    {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-4 h-4 rounded-full" />}
+                                                                                <View className="w-[28px] h-[28px] rounded-full bg-white/30 items-center justify-center mr-2.5 shadow-sm border border-white/20">
+                                                                                    {!!ev.imageUrl && <Image source={typeof ev.imageUrl === 'string' ? { uri: ev.imageUrl } : ev.imageUrl} className="w-5 h-5 rounded-full" />}
                                                                                 </View>
                                                                             )}
                                                                             <Text key="title-text" className="text-white font-black flex-1 tracking-tight" numberOfLines={1} style={{ fontSize: 13 * fontSizeScale }}>
