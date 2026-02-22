@@ -348,9 +348,9 @@ export const EventCard: React.FC<EventCardProps> = ({
                 </View>
             )}
 
-            <View className={`p-4 flex-row items-center`}>
+            <View className={`p-4 flex-row`}>
                 {/* 좌측 아이콘 영역 */}
-                <View className={`w-12 h-12 mr-3.5 rounded-2xl items-center justify-center ${isDark ? 'bg-slate-800/80 shadow-inner' : 'bg-slate-100 shadow-sm'}`}>
+                <View className={`w-12 h-12 mr-3.5 rounded-2xl items-center justify-center mt-0.5 ${isDark ? 'bg-slate-800/80 shadow-inner' : 'bg-slate-100 shadow-sm'}`}>
                     {eventImageUrl ? (
                         <Image source={typeof eventImageUrl === 'string' ? { uri: eventImageUrl } : eventImageUrl} className="w-7 h-7" resizeMode="contain" />
                     ) : (
@@ -358,22 +358,45 @@ export const EventCard: React.FC<EventCardProps> = ({
                     )}
                 </View>
 
-                {/* 메인 타이틀 & 날짜 영역 (플렉스 컨테이너 확장 제어) */}
-                <View className="flex-1 pr-2 justify-center overflow-hidden">
-                    <View className="flex-row items-center mb-1">
-                        {/* SOON 뱃지는 우측 타이머(STARTS IN)와 의미가 중복되어 제거함 */}
-                        <Text
-                            className={`flex-1 font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
-                            style={{ fontSize: 16 * fontSizeScale }}
-                            numberOfLines={1}
-                            adjustsFontSizeToFit
-                            minimumFontScale={0.75}
-                        >
-                            {renderEventTitle()}
-                        </Text>
+                {/* 우측 텍스트 및 액션 영역 (수직 분할) */}
+                <View className="flex-1 overflow-hidden justify-center">
+
+                    {/* 상단 1열: 타이틀 + 우측 타이머 & 화살표 */}
+                    <View className="flex-row justify-between items-center mb-1.5">
+                        <View className="flex-1 flex-row items-center pr-2">
+                            <Text
+                                className={`flex-1 font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+                                style={{ fontSize: 16 * fontSizeScale }}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.75}
+                            >
+                                {renderEventTitle()}
+                            </Text>
+                        </View>
+
+                        <View className="flex-row items-center">
+                            {isUpcomingSoon && remSoonSeconds !== null && (
+                                <View className="items-end mr-3">
+                                    <Text className={`text-[8px] font-black uppercase tracking-widest leading-none mb-0.5 ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>Starts In</Text>
+                                    <Text className={`font-black tabular-nums tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-600'}`} style={{ fontSize: 13 * fontSizeScale }}>
+                                        {formatRemainingTime(remSoonSeconds)}
+                                    </Text>
+                                </View>
+                            )}
+                            {isExpired && (
+                                <View className="items-end mr-3">
+                                    <Text className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Ended</Text>
+                                </View>
+                            )}
+                            <View className={`w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-slate-800/80 shadow-inner' : 'bg-slate-100 shadow-sm'}`}>
+                                <Ionicons name="chevron-forward" size={12} color={isDark ? '#94a3b8' : '#64748b'} />
+                            </View>
+                        </View>
                     </View>
 
-                    <View className="flex-col">
+                    {/* 하단 2열: 날짜 라인 (우측 버튼의 간섭 없이 전체 폭 100% 사용) */}
+                    <View className="flex-col w-full">
                         {(!displayDay && !displayTime) ? (
                             <Text className="text-slate-400 text-xs font-medium">{t('dashboard.unassigned')}</Text>
                         ) : (
@@ -386,7 +409,6 @@ export const EventCard: React.FC<EventCardProps> = ({
                                 const lines = Array.from(new Set(finalStr.split('\n').map(l => l.trim()).filter(Boolean)));
 
                                 return lines.map((line, idx) => {
-                                    // 보기 지저분한 ' ~ ' 를 화살표 ➔ 로 변경해 공간 절약 및 가독성 증가
                                     const compactLine = line.replace(' ~ ', ' ➔ ');
                                     return (
                                         <Text
@@ -402,26 +424,6 @@ export const EventCard: React.FC<EventCardProps> = ({
                                 });
                             })()
                         )}
-                    </View>
-                </View>
-
-                {/* 우측 남은시간 및 액션 영역 */}
-                <View className="items-end justify-center ml-auto">
-                    {isUpcomingSoon && remSoonSeconds !== null && (
-                        <View className="items-end mb-1">
-                            <Text className={`text-[8px] font-black uppercase tracking-widest leading-none mb-1 ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>Starts In</Text>
-                            <Text className={`font-black tabular-nums tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-600'}`} style={{ fontSize: 13 * fontSizeScale }}>
-                                {formatRemainingTime(remSoonSeconds)}
-                            </Text>
-                        </View>
-                    )}
-                    {isExpired && (
-                        <View className="items-end mb-1">
-                            <Text className={`text-[9px] font-black uppercase tracking-widest ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>Ended</Text>
-                        </View>
-                    )}
-                    <View className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-slate-800/80 shadow-inner' : 'bg-slate-100 shadow-sm'}`}>
-                        <Ionicons name="chevron-forward" size={14} color={isDark ? '#94a3b8' : '#64748b'} />
                     </View>
                 </View>
             </View>
