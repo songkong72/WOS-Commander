@@ -496,7 +496,7 @@ export const GateScreen = ({
                             <View className="items-center justify-center mb-6" style={{ marginTop: isMobile ? 64 : 46 }}>
                                 <View className="w-28 h-28 items-center justify-center mb-2">
                                     <Image
-                                        source={require('../../assets/icon.png')}
+                                        source={require('../../assets/logo_transparent.png')}
                                         style={{ width: '120%', height: '120%' }}
                                         resizeMode="contain"
                                     />
