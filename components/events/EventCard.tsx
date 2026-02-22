@@ -192,112 +192,130 @@ export const EventCard: React.FC<EventCardProps> = ({
                 style={({ pressed, hovered }: any) => [
                     {
                         width: '100%',
-                        borderRadius: 24,
+                        borderRadius: 20,
                         overflow: 'hidden',
-                        backgroundColor: isDark ? 'rgba(30, 41, 59, 0.75)' : 'rgba(255, 255, 255, 0.9)',
+                        backgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.95)',
                         borderWidth: 1.5,
-                        borderColor: isDark ? 'rgba(71, 85, 105, 0.5)' : 'rgba(203, 213, 225, 0.8)',
+                        borderColor: isDark ? 'rgba(16, 185, 129, 0.4)' : 'rgba(16, 185, 129, 0.5)',
                         elevation: 5,
                         opacity: pressed ? 0.98 : 1,
                         transform: [{ scale: (hovered && !isLocked) ? 1.02 : 1 }],
                         marginBottom: 12,
+                        shadowColor: '#10b981',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: isDark ? 0.2 : 0.1,
+                        shadowRadius: 8,
                     }
                 ]}
             >
                 {isLocked && (
-                    <View className={`absolute top-3 right-3 z-20 flex-row items-center px-2.5 py-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-600'}`}>
+                    <View className={`absolute top-3 right-3 z-20 flex-row items-center px-2 py-1 rounded-full ${isDark ? 'bg-slate-800' : 'bg-slate-600'}`}>
                         <Ionicons name="lock-closed" size={10} color="#fbbf24" style={{ marginRight: 4 }} />
                         <Text style={{ fontSize: 9 * fontSizeScale, color: '#ffffff', fontWeight: '500' }}>{t('common.member_only_title')}</Text>
                     </View>
                 )}
-                <ImageBackground
-                    source={require('../../assets/images/selection_gate_bg.png')}
-                    style={{ width: '100%' }}
-                    imageStyle={{ opacity: 0.6 }}
-                >
-                    <View className="absolute inset-0 bg-black/50" />
-                    <View className="p-5">
-                        <View className="flex-col mb-1">
-                            <View className="w-full mb-4">
-                                <View className="flex-row items-center mb-2">
-                                    <View className="px-2 py-1 rounded-[6px] bg-blue-500">
-                                        <Text className="text-[11px] font-bold uppercase tracking-wider text-white">Ongoing</Text>
-                                    </View>
-                                    <View className="ml-2 w-2 h-2 rounded-full bg-green-400" />
+
+                {/* Background 워터마크 아이콘 */}
+                <View className="absolute right-[-20px] top-[-20px] opacity-10" style={{ pointerEvents: 'none' }}>
+                    <Ionicons name={getEventIcon(event.originalEventId || event.eventId) as any} size={140} color="#10b981" />
+                </View>
+
+                <View className="p-4 pl-5">
+                    {/* 상단 타이틀 & 남은시간 묶음 */}
+                    <View className="flex-row justify-between items-start mb-4">
+                        <View className="flex-1 pr-2">
+                            <View className="flex-row items-center mb-1.5">
+                                <View className="px-1.5 py-0.5 rounded-[4px] bg-emerald-500 shadow-sm flex-row items-center">
+                                    <View className="w-1.5 h-1.5 rounded-full bg-white mr-1 opacity-90" />
+                                    <Text className="text-[9px] font-black uppercase tracking-wider text-white">ONGOING</Text>
                                 </View>
-                                <Text className="font-black tracking-tight text-white" style={{ fontSize: 22 * fontSizeScale, lineHeight: 26 * fontSizeScale }} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
-                                    {renderEventTitle()}
-                                </Text>
                             </View>
-
-                            <View className="w-full items-end mb-2">
-                                {(() => {
-                                    let remSeconds = getRemainingSeconds(toLocal(displayDay), event.eventId) || getRemainingSeconds(toLocal(displayTime), event.eventId);
-                                    if (remSeconds === null) {
-                                        const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
-                                        if (endDate && now < endDate) {
-                                            remSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
-                                        }
-                                    }
-
-                                    if (remSeconds !== null) {
-                                        const d = Math.floor(remSeconds / (24 * 3600));
-                                        const h = Math.floor((remSeconds % (24 * 3600)) / 3600);
-                                        const m = Math.floor((remSeconds % 3600) / 60);
-                                        const s = remSeconds % 60;
-                                        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-                                        return (
-                                            <View className={`w-full items-center justify-center px-4 py-3 rounded-xl border ${isDark ? 'bg-sky-500/10 border-sky-500/50' : 'bg-blue-50 border-blue-200'}`}>
-                                                <View className="flex-row items-baseline justify-center">
-                                                    {d > 0 && <Text className={`font-black mr-2 ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`} style={{ fontSize: 24 * fontSizeScale }}>{d}{t('common.day_short')}</Text>}
-                                                    <Text className={`font-black tracking-widest tabular-nums ${isDark ? 'text-[#38bdf8]' : 'text-[#2563eb]'}`} style={{ fontSize: 28 * fontSizeScale }}>{timeStr}</Text>
-                                                </View>
-                                                <Text className={`text-[11px] font-bold uppercase tracking-[0.3em] mt-1 opacity-80 ${isDark ? 'text-sky-200' : 'text-blue-400'}`}>REMAINING</Text>
-                                            </View>
-                                        );
-                                    }
-                                    return (
-                                        <View className="w-full items-center justify-center px-4 py-2 rounded-xl bg-blue-500/20">
-                                            <Text className="text-sm font-bold uppercase tracking-widest text-blue-400">Active</Text>
-                                        </View>
-                                    );
-                                })()}
-                            </View>
+                            <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                                {renderEventTitle()}
+                            </Text>
                         </View>
-                        <View className="flex-row flex-wrap items-center pt-2">
-                            <View className="flex-row items-center mr-2 py-0.5">
-                                <Ionicons name="calendar-outline" size={16} color="#CBD5E1" style={{ marginRight: 6 }} />
-                                {(() => {
-                                    const parts = formattedDateRange.split(' ~ ');
-                                    if (parts.length === 2 && parts[0].includes(' ')) {
-                                        const [date1, time1] = parts[0].split(' ');
-                                        return (
-                                            <View className="flex-row items-center">
-                                                <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date1}</Text>
-                                                <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time1}</Text>
-                                            </View>
-                                        );
-                                    }
-                                    return <Text className="font-medium text-slate-300" style={{ fontSize: 18 * fontSizeScale }}>{formattedDateRange}</Text>;
-                                })()}
-                            </View>
+
+                        <View className="items-end pl-2">
                             {(() => {
-                                const parts = formattedDateRange.split(' ~ ');
-                                if (parts.length === 2 && parts[1].includes(' ')) {
-                                    const [date2, time2] = parts[1].split(' ');
+                                let remSeconds = getRemainingSeconds(toLocal(displayDay), event.eventId) || getRemainingSeconds(toLocal(displayTime), event.eventId);
+                                if (remSeconds === null) {
+                                    const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
+                                    if (endDate && now < endDate) {
+                                        remSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
+                                    }
+                                }
+
+                                if (remSeconds !== null) {
+                                    const d = Math.floor(remSeconds / (24 * 3600));
+                                    const h = Math.floor((remSeconds % (24 * 3600)) / 3600);
+                                    const m = Math.floor((remSeconds % 3600) / 60);
+                                    const s = remSeconds % 60;
+                                    const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                                     return (
-                                        <View className="flex-row items-center py-0.5">
-                                            <Text className="text-white mx-1" style={{ fontSize: 18 * fontSizeScale }}>~</Text>
-                                            <Text className="font-bold text-white" style={{ fontSize: 18 * fontSizeScale }}>{date2}</Text>
-                                            <Text className="text-slate-200" style={{ fontSize: 16 * fontSizeScale }}> {time2}</Text>
+                                        <View className="items-end">
+                                            <View className="flex-row items-baseline mb-0.5">
+                                                {d > 0 && <Text className={`font-black mr-1 tracking-tighter ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} style={{ fontSize: 15 * fontSizeScale }}>{d}{t('common.day_short')}</Text>}
+                                                <Text className={`font-black tracking-widest tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} style={{ fontSize: 18 * fontSizeScale }}>{timeStr}</Text>
+                                            </View>
+                                            <Text className={`text-[9px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>REMAINING</Text>
                                         </View>
                                     );
                                 }
-                                return null;
+                                return (
+                                    <Text className="text-sm font-bold uppercase tracking-widest text-emerald-500">Active</Text>
+                                );
                             })()}
                         </View>
                     </View>
-                </ImageBackground>
+
+                    {/* 하단 프로그레스 바 & 기간 */}
+                    <View className="w-full">
+                        {(() => {
+                            // 날짜 문자열 파싱해서 실제 진행률(%) 계산
+                            let progressPct = 100;
+                            const parts = formattedDateRange.split(' ~ ');
+                            if (parts.length === 2) {
+                                const parseDatePattern = (str: string) => {
+                                    const match = str.match(/(\d{2})\.(\d{2})\.(\d{2}) (\d{2}):(\d{2})/);
+                                    if (match) {
+                                        return new Date(2000 + parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]), parseInt(match[4]), parseInt(match[5])).getTime();
+                                    }
+                                    return 0;
+                                };
+                                const startMs = parseDatePattern(parts[0]);
+                                const endMs = parseDatePattern(parts[1]);
+                                if (startMs && endMs && now.getTime() >= startMs && now.getTime() <= endMs) {
+                                    const totalDuration = endMs - startMs;
+                                    const elapsed = now.getTime() - startMs;
+                                    progressPct = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+                                }
+                            }
+
+                            return (
+                                <>
+                                    <View className={`w-full h-1.5 rounded-full overflow-hidden mb-2 ${isDark ? 'bg-slate-800' : 'bg-slate-200'}`}>
+                                        <View
+                                            className="absolute left-0 top-0 bottom-0 bg-emerald-500 rounded-full"
+                                            style={{ width: `${progressPct}%` }}
+                                        />
+                                    </View>
+                                    <View className="flex-row items-center">
+                                        <Ionicons name="time-outline" size={13} color={isDark ? '#cbd5e1' : '#64748b'} style={{ marginRight: 4 }} />
+                                        {parts.length === 2 ? (
+                                            <Text className={`font-medium tracking-tight ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                {parts[0]} <Text className="text-slate-500 opacity-50 mx-1">➔</Text> {parts[1]}
+                                            </Text>
+                                        ) : (
+                                            <Text className={`font-medium tracking-tight ${isDark ? 'text-slate-300' : 'text-slate-600'}`} style={{ fontSize: 11 * fontSizeScale }}>
+                                                {formattedDateRange}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </>
+                            );
+                        })()}
+                    </View>
+                </View>
             </Pressable>
         );
     }
