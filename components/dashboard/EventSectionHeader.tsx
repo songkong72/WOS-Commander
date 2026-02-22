@@ -35,6 +35,9 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
     activeEventTab,
     scrollToSection,
 }) => {
+    // 폰트 크기 비율과 기기 폭을 계산하여 텍스트 표시 여부를 동적으로 결정 (화면 공간 부족 방지)
+    const showViewModeLabel = (windowWidth / fontSizeScale) >= 340;
+
     return (
         <View className={`w-full items-center z-50 py-3 ${isDark ? 'bg-[#060b14]/95' : 'bg-slate-50/95'}`} style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#1e293b' : '#e2e8f0' }}>
             <View className="w-full max-w-6xl">
@@ -68,9 +71,9 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
                                     onPress={() => setTimezone(tz as any)}
                                     style={({ pressed }: any) => [
                                         {
-                                            paddingHorizontal: windowWidth < 410 ? 8 : 12,
-                                            height: 28,
-                                            borderRadius: 8,
+                                            paddingHorizontal: (windowWidth < 410 ? 8 : 12) * fontSizeScale,
+                                            height: 28 * fontSizeScale,
+                                            borderRadius: 8 * fontSizeScale,
                                             alignItems: 'center',
                                             justifyContent: 'center',
                                             backgroundColor: timezone === tz ? '#3b82f6' : 'transparent',
@@ -78,7 +81,12 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
                                         }
                                     ]}
                                 >
-                                    <Text className={`text-[11px] font-black ${timezone === tz ? 'text-white' : 'text-[#3b82f6]'}`}>{tz}</Text>
+                                    <Text
+                                        className={`font-black tracking-widest ${timezone === tz ? 'text-white' : 'text-[#3b82f6]'}`}
+                                        style={{ fontSize: (windowWidth < 410 ? 10 : 11) * fontSizeScale }}
+                                    >
+                                        {tz}
+                                    </Text>
                                 </Pressable>
                             ))}
                         </View>
@@ -95,9 +103,9 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
                                     style={({ pressed }: any) => [
                                         {
                                             flexDirection: 'row',
-                                            paddingHorizontal: windowWidth > 450 ? 12 : 10,
-                                            height: 28,
-                                            borderRadius: 8,
+                                            paddingHorizontal: (windowWidth < 380 ? 8 : 12) * Math.min(fontSizeScale, 1.1),
+                                            height: 28 * fontSizeScale,
+                                            borderRadius: 8 * fontSizeScale,
                                             backgroundColor: viewMode === mode.id ? (isDark ? '#334155' : 'white') : 'transparent',
                                             alignItems: 'center',
                                             justifyContent: 'center',
@@ -107,11 +115,14 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
                                 >
                                     <Ionicons
                                         name={mode.icon as any}
-                                        size={14}
+                                        size={(windowWidth < 380 ? 12 : 14) * fontSizeScale}
                                         color={viewMode === mode.id ? '#fbbf24' : (isDark ? '#64748b' : '#94a3b8')}
                                     />
-                                    {windowWidth > 450 && (
-                                        <Text className={`ml-2 text-[12px] font-black ${viewMode === mode.id ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}>
+                                    {showViewModeLabel && (
+                                        <Text
+                                            className={`ml-1.5 font-black ${viewMode === mode.id ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-400')}`}
+                                            style={{ fontSize: (windowWidth < 380 ? 10 : 12) * fontSizeScale }}
+                                        >
                                             {mode.label}
                                         </Text>
                                     )}
