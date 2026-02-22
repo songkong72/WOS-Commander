@@ -15,6 +15,7 @@ interface DashboardHeaderProps {
     setAdminMenuVisible: (v: boolean) => void;
     setLoginModalVisible: (v: boolean) => void;
     setIsManualVisible: (v: boolean) => void;
+    setQRInviteVisible: (v: boolean) => void;
     openModalWithHistory: (setter: any) => void;
     setInputServer: (v: string) => void;
     setInputAlliance: (v: string) => void;
@@ -36,6 +37,7 @@ export const DashboardHeader = ({
     setAdminMenuVisible,
     setLoginModalVisible,
     setIsManualVisible,
+    setQRInviteVisible,
     openModalWithHistory,
     setInputServer,
     setInputAlliance,
@@ -153,6 +155,31 @@ export const DashboardHeader = ({
                         )}
                     </View>
 
+                    {/* Invite / Share */}
+                    <View className="relative items-center z-50">
+                        <Pressable
+                            onPress={() => openModalWithHistory(setQRInviteVisible)}
+                            // @ts-ignore
+                            onMouseEnter={() => setHoveredBtn('invite')}
+                            // @ts-ignore
+                            onMouseLeave={() => setHoveredBtn(null)}
+                            className={`p-2.5 rounded-full border ${isDark ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-indigo-50 border-indigo-200 shadow-sm'}`}
+                            style={({ pressed, hovered }: any) => [
+                                {
+                                    transform: [{ scale: pressed ? 0.92 : (hovered || hoveredBtn === 'invite' ? 1.15 : 1) }],
+                                    transition: 'all 0.2s cubic-bezier(0.1, 0, 0.2, 1)'
+                                }
+                            ]}
+                        >
+                            <Ionicons name="share-social-outline" size={18} color={isDark ? "#818cf8" : "#4f46e5"} />
+                        </Pressable>
+                        {Platform.OS === 'web' && hoveredBtn === 'invite' && (
+                            <View className={`absolute top-full mt-2 w-max px-2.5 py-1.5 rounded-lg shadow-xl z-[999] ${isDark ? 'bg-slate-800 border border-slate-700' : 'bg-white border border-slate-200'}`} style={{ width: 70, left: '50%', transform: [{ translateX: -35 }] }}>
+                                <Text className={`text-[10px] font-bold text-center whitespace-nowrap ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>{t('header.invite', { defaultValue: '초대하기' })}</Text>
+                            </View>
+                        )}
+                    </View>
+
                     {/* Profile/Auth */}
                     <View className="relative items-center z-50">
                         <Pressable
@@ -187,11 +214,11 @@ export const DashboardHeader = ({
             </View>
 
             <View className="mb-4 flex-row items-center">
-                <View className="w-20 h-20 items-center justify-center mr-2">
+                <View className="w-16 h-16 md:w-20 md:h-20 items-center justify-center mr-3 overflow-hidden rounded-2xl shadow-sm border border-slate-800/30">
                     <Image
                         source={require('../../assets/icon.png')}
-                        style={{ width: '120%', height: '120%' }}
-                        resizeMode="contain"
+                        style={{ width: '100%', height: '100%' }}
+                        resizeMode="cover"
                     />
                 </View>
                 <View className="flex-1">

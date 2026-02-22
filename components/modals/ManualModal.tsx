@@ -25,7 +25,35 @@ export const ManualModal = ({ isVisible, onClose, isDark, isMobile }: ManualModa
 
     const renderMainManualContent = () => (
         <ScrollView className={`flex-1 ${isMobile ? 'px-4 pt-4' : 'px-8 pt-8'}`} showsVerticalScrollIndicator={false}>
-            <View className={`${isMobile ? 'gap-6' : 'gap-12'} pb-10`}>
+            <View className={`${isMobile ? 'gap-6' : 'gap-10'} pb-10`}>
+                {/* 0. 왜 WOS 커맨더인가? (장점 섹션) */}
+                <View className={`${isMobile ? 'p-5 rounded-[28px]' : 'p-8 rounded-[40px]'} border-2 ${isDark ? 'bg-amber-500/5 border-amber-500/20' : 'bg-amber-50/50 border-amber-100 shadow-sm'}`}>
+                    <View className="flex-row items-center mb-6">
+                        <View className={`w-10 h-10 rounded-xl items-center justify-center mr-3 ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                            <Ionicons name="sparkles" size={20} color="#f59e0b" />
+                        </View>
+                        <Text className={`text-2xl font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>{t('manual.benefits_title')}</Text>
+                    </View>
+
+                    <View className="gap-4">
+                        {[
+                            { title: t('manual.benefit_1_title'), desc: t('manual.benefit_1_desc') },
+                            { title: t('manual.benefit_2_title'), desc: t('manual.benefit_2_desc') },
+                            { title: t('manual.benefit_3_title'), desc: t('manual.benefit_3_desc') }
+                        ].map((item, idx) => (
+                            <View key={idx} className="flex-row gap-3">
+                                <View className="mt-1">
+                                    <View className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-amber-500' : 'bg-amber-600'}`} />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className={`text-base font-black mb-1 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{item.title}</Text>
+                                    <Text className={`text-sm leading-6 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{item.desc}</Text>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+
                 {/* 1. 권한 관리 시스템 */}
                 <View>
                     <View className={`flex-row items-center ${isMobile ? 'mb-4' : 'mb-8'}`}>

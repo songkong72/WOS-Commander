@@ -88,6 +88,7 @@ export const useDashboard = ({
     const [noticeModalVisible, setNoticeModalVisible] = useState(false);
     const [installModalVisible, setInstallModalVisible] = useState(false);
     const [isManualVisible, setIsManualVisible] = useState(false);
+    const [qrInviteVisible, setQRInviteVisible] = useState(false);
 
     // Form / Data States
     const [newPassword, setNewPassword] = useState('');
@@ -416,6 +417,7 @@ export const useDashboard = ({
         noticeModalVisible, setNoticeModalVisible,
         installModalVisible, setInstallModalVisible,
         isManualVisible, setIsManualVisible,
+        qrInviteVisible, setQRInviteVisible,
         newPassword, setNewPassword,
         confirmPassword, setConfirmPassword,
         isChangingPassword, setIsChangingPassword,

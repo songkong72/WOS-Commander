@@ -16,6 +16,7 @@ interface DashboardCardsProps {
     setAdminMenuVisible: (v: boolean) => void;
     setLoginModalVisible: (v: boolean) => void;
     setIsManualVisible: (v: boolean) => void;
+    setQRInviteVisible: (v: boolean) => void;
     openModalWithHistory: (setter: any) => void;
     setInputServer: (v: string) => void;
     setInputAlliance: (v: string) => void;
@@ -42,6 +43,7 @@ export const DashboardCards: React.FC<DashboardCardsProps> = ({
     setAdminMenuVisible,
     setLoginModalVisible,
     setIsManualVisible,
+    setQRInviteVisible,
     openModalWithHistory,
     setInputServer,
     setInputAlliance,
@@ -70,6 +72,7 @@ export const DashboardCards: React.FC<DashboardCardsProps> = ({
                     setAdminMenuVisible={setAdminMenuVisible}
                     setLoginModalVisible={setLoginModalVisible}
                     setIsManualVisible={setIsManualVisible}
+                    setQRInviteVisible={setQRInviteVisible}
                     openModalWithHistory={openModalWithHistory}
                     setInputServer={setInputServer}
                     setInputAlliance={setInputAlliance}

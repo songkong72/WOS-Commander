@@ -74,6 +74,7 @@ import { SuperAdminModal } from '../components/modals/SuperAdminModal';
 import { EventSectionList } from '../components/dashboard/EventSectionList';
 import { DashboardCards } from '../components/dashboard/DashboardCards';
 import { EventSectionHeader } from '../components/dashboard/EventSectionHeader';
+import { QRInviteModal } from '../components/modals/QRInviteModal';
 
 
 export default function Home() {
@@ -129,6 +130,7 @@ export default function Home() {
         noticeModalVisible, setNoticeModalVisible,
         installModalVisible, setInstallModalVisible,
         isManualVisible, setIsManualVisible,
+        qrInviteVisible, setQRInviteVisible,
         newPassword, setNewPassword,
         confirmPassword, setConfirmPassword,
         isChangingPassword, setIsChangingPassword,
@@ -499,6 +501,7 @@ export default function Home() {
                     setAdminMenuVisible={setAdminMenuVisible}
                     setLoginModalVisible={setLoginModalVisible}
                     setIsManualVisible={setIsManualVisible}
+                    setQRInviteVisible={setQRInviteVisible}
                     openModalWithHistory={openModalWithHistory}
                     setInputServer={setInputServer}
                     setInputAlliance={setInputAlliance}
@@ -617,6 +620,15 @@ export default function Home() {
                 setNewAdminPassword={setNewAdminPassword}
                 handleAddSuperAdmin={handleAddSuperAdmin}
                 pendingCount={pendingCount}
+            />
+
+            <QRInviteModal
+                isVisible={qrInviteVisible}
+                onClose={() => setQRInviteVisible(false)}
+                isDark={isDark}
+                isMobile={isMobile}
+                serverId={serverId}
+                allianceId={allianceId}
             />
 
             <SuperAdminModal
