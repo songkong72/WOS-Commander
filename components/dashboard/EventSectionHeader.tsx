@@ -36,7 +36,8 @@ export const EventSectionHeader: React.FC<EventSectionHeaderProps> = ({
     scrollToSection,
 }) => {
     // 폰트 크기 비율과 기기 폭을 계산하여 텍스트 표시 여부를 동적으로 결정 (화면 공간 부족 방지)
-    const showViewModeLabel = (windowWidth / fontSizeScale) >= 340;
+    // 380px 부근에서 글씨가 밀리는 현상을 막기 위해 임계값을 430으로 엄격하게 올림.
+    const showViewModeLabel = (windowWidth / fontSizeScale) >= 430;
 
     return (
         <View className={`w-full items-center z-50 py-3 ${isDark ? 'bg-[#060b14]/95' : 'bg-slate-50/95'}`} style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#1e293b' : '#e2e8f0' }}>
