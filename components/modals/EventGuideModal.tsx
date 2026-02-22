@@ -37,26 +37,19 @@ const EventGuideModal = memo(({
                     className="absolute inset-0"
                 />
                 <View className={`w-full max-w-2xl max-h-[85%] rounded-[24px] border overflow-hidden shadow-2xl ${isDark ? 'bg-[#191F28] border-[#333D4B]' : 'bg-white border-transparent'}`}>
-                    {/* Modal Header Image */}
+                    {/* Clean Solid Header */}
                     {event.imageUrl ? (
-                        <ImageBackground source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl} className="h-32 w-full">
-                            {Platform.OS === 'web' ? (
-                                <View className="absolute inset-0 bg-black/70" />
-                            ) : (
-                                <BlurView intensity={20} className="absolute inset-0 bg-black/50" />
-                            )}
-                            <View className="absolute bottom-4 left-6 flex-row items-center">
+                        <View className={`min-h-[100px] w-full justify-end px-6 pb-5 relative ${isDark ? 'bg-[#191F28] border-b border-[#333D4B]' : 'bg-[#1e293b]'}`}>
+                            <View className="flex-row items-center pt-8 pr-10">
                                 <View className="w-8 h-8 rounded-xl border border-white/20 overflow-hidden mr-3 shadow-md bg-black/40">
                                     <ImageBackground source={typeof event.imageUrl === 'string' ? { uri: event.imageUrl } : event.imageUrl} className="w-full h-full" />
                                 </View>
-                                <View>
-                                    <Text className="text-white text-2xl font-bold">{event.title}</Text>
-                                </View>
+                                <Text className="text-white text-[22px] font-bold flex-shrink">{event.title}</Text>
                             </View>
-                            <TouchableOpacity onPress={onClose} className="absolute top-4 right-4 bg-black/40 p-2 rounded-full border border-white/10">
+                            <TouchableOpacity onPress={onClose} className="absolute top-4 right-4 bg-white/10 p-2 rounded-full">
                                 <Ionicons name="close" size={20} color="white" />
                             </TouchableOpacity>
-                        </ImageBackground>
+                        </View>
                     ) : (
                         <View className={`h-24 w-full justify-center px-6 ${isDark ? 'bg-[#191F28]' : 'bg-white border-b border-[#E5E8EB]'}`}>
                             <Text className={`text-[22px] font-bold ${isDark ? 'text-[#F2F4F6]' : 'text-[#191F28]'}`}>{event.title}</Text>
