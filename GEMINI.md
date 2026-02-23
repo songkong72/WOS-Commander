@@ -4,7 +4,7 @@
 
 | 분류 | 파일 경로 | 주요 용도 |
 | :--- | :--- | :--- |
-| **운영 (Operational)** | [CLAUDE.md](./CLAUDE.md) | **(현재 파일)** 빌드/실행 명령어 및 기술적 핵심 지침 |
+| **운영 (Operational)** | [GEMINI.md](./GEMINI.md) | **(현재 파일)** 빌드/실행 명령어 및 기술적 핵심 지침 |
 | **규정 (Compliance)** | [PROJECT_RULES.md](./PROJECT_RULES.md) | 코딩 스타일, 아키텍처 원칙 및 AI 행동 규칙 |
 | **계획 (Strategic)** | [.agent/plans/](./.agent/plans/) | 리팩토링 계획 및 신규 시스템 설계 문서 |
 | **스킬 (Behavioral)** | [.agent/skills/](./.agent/skills/) | AI 전용 특수 스킬(검증, 페르소나 등) 정의 |

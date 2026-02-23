@@ -13,7 +13,7 @@ description: 다국어(i18n) 규칙 준수 여부를 검증합니다. 하드코�
 ## When to Run
 - UI 텍스트가 포함된 컴포넌트 수정 후
 - 새로운 기능 구현 후 PR 전
-- `CLAUDE.md`의 Internationalization Guidelines 준수 여부 확인 시
+- `GEMINI.md`의 Internationalization Guidelines 준수 여부 확인 시
 
 ## Related Files
 | File | Purpose |

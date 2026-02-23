@@ -78,7 +78,7 @@ argument-hint: "[선택사항: 특정 verify 스킬 이름]"
 
 #### 2a. 스킬 SKILL.md 읽기
 
-해당 스킬의 `.claude/skills/verify-<name>/SKILL.md`를 읽고 다음 섹션을 파싱합니다:
+해당 스킬의 `.agent/skills/verify-<name>/SKILL.md`를 읽고 다음 섹션을 파싱합니다:
 
 - **Workflow** — 실행할 검사 단계와 탐지 명령어
 - **Exceptions** — 위반이 아닌 것으로 간주되는 패턴
@@ -235,5 +235,5 @@ X개 수정 완료.
 
 | File | Purpose |
 |------|---------|
-| `.claude/skills/manage-skills/SKILL.md` | 스킬 유지보수 (이 파일의 실행 대상 스킬 목록을 관리) |
-| `CLAUDE.md` | 프로젝트 지침 |
+| `.agent/skills/manage-skills/SKILL.md` | 스킬 유지보수 (이 파일의 실행 대상 스킬 목록을 관리) |
+| `GEMINI.md` | 프로젝트 지침 |
