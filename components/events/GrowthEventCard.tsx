@@ -152,18 +152,34 @@ const GrowthEventCard = memo(({
                                 <Ionicons name="calendar-outline" size={20} color={isDark ? '#B0B8C1' : '#8B95A1'} />
                             </View>
                         )}
-                        <Text
-                            className={`font-bold flex-1 ${textColor}`}
-                            numberOfLines={2}
-                            adjustsFontSizeToFit
-                            minimumFontScale={0.6}
-                            style={{ letterSpacing: -1.0, fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }}
+                        <View
+                            className="flex-1"
+                            style={{
+                                minHeight: 44 * fontSizeScale,
+                                paddingRight: 4,
+                                justifyContent: 'center'
+                            }}
                         >
-                            {t(`events.${event.id}_title`, { defaultValue: event.title })}
-                            {!!event.teamLabel && (
-                                <Text className="text-[#3182F6] font-black" style={{ fontSize: 13 * fontSizeScale }}> ({event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'))})</Text>
-                            )}
-                        </Text>
+                            <Text
+                                className={`font-bold ${textColor}`}
+                                numberOfLines={1}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.75}
+                                style={{
+                                    letterSpacing: -1.0,
+                                    fontSize: 18 * fontSizeScale,
+                                    lineHeight: 22 * fontSizeScale,
+                                }}
+                            >
+                                <Text>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
+                                {!!event.teamLabel && (
+                                    <Text className="text-[#3182F6] font-black tracking-tighter">
+                                        {' '}
+                                        ({event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'))})
+                                    </Text>
+                                )}
+                            </Text>
+                        </View>
                         {!!event.wikiUrl && (
                             <Pressable
                                 onPress={() => openWikiLink(event.wikiUrl || '')}
@@ -192,13 +208,11 @@ const GrowthEventCard = memo(({
                             </Pressable>
                         )}
                     </View>
-                    {!!event.description && (
-                        <Text className={`mb-4 leading-relaxed ${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-[#8B95A1]' : 'text-[#4E5968]')}`} numberOfLines={isOngoing ? undefined : 2} style={{ fontSize: 14 * fontSizeScale }}>
-                            {t(`events.${event.id}_description`, { defaultValue: event.description })}
-                        </Text>
-                    )}
-                    <View className="flex-row items-center flex-wrap gap-2">
-                        <View className={`flex-row items-center px-2 py-1 rounded-[6px] ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
+                    <Text className={`mb-4 leading-relaxed ${isExpired ? (isDark ? 'text-slate-600' : 'text-slate-400') : (isDark ? 'text-[#8B95A1]' : 'text-[#4E5968]')}`} numberOfLines={isOngoing ? undefined : 2} style={{ fontSize: 14 * fontSizeScale }}>
+                        {t(`events.${event.id}_description`, { defaultValue: event.description || t(`events.${event.id}_title`, { defaultValue: event.title }) })}
+                    </Text>
+                    <View className="flex-row items-end flex-wrap gap-2">
+                        <View className={`flex-row items-center px-2 py-1 rounded-[6px] border border-transparent ${isDark ? 'bg-[#333D4B]' : 'bg-[#F2F4F6]'}`}>
                             <Ionicons name={event.category === '연맹' ? 'flag' : event.category === '개인' ? 'person' : event.category === '서버' ? 'earth' : event.category === '초보자' ? 'star' : 'apps'} size={12} color={isDark ? '#B0B8C1' : '#6B7684'} />
                             <Text className={`font-bold ml-1 ${isDark ? 'text-[#B0B8C1]' : 'text-[#6B7684]'}`} style={{ fontSize: 11 * fontSizeScale }}>
                                 {event.category === '연맹' ? t('events.category.alliance')
@@ -214,18 +228,18 @@ const GrowthEventCard = memo(({
                                 <Text className="text-[#3182F6] font-black tracking-wide dark:text-[#4F93F7]" style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ongoing')}</Text>
                             </View>
                         ) : remSoonSeconds !== undefined && remSoonSeconds !== null ? (
-                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center border border-transparent ${isDark ? 'bg-amber-500/20' : 'bg-amber-100'}`}>
                                 <Ionicons name="time" size={10} color={isDark ? '#fbbf24' : '#d97706'} style={{ marginRight: 2 }} />
                                 <Text className={`font-black ${isDark ? 'text-amber-400' : 'text-amber-700'}`} style={{ fontSize: 11 * fontSizeScale }}>
-                                    SOON ({formatRemainingTime(remSoonSeconds)})
+                                    SOON
                                 </Text>
                             </View>
                         ) : isExpired ? (
-                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#2C3544]' : 'bg-slate-200'}`}>
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center border border-transparent ${isDark ? 'bg-[#2C3544]' : 'bg-slate-200'}`}>
                                 <Text className={`font-bold ${isDark ? 'text-[#8B95A1]' : 'text-slate-500'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.ended')}</Text>
                             </View>
                         ) : (
-                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center ${isDark ? 'bg-[#FFF8DD]/10' : 'bg-[#FFF8DD]'}`}>
+                            <View className={`px-2 py-1 rounded-[6px] flex-row items-center border border-transparent ${isDark ? 'bg-[#FFF8DD]/10' : 'bg-[#FFF8DD]'}`}>
                                 <Text className={`font-bold ${isDark ? 'text-[#F2B308]' : 'text-[#9B6F03]'}`} style={{ fontSize: 11 * fontSizeScale }}>{t('events.status.upcoming')}</Text>
                             </View>
                         )}
@@ -237,8 +251,8 @@ const GrowthEventCard = memo(({
                 <View className="px-5 pt-4 pb-5 flex-1 justify-between">
                     <View className="mb-4">
                         {(!event.day && (!event.time || !event.time.trim())) ? (
-                            <View className={`w-full py-6 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-200'}`}>
-                                <Text className={`font-semibold ${isDark ? 'text-slate-500' : 'text-slate-500'}`} style={{ fontSize: 14 * fontSizeScale }}>{t('events.schedule_empty')}</Text>
+                            <View className={`w-full py-3 border border-dashed rounded-2xl items-center justify-center ${isDark ? 'border-slate-800 bg-slate-900/40' : 'bg-slate-50 border-slate-200'}`}>
+                                <Text className={`font-semibold ${isDark ? 'text-slate-500' : 'text-slate-500'}`} style={{ fontSize: 13 * fontSizeScale }}>{t('events.schedule_empty')}</Text>
                             </View>
                         ) : (
                             event.day && (!event.time || !event.time.trim() || DATE_RANGE_IDS.includes(event.id)) && event.day !== '상설' && event.day !== '상시' ? (
@@ -339,7 +353,7 @@ const GrowthEventCard = memo(({
                                                 {(() => {
                                                     const items = selectedContent ? selectedContent.split(/[,|]/).map(s => s.trim()).filter(s => s && s !== '.').filter((v, i, a) => a.indexOf(v) === i) : [];
                                                     if (items.length === 0) return (
-                                                        <View className="px-4 py-8 items-center justify-center">
+                                                        <View className="px-4 py-3 items-center justify-center">
                                                             <Text className={`text-sm font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.schedule_empty')}</Text>
                                                         </View>
                                                     );
@@ -559,6 +573,7 @@ const GrowthEventCard = memo(({
 
 const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, isDark: boolean }) => {
     const { t } = useTranslation();
+    const { fontSizeScale } = useTheme();
     const shimmerAnim = React.useRef(new Animated.Value(0)).current;
 
     React.useEffect(() => {
@@ -605,19 +620,19 @@ const ShimmerScheduleButton = memo(({ onPress, isDark }: { onPress: () => void, 
         >
             <Animated.View
                 style={{ opacity: pulseOpacity }}
-                className="relative overflow-hidden px-3 py-1.5 rounded-xl flex-row items-center justify-center shadow-sm"
+                className="relative overflow-hidden px-2.5 py-1 rounded-[6px] border border-transparent flex-row items-center justify-center shadow-sm"
             >
                 <LinearGradient
                     colors={isDark ? ['#7c3aed', '#4f46e5'] : ['#a78bfa', '#818cf8']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                     className="absolute inset-0 w-full h-full"
-                    style={{ borderRadius: 12 }}
+                    style={{ borderRadius: 6 }}
                 />
-                <View className="flex-row items-center justify-center relative z-10">
-                    <Ionicons name="calendar" size={12} color="white" style={{ marginRight: 4 }} />
-                    <Text className="text-white text-[10px] font-bold">{t('events.set_time')}</Text>
-                </View>
+                <Ionicons name="calendar" size={12} color="white" style={{ marginRight: 4, position: 'relative', zIndex: 10 }} />
+                <Text className="text-white font-bold relative z-10" style={{ fontSize: 11 * fontSizeScale }}>
+                    {t('events.set_time')}
+                </Text>
                 <Animated.View
                     style={{
                         position: 'absolute',

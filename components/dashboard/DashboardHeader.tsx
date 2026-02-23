@@ -244,7 +244,7 @@ export const DashboardHeader = ({
                         <View className={`mr-2.5 w-7 h-7 rounded-full items-center justify-center ${isDark ? 'bg-sky-500/20' : 'bg-sky-100'}`}>
                             <Ionicons name="location" size={14} color={isDark ? "#38bdf8" : "#0284c7"} />
                         </View>
-                        <Text className={`font-black text-xs tracking-tight ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
+                        <Text className={`font-black text-sm tracking-tight ${isDark ? 'text-sky-300' : 'text-sky-700'}`}>
                             {serverId?.toString().startsWith('#') ? serverId : '#' + serverId} · {allianceId}
                         </Text>
                         <Ionicons name="chevron-forward" size={12} color={isDark ? "#38bdf8" : "#0284c7"} style={{ marginLeft: 8 }} />

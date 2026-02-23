@@ -3,7 +3,7 @@ import { View, Text, Modal, TouchableOpacity, FlatList, ActivityIndicator, Press
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import { WikiEvent } from '../../data/wiki-events';
-import { Attendee } from '../../hooks/useFirestoreAttendees';
+import { Attendee } from '../../data/mock-attendees';
 import { MemberPicker, HeroPicker } from '../events/EventPickers';
 
 interface AttendanceModalProps {
@@ -114,7 +114,7 @@ const AttendanceModal = memo(({
                                         )}
                                     </View>
 
-                                    <View className="flex-row gap-2 pointer-events-auto" style={{ zIndex: 1 }}>
+                                    <View className="flex-row gap-2" style={{ zIndex: 1, pointerEvents: 'auto' }}>
                                         <HeroPicker isDark={isDark} num={1} value={attendee.hero1 || ''} onSelect={(v) => onUpdateField(attendee.id!, 'hero1', v)} />
                                         <HeroPicker isDark={isDark} num={2} value={attendee.hero2 || ''} onSelect={(v) => onUpdateField(attendee.id!, 'hero2', v)} />
                                         <HeroPicker isDark={isDark} num={3} value={attendee.hero3 || ''} onSelect={(v) => onUpdateField(attendee.id!, 'hero3', v)} />

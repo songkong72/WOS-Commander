@@ -1157,6 +1157,7 @@ export default function EventTracker() {
                                     // Resolve base event for split events to ensure correct ID is used for saving
                                     const baseEventId = target.originalEventId || (target.id ? target.id.replace(/_(?:team\d+|t?\d+(?:_\d+)?|fortress|citadel)/g, '') : target.id);
                                     const baseEvent = events.find(e => e.id === baseEventId) || target;
+                                    const canonicalId = getCanonicalEventId(baseEvent.id);
 
                                     if (isAdmin) {
                                         if (ev._teamIdx !== undefined) {
@@ -1240,7 +1241,7 @@ export default function EventTracker() {
                     editingEvent={editingEvent}
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
-                    slots1={(editingEvent?.id === 'a_fortress' ? fortressList : (editingEvent?.id === 'a_citadel' ? citadelList : slots1))}
+                    slots1={(getCanonicalEventId(editingEvent?.id || '') === 'a_fortress' ? fortressList : (getCanonicalEventId(editingEvent?.id || '') === 'a_citadel' ? citadelList : slots1))}
                     slots2={slots2}
                     isRecurring={isRecurring}
                     setIsRecurring={setIsRecurring}
@@ -1276,7 +1277,7 @@ export default function EventTracker() {
                     onSave={() => saveSchedule(setEvents)}
                     onDelete={handleDeleteSchedule}
                     onAddTimeSlot={addTimeSlot}
-                    onRemoveTimeSlot={(id) => (editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel') ? removeFortressSlot(id) : removeTimeSlot(id)}
+                    onRemoveTimeSlot={(id) => (getCanonicalEventId(editingEvent?.id || '') === 'a_fortress' || getCanonicalEventId(editingEvent?.id || '') === 'a_citadel') ? removeFortressSlot(id) : removeTimeSlot(id)}
                     onToggleDay={setSelectedDayForSlot}
                     onAddFortressSlot={addFortressSlot}
                     setShowDatePicker={setShowDatePicker}

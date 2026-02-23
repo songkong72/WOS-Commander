@@ -29,7 +29,7 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
         wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%eb%ac%b4%ea%b8%b0%ea%b3%b5%ec%9e%a5-%ec%9f%81%ed%83%88%ec%a0%84/',
         day: '',
         time: '',
-        description: '공장을 점령하여 보상을 획득하는 연맹 전투'
+        description: '공장을 점령하는 연맹 전투'
     },
     {
         id: 'alliance_mobilization',
@@ -49,7 +49,7 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
         wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%9a%a9%eb%b3%91-%eb%aa%85%ec%98%88/',
         day: '',
         time: '',
-        description: '용병을 처치하고 연맹 전체 보상을 획득'
+        description: '용병 처치후 보상 획득'
     },
     {
         id: 'alliance_bear',

@@ -156,6 +156,7 @@ export const useScheduleEditor = ({
         isRecurring2, recValue2, recUnit2, enableSD2, eventSD2]);
 
     const openScheduleModal = useCallback((event: WikiEvent, initialTabIdx?: number) => {
+        const canonicalId = getCanonicalEventId(event.id);
         setEditingEvent(event);
         const currentTabIdx = initialTabIdx !== undefined ? initialTabIdx : (selectedTeamTabs[event.id] || 0);
         setActiveTab(currentTabIdx === 0 ? 1 : 2);
@@ -241,7 +242,7 @@ export const useScheduleEditor = ({
         }
 
         // Fortress / Citadel
-        if (event.id === 'a_fortress' || event.id === 'a_citadel') {
+        if (canonicalId === 'a_fortress' || canonicalId === 'a_citadel') {
             setIsRecurring(!!event.isRecurring);
             setRecurrenceValue(event.recurrenceValue || '1');
             setRecurrenceUnit(event.recurrenceUnit || 'week');
@@ -282,8 +283,21 @@ export const useScheduleEditor = ({
                     } else {
                         const items = cleanTime.split(',');
                         items.forEach((item, idx) => {
-                            const match = item.trim().match(/(.+?)\s+([월화수목금토일\s]+)\s*\(?(\d{2}):(\d{2})\)?/);
-                            if (match) fParsed.push({ id: `f_${idx}`, name: match[1].trim(), day: match[2].trim(), h: match[3], m: match[4] });
+                            const trimmed = item.trim();
+                            // Standard: "Name Day (HH:mm)" or "Name Day HH:mm"
+                            const match = trimmed.match(/^(.+?)\s+([월화수목금토일])\s*\(?(\d{2}):(\d{2})\)?$/);
+                            if (match) {
+                                fParsed.push({ id: `f_${idx}`, name: match[1].trim(), day: match[2].trim(), h: match[3], m: match[4] });
+                            } else {
+                                // Fallback: "Day HH:mm" (no name) or "Name (HH:mm)"
+                                const simpleMatch = trimmed.match(/^([월화수목금토일])?\s*(?:(.+?)\s+)?\(?(\d{2}):(\d{2})\)?$/) || trimmed.match(/^(.+?)\s*\(?(\d{2}):(\d{2})\)?$/);
+                                if (simpleMatch) {
+                                    const hasDay = simpleMatch[1] && '일월화수목금토'.includes(simpleMatch[1]);
+                                    const namePart = hasDay ? (simpleMatch[2] || '요새') : (simpleMatch[1] || '요새');
+                                    const dayPart = hasDay ? simpleMatch[1] : '토';
+                                    fParsed.push({ id: `f_${idx}_s`, name: namePart.trim(), day: dayPart.trim(), h: simpleMatch[simpleMatch.length - 2], m: simpleMatch[simpleMatch.length - 1] });
+                                }
+                            }
                         });
                     }
                 } else if (cleanTime.includes('성채전:')) {
@@ -297,10 +311,11 @@ export const useScheduleEditor = ({
                     const parts = cleanTime.split(/[\/|]/);
                     parts.forEach((p, idx) => {
                         const trimP = p.trim();
-                        const match = trimP.match(/(.+?)\s*[\(]?\s*([월화수목금토일]*)?\s*(\d{2}):(\d{2})[\)]?/);
+                        // Improved regex to make the name part optional
+                        const match = trimP.match(/^(?:(.+?)\s+)?([월화수목금토일]*)?\s*\(?(\d{2}):(\d{2})\)?/);
                         if (match) {
-                            const name = match[1].trim();
-                            const day = match[2] || (name.includes('성채') ? '일' : '토');
+                            const name = (match[1] || (canonicalId === 'a_fortress' ? '요새' : '성채')).trim();
+                            const day = match[2]?.trim() || (name.includes('성채') ? '일' : '토');
                             const h = match[3];
                             const m = match[4];
                             if (name.includes('성채')) cParsed.push({ id: `c_old_${idx}`, name, day, h, m });
@@ -310,7 +325,7 @@ export const useScheduleEditor = ({
                 }
             }
 
-            if (event.id === 'a_fortress') {
+            if (canonicalId === 'a_fortress') {
                 setFortressList(fParsed);
                 setCitadelList([]);
             } else {
@@ -322,7 +337,6 @@ export const useScheduleEditor = ({
         // Standard Schedule
         let s1: any[] = [];
         let s2: any[] = [];
-        const canonicalId = getCanonicalEventId(event.originalEventId || event.id);
         const isSplitCapable = (canonicalId === 'a_foundry' || canonicalId === 'alliance_foundry' ||
             canonicalId === 'alliance_canyon' ||
             canonicalId === 'a_bear' || canonicalId === 'alliance_bear');
@@ -330,29 +344,36 @@ export const useScheduleEditor = ({
         // For split-capable events, get the full original schedule string to populate both tabs correctly
         let scheduleTime = event.time || '';
         if (isSplitCapable) {
-            const canonicalId = getCanonicalEventId(event.originalEventId || event.id);
             const savedSchedule = schedules.find(s => getCanonicalEventId(s.eventId) === canonicalId);
             if (savedSchedule && savedSchedule.time && savedSchedule.time !== '.') {
                 scheduleTime = savedSchedule.time;
             }
         }
 
-        if (isSplitCapable || ((event.category === '연맹' || event.category === '서버') && !SINGLE_SLOT_IDS.includes(event.id))) {
-            const parts = scheduleTime.split(' / ');
-            parts.forEach(p => {
-                if (p.startsWith('1군:') || p.startsWith('Team1:')) s1 = parseScheduleStr(p.replace(/^(1군:|Team1:)\s*/, ''));
-                if (p.startsWith('2군:') || p.startsWith('Team2:')) s2 = parseScheduleStr(p.replace(/^(2군:|Team2:)\s*/, ''));
-            });
-            // If no labels were found but it's a split event, try to parse the whole string as Team 1
-            if (s1.length === 0 && s2.length === 0) s1 = parseScheduleStr(scheduleTime);
+        if (canonicalId === 'a_fortress' || canonicalId === 'a_citadel') {
+            // slots1/slots2 are handled via fortressList/citadelList for these types
+            setSlots1([]);
+            setSlots2([]);
+            setInitialSlots1([]);
+            setInitialSlots2([]);
         } else {
-            s1 = parseScheduleStr(scheduleTime);
-        }
+            if (isSplitCapable || ((event.category === '연맹' || event.category === '서버') && !SINGLE_SLOT_IDS.includes(event.id))) {
+                const parts = scheduleTime.split(' / ');
+                parts.forEach(p => {
+                    if (p.startsWith('1군:') || p.startsWith('Team1:')) s1 = parseScheduleStr(p.replace(/^(1군:|Team1:)\s*/, ''));
+                    if (p.startsWith('2군:') || p.startsWith('Team2:')) s2 = parseScheduleStr(p.replace(/^(2군:|Team2:)\s*/, ''));
+                });
+                // If no labels were found but it's a split event, try to parse the whole string as Team 1
+                if (s1.length === 0 && s2.length === 0) s1 = parseScheduleStr(scheduleTime);
+            } else {
+                s1 = parseScheduleStr(scheduleTime);
+            }
 
-        setSlots1(s1);
-        setSlots2(s2);
-        setInitialSlots1(s1.map(s => ({ day: s.day, time: s.time })));
-        setInitialSlots2(s2.map(s => ({ day: s.day, time: s.time })));
+            setSlots1(s1);
+            setSlots2(s2);
+            setInitialSlots1(s1.map(s => ({ day: s.day, time: s.time })));
+            setInitialSlots2(s2.map(s => ({ day: s.day, time: s.time })));
+        }
 
         // --- Picker Initialization Logic ---
         const activeSlots = (currentTabIdx === 1 ? s1 : s2);
@@ -383,24 +404,43 @@ export const useScheduleEditor = ({
         setPickerSyncKey(Math.random());
 
         // Initialize backing stores
-        setIsRecurring1(!!event.isRecurring);
-        setRecValue1(event.recurrenceValue || '1');
-        setRecUnit1(event.recurrenceUnit || 'week');
-        setEnableSD1(!!(event as any).startDate);
-        setEventSD1((event as any).startDate || '');
+        const isRec1 = !!event.isRecurring;
+        const rv1 = event.recurrenceValue || '1';
+        const ru1 = event.recurrenceUnit || 'week';
+        const esd1 = !!(event as any).startDate;
+        const esdValue1 = (event as any).startDate || '';
 
-        setIsRecurring2(!!((event as any).isRecurring2));
-        setRecValue2(((event as any).recurrenceValue2) || '1');
-        setRecUnit2(((event as any).recurrenceUnit2) || 'week');
-        setEnableSD2(!!((event as any).startDate2));
-        setEventSD2((event as any).startDate2 || '');
+        setIsRecurring1(isRec1);
+        setRecValue1(rv1);
+        setRecUnit1(ru1);
+        setEnableSD1(esd1);
+        setEventSD1(esdValue1);
 
-        if (currentTabIdx === 2) { // currentTabIdx is 1-based, adjusted to match setSlots2 logic if needed
-            setIsRecurring(!!((event as any).isRecurring2));
-            setRecurrenceValue(((event as any).recurrenceValue2) || '1');
-            setRecurrenceUnit(((event as any).recurrenceUnit2) || 'week');
-            setEnableStartDate(!!((event as any).startDate2));
-            setEventStartDate((event as any).startDate2 || '');
+        const isRec2 = !!((event as any).isRecurring2);
+        const rv2 = ((event as any).recurrenceValue2) || '1';
+        const ru2 = ((event as any).recurrenceUnit2) || 'week';
+        const esd2Token = !!((event as any).startDate2);
+        const esdValue2 = (event as any).startDate2 || '';
+
+        setIsRecurring2(isRec2);
+        setRecValue2(rv2);
+        setRecUnit2(ru2);
+        setEnableSD2(esd2Token);
+        setEventSD2(esdValue2);
+
+        // Synchronize UI state with the current team tab
+        if (currentTabIdx === 1) { // 2군 (Team 2)
+            setIsRecurring(isRec2);
+            setRecurrenceValue(rv2);
+            setRecurrenceUnit(ru2);
+            setEnableStartDate(esd2Token);
+            setEventStartDate(esdValue2);
+        } else { // 1군 (Team 1, default)
+            setIsRecurring(isRec1);
+            setRecurrenceValue(rv1);
+            setRecurrenceUnit(ru1);
+            setEnableStartDate(esd1);
+            setEventStartDate(esdValue1);
         }
 
         setScheduleModalVisible(true);
@@ -464,8 +504,16 @@ export const useScheduleEditor = ({
     }, [activeTab, editingSlotId]);
 
     const addFortressSlot = useCallback(() => {
-        const name = selectedFortressName.trim() || (editingEvent?.id === 'a_fortress' ? t('events.fortress_battle') : t('events.citadel_battle'));
-        const day = selectedDayForSlot || (editingEvent?.id === 'a_fortress' ? '토' : '일');
+        const canonicalId = getCanonicalEventId(editingEvent?.id || '');
+
+        if (!selectedFortressName.trim()) {
+            const errorMsg = canonicalId === 'a_fortress' ? t('events.error_fortress_required') : t('events.error_citadel_required');
+            showCustomAlert(t('common.info'), errorMsg, 'warning');
+            return;
+        }
+
+        const name = selectedFortressName.trim();
+        const day = selectedDayForSlot || (canonicalId === 'a_fortress' ? '토' : '일');
 
         const newSlot = {
             id: editingSlotId || `f_${Date.now()}`,
@@ -477,11 +525,11 @@ export const useScheduleEditor = ({
 
         if (editingSlotId) {
             const updateFn = (prev: any[]) => prev.map(s => s.id === editingSlotId ? newSlot : s);
-            if (editingEvent?.id === 'a_fortress') setFortressList(updateFn);
+            if (canonicalId === 'a_fortress') setFortressList(updateFn);
             else setCitadelList(updateFn);
             setEditingSlotId(null);
         } else {
-            if (editingEvent?.id === 'a_fortress') setFortressList(prev => [...prev, newSlot]);
+            if (canonicalId === 'a_fortress') setFortressList(prev => [...prev, newSlot]);
             else setCitadelList(prev => [...prev, newSlot]);
         }
         setSelectedFortressName('');
@@ -489,7 +537,8 @@ export const useScheduleEditor = ({
     }, [editingEvent, selectedFortressName, selectedDayForSlot, editHour, editMinute, editingSlotId, t]);
 
     const removeFortressSlot = useCallback((id: string) => {
-        if (editingEvent?.id === 'a_fortress') setFortressList(prev => prev.filter(f => f.id !== id));
+        const canonicalId = getCanonicalEventId(editingEvent?.id || '');
+        if (canonicalId === 'a_fortress') setFortressList(prev => prev.filter(f => f.id !== id));
         else setCitadelList(prev => prev.filter(c => c.id !== id));
     }, [editingEvent]);
 
@@ -591,14 +640,23 @@ export const useScheduleEditor = ({
                 }
 
                 finalDay = `${startVal} ~ ${endVal}`;
-            } else if (editingEvent.id === 'a_fortress' || editingEvent.id === 'a_citadel') {
+            } else if (canonicalId === 'a_fortress' || canonicalId === 'a_citadel') {
+                const isFortress = canonicalId === 'a_fortress';
+                const currentList = isFortress ? fortressList : citadelList;
 
-                if (editingEvent.id === 'a_fortress') {
-                    finalTime = fortressList.length > 0 ? `${t('events.fortress_battle')}: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}` : '';
-                    finalDay = fortressList.length > 0 ? t('events.fortress_battle') : '';
+                if (currentList.length === 0) {
+                    const errorMsg = isFortress ? t('events.error_fortress_required') : t('events.error_citadel_required');
+                    showCustomAlert(t('common.info'), errorMsg, 'warning');
+                    setIsSaving(false);
+                    return;
+                }
+
+                if (isFortress) {
+                    finalTime = `${t('events.fortress_battle')}: ${fortressList.map(f => `${f.name.replace(/\s+/g, '')} ${f.day || '토'} ${f.h}:${f.m}`).join(', ')}`;
+                    finalDay = t('events.fortress_battle');
                 } else {
-                    finalTime = citadelList.length > 0 ? `${t('events.citadel_battle')}: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}` : '';
-                    finalDay = citadelList.length > 0 ? t('events.citadel_battle') : '';
+                    finalTime = `${t('events.citadel_battle')}: ${citadelList.map(c => `${c.name.replace(/\s+/g, '')} ${c.day || '일'} ${c.h}:${c.m}`).join(', ')}`;
+                    finalDay = t('events.citadel_battle');
                 }
             } else {
                 // Team-based schedules
@@ -640,22 +698,29 @@ export const useScheduleEditor = ({
                 finalSD2 = getRegistrationWeekDate(slots2[0].day, now) || undefined;
             }
 
-            const updateData = {
+            const updateData: any = {
                 eventId: targetId,
                 day: finalDay,
                 time: finalTime,
                 strategy: editingEvent.strategy || '',
-                // Team 1 fields
+                // Main / Team 1 fields
                 isRecurring: finalIsRecurring1,
                 recurrenceValue: activeTab === 1 ? recurrenceValue : recValue1,
                 recurrenceUnit: activeTab === 1 ? recurrenceUnit : recUnit1,
                 startDate: finalSD1,
-                // Team 2 fields
-                isRecurring2: finalIsRecurring2,
-                recurrenceValue2: activeTab === 2 ? recurrenceValue : recValue2,
-                recurrenceUnit2: activeTab === 2 ? recurrenceUnit : recUnit2,
-                startDate2: finalSD2,
             };
+
+            // Only add Team 2 fields for split-capable events
+            const isSplitCapable = (canonicalId === 'a_foundry' || canonicalId === 'alliance_foundry' ||
+                canonicalId === 'alliance_canyon' ||
+                canonicalId === 'a_bear' || canonicalId === 'alliance_bear');
+
+            if (isSplitCapable) {
+                updateData.isRecurring2 = finalIsRecurring2;
+                updateData.recurrenceValue2 = activeTab === 2 ? recurrenceValue : recValue2;
+                updateData.recurrenceUnit2 = activeTab === 2 ? recurrenceUnit : recUnit2;
+                updateData.startDate2 = finalSD2;
+            }
 
             await updateSchedule(updateData);
 
@@ -688,9 +753,9 @@ export const useScheduleEditor = ({
             // Notifications
             if (Platform.OS !== 'web') {
                 await Notifications.cancelAllScheduledNotificationsAsync();
-                if (editingEvent.id === 'a_fortress') {
+                if (canonicalId === 'a_fortress') {
                     for (const f of fortressList) await scheduleNotification(editingEvent, f.day || '토', `${f.h}:${f.m}`);
-                } else if (editingEvent.id === 'a_citadel') {
+                } else if (canonicalId === 'a_citadel') {
                     for (const c of citadelList) await scheduleNotification(editingEvent, c.day || '일', `${c.h}:${c.m}`);
                 } else {
                     const allSlots = [...slots1, ...slots2];

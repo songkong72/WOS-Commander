@@ -273,15 +273,17 @@ export default function Layout() {
                         </View>
                         {!isGateOpen && <GlobalNavigationBar />}
                     </View>
-                    <CustomAlert
-                        visible={customAlert.visible}
-                        title={customAlert.title}
-                        message={customAlert.message}
-                        type={customAlert.type}
-                        isDark={isDark}
-                        onConfirm={customAlert.onConfirm}
-                        onClose={() => setCustomAlert({ ...customAlert, visible: false })}
-                    />
+                    {customAlert.visible && (
+                        <CustomAlert
+                            visible={customAlert.visible}
+                            title={customAlert.title}
+                            message={customAlert.message}
+                            type={customAlert.type}
+                            isDark={isDark}
+                            onConfirm={customAlert.onConfirm}
+                            onClose={() => setCustomAlert({ ...customAlert, visible: false })}
+                        />
+                    )}
 
                 </LanguageContext.Provider>
             </ThemeContext.Provider>

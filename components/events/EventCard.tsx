@@ -220,11 +220,6 @@ export const EventCard: React.FC<EventCardProps> = ({
         if ((event.isBearSplit || event.isFoundrySplit || event.isCanyonSplit) && event.teamLabel) {
             const translatedTeam = event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'));
             const teamBadge = `(${translatedTeam})`;
-
-            // If narrow screen OR timer likely present (Upcoming soon), use newline for better fit
-            if (windowWidth < 380 || isUpcomingSoon) {
-                return `${baseTitle}\n${teamBadge}`;
-            }
             return `${baseTitle} ${teamBadge}`;
         }
         return baseTitle;

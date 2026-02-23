@@ -584,7 +584,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 <View />
 
                 {/* Centered Date/Time Display */}
-                <View className="absolute inset-0 items-center justify-center pointer-events-none">
+                <View className="absolute inset-0 items-center justify-center z-0" style={{ pointerEvents: 'none' }}>
                     <Text className="text-white font-black uppercase tracking-widest shadow-lg" style={{ fontSize: 14 * fontSizeScale }}>
                         {timezone === 'UTC'
                             ? now.toISOString().replace('T', ' ').substring(0, 19).replace(/-/g, '.')
@@ -652,7 +652,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     }}
                     onPress={() => setSelectedBarId(null)}
                 />
-                <View className="absolute inset-x-0 top-0 bottom-0 flex-row pointer-events-none">
+                <View className="absolute inset-x-0 top-0 bottom-0 flex-row" style={{ pointerEvents: 'none' }}>
                     {[...Array(7)].map((_, i) => (
                         <View key={`grid-line-${i}`} className="flex-1 border-r border-sky-500/10" />
                     ))}
@@ -927,8 +927,8 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                 })}
 
                 {/* Current Time Indicator */}
-                <View key="indicator" className="absolute top-0 bottom-0 w-[4px] bg-orange-500 z-[2500] pointer-events-none" style={{ left: indicatorLeft } as ViewStyle}>
-                    <View key="indicator-label" className="absolute -top-12 -left-12 bg-orange-600 px-3 py-1.5 rounded-xl shadow-2xl flex-row items-center border border-white/30 pointer-events-none">
+                <View key="indicator" className="absolute top-0 bottom-0 w-[4px] bg-orange-500 z-[2500]" style={{ left: indicatorLeft, pointerEvents: 'none' } as ViewStyle}>
+                    <View key="indicator-label" className="absolute -top-12 -left-12 bg-orange-600 px-3 py-1.5 rounded-xl shadow-2xl flex-row items-center border border-white/30" style={{ pointerEvents: 'none' }}>
                         {/* Live Dot */}
                         <View className="w-2 h-2 rounded-full bg-white animate-pulse mr-2" />
                         <Text className="text-white font-black tracking-tighter" style={{ fontSize: 11 * fontSizeScale }}>
@@ -939,7 +939,7 @@ const TimelineView: React.FC<TimelineViewProps> = ({ events, isDark, onEventPres
                     </View>
 
                     {/* Pulse Effect Dot */}
-                    <View key="indicator-dot-wrap" className="absolute top-0 -left-[10px] items-center justify-center pointer-events-none">
+                    <View key="indicator-dot-wrap" className="absolute top-0 -left-[10px] items-center justify-center" style={{ pointerEvents: 'none' }}>
                         <Animated.View
                             style={{
                                 position: 'absolute',

@@ -22,13 +22,23 @@ export const SINGLE_SLOT_IDS = [
     'a_svs', 'alliance_svs', 'server_svs_prep', 'server_svs_battle',
     'a_dragon', 'alliance_dragon', 'server_dragon',
     'a_joe', 'alliance_joe',
-    'alliance_frost_league', 'a_weapon'
+    'alliance_frost_league', 'a_weapon',
+    'a_fortress', 'a_citadel', 'alliance_fortress', 'alliance_citadel'
 ];
 
 /** Get the canonical ID for an event to handle legacy/alternate IDs */
 export const getCanonicalEventId = (id: string): string => {
     if (!id) return '';
-    const cleanId = id.trim();
+    let cleanId = id.trim();
+
+    // Safely strip suffixes without breaking canonical IDs like a_fortress
+    if (cleanId.match(/(.+)(_team\d+|_fortress|_citadel)$/)) {
+        const potentialBase = cleanId.replace(/(_team\d+|_fortress|_citadel)$/, '');
+        // Only strip if the prefix is descriptive enough (prevents a_fortress -> a_)
+        if (potentialBase.length > 2) {
+            cleanId = potentialBase;
+        }
+    }
 
     const mappings: { [key: string]: string } = {
         'a_weapon': 'a_weapon',
@@ -154,7 +164,7 @@ export const getEventEndDate = (event: any, schedules: any[], now: Date) => {
 };
 
 /** Check if a weekly recurring event string is expired */
-export const checkWeeklyExpired = (str: string, now: Date) => {
+export const checkWeeklyExpired = (str: string, now: Date, isRecurring = true) => {
     if (!str || str.includes('상시') || str.includes('상설')) return false;
     const dayMapObj: { [key: string]: number } = {
         '월': 0, '화': 1, '수': 2, '목': 3, '금': 4, '토': 5, '일': 6,
@@ -176,13 +186,11 @@ export const checkWeeklyExpired = (str: string, now: Date) => {
                 if (dayIdx === undefined) return true;
 
                 // Nearest occurrence logic:
-                // We want to know if 'dayIdx' (0-6) refers to a past or future event relative to 'currentDay' (0-6).
-                // Example: Today is Monday(0). Sunday(6) has diff = 6 - 0 = 6. 
-                // In a circular 7-day week, 6 is the same as -1.
-                // We treat -3 to +3 as the 'current' window.
                 let diff = dayIdx - currentDay;
-                while (diff > 3) diff -= 7;
-                while (diff < -3) diff += 7;
+                if (isRecurring) {
+                    while (diff > 3) diff -= 7;
+                    while (diff < -3) diff += 7;
+                }
 
                 if (diff < 0) return true; // Past occurrence
                 if (diff > 0) return false; // Future occurrence
@@ -295,11 +303,14 @@ export const isEventExpired = (event: any, schedules: any[], now: Date) => {
                 if (absDate) {
                     // One hour buffer
                     const expireTime = new Date(absDate.getTime() + 3600000);
+                    // For non-recurring, if baseline $(updatedAt) is more than 7 days ago, it's definitely expired
+                    const daysSinceUpdate = (now.getTime() - baseline.getTime()) / (1000 * 60 * 60 * 24);
+                    if (daysSinceUpdate > 7) return true;
                     return now > expireTime;
                 }
             }
         }
-        return checkWeeklyExpired(combined, now);
+        return checkWeeklyExpired(combined, now, isRecurring);
     }
 
     return false;
@@ -541,32 +552,85 @@ export const calculateBearHuntDay = (event: any, schedules: any[], now: Date, ta
     if (!firstDayMatch) return registeredDay;
     const regDayNum = dayMap[firstDayMatch[0]];
 
+    // updatedAt을 기준점으로 사용 (격주 홀짝 구분을 위함)
+    const updatedAt = schedule?.updatedAt || event.updatedAt;
+
+    if (updatedAt) {
+        const updateDate = new Date(updatedAt);
+        updateDate.setHours(0, 0, 0, 0);
+
+        // 1. updatedAt 시점의 요일과 regDayNum의 차이를 계산하여 최초 기준일(baseDate) 설정
+        const updateDay = updateDate.getDay();
+        const daysToFirstEvent = (regDayNum - updateDay + 7) % 7;
+        const baseDate = new Date(updateDate);
+        baseDate.setDate(baseDate.getDate() + daysToFirstEvent);
+
+        // 2. baseDate로부터 오늘까지의 절대적인 일수 차이 계산
+        const todayZero = new Date(now);
+        todayZero.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((todayZero.getTime() - baseDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        // 3. 2일 주기 판단
+        const isEventDay = diffDays >= 0 && diffDays % 2 === 0;
+
+        if (isEventDay) {
+            const checkTime = targetTime || event.time || '';
+            const allTimes = Array.from(checkTime.matchAll(/(\d{1,2}):(\d{2})/g));
+            let latestEventMinutes = -1;
+
+            for (const match of allTimes) {
+                const h = parseInt(match[1]);
+                const m = parseInt(match[2]);
+                const eventMinutes = h * 60 + m;
+                if (eventMinutes > latestEventMinutes) latestEventMinutes = eventMinutes;
+            }
+
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            // 오늘 이벤트가 끝났다면 다음 회차(2일 뒤) 반환
+            if (latestEventMinutes >= 0 && currentMinutes > latestEventMinutes + 30) {
+                const nextDay = new Date(todayZero);
+                nextDay.setDate(nextDay.getDate() + 2);
+                return dayMapReverse[nextDay.getDay()];
+            }
+            return dayMapReverse[todayZero.getDay()];
+        } else {
+            // 이벤트날이 아니면 가장 가까운 미래의 이벤트날(내일 혹은 0~1일 뒤 이벤트일) 반환
+            const nextDay = new Date(todayZero);
+            if (diffDays < 0) {
+                // 아직 등록된 첫 날 전이면 baseDate 반환
+                return dayMapReverse[baseDate.getDay()];
+            } else {
+                // 이미 시작된 로테이션 중이면 다음 홀수 날(내일)이 이벤트날임
+                nextDay.setDate(nextDay.getDate() + 1);
+                return dayMapReverse[nextDay.getDay()];
+            }
+        }
+    }
+
+    // updatedAt이 없는 경우 (Fallback: 기존 방식 보완)
     const todayNum = now.getDay();
     const daysSinceRegistered = (todayNum - regDayNum + 7) % 7;
-    const isEventDay = daysSinceRegistered % 2 === 0;
 
-    if (isEventDay) {
+    // 일주일 내에서는 등록된 요일을 최대한 존중 (2일 주기 고려)
+    if (daysSinceRegistered === 0 || daysSinceRegistered === 2 || daysSinceRegistered === 4 || daysSinceRegistered === 6) {
+        // 이미 지나간 회차인지 체크
         const checkTime = targetTime || event.time || '';
         const allTimes = Array.from(checkTime.matchAll(/(\d{1,2}):(\d{2})/g));
         let latestEventMinutes = -1;
-
         for (const match of allTimes) {
             const h = parseInt(match[1]);
             const m = parseInt(match[2]);
             const eventMinutes = h * 60 + m;
             if (eventMinutes > latestEventMinutes) latestEventMinutes = eventMinutes;
         }
-
         const currentMinutes = now.getHours() * 60 + now.getMinutes();
         if (latestEventMinutes >= 0 && currentMinutes > latestEventMinutes + 30) {
-            const nextEventNum = (todayNum + 2) % 7;
-            return dayMapReverse[nextEventNum];
+            return dayMapReverse[(todayNum + 2) % 7];
         }
         return dayMapReverse[todayNum];
     }
 
-    const nextEventNum = (todayNum + (2 - (daysSinceRegistered % 2))) % 7;
-    return dayMapReverse[nextEventNum];
+    return dayMapReverse[(todayNum + 1) % 7]; // 가장 가까운 다음 회차
 };
 
 /** Check if event is currently active */

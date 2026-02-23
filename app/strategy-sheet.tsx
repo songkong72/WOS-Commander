@@ -327,8 +327,8 @@ export default function StrategySheet() {
 
                 {/* Floating Zoom Controls - Minimal & Transparent - Bottom Center */}
                 {!accessError && !loadError && !isLoading && (
-                    <View className="absolute bottom-4 left-0 right-0 items-center justify-center pointer-events-none z-10">
-                        <View className={`flex-row backdrop-blur-[2px] p-1 rounded-full border pointer-events-auto items-center ${isDark ? 'bg-slate-900/30 border-slate-700/30' : 'bg-white/30 border-slate-200/30'}`}>
+                    <View className="absolute bottom-4 left-0 right-0 items-center justify-center z-10" style={{ pointerEvents: 'none' }}>
+                        <View className={`flex-row backdrop-blur-[2px] p-1 rounded-full border items-center ${isDark ? 'bg-slate-900/30 border-slate-700/30' : 'bg-white/30 border-slate-200/30'}`} style={{ pointerEvents: 'auto' }}>
                             <TouchableOpacity
                                 onPress={() => handleZoom(-0.1)}
                                 className={`w-7 h-7 items-center justify-center rounded-full mr-1.5 active:bg-slate-700/50 border ${isDark ? 'bg-slate-800/40 border-slate-600/30' : 'bg-slate-100/40 border-slate-200/30'}`}

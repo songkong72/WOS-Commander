@@ -6,7 +6,7 @@ import { WikiEvent } from '../../data/wiki-events';
 import WheelPicker from '../common/WheelPicker';
 import RenderDateSelector from '../events/RenderDateSelector';
 
-import { SINGLE_SLOT_IDS, DATE_RANGE_IDS } from '../../app/utils/eventStatus';
+import { SINGLE_SLOT_IDS, DATE_RANGE_IDS, getCanonicalEventId } from '../../app/utils/eventStatus';
 
 
 const FORTRESS_IDS = Array.from({ length: 12 }, (_, i) => `fortress_${i + 1}`);
@@ -78,6 +78,7 @@ const ScheduleModal = memo(({
 }: ScheduleModalProps) => {
 
     const { t } = useTranslation();
+    const canonicalId = useMemo(() => getCanonicalEventId(editingEvent?.id || ''), [editingEvent]);
 
     const dayOptionsForPicker = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'].map(d => ({
         label: t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(d)]}`),
@@ -104,8 +105,8 @@ const ScheduleModal = memo(({
                             <View className="flex-col items-start">
                                 <Text className={`text-[10px] font-bold opacity-60 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} style={{ letterSpacing: 1.5 }}>{t('events.set_schedule')}</Text>
                                 <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mt-0.5`}>
-                                    {editingEvent ? t(`events.${editingEvent.id}_title`, { defaultValue: editingEvent.title }) : ''}
-                                    {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(editingEvent.id) && (
+                                    {editingEvent ? t(`events.${canonicalId}_title`, { defaultValue: editingEvent.title }) : ''}
+                                    {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(canonicalId) && (
                                         ` (${activeTab === 1 ? t('events.team1') : t('events.team2')})`
                                     )}
                                 </Text>
@@ -124,106 +125,123 @@ const ScheduleModal = memo(({
                     </View>
 
                     <View className="flex-1">
-                        {editingEvent?.id === 'a_fortress' || editingEvent?.id === 'a_citadel' ? (
+                        {canonicalId === 'a_fortress' || canonicalId === 'a_citadel' ? (
                             <View className="flex-1" style={{ overflow: 'visible', zIndex: (activeNamePickerId || activeFortressDropdown) ? 200 : 1 }}>
-                                <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
+                                <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 80 }} showsVerticalScrollIndicator={false}>
                                     {/* Registered Fortress Slots Table */}
-                                    <View className="mb-6">
-                                        <View className="flex-row items-center justify-between mb-4 px-1">
-                                            <Text className={`text-sm font-black uppercase tracking-widest ${isDark ? 'text-slate-200' : 'text-slate-600'}`}>{t('events.modal.registered_schedule')}</Text>
-                                            <View className={`px-2 py-1 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
+                                    <View className="mb-4">
+                                        <View className="flex-row items-center justify-between mb-2 px-1">
+                                            <Text className={`text-[11px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('events.modal.registered_schedule')}</Text>
+                                            <View className={`px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-800' : 'bg-slate-100'}`}>
                                                 <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{slots1.length} {t('events.count_unit')}</Text>
                                             </View>
                                         </View>
 
-                                        {slots1.map((slot, idx) => (
-                                            <View key={slot.id} className={`flex-row items-center py-4 px-5 mb-3 rounded-2xl border ${isDark ? 'bg-slate-900/60 border-slate-700/50' : 'bg-slate-50 border-slate-200'}`}>
-                                                <View className="flex-1 flex-row items-center gap-3">
-                                                    <View className={`px-3 py-1.5 rounded-xl ${isDark ? 'bg-sky-500/10' : 'bg-sky-50'}`}>
-                                                        <Text className={`text-xs font-black ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>#{idx + 1}</Text>
+                                        {slots1.length > 0 ? (
+                                            <View className="flex-row flex-wrap gap-2">
+                                                {slots1.map((slot, idx) => (
+                                                    <View key={slot.id} className={`flex-row items-center py-2 px-3 rounded-xl border ${isDark ? 'bg-sky-500/10 border-sky-500/20' : 'bg-sky-50 border-sky-100'}`}>
+                                                        <Text className={`text-xs font-bold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+                                                            {slot.name || (canonicalId === 'a_fortress' ? '요새' : '성채')} {t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(slot.day || '토')]}`)} {slot.h || '00'}:{slot.m || '00'}
+                                                        </Text>
+                                                        <TouchableOpacity onPress={() => onRemoveTimeSlot(slot.id)} className="ml-2">
+                                                            <Ionicons name="close-circle" size={14} color="#ef4444" />
+                                                        </TouchableOpacity>
                                                     </View>
-                                                    <View className="flex-1">
-                                                        <Text className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-800'}`} numberOfLines={1}>{slot.name}</Text>
-                                                        <Text className={`text-xs font-medium mt-0.5 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t(`events.days.${['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][['일', '월', '화', '수', '목', '금', '토'].indexOf(slot.day)]}`)} {slot.h}:{slot.m}</Text>
-                                                    </View>
-                                                </View>
-                                                <TouchableOpacity onPress={() => onRemoveTimeSlot(slot.id)} className={`w-10 h-10 rounded-xl items-center justify-center ${isDark ? 'bg-rose-500/10' : 'bg-rose-50'}`}>
-                                                    <Ionicons name="trash-outline" size={18} color="#ef4444" />
-                                                </TouchableOpacity>
+                                                ))}
                                             </View>
-                                        ))}
-
-                                        {slots1.length === 0 && (
-                                            <View className={`py-12 items-center justify-center rounded-2xl border border-dashed ${isDark ? 'border-slate-800 bg-slate-900/20' : 'border-slate-200 bg-slate-50'}`}>
-                                                <Ionicons name="calendar-outline" size={32} color={isDark ? "#475569" : "#cbd5e1"} />
-                                                <Text className={`text-sm font-medium mt-3 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.modal.no_schedule')}</Text>
+                                        ) : (
+                                            <View className={`h-[32px] items-center justify-center rounded-xl border border-dashed ${isDark ? 'border-slate-800 bg-slate-900/20' : 'border-slate-200 bg-slate-100/50'}`}>
+                                                <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{t('events.modal.no_schedule')}</Text>
                                             </View>
                                         )}
                                     </View>
 
-                                    {/* Recurrence Selection */}
-                                    <View className={`mb-6 p-4 rounded-2xl border ${isDark ? 'bg-slate-900/40 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-row items-center">
-                                                <Ionicons name="repeat-outline" size={18} color="#8b5cf6" style={{ marginRight: 8 }} />
-                                                <Text className={`font-bold ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>{t('events.recurrence')}</Text>
-                                            </View>
-                                            <Switch
-                                                value={isRecurring}
-                                                onValueChange={setIsRecurring}
-                                                trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#8b5cf6' }}
-                                                thumbColor={'white'}
-                                                style={{ transform: [{ scale: 0.8 }] }}
-                                            />
-                                        </View>
-                                        {isRecurring && (
-                                            <View className="mt-4 flex-row items-center gap-3">
-                                                <TextInput
-                                                    value={recurrenceValue}
-                                                    onChangeText={setRecurrenceValue}
-                                                    keyboardType="numeric"
-                                                    placeholder="1"
-                                                    placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-                                                    className={`w-20 p-3 rounded-xl border text-center font-bold text-base ${isDark ? 'bg-slate-900/60 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                    <View className="flex-row gap-3 mb-4">
+                                        {/* Date Specification & Recurrence (Side by Side) */}
+                                        <View className={`flex-1 p-3 rounded-2xl border ${isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-white border-slate-200 shadow-sm'}`}>
+                                            <View className="flex-row items-center justify-between mb-2">
+                                                <Text className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.specify_date')}</Text>
+                                                <Switch
+                                                    value={enableStartDate}
+                                                    onValueChange={setEnableStartDate}
+                                                    trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#3182F6' }}
+                                                    thumbColor={'white'}
+                                                    style={{ transform: [{ scale: 0.7 }] }}
                                                 />
-                                                <View className={`flex-row p-1 rounded-2xl items-center flex-1 ${isDark ? 'bg-slate-900/40' : 'bg-slate-200/30'}`}>
+                                            </View>
+                                            <TouchableOpacity
+                                                disabled={!enableStartDate}
+                                                onPress={() => setShowDatePicker('startDate')}
+                                                className={`p-2 rounded-lg border flex-row items-center justify-between ${!enableStartDate ? 'opacity-30' : ''} ${isDark ? 'bg-slate-900/80 border-slate-600' : 'bg-slate-50 border-slate-200'}`}
+                                            >
+                                                <Text className={`font-mono text-xs font-bold ${eventStartDate ? (isDark ? 'text-white' : 'text-slate-900') : (isDark ? 'text-slate-400' : 'text-slate-400')}`}>
+                                                    {eventStartDate || 'YYYY-MM-DD'}
+                                                </Text>
+                                                <Ionicons name="calendar" size={14} color="#3182F6" />
+                                            </TouchableOpacity>
+                                        </View>
+
+                                        {/* Recurrence Selection */}
+                                        <View className={`flex-1 p-3 rounded-2xl border ${isDark ? 'bg-slate-900/40 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                            <View className="flex-row items-center justify-between mb-2">
+                                                <Text className={`text-[11px] font-bold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>{t('events.recurrence')}</Text>
+                                                <Switch
+                                                    value={isRecurring}
+                                                    onValueChange={setIsRecurring}
+                                                    trackColor={{ false: isDark ? '#334155' : '#cbd5e1', true: '#8b5cf6' }}
+                                                    thumbColor={'white'}
+                                                    style={{ transform: [{ scale: 0.7 }] }}
+                                                />
+                                            </View>
+                                            {isRecurring ? (
+                                                <View className="flex-row items-center gap-2">
+                                                    <TextInput
+                                                        value={recurrenceValue}
+                                                        onChangeText={setRecurrenceValue}
+                                                        keyboardType="numeric"
+                                                        placeholder="1"
+                                                        placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
+                                                        className={`w-10 p-1 rounded-lg border text-center font-bold text-xs ${isDark ? 'bg-slate-900/60 border-slate-600 text-white' : 'bg-white border-slate-300 text-slate-900'}`}
+                                                    />
                                                     <TouchableOpacity
-                                                        onPress={() => setRecurrenceUnit('day')}
-                                                        className={`flex-1 py-3 items-center rounded-xl ${recurrenceUnit === 'day' ? 'bg-indigo-600 shadow-lg' : ''}`}
+                                                        onPress={() => setRecurrenceUnit(recurrenceUnit === 'day' ? 'week' : 'day')}
+                                                        className={`flex-1 py-1.5 items-center rounded-lg bg-indigo-600`}
                                                     >
-                                                        <Text className={`text-xs font-bold ${recurrenceUnit === 'day' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{t('events.recurrence_days')}</Text>
-                                                    </TouchableOpacity>
-                                                    <TouchableOpacity
-                                                        onPress={() => setRecurrenceUnit('week')}
-                                                        className={`flex-1 py-3 items-center rounded-xl ${recurrenceUnit === 'week' ? 'bg-indigo-600 shadow-lg' : ''}`}
-                                                    >
-                                                        <Text className={`text-xs font-bold ${recurrenceUnit === 'week' ? 'text-white' : (isDark ? 'text-slate-500' : 'text-slate-500')}`}>{t('events.recurrence_weeks')}</Text>
+                                                        <Text className="text-[10px] font-bold text-white">{recurrenceUnit === 'day' ? t('events.recurrence_days') : t('events.recurrence_weeks')}</Text>
                                                     </TouchableOpacity>
                                                 </View>
-                                            </View>
-                                        )}
+                                            ) : (
+                                                <View className="py-2.5 items-center justify-center opacity-20">
+                                                    <Text className="text-[10px] font-bold">OFF</Text>
+                                                </View>
+                                            )}
+                                        </View>
                                     </View>
 
                                     {/* Compact Form to add new slot */}
-                                    <View className={`rounded-3xl p-6 border ${isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                        <Text className={`text-sm font-black uppercase tracking-widest mb-4 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{t('events.modal.new_schedule')}</Text>
+                                    <View className={`rounded-3xl p-4 border ${isDark ? 'bg-slate-900/60 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                                        <Text className={`text-[11px] font-black uppercase tracking-widest mb-3 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{t('events.modal.new_schedule')}</Text>
 
                                         {/* Fortress/Citadel Horizontal Picker */}
-                                        <View className="mb-6">
-                                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" contentContainerStyle={{ paddingVertical: 4 }}>
-                                                {(editingEvent?.id === 'a_fortress' ? FORTRESS_IDS : CITADEL_IDS).map((id) => {
-                                                    const isFortress = editingEvent?.id === 'a_fortress';
-                                                    const fName = isFortress ? `요새 ${id.split('_')[1]}` : `성채 ${id.split('_')[1]}`;
+                                        <View className="mb-4">
+                                            <Text className={`text-[10px] font-black uppercase tracking-widest mb-2 px-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                {canonicalId === 'a_fortress' ? t('events.select_fortress', { defaultValue: '요새 선택' }) : t('events.select_citadel', { defaultValue: '성채 선택' })}
+                                            </Text>
+                                            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row" contentContainerStyle={{ paddingVertical: 2 }}>
+                                                {(canonicalId === 'a_fortress' ? FORTRESS_IDS : CITADEL_IDS).map((id) => {
+                                                    const isFortress = canonicalId === 'a_fortress';
+                                                    const fNum = id.split('_')[1];
+                                                    const fName = isFortress ? `요새 ${fNum}` : `성채 ${fNum}`;
                                                     const isSelected = selectedFortressName === fName;
                                                     return (
                                                         <TouchableOpacity
                                                             key={id}
                                                             onPress={() => setSelectedFortressName(fName)}
-                                                            className={`mr-3 px-5 py-3 rounded-2xl flex-row items-center border ${isSelected ? (isDark ? 'bg-sky-500 border-sky-400 shadow-lg' : 'bg-sky-500 border-sky-500 shadow-lg') : (isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-white border-slate-200 shadow-sm')}`}
+                                                            className={`mr-2 px-3 py-2 rounded-xl flex-row items-center border ${isSelected ? (isDark ? 'bg-sky-500 border-sky-400' : 'bg-sky-500 border-sky-500') : (isDark ? 'bg-slate-800 border-slate-700/60' : 'bg-white border-slate-200 shadow-sm')}`}
                                                         >
-                                                            <Text className="mr-2 text-sm">{isFortress ? '🏰' : '🛡️'}</Text>
-                                                            <Text className={`font-bold text-[14px] ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
-                                                                {isFortress ? t('events.fortress') : t('events.citadel')} {id.split('_')[1]}
+                                                            <Text className={`font-bold text-xs ${isSelected ? 'text-white' : (isDark ? 'text-slate-400' : 'text-slate-600')}`}>
+                                                                {isFortress ? '🏰' : '🛡️'} {fNum}
                                                             </Text>
                                                         </TouchableOpacity>
                                                     );
@@ -232,13 +250,13 @@ const ScheduleModal = memo(({
                                         </View>
 
                                         {/* Triple Wheel Picker */}
-                                        <View className="mb-6">
-                                            <View className="flex-row items-center justify-between mb-3 px-1">
-                                                <Text className={`text-[11px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.day_of_week')}</Text>
-                                                <Text className={`text-[11px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.modal.set_time')}</Text>
+                                        <View className="mb-4">
+                                            <View className="flex-row items-center justify-between mb-2 px-1">
+                                                <Text className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.day_of_week')}</Text>
+                                                <Text className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.modal.set_time')}</Text>
                                             </View>
-                                            <View className={`rounded-3xl border flex-row items-center justify-around ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ height: 140, overflow: 'hidden' }}>
-                                                <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 10, right: 10, height: 40, marginTop: -20, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 30 }} />
+                                            <View className={`rounded-2xl border flex-row items-center justify-around ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`} style={{ height: 110, overflow: 'hidden' }}>
+                                                <View style={{ pointerEvents: 'none', position: 'absolute', top: '50%', left: 10, right: 10, height: 34, marginTop: -17, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 8, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 30 }} />
 
                                                 <WheelPicker
                                                     options={['일', '월', '화', '수', '목', '금', '토'].map(d => ({
@@ -248,29 +266,29 @@ const ScheduleModal = memo(({
                                                     value={selectedDayForSlot}
                                                     onChange={setSelectedDayForSlot}
                                                     isDark={isDark}
-                                                    width={85}
+                                                    width={70}
                                                     showHighlight={false}
                                                     syncKey={pickerSyncKey}
                                                     containerBgColor={isDark ? '#0f172a' : '#ffffff'}
                                                 />
-                                                <View className="w-[1px] h-10 bg-slate-700/20" />
+                                                <View className="w-[1px] h-8 bg-slate-700/20" />
                                                 <WheelPicker
                                                     options={Array.from({ length: 24 }, (_, i) => pad(i))}
                                                     value={editHour}
                                                     onChange={setEditHour}
                                                     isDark={isDark}
-                                                    width={75}
+                                                    width={60}
                                                     showHighlight={false}
                                                     syncKey={pickerSyncKey}
                                                     containerBgColor={isDark ? '#0f172a' : '#ffffff'}
                                                 />
-                                                <Text className={`text-xl font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>:</Text>
+                                                <Text className={`text-lg font-black ${isDark ? 'text-slate-600' : 'text-slate-300'}`}>:</Text>
                                                 <WheelPicker
-                                                    options={Array.from({ length: 6 }, (_, i) => pad(i * 10))}
+                                                    options={Array.from({ length: 12 }, (_, i) => pad(i * 5))}
                                                     value={editMinute}
                                                     onChange={setEditMinute}
                                                     isDark={isDark}
-                                                    width={75}
+                                                    width={60}
                                                     showHighlight={false}
                                                     syncKey={pickerSyncKey}
                                                     containerBgColor={isDark ? '#0f172a' : '#ffffff'}
@@ -280,10 +298,10 @@ const ScheduleModal = memo(({
 
                                         <TouchableOpacity
                                             onPress={onAddFortressSlot}
-                                            className={`w-full py-4 rounded-2xl items-center flex-row justify-center shadow-lg ${editingSlotId ? 'bg-emerald-600' : 'bg-[#3182F6]'}`}
+                                            className={`w-full py-3.5 rounded-2xl items-center flex-row justify-center shadow-md ${editingSlotId ? 'bg-emerald-600' : 'bg-[#3182F6]'}`}
                                         >
-                                            <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={20} color="white" style={{ marginRight: 8 }} />
-                                            <Text className="text-white font-bold text-base">
+                                            <Ionicons name={editingSlotId ? "checkmark-circle" : "add-circle-outline"} size={18} color="white" style={{ marginRight: 6 }} />
+                                            <Text className="text-white font-bold text-sm">
                                                 {editingSlotId ? t('events.modal.update_schedule') : t('events.add_schedule_entry')}
                                             </Text>
                                         </TouchableOpacity>
@@ -326,6 +344,7 @@ const ScheduleModal = memo(({
                                         {mStart && mEnd && (() => {
                                             const parseDate = (v: string) => {
                                                 const [dp, tp] = v.split(' ');
+                                                if (!dp) return new Date();
                                                 const [y, mo, d] = dp.split('.');
                                                 const [hh, mm] = (tp || '00:00').split(':');
                                                 return new Date(+y, +mo - 1, +d, +hh, +mm);
@@ -361,7 +380,7 @@ const ScheduleModal = memo(({
                         ) : (
                             <View className="flex-1" style={{ overflow: 'visible', zIndex: 1 }}>
                                 {/* Team Tabs for multi-team events */}
-                                {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(editingEvent.id) && (
+                                {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(canonicalId) && (
                                     <View className={`flex-row mx-5 mt-4 p-1 rounded-[18px] ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
                                         <TouchableOpacity
                                             onPress={() => setActiveTab(1)}
@@ -493,8 +512,8 @@ const ScheduleModal = memo(({
                                                     </TouchableOpacity>
                                                 ))}
                                                 {(activeTab === 1 ? slots1 : slots2).length === 0 && (
-                                                    <View className={`w-full py-8 items-center justify-center rounded-2xl border border-dashed ${isDark ? 'border-slate-800 bg-slate-900/20' : 'border-slate-200 bg-slate-50/50'}`}>
-                                                        <Text className={`text-xs font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{t('events.modal.no_schedule')}</Text>
+                                                    <View className={`w-full h-[32px] items-center justify-center rounded-xl border border-dashed ${isDark ? 'border-slate-800 bg-slate-900/20' : 'border-slate-200 bg-slate-50/50'}`}>
+                                                        <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{t('events.modal.no_schedule')}</Text>
                                                     </View>
                                                 )}
                                             </View>
@@ -508,7 +527,7 @@ const ScheduleModal = memo(({
                                                     <Text className={`text-[11px] font-black uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('events.modal.set_time')}</Text>
                                                 </View>
                                                 <View className={`rounded-3xl border p-2 flex-row items-center justify-around ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200 shadow-inner'}`} style={{ height: 120, overflow: 'hidden' }}>
-                                                    <View pointerEvents="none" style={{ position: 'absolute', top: '50%', left: 10, right: 10, height: 38, marginTop: -19, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 30 }} />
+                                                    <View style={{ pointerEvents: 'none', position: 'absolute', top: '50%', left: 10, right: 10, height: 38, marginTop: -19, backgroundColor: isDark ? '#38bdf812' : '#38bdf805', borderRadius: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: isDark ? '#38bdf825' : '#38bdf812', zIndex: 30 }} />
 
                                                     <WheelPicker
                                                         options={dayOptionsForPicker}
@@ -580,8 +599,8 @@ const ScheduleModal = memo(({
                         </View>
                     </View>
                 </Pressable>
-            </Pressable>
-        </Modal>
+            </Pressable >
+        </Modal >
     );
 });
 

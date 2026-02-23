@@ -32,7 +32,7 @@ export const CustomAlert = memo(({ visible, title, message, type, onConfirm, onC
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-            <View className="flex-1 bg-black/60 items-center justify-center p-6">
+            <View className="flex-1 bg-black/60 items-center justify-center p-6" style={{ zIndex: 10000 }}>
                 <BlurView intensity={isDark ? 30 : 60} tint={isDark ? 'dark' : 'light'} className="absolute inset-0" />
                 <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                     <View className="items-center mb-6">
@@ -90,7 +90,7 @@ export const WarningModal = memo(({ visible, isDark, onCancel, onConfirm }: Warn
 
     return (
         <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-            <View className="flex-1 bg-black/60 items-center justify-center p-6">
+            <View className="flex-1 bg-black/60 items-center justify-center p-6" style={{ zIndex: 10000 }}>
                 <BlurView intensity={isDark ? 30 : 60} tint={isDark ? 'dark' : 'light'} className="absolute inset-0" />
                 <View className={`w-full max-w-sm rounded-[40px] border p-8 shadow-2xl ${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
                     <View className="items-center mb-6">
