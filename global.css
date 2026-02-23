@@ -1,8 +1,8 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 /* Force full viewport on Web */
 html,
@@ -15,13 +15,18 @@ body,
     min-width: 100vw;
     height: 100%;
     min-height: 100vh;
-    background-color: #F2F4F6; /* Toss Background Grey */
+    background-color: #F2F4F6;
+    /* Toss Background Grey */
     overflow-x: hidden;
     font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    font-size: 16px; /* Base Size */
-    line-height: 1.5; /* Good Readability */
-    letter-spacing: -0.02em; /* Tight Spacing */
-    color: #191F28; /* TDS Grey 900 */
+    font-size: 16px;
+    /* Base Size */
+    line-height: 1.5;
+    /* Good Readability */
+    letter-spacing: -0.02em;
+    /* Tight Spacing */
+    color: #191F28;
+    /* TDS Grey 900 */
 }
 
 /* Ensure icons use their own font family */
@@ -45,15 +50,18 @@ input::-ms-clear {
     width: 10px;
     background: transparent;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
     background-color: #94a3b8;
     border-radius: 5px;
     border: 2px solid transparent;
     background-clip: content-box;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background-color: #cbd5e1;
 }
@@ -62,24 +70,31 @@ input::-ms-clear {
 .shadow-sm {
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
 }
+
 .shadow {
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1) !important;
 }
+
 .shadow-md {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
 }
+
 .shadow-lg {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
 }
+
 .shadow-xl {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
+
 .shadow-2xl {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
 }
+
 .shadow-inner {
     box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.05) !important;
 }
+
 .shadow-none {
     box-shadow: none !important;
 }

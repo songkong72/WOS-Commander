@@ -39,7 +39,7 @@ export const ALLIANCE_EVENTS: WikiEvent[] = [
         wikiUrl: 'https://www.whiteoutsurvival.wiki/ko/events/%ec%97%b0%eb%a7%b9-%ec%b4%9d%eb%8f%99%ec%9b%90/',
         day: '',
         time: '',
-        description: '연맹원들과 함께 미션을 수행하는 이벤트'
+        description: '연맹원들과 함께 미션을 수행.'
     },
     {
         id: 'alliance_mercenary',

@@ -380,7 +380,7 @@ const ScheduleModal = memo(({
                         ) : (
                             <View className="flex-1" style={{ overflow: 'visible', zIndex: 1 }}>
                                 {/* Team Tabs for multi-team events */}
-                                {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(canonicalId) && (
+                                {editingEvent?.category === '연맹' && !SINGLE_SLOT_IDS.includes(canonicalId) && (editingEvent as any)?._teamIdx === undefined && (
                                     <View className={`flex-row mx-5 mt-4 p-1 rounded-[18px] ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
                                         <TouchableOpacity
                                             onPress={() => setActiveTab(1)}

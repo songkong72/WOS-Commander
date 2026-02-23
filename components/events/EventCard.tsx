@@ -228,6 +228,14 @@ export const EventCard: React.FC<EventCardProps> = ({
     // 여기서부터가 실제 화면에 그려지는 부분(View)입니다.
     // 리액트에서는 HTML과 비슷하게 생긴 JSX(타입스크립트는 TSX) 문법을 씁니다.
     if (isActive) {
+        let activeRemSeconds = getRemainingSeconds(toLocal(displayDay), mergedIdAndTitle) || getRemainingSeconds(toLocal(displayTime), mergedIdAndTitle);
+        if (activeRemSeconds === null) {
+            const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
+            if (endDate && now < endDate) {
+                activeRemSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
+            }
+        }
+
         return (
             // Pressable: 터치(클릭)가 가능한 영역을 만드는 투명한 버튼 박스입니다.
             <Pressable
@@ -284,26 +292,27 @@ export const EventCard: React.FC<EventCardProps> = ({
                             </View>
                             {/* numberOfLines={1}: 글자가 1줄을 넘어가면 뒷부분을 ...으로 잘라줍니다 (말줄임표) */}
                             {/* adjustsFontSizeToFit: 공간이 모자라면 폰트 크기를 스스로 줄여서 1줄 안에 다 맞춰넣는 신기한 속성입니다! */}
-                            <Text className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`} style={{ fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                            <Text
+                                className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+                                style={Platform.select({
+                                    web: { wordBreak: 'keep-all', fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale } as any,
+                                    default: { fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }
+                                })}
+                                numberOfLines={2}
+                                adjustsFontSizeToFit
+                                minimumFontScale={0.7}
+                            >
                                 {renderEventTitle()}
                             </Text>
                         </View>
 
                         <View className="items-end pl-2">
                             {(() => {
-                                let remSeconds = getRemainingSeconds(toLocal(displayDay), mergedIdAndTitle) || getRemainingSeconds(toLocal(displayTime), mergedIdAndTitle);
-                                if (remSeconds === null) {
-                                    const endDate = getEventEndDate({ ...event, day: toLocal(displayDay), time: toLocal(displayTime) });
-                                    if (endDate && now < endDate) {
-                                        remSeconds = Math.floor((endDate.getTime() - now.getTime()) / 1000);
-                                    }
-                                }
-
-                                if (remSeconds !== null) {
-                                    const d = Math.floor(remSeconds / (24 * 3600));
-                                    const h = Math.floor((remSeconds % (24 * 3600)) / 3600);
-                                    const m = Math.floor((remSeconds % 3600) / 60);
-                                    const s = remSeconds % 60;
+                                if (activeRemSeconds !== null) {
+                                    const d = Math.floor(activeRemSeconds / (24 * 3600));
+                                    const h = Math.floor((activeRemSeconds % (24 * 3600)) / 3600);
+                                    const m = Math.floor((activeRemSeconds % 3600) / 60);
+                                    const s = activeRemSeconds % 60;
                                     const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
                                     return (
                                         <View className="items-end">
@@ -338,10 +347,18 @@ export const EventCard: React.FC<EventCardProps> = ({
                                 };
                                 const startMs = parseDatePattern(parts[0]);
                                 const endMs = parseDatePattern(parts[1]);
-                                if (startMs && endMs && now.getTime() >= startMs && now.getTime() <= endMs) {
+                                if (startMs && endMs) {
                                     const totalDuration = endMs - startMs;
-                                    const elapsed = now.getTime() - startMs;
-                                    progressPct = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+                                    if (totalDuration > 0) {
+                                        let elapsed = 0;
+                                        if (activeRemSeconds !== null && activeRemSeconds > 0) {
+                                            elapsed = totalDuration - (activeRemSeconds * 1000);
+                                        } else {
+                                            // Fallback for safety
+                                            elapsed = now.getTime() - startMs;
+                                        }
+                                        progressPct = Math.max(0, Math.min(100, (elapsed / totalDuration) * 100));
+                                    }
                                 }
                             }
 
@@ -416,14 +433,23 @@ export const EventCard: React.FC<EventCardProps> = ({
                 <View className="flex-1 overflow-hidden justify-center">
 
                     {/* 상단 1열: 타이틀 + 우측 타이머 & 화살표 */}
-                    <View className="flex-row justify-between items-center mb-1.5">
-                        <View className="flex-1 flex-row items-center pr-2">
+                    <View className="flex-row justify-between items-center mb-1.5 pt-0.5">
+                        <View
+                            className="flex-1 pr-2"
+                            style={{
+                                minHeight: 22 * fontSizeScale,
+                                justifyContent: 'center'
+                            }}
+                        >
                             <Text
-                                className={`flex-1 font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
-                                style={{ fontSize: 16 * fontSizeScale }}
+                                className={`font-black tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}
+                                style={Platform.select({
+                                    web: { wordBreak: 'keep-all', fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale, letterSpacing: -0.5 } as any,
+                                    default: { fontSize: 16 * fontSizeScale, lineHeight: 22 * fontSizeScale, letterSpacing: -0.5 }
+                                })}
                                 numberOfLines={2}
                                 adjustsFontSizeToFit
-                                minimumFontScale={0.8}
+                                minimumFontScale={0.7}
                             >
                                 {renderEventTitle()}
                             </Text>

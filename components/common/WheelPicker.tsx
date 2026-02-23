@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, Text, FlatList, Platform, Pressable } from 'react-native';
+import { View, Text, FlatList, Platform, Pressable, DimensionValue } from 'react-native';
 
 export interface WheelPickerProps {
     options: any[];
     value: any;
     onChange: (value: any) => void;
     isDark: boolean;
-    width?: number | string;
+    width?: DimensionValue;
     showHighlight?: boolean;
     syncKey?: any;
     containerBgColor?: string;

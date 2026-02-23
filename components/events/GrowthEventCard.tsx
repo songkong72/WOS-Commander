@@ -162,22 +162,16 @@ const GrowthEventCard = memo(({
                         >
                             <Text
                                 className={`font-bold ${textColor}`}
-                                numberOfLines={1}
+                                numberOfLines={2}
                                 adjustsFontSizeToFit
-                                minimumFontScale={0.75}
-                                style={{
-                                    letterSpacing: -1.0,
-                                    fontSize: 18 * fontSizeScale,
-                                    lineHeight: 22 * fontSizeScale,
-                                }}
+                                minimumFontScale={0.7}
+                                style={Platform.select({
+                                    web: { wordBreak: 'keep-all', letterSpacing: -1.0, fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale } as any,
+                                    default: { letterSpacing: -1.0, fontSize: 18 * fontSizeScale, lineHeight: 22 * fontSizeScale }
+                                })}
                             >
-                                <Text>{t(`events.${event.id}_title`, { defaultValue: event.title })}</Text>
-                                {!!event.teamLabel && (
-                                    <Text className="text-[#3182F6] font-black tracking-tighter">
-                                        {' '}
-                                        ({event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'))})
-                                    </Text>
-                                )}
+                                {t(`events.${event.id}_title`, { defaultValue: event.title })}
+                                {!!event.teamLabel ? `\n(${event.teamLabel.replace('1군', t('events.team1')).replace('2군', t('events.team2'))})` : ''}
                             </Text>
                         </View>
                         {!!event.wikiUrl && (

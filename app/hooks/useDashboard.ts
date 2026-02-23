@@ -265,7 +265,22 @@ export const useDashboard = ({
         if (!schedules) return [];
         const allBaseEvents = [...INITIAL_WIKI_EVENTS, ...ADDITIONAL_EVENTS];
 
-        const rawList = schedules.map(s => {
+        // Deduplicate schedules by base canonical ID to prevent ghost duplicate cards
+        // (e.g., from old 'a_foundry' vs 'alliance_foundry' vs phantom '_team' generated entries)
+        const uniqueSchedules = new Map<string, any>();
+        schedules.forEach(s => {
+            if (!s.eventId) return;
+            const canonicalId = getCanonicalEventId(s.eventId);
+            // Ignore corrupted phantom entries that shouldn't be in the DB directly
+            if (s.eventId.match(/(_team\d+|_fortress|_citadel)$/)) return;
+
+            // Give priority to the canonical ID itself
+            if (!uniqueSchedules.has(canonicalId) || s.eventId === canonicalId) {
+                uniqueSchedules.set(canonicalId, s);
+            }
+        });
+
+        const rawList = Array.from(uniqueSchedules.values()).map(s => {
             let searchId = getCanonicalEventId(s.eventId);
 
             const eventInfo = allBaseEvents.find(e => e.id === searchId);
