@@ -11,7 +11,7 @@ import { useFirestoreStrategySheet } from '../hooks/useFirestoreStrategySheet';
 import { useTranslation } from 'react-i18next';
 
 const DEFAULT_SHEET_ID = '1p-Q6jvTITyFmQjMGlTR4PSw9aFZW3jih-9NNNI0QIiI';
-const DEFAULT_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/htmlview?embedded=true`;
+const DEFAULT_SHEET_URL = `https://docs.google.com/spreadsheets/d/${DEFAULT_SHEET_ID}/htmlembed?widget=true&headers=false`;
 
 export default function StrategySheet() {
     const router = useRouter();
@@ -129,7 +129,7 @@ export default function StrategySheet() {
             // Check if it's a google sheet URL and clean it if necessary
             const match = sheetData.url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
             if (match && match[1]) {
-                targetUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/htmlview?embedded=true`;
+                targetUrl = `https://docs.google.com/spreadsheets/d/${match[1]}/htmlembed?widget=true&headers=false`;
             } else {
                 targetUrl = sheetData.url;
             }
@@ -167,7 +167,7 @@ export default function StrategySheet() {
             const match = inputUrl.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
             if (match && match[1]) {
                 const id = match[1];
-                const cleanUrl = `https://docs.google.com/spreadsheets/d/${id}/htmlview?embedded=true`;
+                const cleanUrl = `https://docs.google.com/spreadsheets/d/${id}/htmlembed?widget=true&headers=false`;
                 await saveSheetUrl(cleanUrl, 'url');
             } else {
                 await saveSheetUrl(inputUrl, 'url');
