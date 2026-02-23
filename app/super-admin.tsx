@@ -401,7 +401,6 @@ export default function SuperAdminDashboard() {
                                                         <Text className={`font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1`} style={{ fontSize: 10 * fontSizeScale }}>{req.serverId}</Text>
                                                         <Text className={`font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`} numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 18 * fontSizeScale }}>{req.allianceId}</Text>
                                                     </View>
-                                                    <Text className={`font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>{req.allianceName}</Text>
                                                 </View>
 
                                                 {activeTab === 'pending' && (
@@ -428,11 +427,10 @@ export default function SuperAdminDashboard() {
 
                                             <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
                                                 <View style={{ flex: 1, marginRight: 10 }}>
-                                                    <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>Admin ID: <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontSize: 12 * fontSizeScale }}>{req.adminId}</Text></Text>
-                                                    <Text className={`font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1} style={{ fontSize: 10 * fontSizeScale }}>Contact: <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontSize: 12 * fontSizeScale }}>{req.contact || '-'}</Text></Text>
+                                                    <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1} style={{ fontSize: 14 * fontSizeScale }}>Admin ID: <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontSize: 16 * fontSizeScale }}>{req.adminId}</Text></Text>
                                                 </View>
                                                 <View className="items-end">
-                                                    <Text className={`font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`} style={{ fontSize: 10 * fontSizeScale }}>
+                                                    <Text className={`font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`} style={{ fontSize: 14 * fontSizeScale }}>
                                                         {new Date(req.requestedAt).toLocaleDateString()}
                                                     </Text>
                                                 </View>

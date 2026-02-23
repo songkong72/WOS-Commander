@@ -324,7 +324,6 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
                                                                         <Text className="text-[10px] font-black px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-500 mr-2 mb-1">{req.serverId}</Text>
                                                                         <Text className={`text-lg font-black ${isDark ? 'text-white' : 'text-slate-900'} mb-1`}>{req.allianceId}</Text>
                                                                     </View>
-                                                                    {!!req.allianceName && <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{req.allianceName}</Text>}
                                                                 </View>
 
                                                                 {superAdminTab === 'pending' ? (
@@ -370,11 +369,10 @@ export const SuperAdminModal: React.FC<SuperAdminModalProps> = ({
 
                                                             <View className={`flex-row justify-between items-center p-3 rounded-2xl ${isDark ? 'bg-slate-950/50' : 'bg-slate-50'}`}>
                                                                 <View style={{ flex: 1, marginRight: 10 }}>
-                                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Admin ID: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.adminId}</Text></Text>
-                                                                    <Text className={`text-[10px] font-bold mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} numberOfLines={1}>Contact: <Text className={`text-xs ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>{req.contact || '-'}</Text></Text>
+                                                                    <Text className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`} style={{ fontSize: 14 * fontSizeScale }} numberOfLines={1}>Admin ID: <Text className={`${isDark ? 'text-slate-200' : 'text-slate-800'}`} style={{ fontSize: 16 * fontSizeScale }}>{req.adminId}</Text></Text>
                                                                 </View>
                                                                 <View className="items-end">
-                                                                    <Text className={`text-[10px] font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
+                                                                    <Text className={`font-bold ${isDark ? 'text-slate-600' : 'text-slate-400'}`} style={{ fontSize: 14 * fontSizeScale }}>{new Date(req.requestedAt).toLocaleDateString()}</Text>
                                                                 </View>
                                                             </View>
                                                         </View>
